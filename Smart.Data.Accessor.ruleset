@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Smart.Data Rules" Description="Smart.Data Rules" ToolsVersion="15.0">
+  <IncludeAll Action="Warning" />
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="SA1005" Action="Hidden" />
+    <Rule Id="SA1101" Action="Hidden" />
+    <Rule Id="SA1121" Action="Hidden" />
+    <Rule Id="SA1201" Action="Hidden" />
+    <Rule Id="SA1202" Action="Hidden" />
+    <Rule Id="SA1203" Action="Hidden" />
+    <Rule Id="SA1204" Action="Hidden" />
+    <Rule Id="SA1402" Action="Hidden" />
+    <Rule Id="SA1512" Action="Hidden" />
+    <Rule Id="SA1513" Action="Hidden" />
+    <Rule Id="SA1606" Action="Hidden" />
+    <Rule Id="SA1614" Action="Hidden" />
+    <Rule Id="SA1616" Action="Hidden" />
+    <Rule Id="SA1622" Action="Hidden" />
+    <Rule Id="SA1633" Action="Hidden" />
+    <Rule Id="SA1642" Action="Hidden" />
+    <Rule Id="SA1652" Action="Hidden" />
+  </Rules>
+</RuleSet>
