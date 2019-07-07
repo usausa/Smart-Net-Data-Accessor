@@ -57,12 +57,22 @@ namespace Smart.Data.Accessor.Engine
 
         public ExecuteEngineConfig ConfigureComponents(Action<IComponentConfig> action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             action(components);
             return this;
         }
 
         public ExecuteEngineConfig ConfigureTypeMap(Action<IDictionary<Type, DbType>> action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             var dictionary = new Dictionary<Type, DbType>(DefaultTypeMap);
             action(dictionary);
             typeMap = dictionary;
@@ -71,6 +81,11 @@ namespace Smart.Data.Accessor.Engine
 
         public ExecuteEngineConfig ConfigureTypeHandlers(Action<IDictionary<Type, ITypeHandler>> action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             var dictionary = new Dictionary<Type, ITypeHandler>();
             action(dictionary);
             typeHandlers = dictionary;
@@ -79,6 +94,11 @@ namespace Smart.Data.Accessor.Engine
 
         public ExecuteEngineConfig ConfigureResultMapperFactories(Action<IList<IResultMapperFactory>> action)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
             var list = new List<IResultMapperFactory>(DefaultResultMapperFactories);
             action(list);
             resultMapperFactories = list;

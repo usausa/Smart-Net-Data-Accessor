@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Scripts
+namespace Smart.Data.Accessor.Scripts
 {
     using System;
     using System.Collections;
@@ -33,13 +33,13 @@
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Any(Array array)
         {
-            return array.Length > 0;
+            return array?.Length > 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Any(ICollection ic)
         {
-            return ic.Count > 0;
+            return ic?.Count > 0;
         }
     }
 }

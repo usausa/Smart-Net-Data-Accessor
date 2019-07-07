@@ -23,6 +23,7 @@ namespace Smart.Data.Accessor.Loaders
             this.extension = extension ?? "sql";
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public string Load(MethodInfo mi)
         {
             var path = root;

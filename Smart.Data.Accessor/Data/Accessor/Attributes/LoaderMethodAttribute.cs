@@ -15,6 +15,7 @@ namespace Smart.Data.Accessor.Attributes
         {
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var sql = loader.Load(mi);

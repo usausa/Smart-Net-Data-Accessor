@@ -8,7 +8,8 @@ namespace Smart.Data.Accessor.Engine
     using System.Threading;
     using System.Threading.Tasks;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
     public sealed partial class ExecuteEngine
     {
         private const CommandBehavior CommandBehaviorForEnumerable =

@@ -10,6 +10,7 @@ namespace Smart.Data.Accessor.Generator
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class RuntimeHelper
     {
         //--------------------------------------------------------------------------------

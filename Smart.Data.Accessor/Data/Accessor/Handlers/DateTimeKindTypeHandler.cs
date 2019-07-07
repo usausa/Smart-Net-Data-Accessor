@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Handlers
+namespace Smart.Data.Accessor.Handlers
 {
     using System;
     using System.Data;
@@ -20,6 +20,7 @@
             this.kind = kind;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void SetValue(IDbDataParameter parameter, object value)
         {
             parameter.DbType = dbType;

@@ -22,6 +22,7 @@ namespace Smart.Data.Accessor.Mappers
 
         public bool IsMatch(Type type) => true;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
         {
             var delegateFactory = context.Components.Get<IDelegateFactory>();

@@ -9,6 +9,7 @@ namespace Smart.Data.Accessor.Helpers
 
     public static class AttributeHelper
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static IReadOnlyList<ParameterNode> CreateParameterNodes(MethodInfo mi)
         {
             var nodes = new List<ParameterNode>();
