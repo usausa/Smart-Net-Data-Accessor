@@ -3,10 +3,6 @@
     public enum TokenType
     {
         Comment,
-        CodeComment,
-        PragmaComment,
-        ParameterComment,
-        ReplaceComment,
         Block,
         OpenParenthesis,
         CloseParenthesis

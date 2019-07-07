@@ -16,7 +16,7 @@ namespace Smart.Data.Accessor.Tokenizer
             this.source = source;
         }
 
-        public IList<Token> Tokenize()
+        public IReadOnlyList<Token> Tokenize()
         {
             int remain;
             while ((remain = source.Length - current) > 0)
@@ -66,44 +66,16 @@ namespace Smart.Data.Accessor.Tokenizer
             else if ((source[current] == '/') && (source[current + 1] == '*'))
             {
                 // Block comment
-                var start = current;
                 current += 2;
 
-                var tokenType = TokenType.Comment;
-                if (current < source.Length)
-                {
-                    if (source[current] == '@')
-                    {
-                        tokenType = TokenType.ParameterComment;
-                        current++;
-                    }
-                    else if (source[current] == '#')
-                    {
-                        tokenType = TokenType.ReplaceComment;
-                        current++;
-                    }
-                    else if (source[current] == '%')
-                    {
-                        tokenType = TokenType.CodeComment;
-                        current++;
-                    }
-                    else if (source[current] == '!')
-                    {
-                        tokenType = TokenType.PragmaComment;
-                        current++;
-                    }
-                }
-
+                var start = current;
                 while (current < source.Length - 1)
                 {
                     if ((source[current] == '*') && (source[current + 1] == '/'))
                     {
-                        current += 2;
+                        tokens.Add(new Token(TokenType.Comment, source.Substring(start, current - start).Trim()));
 
-                        tokens.Add(
-                            tokenType == TokenType.Comment
-                            ? new Token(tokenType, source.Substring(start, current - start).Trim())
-                            : new Token(tokenType, source.Substring(start + 3, current - start - 5).Trim()));
+                        current += 2;
 
                         return;
                     }
@@ -111,7 +83,7 @@ namespace Smart.Data.Accessor.Tokenizer
                     current++;
                 }
 
-                throw new AccessorException("Invalid sql. Comment is not closed.");
+                throw new SqlTokenizerException("Invalid sql. Comment is not closed.");
             }
             else
             {
@@ -133,7 +105,7 @@ namespace Smart.Data.Accessor.Tokenizer
             }
             else if (source[current] == '\'')
             {
-                // Quate
+                // Quote
                 var start = current;
                 current++;
 
@@ -161,7 +133,7 @@ namespace Smart.Data.Accessor.Tokenizer
 
                 if (!closed)
                 {
-                    throw new AccessorException("Invalid sql. Quate is not closed.");
+                    throw new SqlTokenizerException("Invalid sql. Quote is not closed.");
                 }
 
                 tokens.Add(new Token(TokenType.Block, source.Substring(start, current - start)));
