@@ -1,13 +1,12 @@
-namespace Smart.Data.Accessor.Parser
+namespace Smart.Data.Accessor.Nodes
 {
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
 
-    using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class NodeParser
+    public sealed class NodeBuilder
     {
         private readonly IReadOnlyList<Token> tokens;
 
@@ -21,7 +20,7 @@ namespace Smart.Data.Accessor.Parser
 
         private bool lastParenthesis;
 
-        public NodeParser(IReadOnlyList<Token> tokens)
+        public NodeBuilder(IReadOnlyList<Token> tokens)
         {
             this.tokens = tokens;
         }
@@ -66,7 +65,7 @@ namespace Smart.Data.Accessor.Parser
             lastParenthesis = false;
         }
 
-        public IReadOnlyList<INode> Parse()
+        public IReadOnlyList<INode> Build()
         {
             while (current < tokens.Count)
             {

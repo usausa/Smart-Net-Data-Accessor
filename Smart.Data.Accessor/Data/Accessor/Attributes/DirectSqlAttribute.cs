@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Attributes
 
     using Smart.Data.Accessor.Loaders;
     using Smart.Data.Accessor.Nodes;
-    using Smart.Data.Accessor.Parser;
     using Smart.Data.Accessor.Tokenizer;
 
     public sealed class DirectSqlAttribute : MethodAttribute
@@ -23,8 +22,8 @@ namespace Smart.Data.Accessor.Attributes
         {
             var tokenizer = new SqlTokenizer(sql);
             var tokens = tokenizer.Tokenize();
-            var parser = new NodeParser(tokens);
-            return parser.Parse();
+            var builder = new NodeBuilder(tokens);
+            return builder.Build();
         }
     }
 }
