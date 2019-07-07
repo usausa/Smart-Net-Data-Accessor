@@ -1518,7 +1518,7 @@ namespace Smart.Data.Accessor.Generator
                 case ParameterDirection.Input:
                     return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(parameter.Direction), $"Invalid parameter direction. direction=[{parameter.Direction}]");
+                    throw new ArgumentOutOfRangeException(nameof(parameter), $"Invalid parameter direction. direction=[{parameter.Direction}]");
             }
         }
     }

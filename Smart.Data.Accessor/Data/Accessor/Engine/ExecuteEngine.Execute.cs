@@ -8,6 +8,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Threading;
     using System.Threading.Tasks;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
     public sealed partial class ExecuteEngine
     {
         private const CommandBehavior CommandBehaviorForEnumerable =
@@ -213,7 +214,7 @@ namespace Smart.Data.Accessor.Engine
                 await con.OpenAsync(cancel).ConfigureAwait(false);
             }
 
-            return await cmd.ExecuteReaderAsync(wasClosed ? CommandBehaviorForEnumerableWithClose : CommandBehaviorForEnumerable, cancel);
+            return await cmd.ExecuteReaderAsync(wasClosed ? CommandBehaviorForEnumerableWithClose : CommandBehaviorForEnumerable, cancel).ConfigureAwait(false);
         }
 
         //--------------------------------------------------------------------------------
@@ -329,7 +330,7 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<T> QueryFirstOrDefaultAsync<T>(DbCommand cmd, CancellationToken cancel = default)
         {
-            using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel))
+            using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false))
             {
                 var mapper = CreateResultMapper<T>(reader);
                 return reader.Read() ? mapper(reader) : default;

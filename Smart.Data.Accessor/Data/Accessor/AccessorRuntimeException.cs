@@ -1,9 +1,10 @@
 namespace Smart.Data.Accessor
 {
     using System;
+    using System.Runtime.Serialization;
 
     [Serializable]
-    public sealed class AccessorRuntimeException : Exception
+    public class AccessorRuntimeException : Exception
     {
         public AccessorRuntimeException()
         {
@@ -16,6 +17,11 @@ namespace Smart.Data.Accessor
 
         public AccessorRuntimeException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        protected AccessorRuntimeException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

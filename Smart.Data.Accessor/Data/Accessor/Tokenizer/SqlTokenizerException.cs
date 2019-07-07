@@ -1,9 +1,10 @@
 namespace Smart.Data.Accessor.Tokenizer
 {
     using System;
+    using System.Runtime.Serialization;
 
     [Serializable]
-    public sealed class SqlTokenizerException : Exception
+    public class SqlTokenizerException : Exception
     {
         public SqlTokenizerException()
         {
@@ -16,6 +17,11 @@ namespace Smart.Data.Accessor.Tokenizer
 
         public SqlTokenizerException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        protected SqlTokenizerException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

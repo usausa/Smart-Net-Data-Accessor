@@ -1,9 +1,10 @@
 namespace Smart.Data.Accessor.Generator
 {
     using System;
+    using System.Runtime.Serialization;
 
     [Serializable]
-    public sealed class AccessorGeneratorException : Exception
+    public class AccessorGeneratorException : Exception
     {
         public AccessorGeneratorException()
         {
@@ -16,6 +17,11 @@ namespace Smart.Data.Accessor.Generator
 
         public AccessorGeneratorException(string message, Exception innerException)
             : base(message, innerException)
+        {
+        }
+
+        protected AccessorGeneratorException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

@@ -165,7 +165,7 @@ namespace Smart.Data.Accessor.Tokenizer
             }
         }
 
-        private bool IsBlockChar(char c)
+        private static bool IsBlockChar(char c)
         {
             if (Char.IsWhiteSpace(c))
             {

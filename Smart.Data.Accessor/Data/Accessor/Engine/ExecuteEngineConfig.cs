@@ -14,7 +14,7 @@ namespace Smart.Data.Accessor.Engine
 
     public sealed class ExecuteEngineConfig : IExecuteEngineConfig
     {
-        private readonly Dictionary<Type, DbType> typeMap = new Dictionary<Type, DbType>
+        private static readonly Dictionary<Type, DbType> DefaultTypeMap = new Dictionary<Type, DbType>
         {
             { typeof(byte), DbType.Byte },
             { typeof(sbyte), DbType.SByte },
@@ -38,24 +38,52 @@ namespace Smart.Data.Accessor.Engine
             { typeof(object), DbType.Object },
         };
 
-        private readonly Dictionary<Type, ITypeHandler> typeHandlers = new Dictionary<Type, ITypeHandler>();
-
-        private readonly List<IResultMapperFactory> resultMapperFactories = new List<IResultMapperFactory>
+        private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new List<IResultMapperFactory>
         {
             ObjectResultMapperFactory.Instance
         };
+
+        private readonly ComponentConfig components = new ComponentConfig();
+
+        private Dictionary<Type, DbType> typeMap = new Dictionary<Type, DbType>(DefaultTypeMap);
+
+        private Dictionary<Type, ITypeHandler> typeHandlers = new Dictionary<Type, ITypeHandler>();
+
+        private List<IResultMapperFactory> resultMapperFactories = new List<IResultMapperFactory>(DefaultResultMapperFactories);
 
         //--------------------------------------------------------------------------------
         // Config
         //--------------------------------------------------------------------------------
 
-        public ComponentConfig Components { get; } = new ComponentConfig();
+        public ExecuteEngineConfig ConfigureComponents(Action<IComponentConfig> action)
+        {
+            action(components);
+            return this;
+        }
 
-        public IDictionary<Type, DbType> TypeMap => typeMap;
+        public ExecuteEngineConfig ConfigureTypeMap(Action<IDictionary<Type, DbType>> action)
+        {
+            var dictionary = new Dictionary<Type, DbType>(DefaultTypeMap);
+            action(dictionary);
+            typeMap = dictionary;
+            return this;
+        }
 
-        public IDictionary<Type, ITypeHandler> TypeHandlers => typeHandlers;
+        public ExecuteEngineConfig ConfigureTypeHandlers(Action<IDictionary<Type, ITypeHandler>> action)
+        {
+            var dictionary = new Dictionary<Type, ITypeHandler>();
+            action(dictionary);
+            typeHandlers = dictionary;
+            return this;
+        }
 
-        public IList<IResultMapperFactory> ResultMapperFactories => resultMapperFactories;
+        public ExecuteEngineConfig ConfigureResultMapperFactories(Action<IList<IResultMapperFactory>> action)
+        {
+            var list = new List<IResultMapperFactory>(DefaultResultMapperFactories);
+            action(list);
+            resultMapperFactories = list;
+            return this;
+        }
 
         //--------------------------------------------------------------------------------
         // Constructor
@@ -63,21 +91,21 @@ namespace Smart.Data.Accessor.Engine
 
         public ExecuteEngineConfig()
         {
-            Components.Add<IDelegateFactory>(DelegateFactory.Default);
-            Components.Add<IObjectConverter>(ObjectConverter.Default);
-            Components.Add<IPropertySelector>(DefaultPropertySelector.Instance);
-            Components.Add<IEmptyDialect, EmptyDialect>();
+            components.Add<IDelegateFactory>(DelegateFactory.Default);
+            components.Add<IObjectConverter>(ObjectConverter.Default);
+            components.Add<IPropertySelector>(DefaultPropertySelector.Instance);
+            components.Add<IEmptyDialect, EmptyDialect>();
         }
 
         //--------------------------------------------------------------------------------
         // Interface
         //--------------------------------------------------------------------------------
 
-        IComponentContainer IExecuteEngineConfig.CreateComponentContainer() => Components.ToContainer();
+        IComponentContainer IExecuteEngineConfig.CreateComponentContainer() => components.ToContainer();
 
-        public IDictionary<Type, DbType> GetTypeMap() => typeMap;
+        IDictionary<Type, DbType> IExecuteEngineConfig.GetTypeMap() => typeMap;
 
-        public IDictionary<Type, ITypeHandler> GetTypeHandlers() => typeHandlers;
+        IDictionary<Type, ITypeHandler> IExecuteEngineConfig.GetTypeHandlers() => typeHandlers;
 
         IResultMapperFactory[] IExecuteEngineConfig.GetResultMapperFactories() => resultMapperFactories.ToArray();
     }
