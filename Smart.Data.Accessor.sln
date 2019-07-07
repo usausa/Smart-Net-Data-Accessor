@@ -10,7 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		README.md = README.md
+		Smart.Data.Accessor.Extensions.DependencyInjection.nuspec = Smart.Data.Accessor.Extensions.DependencyInjection.nuspec
 		Smart.Data.Accessor.nuspec = Smart.Data.Accessor.nuspec
+		Smart.Data.Accessor.Resolver.nuspec = Smart.Data.Accessor.Resolver.nuspec
 		Smart.Data.Accessor.ruleset = Smart.Data.Accessor.ruleset
 		Smart.Data.Accessor.sln.DotSettings = Smart.Data.Accessor.sln.DotSettings
 	EndProjectSection
@@ -22,6 +24,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Benchmark", "Smart.Data.Accessor.Benchmark\Smart.Data.Accessor.Benchmark.csproj", "{33F6C80F-50FC-4411-BA69-113B934826B5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Tests", "Smart.Data.Accessor.Tests\Smart.Data.Accessor.Tests.csproj", "{C24CD0E3-D070-4DFF-97A8-5788FCFE6AB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Extensions.DependencyInjection", "Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj", "{9740D356-CC98-40A2-AC59-8AF204080F38}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Resolver", "Smart.Data.Accessor.Resolver\Smart.Data.Accessor.Resolver.csproj", "{F625023A-2B30-40A3-849A-8E0E87A37AC1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +51,14 @@ Global
 		{C24CD0E3-D070-4DFF-97A8-5788FCFE6AB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C24CD0E3-D070-4DFF-97A8-5788FCFE6AB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C24CD0E3-D070-4DFF-97A8-5788FCFE6AB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9740D356-CC98-40A2-AC59-8AF204080F38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9740D356-CC98-40A2-AC59-8AF204080F38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9740D356-CC98-40A2-AC59-8AF204080F38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9740D356-CC98-40A2-AC59-8AF204080F38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
