@@ -7,6 +7,14 @@
 
 <h6>Total count: @count</h6>
 
+<div class="btn-toolbar" role="toolbar">
+    <div class="btn-group btn-group-sm" role="group">
+        <a class="btn btn-secondary" asp-action="Index" asp-route-type="">All</a>
+        <a class="btn btn-secondary" asp-action="Index" asp-route-type="A">Type A</a>
+        <a class="btn btn-secondary" asp-action="Index" asp-route-type="B">Type B</a>
+    </div>
+</div>
+
 <table class="table">
     <thead>
         <tr>

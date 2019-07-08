@@ -15,5 +15,8 @@ namespace Example.WebApplication.Dao
 
         [Query]
         Task<IList<DataEntity>> QueryDataAsync(string type);
+
+        [Insert]
+        Task<int> InsertData(DataEntity entity);
     }
 }
