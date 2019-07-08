@@ -40,7 +40,7 @@ namespace Smart.Data.Accessor.Selectors
 
         private static bool IsMatchName(PropertyInfo pi, string name, bool ignoreCase)
         {
-            var propertyName = pi.GetCustomAttribute<ColumnAttribute>()?.Name ?? pi.Name;
+            var propertyName = pi.GetCustomAttribute<NameAttribute>()?.Name ?? pi.Name;
             return String.Equals(propertyName, name, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
     }

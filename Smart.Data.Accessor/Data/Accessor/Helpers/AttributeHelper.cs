@@ -9,6 +9,19 @@ namespace Smart.Data.Accessor.Helpers
 
     public static class AttributeHelper
     {
+        public static string GetTableName(MethodInfo mi)
+        {
+            var attribute = mi.GetCustomAttribute<NameAttribute>();
+            if (attribute != null)
+            {
+                return attribute.Name;
+            }
+
+            return mi.GetParameters()
+                .Select(x => x.ParameterType.GetCustomAttribute<NameAttribute>())
+                .FirstOrDefault(x => x != null)?.Name;
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static IReadOnlyList<ParameterNode> CreateParameterNodes(MethodInfo mi)
         {
@@ -22,13 +35,13 @@ namespace Smart.Data.Accessor.Helpers
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
                         .Select(pi => new ParameterNode(
                             $"{pmi.Name}.{pi.Name}",
-                            pi.GetCustomAttribute<ParameterAttribute>()?.Name ?? pi.Name)));
+                            pi.GetCustomAttribute<NameAttribute>()?.Name ?? pi.Name)));
                 }
                 else
                 {
                     nodes.Add(new ParameterNode(
                         pmi.Name,
-                        pmi.GetCustomAttribute<ParameterAttribute>()?.Name ?? pmi.Name));
+                        pmi.GetCustomAttribute<NameAttribute>()?.Name ?? pmi.Name));
                 }
             }
 

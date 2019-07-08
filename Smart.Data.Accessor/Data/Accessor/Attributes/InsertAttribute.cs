@@ -12,6 +12,11 @@ namespace Smart.Data.Accessor.Attributes
     {
         private readonly string table;
 
+        public InsertAttribute()
+            : this(null)
+        {
+        }
+
         public InsertAttribute(string table)
             : base(CommandType.Text, MethodType.Execute)
         {
@@ -25,7 +30,7 @@ namespace Smart.Data.Accessor.Attributes
             var nodes = new List<INode>
             {
                 new SqlNode("INSERT INTO "),
-                new SqlNode(table),
+                new SqlNode(table ?? AttributeHelper.GetTableName(mi)),
                 new SqlNode(" (")
             };
 
