@@ -16,9 +16,9 @@ namespace Smart.Data.Accessor.Generator
 
     public sealed class DaoGenerator
     {
-        private readonly ISqlLoader loader;
-
         private readonly ExecuteEngine engine;
+
+        private readonly ISqlLoader loader;
 
         private readonly IGeneratorDebugger debugger;
 
@@ -31,15 +31,15 @@ namespace Smart.Data.Accessor.Generator
             AddReference(DefaultReference, typeof(ExecuteEngine).Assembly);
         }
 
-        public DaoGenerator(ISqlLoader loader, ExecuteEngine engine)
-            : this(loader, engine, null)
+        public DaoGenerator(ExecuteEngine engine, ISqlLoader loader)
+            : this(engine, loader, null)
         {
         }
 
-        public DaoGenerator(ISqlLoader loader, ExecuteEngine engine, IGeneratorDebugger debugger)
+        public DaoGenerator(ExecuteEngine engine, ISqlLoader loader, IGeneratorDebugger debugger)
         {
-            this.loader = loader;
             this.engine = engine;
+            this.loader = loader;
             this.debugger = debugger;
         }
 
@@ -60,7 +60,16 @@ namespace Smart.Data.Accessor.Generator
 
         public T Create<T>()
         {
-            var type = typeof(T);
+            return (T)Create(typeof(T));
+        }
+
+        public object Create(Type type)
+        {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             if (!cache.TryGetValue(type, out var dao))
             {
                 dao = cache.AddIfNotExist(type, CreateInternal);
@@ -70,7 +79,7 @@ namespace Smart.Data.Accessor.Generator
                 }
             }
 
-            return (T)dao;
+            return dao;
         }
 
         private object CreateInternal(Type type)

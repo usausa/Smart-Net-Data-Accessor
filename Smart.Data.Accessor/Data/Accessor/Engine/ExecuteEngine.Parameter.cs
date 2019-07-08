@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine
 {
     using System;
     using System.Collections.Generic;
@@ -36,7 +36,7 @@
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return CreateInParameterSetupByDbType<T>(dbType, 0);
+                return CreateInParameterSetupByDbType<T>(dbType, null);
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
@@ -53,7 +53,7 @@
             };
         }
 
-        private static Action<DbCommand, string, T> CreateInParameterSetupByDbType<T>(DbType dbType, int size)
+        private static Action<DbCommand, string, T> CreateInParameterSetupByDbType<T>(DbType dbType, int? size)
         {
             return (cmd, name, value) =>
             {
@@ -65,9 +65,12 @@
                 }
                 else
                 {
-                    parameter.DbType = dbType;
-                    parameter.Size = size;
                     parameter.Value = value;
+                    parameter.DbType = dbType;
+                    if (size.HasValue)
+                    {
+                        parameter.Size = size.Value;
+                    }
                 }
                 parameter.ParameterName = name;
             };
@@ -97,7 +100,7 @@
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return CreateInOutParameterSetupByDbType<T>(dbType, 0);
+                return CreateInOutParameterSetupByDbType<T>(dbType, null);
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
@@ -116,7 +119,7 @@
             };
         }
 
-        private static Func<DbCommand, string, T, DbParameter> CreateInOutParameterSetupByDbType<T>(DbType dbType, int size)
+        private static Func<DbCommand, string, T, DbParameter> CreateInOutParameterSetupByDbType<T>(DbType dbType, int? size)
         {
             return (cmd, name, value) =>
             {
@@ -128,9 +131,12 @@
                 }
                 else
                 {
-                    parameter.DbType = dbType;
-                    parameter.Size = size;
                     parameter.Value = value;
+                    parameter.DbType = dbType;
+                    if (size.HasValue)
+                    {
+                        parameter.Size = size.Value;
+                    }
                 }
                 parameter.ParameterName = name;
                 parameter.Direction = ParameterDirection.InputOutput;
@@ -156,20 +162,23 @@
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return CreateOutParameterSetupByDbType(dbType, 0);
+                return CreateOutParameterSetupByDbType(dbType, null);
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static Func<DbCommand, string, DbParameter> CreateOutParameterSetupByDbType(DbType dbType, int size)
+        private static Func<DbCommand, string, DbParameter> CreateOutParameterSetupByDbType(DbType dbType, int? size)
         {
             return (cmd, name) =>
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
                 parameter.DbType = dbType;
-                parameter.Size = size;
+                if (size.HasValue)
+                {
+                    parameter.Size = size.Value;
+                }
                 parameter.ParameterName = name;
                 parameter.Direction = ParameterDirection.Output;
                 return parameter;
@@ -241,7 +250,7 @@
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return CreateArrayParameterSetupByDbType<T>(dbType, 0);
+                return CreateArrayParameterSetupByDbType<T>(dbType, null);
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
@@ -262,7 +271,7 @@
             };
         }
 
-        private Action<DbCommand, string, T[]> CreateArrayParameterSetupByDbType<T>(DbType dbType, int size)
+        private Action<DbCommand, string, T[]> CreateArrayParameterSetupByDbType<T>(DbType dbType, int? size)
         {
             return (cmd, name, values) =>
             {
@@ -277,9 +286,12 @@
                     }
                     else
                     {
-                        parameter.DbType = dbType;
-                        parameter.Size = size;
                         parameter.Value = value;
+                        parameter.DbType = dbType;
+                        if (size.HasValue)
+                        {
+                            parameter.Size = size.Value;
+                        }
                     }
                     parameter.ParameterName = name;
                 }
@@ -337,7 +349,7 @@
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return CreateListParameterSetupByDbType<T>(dbType, 0);
+                return CreateListParameterSetupByDbType<T>(dbType, null);
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
@@ -358,7 +370,7 @@
             };
         }
 
-        private Action<DbCommand, string, IList<T>> CreateListParameterSetupByDbType<T>(DbType dbType, int size)
+        private Action<DbCommand, string, IList<T>> CreateListParameterSetupByDbType<T>(DbType dbType, int? size)
         {
             return (cmd, name, values) =>
             {
@@ -373,9 +385,12 @@
                     }
                     else
                     {
-                        parameter.DbType = dbType;
-                        parameter.Size = size;
                         parameter.Value = value;
+                        parameter.DbType = dbType;
+                        if (size.HasValue)
+                        {
+                            parameter.Size = size.Value;
+                        }
                     }
                     parameter.ParameterName = name;
                 }

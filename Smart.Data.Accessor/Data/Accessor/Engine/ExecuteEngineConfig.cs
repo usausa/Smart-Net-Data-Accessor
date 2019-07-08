@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor.Engine
         // Config
         //--------------------------------------------------------------------------------
 
-        public ExecuteEngineConfig ConfigureComponents(Action<IComponentConfig> action)
+        public ExecuteEngineConfig ConfigureComponents(Action<ComponentConfig> action)
         {
             if (action is null)
             {

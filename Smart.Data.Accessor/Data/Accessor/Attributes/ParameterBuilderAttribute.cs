@@ -8,14 +8,14 @@ namespace Smart.Data.Accessor.Attributes
     {
         public DbType DbType { get; }
 
-        public int Size { get;  }
+        public int? Size { get;  }
 
         protected ParameterBuilderAttribute(DbType dbType)
-            : this(dbType, 0)
+            : this(dbType, null)
         {
         }
 
-        protected ParameterBuilderAttribute(DbType dbType, int size)
+        protected ParameterBuilderAttribute(DbType dbType, int? size)
         {
             DbType = dbType;
             Size = size;
