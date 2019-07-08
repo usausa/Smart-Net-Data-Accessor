@@ -9,6 +9,7 @@ namespace Smart.Data.Accessor.Helpers
 
     public static class AttributeHelper
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetTableName(MethodInfo mi)
         {
             var attribute = mi.GetCustomAttribute<NameAttribute>();
