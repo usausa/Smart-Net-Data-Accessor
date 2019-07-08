@@ -1,15 +1,27 @@
 namespace Example.WebApplication.Controllers
 {
     using System.Diagnostics;
+    using System.Threading.Tasks;
 
+    using Example.WebApplication.Dao;
     using Example.WebApplication.Models;
 
     using Microsoft.AspNetCore.Mvc;
 
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly ISampleDao sampleDao;
+
+        public HomeController(ISampleDao sampleDao)
         {
+            this.sampleDao = sampleDao;
+        }
+
+        public async Task<IActionResult> Index(DataListForm form)
+        {
+            ViewBag.Count = await sampleDao.CountDataAsync().ConfigureAwait(false);
+            ViewBag.List = await sampleDao.QueryDataAsync(form.Type).ConfigureAwait(false);
+
             return View();
         }
 
