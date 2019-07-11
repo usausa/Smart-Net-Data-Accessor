@@ -138,6 +138,12 @@ namespace Smart.Data.Accessor.Tokenizer
 
                 tokens.Add(new Token(TokenType.Block, source.Substring(start, current - start)));
             }
+            else if (source[current] == ',')
+            {
+                // Open
+                tokens.Add(new Token(TokenType.Comma, ","));
+                current += 1;
+            }
             else if (source[current] == '(')
             {
                 // Open
@@ -175,6 +181,7 @@ namespace Smart.Data.Accessor.Tokenizer
             switch (c)
             {
                 case '\'':
+                case ',':
                 case '(':
                 case ')':
                 case '\r':

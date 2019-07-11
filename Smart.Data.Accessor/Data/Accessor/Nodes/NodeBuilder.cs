@@ -79,6 +79,9 @@ namespace Smart.Data.Accessor.Nodes
                         AppendSql(token.Value.Trim(), true);
                         lastParenthesis = true;
                         break;
+                    case TokenType.Comma:
+                        AppendSql(token.Value.Trim(), false);
+                        break;
                     case TokenType.CloseParenthesis:
                         AppendSql(token.Value.Trim(), false);
                         break;
@@ -123,7 +126,8 @@ namespace Smart.Data.Accessor.Nodes
             // Parameter
             if (value.StartsWith("@"))
             {
-                AddBody(new ParameterNode(value.Substring(1).Trim()), true);
+                AddBody(new ParameterNode(value.Substring(1).Trim()), !lastParenthesis);
+                lastParenthesis = false;
 
                 var token = NextToken();
                 if (token != null)

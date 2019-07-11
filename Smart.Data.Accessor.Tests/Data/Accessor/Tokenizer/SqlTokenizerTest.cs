@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Tokenizer
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void TestBasic()
+        public void TestBasicSelect()
         {
             var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */ 1");
             var tokens = tokenizer.Tokenize();
