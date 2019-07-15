@@ -42,7 +42,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static Action<DbCommand, string, T> CreateInParameterSetupByHandler<T>(Action<IDbDataParameter, object> action)
+        private static Action<DbCommand, string, T> CreateInParameterSetupByHandler<T>(Action<DbParameter, object> action)
         {
             return (cmd, name, value) =>
             {
@@ -106,7 +106,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static Func<DbCommand, string, T, DbParameter> CreateInOutParameterSetupByHandler<T>(Action<IDbDataParameter, object> action)
+        private static Func<DbCommand, string, T, DbParameter> CreateInOutParameterSetupByHandler<T>(Action<DbParameter, object> action)
         {
             return (cmd, name, value) =>
             {
@@ -256,7 +256,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private Action<DbCommand, string, T[]> CreateArrayParameterSetupByHandler<T>(Action<IDbDataParameter, object> action)
+        private Action<DbCommand, string, T[]> CreateArrayParameterSetupByHandler<T>(Action<DbParameter, object> action)
         {
             return (cmd, name, values) =>
             {
@@ -355,7 +355,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private Action<DbCommand, string, IList<T>> CreateListParameterSetupByHandler<T>(Action<IDbDataParameter, object> action)
+        private Action<DbCommand, string, IList<T>> CreateListParameterSetupByHandler<T>(Action<DbParameter, object> action)
         {
             return (cmd, name, values) =>
             {

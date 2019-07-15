@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine
 {
     using System;
 
@@ -14,8 +14,7 @@
             Type = type;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1008:OpeningParenthesisMustBeSpacedCorrectly", Justification = "Ignore")]
-        public override int GetHashCode() => (Name, Type).GetHashCode();
+        public override int GetHashCode() => Name.GetHashCode() ^ Type.GetHashCode();
 
         public override bool Equals(object obj) => obj is ColumnInfo other && Equals(other);
 

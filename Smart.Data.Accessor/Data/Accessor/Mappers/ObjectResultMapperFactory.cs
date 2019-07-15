@@ -5,19 +5,50 @@ namespace Smart.Data.Accessor.Mappers
     using System.Data;
     using System.Linq;
     using System.Reflection;
+    using System.Reflection.Emit;
+    using System.Runtime.CompilerServices;
 
     using Smart;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;
     using Smart.Data.Accessor.Selectors;
-    using Smart.Reflection;
+    using Smart.Reflection.Emit;
 
     public sealed class ObjectResultMapperFactory : IResultMapperFactory
     {
         public static ObjectResultMapperFactory Instance { get; } = new ObjectResultMapperFactory();
 
+        private readonly MethodInfo getValueMethod;
+
+        private readonly MethodInfo getValueWithConvertMethod;
+
+        private int typeNo;
+
+        private AssemblyBuilder assemblyBuilder;
+
+        private ModuleBuilder moduleBuilder;
+
+        private ModuleBuilder ModuleBuilder
+        {
+            get
+            {
+                if (moduleBuilder == null)
+                {
+                    assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                        new AssemblyName("ObjectResultMapperFactoryAssembly"),
+                        AssemblyBuilderAccess.Run);
+                    moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                        "ObjectResultMapperFactoryModule");
+                }
+
+                return moduleBuilder;
+            }
+        }
+
         private ObjectResultMapperFactory()
         {
+            getValueMethod = GetType().GetMethod(nameof(GetValue), BindingFlags.Static | BindingFlags.NonPublic);
+            getValueWithConvertMethod = GetType().GetMethod(nameof(GetValueWithConvert), BindingFlags.Static | BindingFlags.NonPublic);
         }
 
         public bool IsMatch(Type type) => true;
@@ -25,32 +56,51 @@ namespace Smart.Data.Accessor.Mappers
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
         {
-            var delegateFactory = context.Components.Get<IDelegateFactory>();
-            var factory = delegateFactory.CreateFactory<T>();
+            var entries = CreateMapEntries(context, type, columns);
+            var holder = CreateHolder(entries);
+            var holderType = holder.GetType();
 
-            var entries = CreateMapEntries(context, delegateFactory, type, columns);
-
-            return record =>
+            var ci = type.GetConstructor(Type.EmptyTypes);
+            if (ci is null)
             {
-                var obj = factory();
+                throw new ArgumentException($"Default constructor not found. type=[{type.FullName}]", nameof(type));
+            }
 
-                for (var i = 0; i < entries.Length; i++)
+            var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
+            var ilGenerator = dynamicMethod.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Newobj, ci);
+
+            foreach (var entry in entries)
+            {
+                ilGenerator.Emit(OpCodes.Dup);
+                ilGenerator.Emit(OpCodes.Ldarg_1);
+                ilGenerator.EmitLdcI4(entry.Index);
+                if (entry.Converter == null)
                 {
-                    var entry = entries[i];
-                    entry.Setter(obj, record.GetValue(entry.Index));
+                    var method = getValueMethod.MakeGenericMethod(entry.Property.PropertyType);
+                    ilGenerator.Emit(OpCodes.Call, method);
                 }
+                else
+                {
+                    var field = holderType.GetField($"parser{entry.Index}");
+                    ilGenerator.Emit(OpCodes.Ldarg_0);
+                    ilGenerator.Emit(OpCodes.Ldfld, field);
+                    var method = getValueWithConvertMethod.MakeGenericMethod(entry.Property.PropertyType);
+                    ilGenerator.Emit(OpCodes.Call, method);
+                }
+                ilGenerator.Emit(OpCodes.Callvirt, entry.Property.SetMethod);
+            }
 
-                return obj;
-            };
+            ilGenerator.Emit(OpCodes.Ret);
+
+            var funcType = typeof(Func<,>).MakeGenericType(typeof(IDataRecord), type);
+            return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(funcType, holder);
         }
 
-        private static MapEntry[] CreateMapEntries(
-            IResultMapperCreateContext context,
-            IDelegateFactory delegateFactory,
-            Type type,
-            ColumnInfo[] columns)
+        private static MapEntry[] CreateMapEntries(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
         {
-            var propertySelector = context.Components.Get<IPropertySelector>();
+            var selector = context.Components.Get<IPropertySelector>();
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Where(IsTargetProperty)
                 .ToArray();
@@ -59,23 +109,21 @@ namespace Smart.Data.Accessor.Mappers
             for (var i = 0; i < columns.Length; i++)
             {
                 var column = columns[i];
-                var pi = propertySelector.SelectProperty(properties, column.Name);
+                var pi = selector.SelectProperty(properties, column.Name);
                 if (pi == null)
                 {
                     continue;
                 }
 
-                var defaultValue = pi.PropertyType.GetDefaultValue();
-                var setter = delegateFactory.CreateSetter(pi);
                 if ((pi.PropertyType == column.Type) ||
                     (pi.PropertyType.IsNullableType() && (Nullable.GetUnderlyingType(pi.PropertyType) == column.Type)))
                 {
-                    list.Add(new MapEntry(i, (obj, value) => setter(obj, value is DBNull ? defaultValue : value)));
+                    list.Add(new MapEntry(i, pi, null));
                 }
                 else
                 {
                     var converter = context.CreateConverter(column.Type, pi.PropertyType, pi);
-                    list.Add(new MapEntry(i, (obj, value) => setter(obj, value is DBNull ? defaultValue : converter(value))));
+                    list.Add(new MapEntry(i, pi, converter));
                 }
             }
 
@@ -87,16 +135,68 @@ namespace Smart.Data.Accessor.Mappers
             return pi.CanWrite && (pi.GetCustomAttribute<IgnoreAttribute>() == null);
         }
 
+        private object CreateHolder(MapEntry[] entries)
+        {
+            var typeBuilder = ModuleBuilder.DefineType(
+                $"Holder_{typeNo}",
+                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+            typeNo++;
+
+            // Define setter fields
+            foreach (var entry in entries)
+            {
+                if (entry.Converter != null)
+                {
+                    typeBuilder.DefineField(
+                        $"parser{entry.Index}",
+                        typeof(Func<object, object>),
+                        FieldAttributes.Public);
+                }
+            }
+
+            var typeInfo = typeBuilder.CreateTypeInfo();
+            var holderType = typeInfo.AsType();
+            var holder = Activator.CreateInstance(holderType);
+
+            foreach (var entry in entries)
+            {
+                if (entry.Converter != null)
+                {
+                    var field = holderType.GetField($"parser{entry.Index}");
+                    field.SetValue(holder, entry.Converter);
+                }
+            }
+
+            return holder;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T GetValue<T>(IDataRecord reader, int index)
+        {
+            var value = reader.GetValue(index);
+            return value is DBNull ? default : (T)value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static T GetValueWithConvert<T>(IDataRecord reader, int index, Func<object, object> parser)
+        {
+            var value = reader.GetValue(index);
+            return value is DBNull ? default : (T)parser(value);
+        }
+
         private sealed class MapEntry
         {
             public int Index { get; }
 
-            public Action<object, object> Setter { get; }
+            public PropertyInfo Property { get; }
 
-            public MapEntry(int index, Action<object, object> setter)
+            public Func<object, object> Converter { get; }
+
+            public MapEntry(int index, PropertyInfo property, Func<object, object> converter)
             {
                 Index = index;
-                Setter = setter;
+                Property = property;
+                Converter = converter;
             }
         }
     }

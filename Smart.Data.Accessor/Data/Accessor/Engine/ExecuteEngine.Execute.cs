@@ -222,7 +222,7 @@ namespace Smart.Data.Accessor.Engine
         // ReaderToDefer
         //--------------------------------------------------------------------------------
 
-        public IEnumerable<T> ReaderToDefer<T>(IDbCommand cmd, IDataReader reader)
+        public IEnumerable<T> ReaderToDefer<T>(DbCommand cmd, DbDataReader reader)
         {
             var mapper = CreateResultMapper<T>(reader);
 
@@ -323,8 +323,13 @@ namespace Smart.Data.Accessor.Engine
         {
             using (var reader = cmd.ExecuteReader(CommandBehaviorForSingle))
             {
-                var mapper = CreateResultMapper<T>(reader);
-                return reader.Read() ? mapper(reader) : default;
+                if (reader.Read())
+                {
+                    var mapper = CreateResultMapper<T>(reader);
+                    return mapper(reader);
+                }
+
+                return default;
             }
         }
 
@@ -333,8 +338,13 @@ namespace Smart.Data.Accessor.Engine
         {
             using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false))
             {
-                var mapper = CreateResultMapper<T>(reader);
-                return reader.Read() ? mapper(reader) : default;
+                if (await reader.ReadAsync(cancel).ConfigureAwait(false))
+                {
+                    var mapper = CreateResultMapper<T>(reader);
+                    return mapper(reader);
+                }
+
+                return default;
             }
         }
 

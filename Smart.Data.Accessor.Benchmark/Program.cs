@@ -24,11 +24,6 @@ namespace Smart.Data.Accessor.Benchmark
     {
         public static void Main()
         {
-            //var b = new DaoBenchmark();
-            //b.IterationSetup();
-            //b.DapperExecute();
-            //b.IterationSetup();
-            //b.SmartExecute();
             BenchmarkRunner.Run<DaoBenchmark>();
         }
     }

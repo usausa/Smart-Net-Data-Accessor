@@ -3,12 +3,13 @@ namespace Smart.Data.Accessor.Engine
 {
     using System;
     using System.Data;
+    using System.Data.Common;
 
     public sealed class WrappedReader : IDataReader
     {
-        private readonly IDbCommand command;
+        private readonly DbCommand command;
 
-        private readonly IDataReader reader;
+        private readonly DbDataReader reader;
 
         public int FieldCount => reader.FieldCount;
 
@@ -22,7 +23,7 @@ namespace Smart.Data.Accessor.Engine
 
         public int RecordsAffected => reader.RecordsAffected;
 
-        public WrappedReader(IDbCommand command, IDataReader reader)
+        public WrappedReader(DbCommand command, DbDataReader reader)
         {
             this.command = command;
             this.reader = reader;
