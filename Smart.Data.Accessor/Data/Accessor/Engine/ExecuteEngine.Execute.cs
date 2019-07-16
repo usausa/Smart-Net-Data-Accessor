@@ -84,46 +84,6 @@ namespace Smart.Data.Accessor.Engine
             return await cmd.ExecuteNonQueryAsync(cancel).ConfigureAwait(false);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int Execute(DbConnection con, DbCommand cmd)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    con.Open();
-
-                    return cmd.ExecuteNonQuery();
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return cmd.ExecuteNonQuery();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<int> ExecuteAsync(DbConnection con, DbCommand cmd, CancellationToken cancel = default)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    await con.OpenAsync(cancel).ConfigureAwait(false);
-
-                    return await cmd.ExecuteNonQueryAsync(cancel).ConfigureAwait(false);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return await cmd.ExecuteNonQueryAsync(cancel).ConfigureAwait(false);
-        }
-
         //--------------------------------------------------------------------------------
         // ExecuteScalar
         //--------------------------------------------------------------------------------
@@ -140,82 +100,32 @@ namespace Smart.Data.Accessor.Engine
             return await cmd.ExecuteScalarAsync(cancel).ConfigureAwait(false);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public object ExecuteScalar(DbConnection con, DbCommand cmd)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    con.Open();
-
-                    return cmd.ExecuteScalar();
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return cmd.ExecuteScalar();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<object> ExecuteScalarAsync(DbConnection con, DbCommand cmd, CancellationToken cancel = default)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    await con.OpenAsync(cancel).ConfigureAwait(false);
-
-                    return await cmd.ExecuteScalarAsync(cancel).ConfigureAwait(false);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return await cmd.ExecuteScalarAsync(cancel).ConfigureAwait(false);
-        }
-
         //--------------------------------------------------------------------------------
         // ExecuteReader
         //--------------------------------------------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DbDataReader ExecuteReader(DbCommand cmd)
+        public DbDataReader ExecuteReaderWithClose(DbCommand cmd)
         {
             return cmd.ExecuteReader(CommandBehaviorForEnumerableWithClose);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Task<DbDataReader> ExecuteReaderAsync(DbCommand cmd, CancellationToken cancel)
+        public Task<DbDataReader> ExecuteReaderWithCloseAsync(DbCommand cmd, CancellationToken cancel)
         {
             return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerableWithClose, cancel);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DbDataReader ExecuteReader(DbConnection con, bool wasClosed, DbCommand cmd)
+        public DbDataReader ExecuteReader(DbCommand cmd)
         {
-            if (wasClosed)
-            {
-                con.Open();
-            }
-
-            return cmd.ExecuteReader(wasClosed ? CommandBehaviorForEnumerableWithClose : CommandBehaviorForEnumerable);
+            return cmd.ExecuteReader(CommandBehaviorForEnumerable);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<DbDataReader> ExecuteReaderAsync(DbConnection con, bool wasClosed, DbCommand cmd, CancellationToken cancel)
+        public Task<DbDataReader> ExecuteReaderAsync(DbCommand cmd, CancellationToken cancel)
         {
-            if (wasClosed)
-            {
-                await con.OpenAsync(cancel).ConfigureAwait(false);
-            }
-
-            return await cmd.ExecuteReaderAsync(wasClosed ? CommandBehaviorForEnumerableWithClose : CommandBehaviorForEnumerable, cancel).ConfigureAwait(false);
+            return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerable, cancel);
         }
 
         //--------------------------------------------------------------------------------
@@ -241,7 +151,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IList<T> QueryBuffer<T>(DbCommand cmd)
+        public List<T> QueryBuffer<T>(DbCommand cmd)
         {
             using (var reader = cmd.ExecuteReader(CommandBehaviorForList))
             {
@@ -258,7 +168,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<IList<T>> QueryBufferAsync<T>(DbCommand cmd, CancellationToken cancel = default)
+        public async Task<List<T>> QueryBufferAsync<T>(DbCommand cmd, CancellationToken cancel = default)
         {
             using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
             {
@@ -272,46 +182,6 @@ namespace Smart.Data.Accessor.Engine
 
                 return list;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IList<T> QueryBuffer<T>(DbConnection con, DbCommand cmd)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    con.Open();
-
-                    return QueryBuffer<T>(cmd);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return QueryBuffer<T>(cmd);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<IList<T>> QueryBufferAsync<T>(DbConnection con, DbCommand cmd, CancellationToken cancel = default)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    await con.OpenAsync(cancel).ConfigureAwait(false);
-
-                    return await QueryBufferAsync<T>(cmd, cancel).ConfigureAwait(false);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return await QueryBufferAsync<T>(cmd, cancel).ConfigureAwait(false);
         }
 
         //--------------------------------------------------------------------------------
@@ -346,46 +216,6 @@ namespace Smart.Data.Accessor.Engine
 
                 return default;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T QueryFirstOrDefault<T>(DbConnection con, DbCommand cmd)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    con.Open();
-
-                    return QueryFirstOrDefault<T>(cmd);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return QueryFirstOrDefault<T>(cmd);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<T> QueryFirstOrDefaultAsync<T>(DbConnection con, DbCommand cmd, CancellationToken cancel = default)
-        {
-            if (con.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    await con.OpenAsync(cancel).ConfigureAwait(false);
-
-                    return await QueryFirstOrDefaultAsync<T>(cmd, cancel).ConfigureAwait(false);
-                }
-                finally
-                {
-                    con.Close();
-                }
-            }
-
-            return await QueryFirstOrDefaultAsync<T>(cmd, cancel).ConfigureAwait(false);
         }
     }
 }

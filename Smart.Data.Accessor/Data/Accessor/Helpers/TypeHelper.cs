@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Helpers
+namespace Smart.Data.Accessor.Helpers
 {
     using System;
     using System.Collections.Generic;
@@ -12,12 +12,12 @@
 
         public static bool IsEnumerable(Type type)
         {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
         }
 
         public static bool IsList(Type type)
         {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList<>);
+            return type.IsGenericType && ((type.GetGenericTypeDefinition() == typeof(IList<>)) || (type.GetGenericTypeDefinition() == typeof(List<>)));
         }
 
         //--------------------------------------------------------------------------------
@@ -45,12 +45,12 @@
 
         public static Type GetEnumerableElementType(Type type)
         {
-            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)).GetGenericArguments()[0];
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IEnumerable<>))).GetGenericArguments()[0];
         }
 
         public static Type GetListElementType(Type type)
         {
-            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>)).GetGenericArguments()[0];
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
         }
     }
 }

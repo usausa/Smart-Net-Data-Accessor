@@ -32,7 +32,6 @@ namespace Smart.Data.Accessor.Generator
         private const string CommandVar = "_cmd";
         private const string ReaderVar = "_reader";
         private const string ResultVar = "_result";
-        private const string WasClosedVar = "_wasClosed";
         private const string BuilderVar = "_sql";
         private const string OutParamVar = "_outParam";
         private const string ReturnOutParamVar = "_outParamReturn";
@@ -43,11 +42,10 @@ namespace Smart.Data.Accessor.Generator
         private static readonly string RuntimeHelperType = GeneratorHelper.MakeGlobalName(typeof(RuntimeHelper));
         private static readonly string MethodNoAttributeType = GeneratorHelper.MakeGlobalName(typeof(MethodNoAttribute));
         private static readonly string ProviderType = GeneratorHelper.MakeGlobalName(typeof(IDbProvider));
-        private static readonly string DataReaderType = GeneratorHelper.MakeGlobalName(typeof(IDataReader));
+        private static readonly string DbDataReaderType = GeneratorHelper.MakeGlobalName(typeof(DbDataReader));
         private static readonly string DbCommandType = GeneratorHelper.MakeGlobalName(typeof(DbCommand));
         private static readonly string DbParameterType = GeneratorHelper.MakeGlobalName(typeof(DbParameter));
         private static readonly string CommandTypeType = GeneratorHelper.MakeGlobalName(typeof(CommandType));
-        private static readonly string ConnectionStateType = GeneratorHelper.MakeGlobalName(typeof(ConnectionState));
         private static readonly string WrappedReaderType = GeneratorHelper.MakeGlobalName(typeof(WrappedReader));
         private static readonly string StringBuilderType = GeneratorHelper.MakeGlobalName(typeof(StringBuilder));
         private static readonly string ExceptionType = GeneratorHelper.MakeGlobalName(typeof(Exception));
@@ -624,15 +622,14 @@ namespace Smart.Data.Accessor.Generator
                 Append($"var {ResultVar} = ");
             }
 
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, " : string.Empty;
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.ExecuteAsync({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.ExecuteAsync({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.Execute({commandOption}{CommandVar});");
+                Append($"{EngineFieldRef}.Execute({CommandVar});");
             }
 
             NewLine();
@@ -699,15 +696,14 @@ namespace Smart.Data.Accessor.Generator
                 Indent();
             }
 
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, " : string.Empty;
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.ExecuteScalarAsync({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false)");
+                Append($"await {EngineFieldRef}.ExecuteScalarAsync({CommandVar}{cancelOption}).ConfigureAwait(false)");
             }
             else
             {
-                Append($"{EngineFieldRef}.ExecuteScalar({commandOption}{CommandVar})");
+                Append($"{EngineFieldRef}.ExecuteScalar({CommandVar})");
             }
 
             if (mm.EngineResultType != typeof(object))
@@ -752,25 +748,20 @@ namespace Smart.Data.Accessor.Generator
 
             // Execute
             Indent();
-            Append($"var {ResultVar} = ");
+            Append($"{ReaderVar} = ");
 
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, {WasClosedVar}, " : string.Empty;
+            var closeOption = mm.HasConnectionParameter ? string.Empty : "WithClose";
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.ExecuteReaderAsync({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.ExecuteReader{closeOption}Async({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.ExecuteReader({commandOption}{CommandVar});");
+                Append($"{EngineFieldRef}.ExecuteReader{closeOption}({CommandVar});");
             }
 
             NewLine();
-
-            if (mm.HasConnectionParameter)
-            {
-                AppendLine($"{WasClosedVar} = false;");
-            }
 
             // PostProcess
             DefinePostProcess(mm);
@@ -802,25 +793,20 @@ namespace Smart.Data.Accessor.Generator
 
             // Body
             Indent();
-            Append($"var {ResultVar} = ");
+            Append($"{ReaderVar} = ");
 
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, {WasClosedVar}, " : string.Empty;
+            var closeOption = mm.HasConnectionParameter ? string.Empty : "WithClose";
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.ExecuteReaderAsync({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.ExecuteReader{closeOption}Async({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.ExecuteReader({commandOption}{CommandVar});");
+                Append($"{EngineFieldRef}.ExecuteReader{closeOption}({CommandVar});");
             }
 
             NewLine();
-
-            if (mm.HasConnectionParameter)
-            {
-                AppendLine($"{WasClosedVar} = false;");
-            }
 
             // PostProcess
             DefinePostProcess(mm);
@@ -828,7 +814,10 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             var resultType = GeneratorHelper.MakeGlobalName(TypeHelper.GetEnumerableElementType(mm.EngineResultType));
-            AppendLine($"return {EngineFieldRef}.ReaderToDefer<{resultType}>({CommandVar}, {ReaderVar});");
+            AppendLine($"var {ResultVar} = {EngineFieldRef}.ReaderToDefer<{resultType}>({CommandVar}, {ReaderVar});");
+            AppendLine($"{CommandVar} = null;");
+            AppendLine($"{ReaderVar} = null;");
+            AppendLine($"return {ResultVar};");
             EndConnectionForReader(mm);
 
             End();
@@ -856,15 +845,14 @@ namespace Smart.Data.Accessor.Generator
             Append($"var {ResultVar} = ");
 
             var resultType = GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(mm.EngineResultType));
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, " : string.Empty;
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.QueryBuffer<{resultType}>({commandOption}{CommandVar});");
+                Append($"{EngineFieldRef}.QueryBuffer<{resultType}>({CommandVar});");
             }
 
             NewLine();
@@ -899,15 +887,14 @@ namespace Smart.Data.Accessor.Generator
             Append($"var {ResultVar} = ");
 
             var resultType = GeneratorHelper.MakeGlobalName(mm.EngineResultType);
-            var commandOption = mm.HasConnectionParameter ? $"{GetConnectionName(mm)}, " : string.Empty;
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.QueryFirstOrDefaultAsync<{resultType}>({commandOption}{CommandVar}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.QueryFirstOrDefaultAsync<{resultType}>({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.QueryFirstOrDefault<{resultType}>({commandOption}{CommandVar});");
+                Append($"{EngineFieldRef}.QueryFirstOrDefault<{resultType}>({CommandVar});");
             }
 
             NewLine();
@@ -1005,12 +992,8 @@ namespace Smart.Data.Accessor.Generator
         private void BeginConnectionForReader(MethodMetadata mm)
         {
             AppendLine($"var {CommandVar} = default({DbCommandType});");
-            AppendLine($"var {ReaderVar} = default({DataReaderType});");
-            if (mm.HasConnectionParameter)
-            {
-                AppendLine($"var {WasClosedVar} = {GetConnectionName(mm)}.State == {ConnectionStateType}.Closed;");
-            }
-            else
+            AppendLine($"var {ReaderVar} = default({DbDataReaderType});");
+            if (!mm.HasConnectionParameter)
             {
                 var providerName = mm.Provider != null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
                 AppendLine($"var {ConnectionVar} = {providerName}.CreateConnection();");
@@ -1039,29 +1022,12 @@ namespace Smart.Data.Accessor.Generator
             AppendLine($"{CommandVar}?.Dispose();");
             if (!mm.HasConnectionParameter)
             {
-                AppendLine($"{ConnectionVar}.Close();");
+                AppendLine($"{ConnectionVar}.Dispose();");
             }
             AppendLine("throw;");
 
             indent--;
             AppendLine("}");
-
-            if (mm.HasConnectionParameter)
-            {
-                AppendLine("finally");
-                AppendLine("{");
-                indent++;
-
-                AppendLine($"if ({WasClosedVar})");
-                AppendLine("{");
-                indent++;
-                AppendLine($"{GetConnectionName(mm)}.Close();");
-                indent--;
-                AppendLine("}");
-
-                indent--;
-                AppendLine("}");
-            }
         }
 
         private void DefineCommandOption(MethodMetadata mm)
