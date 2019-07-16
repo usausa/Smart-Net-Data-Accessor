@@ -485,7 +485,7 @@ namespace Smart.Data.Accessor.Generator
             {
                 if (provider == null)
                 {
-                    AppendLine($"{ProviderFieldRef} = {CtorArg}.Components.Get<{ProviderType}>();");
+                    AppendLine($"{ProviderFieldRef} = ({ProviderType}){CtorArg}.ServiceProvider.GetService(typeof({ProviderType}));");
                 }
                 else
                 {

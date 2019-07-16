@@ -10,7 +10,6 @@ namespace Smart.Data.Accessor.Engine
     using Smart.Data.Accessor.Handlers;
     using Smart.Data.Accessor.Mappers;
     using Smart.Data.Accessor.Selectors;
-    using Smart.Reflection;
 
     public sealed class ExecuteEngineConfig : IExecuteEngineConfig
     {
@@ -43,7 +42,9 @@ namespace Smart.Data.Accessor.Engine
             ObjectResultMapperFactory.Instance
         };
 
-        private readonly ComponentConfig components = new ComponentConfig();
+        private IServiceProvider serviceProvider;
+
+        private ComponentConfig components;
 
         private Dictionary<Type, DbType> typeMap = new Dictionary<Type, DbType>(DefaultTypeMap);
 
@@ -55,11 +56,38 @@ namespace Smart.Data.Accessor.Engine
         // Config
         //--------------------------------------------------------------------------------
 
+        public ExecuteEngineConfig SetServiceProvider(IServiceProvider provider)
+        {
+            if (provider is null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
+            if (components != null)
+            {
+                throw new InvalidOperationException("Components are already configured.");
+            }
+
+            serviceProvider = provider;
+
+            return this;
+        }
+
         public ExecuteEngineConfig ConfigureComponents(Action<ComponentConfig> action)
         {
             if (action is null)
             {
                 throw new ArgumentNullException(nameof(action));
+            }
+
+            if (serviceProvider != null)
+            {
+                throw new InvalidOperationException("Components are already configured.");
+            }
+
+            if (components == null)
+            {
+                components = CreateDefaultComponents();
             }
 
             action(components);
@@ -109,19 +137,28 @@ namespace Smart.Data.Accessor.Engine
         // Constructor
         //--------------------------------------------------------------------------------
 
-        public ExecuteEngineConfig()
+        private static ComponentConfig CreateDefaultComponents()
         {
-            components.Add<IDelegateFactory>(DelegateFactory.Default);
+            var components = new ComponentConfig();
             components.Add<IObjectConverter>(ObjectConverter.Default);
             components.Add<IPropertySelector>(DefaultPropertySelector.Instance);
             components.Add<IEmptyDialect, EmptyDialect>();
+            return components;
         }
 
         //--------------------------------------------------------------------------------
         // Interface
         //--------------------------------------------------------------------------------
 
-        IComponentContainer IExecuteEngineConfig.CreateComponentContainer() => components.ToContainer();
+        public IServiceProvider GetServiceProvider()
+        {
+            if (serviceProvider != null)
+            {
+                return serviceProvider;
+            }
+
+            return (components ?? CreateDefaultComponents()).ToContainer();
+        }
 
         IDictionary<Type, DbType> IExecuteEngineConfig.GetTypeMap() => typeMap;
 

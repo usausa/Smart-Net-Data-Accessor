@@ -70,14 +70,14 @@ namespace Smart.Data.Accessor.Generator
         public static IDbProvider GetDbProvider(ExecuteEngine engine, Type interfaceType)
         {
             var attribute = interfaceType.GetCustomAttribute<ProviderAttribute>();
-            var selector = (IDbProviderSelector)engine.Components.Get(attribute.SelectorType);
+            var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(attribute.SelectorType);
             return selector.GetProvider(attribute.Parameter);
         }
 
         public static IDbProvider GetDbProvider(ExecuteEngine engine, MethodInfo method)
         {
             var attribute = method.GetCustomAttribute<ProviderAttribute>();
-            var selector = (IDbProviderSelector)engine.Components.Get(attribute.SelectorType);
+            var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(attribute.SelectorType);
             return selector.GetProvider(attribute.Parameter);
         }
 

@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor.Engine
 
     public interface IExecuteEngineConfig
     {
-        IComponentContainer CreateComponentContainer();
+        IServiceProvider GetServiceProvider();
 
         IDictionary<Type, DbType> GetTypeMap();
 

@@ -1,14 +1,13 @@
-namespace Smart
+namespace Smart.Data.Accessor.Extensions.DependencyInjection
 {
     using System.Collections.Generic;
     using System.Reflection;
 
-    using Smart.Data.Accessor.Engine;
     using Smart.Data.Accessor.Loaders;
 
     public sealed class DataAccessorOption
     {
-        public ExecuteEngineConfig Config { get; } = new ExecuteEngineConfig();
+        public ExecuteEngineFactoryOptions EngineOption { get; } = new ExecuteEngineFactoryOptions();
 
         public ISqlLoader Loader { get; set; }
 

@@ -1,35 +1,37 @@
-namespace Smart
+namespace Smart.Data.Accessor.Extensions.DependencyInjection
 {
     using System;
 
-    using Smart.Data;
     using Smart.Data.Accessor.Engine;
 
     public class ExecuteEngineFactory
     {
         private readonly ExecuteEngineConfig config;
 
-        public ExecuteEngineFactory(ExecuteEngineConfig config)
-            : this(config, null)
+        public ExecuteEngineFactory(ExecuteEngineFactoryOptions options, IServiceProvider serviceProvider)
         {
-        }
-
-        public ExecuteEngineFactory(ExecuteEngineConfig config, IDbProvider provider)
-        {
-            if (config is null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            if (provider != null)
+            config = new ExecuteEngineConfig();
+            config.SetServiceProvider(serviceProvider);
+
+            if (options.TypeMapConfig != null)
             {
-                config.ConfigureComponents(components =>
-                {
-                    components.Add(provider);
-                });
+                config.ConfigureTypeMap(options.TypeMapConfig);
             }
 
-            this.config = config;
+            if (options.TypeHandlersConfig != null)
+            {
+                config.ConfigureTypeHandlers(options.TypeHandlersConfig);
+            }
+
+            if (options.ResultMapperFactoriesConfig != null)
+            {
+                config.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
+            }
         }
 
         public ExecuteEngine Create() => config.ToEngine();

@@ -8,7 +8,6 @@ namespace Smart.Data.Accessor.Engine
     using System.Reflection;
     using System.Runtime.CompilerServices;
 
-    using Smart.ComponentModel;
     using Smart.Converter;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Dialect;
@@ -31,7 +30,7 @@ namespace Smart.Data.Accessor.Engine
 
         private readonly string[] parameterSubNames;
 
-        public IComponentContainer Components { get; }
+        public IServiceProvider ServiceProvider { get; }
 
         //--------------------------------------------------------------------------------
         // Constructor
@@ -39,9 +38,9 @@ namespace Smart.Data.Accessor.Engine
 
         public ExecuteEngine(IExecuteEngineConfig config)
         {
-            Components = config.CreateComponentContainer();
-            objectConverter = Components.Get<IObjectConverter>();
-            emptyDialect = Components.Get<IEmptyDialect>();
+            ServiceProvider = config.GetServiceProvider();
+            objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter));
+            emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect));
 
             typeMap = new Dictionary<Type, DbType>(config.GetTypeMap());
             typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
@@ -119,7 +118,7 @@ namespace Smart.Data.Accessor.Engine
             var attribute = provider?.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
             if (attribute != null)
             {
-                return attribute.CreateConverter(Components, type);
+                return attribute.CreateConverter(ServiceProvider, type);
             }
 
             // ITypeHandler

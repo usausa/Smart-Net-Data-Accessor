@@ -10,8 +10,8 @@ namespace Example.WebApplication
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
 
-    using Smart;
     using Smart.Data;
+    using Smart.Data.Accessor.Extensions.DependencyInjection;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Mapper;
 
