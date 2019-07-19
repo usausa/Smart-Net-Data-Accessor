@@ -5,6 +5,8 @@ namespace Smart.Data.Accessor.Loaders
     using System.Reflection;
     using System.Text;
 
+    using Smart.Data.Accessor.Helpers;
+
     public sealed class FileSqlLoader : ISqlLoader
     {
         private readonly Encoding encoding;
@@ -42,7 +44,7 @@ namespace Smart.Data.Accessor.Loaders
                 path = Path.Combine(path, mi.DeclaringType.Namespace.Replace('.', Path.DirectorySeparatorChar));
             }
 
-            path = Path.Combine(path, $"{mi.DeclaringType.Name}_{mi.Name}");
+            path = Path.Combine(path, $"{TypeHelper.MakeDaoName(mi.DeclaringType)}_{mi.Name}");
             if (!String.IsNullOrEmpty(extension))
             {
                 path = Path.ChangeExtension(path, extension);

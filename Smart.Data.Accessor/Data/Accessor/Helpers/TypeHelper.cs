@@ -7,6 +7,16 @@ namespace Smart.Data.Accessor.Helpers
     internal static class TypeHelper
     {
         //--------------------------------------------------------------------------------
+        // Name
+        //--------------------------------------------------------------------------------
+
+        public static string MakeDaoName(Type type)
+        {
+            var index = type.FullName.LastIndexOf('.');
+            return (index >= 0 ? type.FullName.Substring(index + 1) : type.FullName).Replace('+', '_');
+        }
+
+        //--------------------------------------------------------------------------------
         // For result type
         //--------------------------------------------------------------------------------
 

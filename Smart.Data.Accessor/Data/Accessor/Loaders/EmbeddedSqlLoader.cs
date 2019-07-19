@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor.Loaders
     using System.Reflection;
     using System.Text;
 
+    using Smart.Data.Accessor.Helpers;
     using Smart.IO;
 
     public sealed class EmbeddedSqlLoader : ISqlLoader
@@ -32,7 +33,7 @@ namespace Smart.Data.Accessor.Loaders
                 name.Append(folder);
                 name.Append(".");
             }
-            name.Append(mi.DeclaringType.Name);
+            name.Append(TypeHelper.MakeDaoName(mi.DeclaringType));
             name.Append("_");
             name.Append(mi.Name);
             if (!String.IsNullOrEmpty(extension))

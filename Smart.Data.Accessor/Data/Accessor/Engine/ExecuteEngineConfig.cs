@@ -60,7 +60,7 @@ namespace Smart.Data.Accessor.Engine
         {
             if (provider is null)
             {
-                throw new ArgumentNullException(nameof(serviceProvider));
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (components != null)

@@ -78,7 +78,7 @@ namespace Smart.Data.Accessor.Generator
             this.targetType = targetType;
 
             interfaceFullName = GeneratorHelper.MakeGlobalName(targetType);
-            implementName = targetType.Name + ImplementSuffix;
+            implementName = TypeHelper.MakeDaoName(targetType) + ImplementSuffix;
             provider = targetType.GetCustomAttribute<ProviderAttribute>();
         }
 
@@ -359,7 +359,7 @@ namespace Smart.Data.Accessor.Generator
                 AppendLine($"using static {name};");
             }
 
-            AppendLine($"using static {typeof(ScriptHelper).Namespace}.{typeof(ScriptHelper).Name};");
+            AppendLine($"using static {typeof(ScriptHelper).FullName.Replace('+', '.')};");
 
             NewLine();
         }
