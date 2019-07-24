@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
         {
             if (options is null)
             {
-                throw new ArgumentNullException(nameof(config));
+                throw new ArgumentNullException(nameof(options));
             }
 
             config = new ExecuteEngineConfig();
