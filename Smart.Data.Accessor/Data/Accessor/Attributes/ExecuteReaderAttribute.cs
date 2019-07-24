@@ -1,8 +1,8 @@
 namespace Smart.Data.Accessor.Attributes
 {
-    public sealed class ExecuteScalarReaderAttribute : LoaderMethodAttribute
+    public sealed class ExecuteReaderAttribute : LoaderMethodAttribute
     {
-        public ExecuteScalarReaderAttribute()
+        public ExecuteReaderAttribute()
             : base(MethodType.ExecuteReader)
         {
         }
