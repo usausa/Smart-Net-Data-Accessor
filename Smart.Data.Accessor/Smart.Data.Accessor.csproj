@@ -15,7 +15,7 @@
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
     <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="Usa.Smart.Core" Version="1.7.3" />
-    <PackageReference Include="Usa.Smart.Data" Version="1.1.0" />
+    <PackageReference Include="Usa.Smart.Data" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
