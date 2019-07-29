@@ -46,7 +46,7 @@ namespace Smart.Data.Accessor.Engine
             typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
             resultMapperFactories = config.GetResultMapperFactories();
 
-            parameterSubNames = Enumerable.Range(0, 256).Select(x => x.ToString(CultureInfo.InvariantCulture)).ToArray();
+            parameterSubNames = Enumerable.Range(0, 256).Select(x => $"_{x}").ToArray();
         }
 
         //--------------------------------------------------------------------------------

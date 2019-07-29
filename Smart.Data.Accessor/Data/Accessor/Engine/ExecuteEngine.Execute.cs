@@ -111,7 +111,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Task<DbDataReader> ExecuteReaderWithCloseAsync(DbCommand cmd, CancellationToken cancel)
+        public Task<DbDataReader> ExecuteReaderWithCloseAsync(DbCommand cmd, CancellationToken cancel = default)
         {
             return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerableWithClose, cancel);
         }
@@ -123,7 +123,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Task<DbDataReader> ExecuteReaderAsync(DbCommand cmd, CancellationToken cancel)
+        public Task<DbDataReader> ExecuteReaderAsync(DbCommand cmd, CancellationToken cancel = default)
         {
             return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerable, cancel);
         }

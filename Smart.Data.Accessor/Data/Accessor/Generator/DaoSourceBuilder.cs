@@ -1279,7 +1279,7 @@ namespace Smart.Data.Accessor.Generator
                 else
                 {
                     FlushSql();
-                    builder.AppendLine(MakeSqlSetup(mm, parameter, parameterName));
+                    builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
                 }
             }
 
@@ -1378,7 +1378,7 @@ namespace Smart.Data.Accessor.Generator
                 else
                 {
                     FlushSql();
-                    builder.AppendLine(MakeSqlSetup(mm, parameter, parameterName));
+                    builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
                 }
                 builder.AppendLine($"{FlagVar}{parameter.Index} = true;");
             }
