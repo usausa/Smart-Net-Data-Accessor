@@ -8,7 +8,6 @@ namespace Smart.Data.Accessor.Mappers
     using System.Reflection.Emit;
     using System.Runtime.CompilerServices;
 
-    using Smart;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;
     using Smart.Data.Accessor.Selectors;

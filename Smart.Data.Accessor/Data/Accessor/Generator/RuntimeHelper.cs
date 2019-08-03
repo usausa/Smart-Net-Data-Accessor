@@ -5,7 +5,6 @@ namespace Smart.Data.Accessor.Generator
     using System.Data.Common;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;

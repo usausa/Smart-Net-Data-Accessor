@@ -4,7 +4,6 @@ namespace Smart.Data.Accessor.Engine
     using System.Collections.Generic;
     using System.Data;
 
-    using Smart.ComponentModel;
     using Smart.Data.Accessor.Handlers;
     using Smart.Data.Accessor.Mappers;
 
