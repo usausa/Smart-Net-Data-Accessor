@@ -1,5 +1,6 @@
 namespace Smart.Mock
 {
+    using System.Collections.Generic;
     using System.Reflection;
 
     using Smart.Data.Accessor.Loaders;
@@ -14,5 +15,17 @@ namespace Smart.Mock
         }
 
         public string Load(MethodInfo mi) => sql;
+    }
+
+    public sealed class MapLoader : ISqlLoader
+    {
+        private readonly Dictionary<string, string> map;
+
+        public MapLoader(Dictionary<string, string> map)
+        {
+            this.map = map;
+        }
+
+        public string Load(MethodInfo mi) => map[mi.Name];
     }
 }

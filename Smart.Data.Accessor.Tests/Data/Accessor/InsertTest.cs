@@ -1,0 +1,40 @@
+namespace Smart.Data.Accessor
+{
+    using Smart.Data.Accessor.Attributes;
+    using Smart.Mock;
+
+    using Xunit;
+
+    public class InsertTest
+    {
+        [Dao]
+        public interface IInsertDao
+        {
+            [Insert]
+            int Insert(DataEntity entity);
+        }
+
+        [Fact]
+        public void Insert()
+        {
+            using (var con = TestDatabase.Initialize()
+                .SetupDataTable())
+            {
+                var generator = new GeneratorBuilder()
+                    .EnableDebug()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<IInsertDao>();
+
+                var effect = dao.Insert(new DataEntity { Id = 1, Name = "xxx" });
+
+                Assert.Equal(1, effect);
+
+                var entity = con.QueryData(1);
+                Assert.NotNull(entity);
+                Assert.Equal(1, entity.Id);
+                Assert.Equal("xxx", entity.Name);
+            }
+        }
+    }
+}
