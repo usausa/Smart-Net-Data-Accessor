@@ -7,6 +7,6 @@ namespace Smart.Data.Accessor.Mappers
     {
         IServiceProvider ServiceProvider { get; }
 
-        Func<object, object> CreateConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
+        Func<object, object> GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
     }
 }

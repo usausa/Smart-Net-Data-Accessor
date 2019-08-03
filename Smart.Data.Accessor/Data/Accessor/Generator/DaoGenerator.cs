@@ -163,7 +163,14 @@ namespace Smart.Data.Accessor.Generator
                 var assembly = Assembly.Load(ms.ToArray());
 
                 var implementType = assembly.GetType(source.ImplementTypeFullName);
-                return Activator.CreateInstance(implementType, engine);
+                try
+                {
+                    return Activator.CreateInstance(implementType, engine);
+                }
+                catch (Exception e)
+                {
+                    throw new AccessorRuntimeException("Create dao instance failed.", e);
+                }
             }
         }
     }

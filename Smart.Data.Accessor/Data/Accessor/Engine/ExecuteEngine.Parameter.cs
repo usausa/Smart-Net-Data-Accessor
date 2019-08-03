@@ -21,7 +21,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
 
             // ParameterBuilderAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
             if (attribute != null)
             {
                 return CreateInParameterSetupByDbType<T>(attribute.DbType, attribute.Size);
@@ -48,7 +48,14 @@ namespace Smart.Data.Accessor.Engine
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                action(parameter, value);
+                if (value == null)
+                {
+                    parameter.Value = DBNull.Value;
+                }
+                else
+                {
+                    action(parameter, value);
+                }
                 parameter.ParameterName = name;
             };
         }
@@ -85,7 +92,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
 
             // ParameterBuilderAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
             if (attribute != null)
             {
                 return CreateInOutParameterSetupByDbType<T>(attribute.DbType, attribute.Size);
@@ -112,7 +119,14 @@ namespace Smart.Data.Accessor.Engine
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                action(parameter, value);
+                if (value == null)
+                {
+                    parameter.Value = DBNull.Value;
+                }
+                else
+                {
+                    action(parameter, value);
+                }
                 parameter.ParameterName = name;
                 parameter.Direction = ParameterDirection.InputOutput;
                 return parameter;
@@ -153,7 +167,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
 
             // ParameterBuilderAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
             if (attribute != null)
             {
                 return CreateOutParameterSetupByDbType(attribute.DbType, attribute.Size);
@@ -235,7 +249,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
 
             // ParameterBuilderAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
             if (attribute != null)
             {
                 return CreateArrayParameterSetupByDbType<T>(attribute.DbType, attribute.Size);
@@ -270,7 +284,14 @@ namespace Smart.Data.Accessor.Engine
                     var value = values[i];
                     var parameter = cmd.CreateParameter();
                     cmd.Parameters.Add(parameter);
-                    action(parameter, value);
+                    if (value == null)
+                    {
+                        parameter.Value = DBNull.Value;
+                    }
+                    else
+                    {
+                        action(parameter, value);
+                    }
                     parameter.ParameterName = name + GetParameterSubName(i);
                 }
             };
@@ -343,7 +364,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
 
             // ParameterBuilderAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
             if (attribute != null)
             {
                 return CreateListParameterSetupByDbType<T>(attribute.DbType, attribute.Size);
@@ -378,7 +399,14 @@ namespace Smart.Data.Accessor.Engine
                     var value = values[i];
                     var parameter = cmd.CreateParameter();
                     cmd.Parameters.Add(parameter);
-                    action(parameter, value);
+                    if (value == null)
+                    {
+                        parameter.Value = DBNull.Value;
+                    }
+                    else
+                    {
+                        action(parameter, value);
+                    }
                     parameter.ParameterName = name + GetParameterSubName(i);
                 }
             };

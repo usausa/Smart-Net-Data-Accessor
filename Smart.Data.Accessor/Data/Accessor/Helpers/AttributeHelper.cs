@@ -12,15 +12,15 @@ namespace Smart.Data.Accessor.Helpers
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetTableName(MethodInfo mi)
         {
-            var attribute = mi.GetCustomAttribute<NameAttribute>();
-            if (attribute != null)
+            var parameter = mi.GetParameters()
+                .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
+            if (parameter == null)
             {
-                return attribute.Name;
+                return null;
             }
 
-            return mi.GetParameters()
-                .Select(x => x.ParameterType.GetCustomAttribute<NameAttribute>())
-                .FirstOrDefault(x => x != null)?.Name;
+            var attr = parameter.ParameterType.GetCustomAttribute<NameAttribute>();
+            return attr != null ? attr.Name : parameter.Name;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]

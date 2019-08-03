@@ -89,6 +89,33 @@ namespace Smart.Data.Accessor.Tokenizer
             Assert.Equal(")", tokens[6].Value);
         }
 
+        [Fact]
+        public void TestInNested()
+        {
+            var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2'))");
+            var tokens = tokenizer.Tokenize();
+
+            Assert.Equal(9, tokens.Count);
+            Assert.Equal(TokenType.Block, tokens[0].TokenType);
+            Assert.Equal("IN", tokens[0].Value);
+            Assert.Equal(TokenType.Comment, tokens[1].TokenType);
+            Assert.Equal("@ ids", tokens[1].Value);
+            Assert.Equal(TokenType.OpenParenthesis, tokens[2].TokenType);
+            Assert.Equal("(", tokens[2].Value);
+            Assert.Equal(TokenType.OpenParenthesis, tokens[3].TokenType);
+            Assert.Equal("(", tokens[3].Value);
+            Assert.Equal(TokenType.Block, tokens[4].TokenType);
+            Assert.Equal("'1'", tokens[4].Value);
+            Assert.Equal(TokenType.Comma, tokens[5].TokenType);
+            Assert.Equal(",", tokens[5].Value);
+            Assert.Equal(TokenType.Block, tokens[6].TokenType);
+            Assert.Equal("'2'", tokens[6].Value);
+            Assert.Equal(TokenType.CloseParenthesis, tokens[7].TokenType);
+            Assert.Equal(")", tokens[7].Value);
+            Assert.Equal(TokenType.CloseParenthesis, tokens[8].TokenType);
+            Assert.Equal(")", tokens[8].Value);
+        }
+
         //--------------------------------------------------------------------------------
         // Insert
         //--------------------------------------------------------------------------------

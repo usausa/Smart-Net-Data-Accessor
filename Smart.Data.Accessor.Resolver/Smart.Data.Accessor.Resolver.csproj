@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Core" Version="1.7.3" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.7.5" />
     <PackageReference Include="Usa.Smart.Resolver" Version="1.8.1" />
   </ItemGroup>
 

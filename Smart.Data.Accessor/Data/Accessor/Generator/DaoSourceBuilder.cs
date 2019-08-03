@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Generator
         private const string EngineFieldRef = "this." + EngineField;
         private const string ProviderField = "_provider";
         private const string ProviderFieldRef = "this." + ProviderField;
-        private const string ConvertField = "_convert";
+        private const string HandlerField = "_handler";
         private const string SetupReturnField = "_setupReturn";
         private const string SetupParameterField = "_setupParameter";
         private const string SetupSqlField = "_setupSql";
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Generator
         private static readonly string WrappedReaderType = GeneratorHelper.MakeGlobalName(typeof(WrappedReader));
         private static readonly string StringBuilderType = GeneratorHelper.MakeGlobalName(typeof(StringBuilder));
         private static readonly string ExceptionType = GeneratorHelper.MakeGlobalName(typeof(Exception));
-        private static readonly string ConverterType = GeneratorHelper.MakeGlobalName(typeof(Func<object, object>));
+        private static readonly string HandlerType = GeneratorHelper.MakeGlobalName(typeof(Func<object, object>));
         private static readonly string OutSetupType = GeneratorHelper.MakeGlobalName(typeof(Func<DbCommand, string, DbParameter>));
         private static readonly string ReturnSetupType = GeneratorHelper.MakeGlobalName(typeof(Func<DbCommand, DbParameter>));
 
@@ -164,17 +164,17 @@ namespace Smart.Data.Accessor.Generator
 
         private static string GetProviderFieldRef(int no) => "this." + GetProviderFieldName(no);
 
-        private static string GetConvertFieldName(int no) => ConvertField + no;
+        private static string GetHandlerFieldName(int no) => HandlerField + no;
 
-        private static string GetConvertFieldRef(int no) => "this." + GetConvertFieldName(no);
+        private static string GetHandlerFieldRef(int no) => "this." + GetHandlerFieldName(no);
 
-        private static string GetConvertFieldName(int no, int index) => ConvertField + no + "_" + index;
+        private static string GetHandlerFieldName(int no, int index) => HandlerField + no + "_" + index;
 
-        private static string GetConvertFieldRef(int no, int index) => "this." + GetConvertFieldName(no, index);
+        private static string GetHandlerFieldRef(int no, int index) => "this." + GetHandlerFieldName(no, index);
 
-        private static string GetSetupReturnFieldName() => SetupReturnField;
+        private static string GetSetupReturnFieldName(int no) => SetupReturnField + no;
 
-        private static string GetSetupReturnFieldRef() => "this." + GetSetupReturnFieldName();
+        private static string GetSetupReturnFieldRef(int no) => "this." + GetSetupReturnFieldName(no);
 
         private static string GetSetupParameterFieldName(int no, int index) => SetupParameterField + no + "_" + index;
 
@@ -402,11 +402,12 @@ namespace Smart.Data.Accessor.Generator
 
                 if (IsResultConverterRequired(mm))
                 {
-                    AppendLine($"private readonly {ConverterType} {GetConvertFieldName(mm.No)};");
-                    if (mm.ReturnValueAsResult)
-                    {
-                        AppendLine($"private readonly {ReturnSetupType} {GetSetupReturnFieldName()};");
-                    }
+                    AppendLine($"private readonly {HandlerType} {GetHandlerFieldName(mm.No)};");
+                }
+
+                if (mm.ReturnValueAsResult)
+                {
+                    AppendLine($"private readonly {ReturnSetupType} {GetSetupReturnFieldName(mm.No)};");
                 }
 
                 foreach (var parameter in mm.Parameters)
@@ -454,7 +455,7 @@ namespace Smart.Data.Accessor.Generator
 
                 foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
                 {
-                    AppendLine($"private readonly {ConverterType} {GetConvertFieldName(mm.No, parameter.Index)};");
+                    AppendLine($"private readonly {HandlerType} {GetHandlerFieldName(mm.No, parameter.Index)};");
                 }
 
                 if (source.Length > previous)
@@ -478,22 +479,17 @@ namespace Smart.Data.Accessor.Generator
         private void InitializeFields()
         {
             AppendLine($"{EngineFieldRef} = {CtorArg};");
-            NewLine();
 
             var useDefaultProvider = methods.Any(x => (x.ConnectionParameter == null) && (x.TransactionParameter == null));
             if (useDefaultProvider)
             {
+                NewLine();
                 if (provider == null)
                 {
                     AppendLine($"{ProviderFieldRef} = ({ProviderType}){CtorArg}.ServiceProvider.GetService(typeof({ProviderType}));");
                 }
                 else
                 {
-                    if (!typeof(IDbProviderSelector).IsAssignableFrom(provider.SelectorType))
-                    {
-                        throw new AccessorGeneratorException($"Provider attribute parameter is invalid. type=[{targetType.FullName}]");
-                    }
-
                     AppendLine($"{ProviderFieldRef} = {RuntimeHelperType}.GetDbProvider({CtorArg}, typeof({interfaceFullName}));");
                 }
             }
@@ -503,28 +499,24 @@ namespace Smart.Data.Accessor.Generator
             {
                 var hasProvider = mm.Provider != null;
                 var hasConverter = IsResultConverterRequired(mm);
-                if (hasProvider || hasConverter || mm.Parameters.Count > 0)
+                if (hasProvider || hasConverter || mm.ReturnValueAsResult || mm.Parameters.Count > 0)
                 {
                     NewLine();
                     AppendLine($"var method{mm.No} = {RuntimeHelperType}.GetInterfaceMethodByNo(GetType(), typeof({interfaceFullName}), {mm.No});");
 
                     if (hasProvider)
                     {
-                        if (!typeof(IDbProviderSelector).IsAssignableFrom(mm.Provider.SelectorType))
-                        {
-                            throw new AccessorGeneratorException($"Provider attribute parameter is invalid. type=[{targetType.FullName}], method=[{mm.MethodInfo.Name}]");
-                        }
-
                         AppendLine($"{GetProviderFieldRef(mm.No)} = {RuntimeHelperType}.GetDbProvider({CtorArg}, method{mm.No});");
                     }
 
                     if (hasConverter)
                     {
-                        AppendLine($"{GetConvertFieldRef(mm.No)} = {CtorArg}.CreateConverter<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(method{mm.No});");
-                        if (mm.ReturnValueAsResult)
-                        {
-                            AppendLine($"{GetSetupReturnFieldRef()} = {CtorArg}.CreateReturnParameterSetup();");
-                        }
+                        AppendLine($"{GetHandlerFieldRef(mm.No)} = {CtorArg}.CreateHandler<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(method{mm.No});");
+                    }
+
+                    if (mm.ReturnValueAsResult)
+                    {
+                        AppendLine($"{GetSetupReturnFieldRef(mm.No)} = {CtorArg}.CreateReturnParameterSetup();");
                     }
 
                     foreach (var parameter in mm.Parameters)
@@ -585,7 +577,7 @@ namespace Smart.Data.Accessor.Generator
 
                     foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
                     {
-                        AppendLine($"{GetConvertFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateConverter<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
                     }
                 }
             }
@@ -608,7 +600,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (mm.ReturnValueAsResult && (mm.EngineResultType != typeof(void)))
             {
-                AppendLine($"var {ReturnOutParamVar} = {GetSetupReturnFieldRef()}({CommandVar});");
+                AppendLine($"var {ReturnOutParamVar} = {GetSetupReturnFieldRef(mm.No)}({CommandVar});");
                 NewLine();
             }
 
@@ -644,14 +636,14 @@ namespace Smart.Data.Accessor.Generator
                     NewLine();
 
                     Indent();
-                    Append($"var {ResultVar} = {RuntimeHelperType}.Convert<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(");
+                    Append($"var {ResultVar} = {EngineFieldRef}.Convert<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(");
                     NewLine();
                     indent++;
                     Indent();
                     Append($"{ReturnOutParamVar}.Value,");
                     NewLine();
                     Indent();
-                    Append($"{GetConvertFieldRef(mm.No)});");
+                    Append($"{GetHandlerFieldRef(mm.No)});");
                     indent--;
                     NewLine();
                 }
@@ -690,7 +682,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (mm.EngineResultType != typeof(object))
             {
-                Append($"{RuntimeHelperType}.Convert<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(");
+                Append($"{EngineFieldRef}.Convert<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(");
                 NewLine();
                 indent++;
                 Indent();
@@ -711,7 +703,7 @@ namespace Smart.Data.Accessor.Generator
                 Append(",");
                 NewLine();
                 Indent();
-                Append($"{GetConvertFieldRef(mm.No)});");
+                Append($"{GetHandlerFieldRef(mm.No)});");
                 indent--;
             }
             else
@@ -1101,14 +1093,14 @@ namespace Smart.Data.Accessor.Generator
 
                 if (parameter.Type != typeof(object))
                 {
-                    Append($"{RuntimeHelperType}.Convert<{GeneratorHelper.MakeGlobalName(parameter.Type)}>(");
+                    Append($"{EngineFieldRef}.Convert<{GeneratorHelper.MakeGlobalName(parameter.Type)}>(");
                     NewLine();
                     indent++;
                     Indent();
                     Append($"{GetOutParamName(parameter.Index)}.Value,");
                     NewLine();
                     Indent();
-                    Append($"{GetConvertFieldRef(mm.No, parameter.Index)});");
+                    Append($"{GetHandlerFieldRef(mm.No, parameter.Index)});");
                     indent--;
                 }
                 else
@@ -1217,7 +1209,7 @@ namespace Smart.Data.Accessor.Generator
             public override void Visit(ParameterNode node)
             {
                 var parameter = mm.Parameters.First(x => x.Source == node.Source);
-                var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
                 sql.Append("@");
                 sql.Append(parameterName);
             }
@@ -1228,7 +1220,7 @@ namespace Smart.Data.Accessor.Generator
 
                 foreach (var parameter in mm.Parameters)
                 {
-                    var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                    var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
                     builder.AppendLine(MakeParameterSetup(mm, parameter, parameterName));
                 }
 
@@ -1270,7 +1262,7 @@ namespace Smart.Data.Accessor.Generator
             public override void Visit(ParameterNode node)
             {
                 var parameter = mm.Parameters.First(x => x.Source == node.Source);
-                var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
 
                 if (parameter.ParameterType == ParameterType.Simple)
                 {
@@ -1303,7 +1295,7 @@ namespace Smart.Data.Accessor.Generator
 
                 foreach (var parameter in mm.Parameters)
                 {
-                    var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                    var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
                     builder.AppendLine(MakeParameterSetup(mm, parameter, parameterName));
                 }
 
@@ -1369,7 +1361,7 @@ namespace Smart.Data.Accessor.Generator
             public override void Visit(ParameterNode node)
             {
                 var parameter = mm.Parameters.First(x => x.Source == node.Source);
-                var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
 
                 if (parameter.ParameterType == ParameterType.Simple)
                 {
@@ -1407,7 +1399,7 @@ namespace Smart.Data.Accessor.Generator
                     builder.AppendLine("{");
                     builder.indent++;
 
-                    var parameterName = ParameterNames.GetParameterName(parameter.Index);
+                    var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
                     builder.AppendLine(MakeParameterSetup(mm, parameter, parameterName));
 
                     builder.indent--;
@@ -1481,10 +1473,8 @@ namespace Smart.Data.Accessor.Generator
                     return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\");";
                 case ParameterDirection.InputOutput:
                     return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
-                case ParameterDirection.Input:
-                    return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(parameter), $"Invalid parameter direction. direction=[{parameter.Direction}]");
+                    return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
             }
         }
     }

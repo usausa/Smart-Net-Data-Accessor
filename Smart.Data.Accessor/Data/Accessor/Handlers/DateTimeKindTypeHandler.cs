@@ -28,9 +28,9 @@ namespace Smart.Data.Accessor.Handlers
             parameter.Value = value;
         }
 
-        public object Parse(Type type, object value)
+        public Func<object, object> CreateParse(Type type)
         {
-            return DateTime.SpecifyKind((DateTime)value, kind);
+            return x => DateTime.SpecifyKind((DateTime)x, kind);
         }
     }
 }

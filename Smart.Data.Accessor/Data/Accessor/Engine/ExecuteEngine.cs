@@ -99,44 +99,70 @@ namespace Smart.Data.Accessor.Engine
         // Converter
         //--------------------------------------------------------------------------------
 
-        Func<object, object> IResultMapperCreateContext.CreateConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
+        Func<object, object> IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
         {
-            var converter = CreateConverter(destinationType, provider);
-            return converter ?? objectConverter.CreateConverter(sourceType, destinationType);
+            var converter = GetHandler(destinationType, provider);
+            if (converter != null)
+            {
+                return converter;
+            }
+
+            if ((destinationType == sourceType) ||
+                (destinationType.IsNullableType() && (Nullable.GetUnderlyingType(destinationType) == sourceType)))
+            {
+                return null;
+            }
+
+            return objectConverter.CreateConverter(sourceType, destinationType);
         }
 
-        public Func<object, object> CreateConverter<T>(ICustomAttributeProvider provider)
+        public Func<object, object> CreateHandler<T>(ICustomAttributeProvider provider)
         {
             var type = typeof(T);
-            var converter = CreateConverter(type, provider);
-            return converter ?? CreateConverterRuntimeConverter(Nullable.GetUnderlyingType(type) ?? type);
+            return GetHandler(type, provider);
         }
 
-        private Func<object, object> CreateConverter(Type type, ICustomAttributeProvider provider)
+        private Func<object, object> GetHandler(Type type, ICustomAttributeProvider provider)
         {
             // ResultAttribute
-            var attribute = provider?.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
+            var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
             if (attribute != null)
             {
-                return attribute.CreateConverter(ServiceProvider, type);
+                return attribute.CreateParser(ServiceProvider, type);
             }
 
             // ITypeHandler
             if (LookupTypeHandler(type, out var handler))
             {
-                return x => handler.Parse(type, x);
+                return handler.CreateParse(type);
             }
 
             return null;
         }
 
-        private Func<object, object> CreateConverterRuntimeConverter(Type type)
+        public T Convert<T>(object source, Func<object, object> handler)
         {
-            return x =>
+            if (handler != null)
             {
-                var converter = objectConverter.CreateConverter(x.GetType(), type);
-                return converter(x);
-            };
+                if (source is DBNull)
+                {
+                    return default;
+                }
+
+                return (T)handler(source);
+            }
+
+            if (source is T value)
+            {
+                return value;
+            }
+
+            if (source is DBNull)
+            {
+                return default;
+            }
+
+            return objectConverter.Convert<T>(source);
         }
 
         //--------------------------------------------------------------------------------

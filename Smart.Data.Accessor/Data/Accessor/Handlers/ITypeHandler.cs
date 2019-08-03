@@ -7,6 +7,6 @@ namespace Smart.Data.Accessor.Handlers
     {
         void SetValue(DbParameter parameter, object value);
 
-        object Parse(Type type, object value);
+        Func<object, object> CreateParse(Type type);
     }
 }

@@ -15,7 +15,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
       <group targetFramework="netstandard2.0">
-        <dependency id="Usa.Smart.Core" version="1.7.3" />
+        <dependency id="Usa.Smart.Core" version="1.7.5" />
         <dependency id="Usa.Smart.Data.Accessor" version="0.1.0" />
         <dependency id="Usa.Smart.Resolver" version="1.8.1" />
       </group>

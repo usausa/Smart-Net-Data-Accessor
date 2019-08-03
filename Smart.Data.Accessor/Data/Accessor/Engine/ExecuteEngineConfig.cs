@@ -63,12 +63,8 @@ namespace Smart.Data.Accessor.Engine
                 throw new ArgumentNullException(nameof(provider));
             }
 
-            if (components != null)
-            {
-                throw new InvalidOperationException("Components are already configured.");
-            }
-
             serviceProvider = provider;
+            components = null;
 
             return this;
         }
@@ -80,17 +76,14 @@ namespace Smart.Data.Accessor.Engine
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (serviceProvider != null)
-            {
-                throw new InvalidOperationException("Components are already configured.");
-            }
-
             if (components == null)
             {
                 components = CreateDefaultComponents();
             }
 
             action(components);
+            serviceProvider = null;
+
             return this;
         }
 
