@@ -30,7 +30,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryBufferdSimple()
+        public void TestQueryBufferdSimple()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryNonBufferdSimple()
+        public void TestQueryNonBufferdSimple()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -90,7 +90,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryBufferdSimpleAsync()
+        public async Task TestQueryBufferdSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -115,7 +115,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryNonBufferdSimpleAsync()
+        public async Task TestQueryNonBufferdSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -154,7 +154,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryBufferdWithConnection()
+        public void TestQueryBufferdWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -181,7 +181,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryNonBufferdWithConnection()
+        public void TestQueryNonBufferdWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -218,7 +218,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryBufferdWithConnectionAsync()
+        public async Task TestQueryBufferdWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -245,7 +245,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryNonBufferdWithConnectionAsync()
+        public async Task TestQueryNonBufferdWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -286,7 +286,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryBufferdCancelAsync()
+        public async Task TestQueryBufferdCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -310,7 +310,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryNonBufferdCancelAsync()
+        public async Task TestQueryNonBufferdCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -345,7 +345,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryInvalid()
+        public void TestQueryInvalid()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -363,7 +363,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryInvalidAsync()
+        public void TestQueryInvalidAsync()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

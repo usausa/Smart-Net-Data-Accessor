@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Generator
     public class ParameterNamesTest
     {
         [Fact]
-        public void GetParameterNames()
+        public void TestGetParameterNames()
         {
             Assert.Equal("_p0", ParameterNames.GetParameterName(0));
             Assert.Equal("_p255", ParameterNames.GetParameterName(255));

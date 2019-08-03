@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void DirectSql()
+        public void TestDirectSql()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()

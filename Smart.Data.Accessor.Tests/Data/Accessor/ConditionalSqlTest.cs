@@ -21,7 +21,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseHelper()
+        public void TestHelper()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void UseCustomHelper()
+        public void TestCustomHelper()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -86,7 +86,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseCustomUsing()
+        public void TestCustomUsing()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -128,7 +128,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void DynamicArray()
+        public void TestDynamicArray()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()

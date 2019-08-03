@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryFirstOrDefaultSimple()
+        public void TestQueryFirstOrDefaultSimple()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -57,7 +57,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryFirstOrDefaultSimpleAsync()
+        public async Task TestQueryFirstOrDefaultSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -93,7 +93,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryFirstOrDefaultWithConnection()
+        public void TestQueryFirstOrDefaultWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -127,7 +127,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryFirstOrDefaultWithConnectionAsync()
+        public async Task TestQueryFirstOrDefaultWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -165,7 +165,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task QueryFirstOrDefaultCancelAsync()
+        public async Task TestQueryFirstOrDefaultCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -203,7 +203,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryFirstOrDefaultInvalid()
+        public void TestQueryFirstOrDefaultInvalid()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -221,7 +221,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void QueryFirstOrDefaultInvalidAsync()
+        public void TestQueryFirstOrDefaultInvalidAsync()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

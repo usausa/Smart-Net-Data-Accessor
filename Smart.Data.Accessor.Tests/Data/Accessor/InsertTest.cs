@@ -15,7 +15,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void Insert()
+        public void TestInsert()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())

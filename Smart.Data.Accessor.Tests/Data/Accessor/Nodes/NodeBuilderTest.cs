@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void Basic()
+        public void TestBasic()
         {
             var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */ 1");
             var builder = new NodeBuilder(tokenizer.Tokenize());
@@ -30,7 +30,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void UseIn()
+        public void TestIn()
         {
             var tokenizer = new SqlTokenizer("IN /*@ ids */ ('1', '2')");
             var builder = new NodeBuilder(tokenizer.Tokenize());
@@ -45,7 +45,7 @@ namespace Smart.Data.Accessor.Nodes
         }
 
         [Fact]
-        public void UseInNested()
+        public void TestInNested()
         {
             var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2')");
             var builder = new NodeBuilder(tokenizer.Tokenize());
@@ -64,7 +64,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void UseReplace()
+        public void TestReplace()
         {
             var tokenizer = new SqlTokenizer("SELECT * FROM Data ORDER BY /*# sort */");
             var builder = new NodeBuilder(tokenizer.Tokenize());
@@ -83,7 +83,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void UseHelper()
+        public void TestHelper()
         {
             var tokenizer = new SqlTokenizer(
                 "/*!helper Smart.Mock.CustomScriptHelper */" +
@@ -115,7 +115,7 @@ namespace Smart.Data.Accessor.Nodes
         }
 
         [Fact]
-        public void UseUsing()
+        public void TestUsing()
         {
             var tokenizer = new SqlTokenizer(
                 "/*!using Smart.Mock */" +
@@ -151,7 +151,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void Insert()
+        public void TestInsert()
         {
             var tokenizer = new SqlTokenizer("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'name')");
             var builder = new NodeBuilder(tokenizer.Tokenize());
@@ -177,7 +177,7 @@ namespace Smart.Data.Accessor.Nodes
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void Update()
+        public void TestUpdate()
         {
             var tokenizer = new SqlTokenizer(
                 "UPDATE Data " +

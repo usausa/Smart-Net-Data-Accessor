@@ -16,7 +16,7 @@ namespace Smart.Data.Accessor.Generator
         }
 
         [Fact]
-        public void UnsupportedOperations()
+        public void TestUnsupportedOperations()
         {
             var generator = new DaoGenerator(null, null);
 
@@ -45,7 +45,7 @@ namespace Smart.Data.Accessor.Generator
         }
 
         [Fact]
-        public void InvalidCode()
+        public void TestInvalidCode()
         {
             var generator = new DaoGenerator(null, null);
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidCodeDao>());

@@ -42,7 +42,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void MapProperty()
+        public void TestMapProperty()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -108,7 +108,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void UseCustomParser()
+        public void TestCustomParser()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -147,7 +147,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void DefaultConstructorRequired()
+        public void TestDefaultConstructorRequired()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -171,7 +171,7 @@ namespace Smart.Data.Accessor.Mappers
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void FactoryNotExists()
+        public void TestFactoryNotExists()
         {
             var engine = new ExecuteEngineConfig()
                 .ConfigureResultMapperFactories(mappers => mappers.Clear())

@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Engine
     public class ResultMapperCacheTest
     {
         [Fact]
-        public void ResultMapperCached()
+        public void TestResultMapperCached()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -33,7 +33,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ResultMapperForSameTypeDifferentResult()
+        public void TestResultMapperForSameTypeDifferentResult()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -70,7 +70,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ResultMapperForDifferentTypeSameResult()
+        public void TestResultMapperForDifferentTypeSameResult()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 

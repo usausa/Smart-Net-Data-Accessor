@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void Transaction()
+        public void TestTransaction()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -63,7 +63,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public async Task TransactionAsync()
+        public async Task TestTransactionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())

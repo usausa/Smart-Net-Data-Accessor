@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void OrderBy()
+        public void TestReplace()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()

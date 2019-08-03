@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseProviderForExecuteScalar()
+        public void TestProviderForExecuteScalar()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -50,10 +50,6 @@ namespace Smart.Data.Accessor
             }
         }
 
-        //--------------------------------------------------------------------------------
-        // Provider
-        //--------------------------------------------------------------------------------
-
         [Dao]
         [Provider(ProviderNames.Main)]
         public interface IProviderForQueryDao
@@ -67,7 +63,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseProviderForQuery()
+        public void TestProviderForQuery()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()

@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void TimeoutAttribute()
+        public void TestTimeoutAttribute()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -50,7 +50,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void TimeoutParameter()
+        public void TestTimeoutParameter()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -80,7 +80,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void InvalidTimeoutParameter()
+        public void TestInvalidTimeoutParameter()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

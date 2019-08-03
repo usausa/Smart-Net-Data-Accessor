@@ -47,7 +47,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDbTypeForEnumUnderlyingType()
+        public void TestDbTypeForEnumUnderlyingType()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -70,7 +70,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseTypeHandlerForEnumUnderlyingType()
+        public void TestTypeHandlerForEnumUnderlyingType()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -112,7 +112,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseAnsiStringAttribute()
+        public void TestAnsiStringAttribute()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -144,7 +144,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDbTypeAttribute()
+        public void TestDbTypeAttribute()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -183,7 +183,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDateTimeKindTypeHandler()
+        public void TestDateTimeKindTypeHandler()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -235,7 +235,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDateTimeTickTypeHandler()
+        public void TestDateTimeTickTypeHandler()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -306,7 +306,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseTypeHandler()
+        public void TestTypeHandler()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -433,7 +433,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDbType()
+        public void TestDbType()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -557,7 +557,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void SetupFailedIn()
+        public void TestSetupFailedIn()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -579,7 +579,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void SetupFailedInOut()
+        public void TestSetupFailedInOut()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -601,7 +601,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void SetupFailedOut()
+        public void TestSetupFailedOut()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -623,7 +623,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void SetupFailedArray()
+        public void TestSetupFailedArray()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -645,7 +645,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void SetupFailedList()
+        public void TestSetupFailedList()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

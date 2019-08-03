@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteSimple()
+        public void TestExecuteSimple()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -56,7 +56,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteSimpleAsync()
+        public async Task TestExecuteSimpleAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -91,7 +91,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteVoid()
+        public void TestExecuteVoid()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -118,7 +118,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteVoidAsync()
+        public async Task TestExecuteVoidAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -149,7 +149,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteWithConnection()
+        public void TestExecuteWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -182,7 +182,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteWithConnectionAsync()
+        public async Task TestExecuteWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -219,7 +219,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteCancelAsync()
+        public async Task TestExecuteCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable())
@@ -252,7 +252,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteInvalid()
+        public void TestExecuteInvalid()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -270,7 +270,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteInvalidAsync()
+        public void TestExecuteInvalidAsync()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

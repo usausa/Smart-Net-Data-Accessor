@@ -71,7 +71,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void ParameterConvert()
+        public void TestParameterConvert()
         {
             using (TestDatabase.Initialize())
             {
@@ -153,7 +153,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDirectionParameter()
+        public void TestDirectionParameter()
         {
             using (TestDatabase.Initialize())
             {
@@ -204,7 +204,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void UseDirectionArgument()
+        public void TestDirectionArgument()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable())
@@ -252,7 +252,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void CallParameterIsObject()
+        public void TestObjectParameter()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable())

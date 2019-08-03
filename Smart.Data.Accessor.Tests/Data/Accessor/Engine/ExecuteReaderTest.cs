@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteReaderSimple()
+        public void TestExecuteReaderSimple()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -57,7 +57,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteReaderSimpleAsync()
+        public async Task TestExecuteReaderSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -93,7 +93,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteReaderWithConnection()
+        public void TestExecuteReaderWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -130,7 +130,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteReaderWithConnectionAsync()
+        public async Task TestExecuteReaderWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -171,7 +171,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteReaderCancelAsync()
+        public async Task TestExecuteReaderCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -212,7 +212,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteReaderInvalid()
+        public void TestExecuteReaderInvalid()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -230,7 +230,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteReaderInvalidAsync()
+        public void TestExecuteReaderInvalidAsync()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

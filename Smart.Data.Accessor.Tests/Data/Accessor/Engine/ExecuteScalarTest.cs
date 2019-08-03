@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarSimple()
+        public void TestExecuteScalarSimple()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -53,7 +53,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarSimpleAsync()
+        public async Task TestExecuteScalarSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -78,7 +78,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void ExecuteScalarResultIsNull()
+        public void TestExecuteScalarResultIsNull()
         {
             using (TestDatabase.Initialize())
             {
@@ -96,7 +96,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarResultIsNullAsync()
+        public async Task TestExecuteScalarResultIsNullAsync()
         {
             using (TestDatabase.Initialize())
             {
@@ -125,7 +125,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarObject()
+        public void TestExecuteScalarObject()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -153,7 +153,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarObjectAsync()
+        public async Task TestExecuteScalarObjectAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -185,7 +185,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarWithConvert()
+        public void TestExecuteScalarWithConvert()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -213,7 +213,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarWithConvertAsync()
+        public async Task TestExecuteScalarWithConvertAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -245,7 +245,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarWithConnection()
+        public void TestExecuteScalarWithConnection()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -275,7 +275,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarWithConnectionAsync()
+        public async Task TestExecuteScalarWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -309,7 +309,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task ExecuteScalarCancelAsync()
+        public async Task TestExecuteScalarCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -344,7 +344,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarInvalid()
+        public void TestExecuteScalarInvalid()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()
@@ -362,7 +362,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public void ExecuteScalarInvalidAsync()
+        public void TestExecuteScalarInvalidAsync()
         {
             var generator = new GeneratorBuilder()
                 .EnableDebug()

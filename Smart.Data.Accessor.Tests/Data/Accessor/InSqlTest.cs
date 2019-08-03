@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void InArray()
+        public void TestArray()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -65,7 +65,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void InArrayMixed()
+        public void TestArrayMixed()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -99,7 +99,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void InList()
+        public void TestList()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -141,7 +141,7 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void InListMixed()
+        public void TestListMixed()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
