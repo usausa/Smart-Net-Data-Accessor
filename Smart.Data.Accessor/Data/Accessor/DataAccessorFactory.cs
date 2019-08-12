@@ -1,29 +1,35 @@
 namespace Smart.Data.Accessor
 {
+    using System;
+    using System.IO;
+    using System.Reflection;
+
+    using Smart.Data.Accessor.Engine;
+    using Smart.Data.Accessor.Generator;
+
     public sealed class DataAccessorFactory
     {
-        //public T Create<T>()
-        //{
-        //    return (T)Create(typeof(T));
-        //}
+        private readonly ExecuteEngine engine;
 
-        //public object Create(Type type)
-        //{
-        //    if (type is null)
-        //    {
-        //        throw new ArgumentNullException(nameof(type));
-        //    }
+        public DataAccessorFactory(ExecuteEngine engine)
+        {
+            this.engine = engine;
+        }
 
-        //    if (!cache.TryGetValue(type, out var dao))
-        //    {
-        //        dao = cache.AddIfNotExist(type, CreateInternal);
-        //        if (dao == null)
-        //        {
-        //            throw new AccessorGeneratorException($"Dao generate failed. type=[{type.FullName}]");
-        //        }
-        //    }
+        public T Create<T>()
+        {
+            var type = typeof(T);
+            var directory = Path.GetDirectoryName(type.Assembly.Location);
+            var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
+            var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
+            var accessorName = $"{type.Namespace}.{TypeHelper.MakeDaoName(type)}";
+            var implType = assembly.GetType(accessorName);
+            if (implType == null)
+            {
+                throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
+            }
 
-        //    return dao;
-        //}
+            return (T)Activator.CreateInstance(implType, engine);
+        }
     }
 }

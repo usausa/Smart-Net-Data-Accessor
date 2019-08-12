@@ -364,7 +364,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void BeginClass(string className)
         {
-            AppendLine($"internal sealed class {className} : {interfaceFullName}");
+            AppendLine($"public sealed class {className} : {interfaceFullName}");
             AppendLine("{");
             indent++;
         }
