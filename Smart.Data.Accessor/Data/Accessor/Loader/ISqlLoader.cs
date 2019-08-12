@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Loaders
+namespace Smart.Data.Accessor.Loader
 {
     using System.Reflection;
 

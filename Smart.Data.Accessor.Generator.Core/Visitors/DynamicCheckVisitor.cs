@@ -1,8 +1,8 @@
-﻿namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Generator.Visitors
 {
     using Smart.Data.Accessor.Nodes;
 
-    public sealed class DynamicCheckVisitor : NodeVisitorBase
+    internal sealed class DynamicCheckVisitor : NodeVisitorBase
     {
         public bool IsDynamic { get; private set; }
 

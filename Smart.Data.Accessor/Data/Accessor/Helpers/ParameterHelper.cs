@@ -8,7 +8,9 @@ namespace Smart.Data.Accessor.Helpers
     using Smart;
     using Smart.Data.Accessor.Attributes;
 
-    internal static class ParameterHelper
+    // TODO LoaderとあわせてGeneratorへ移動？
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
+    public static class ParameterHelper
     {
         public static bool IsTimeoutParameter(ParameterInfo pi) =>
             pi.GetCustomAttribute<TimeoutParameterAttribute>() != null;

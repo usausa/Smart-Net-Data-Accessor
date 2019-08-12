@@ -10,14 +10,16 @@ namespace Smart.Data.Accessor.Generator
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;
+    using Smart.Data.Accessor.Generator.Helpers;
+    using Smart.Data.Accessor.Generator.Metadata;
+    using Smart.Data.Accessor.Generator.Visitors;
     using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
+    using Smart.Data.Accessor.Runtime;
     using Smart.Data.Accessor.Scripts;
 
-    internal sealed class DaoSourceBuilder
+    internal sealed class SourceBuilder
     {
-        private const string ImplementSuffix = "_Impl";
-
         private const string CtorArg = "engine";
         private const string EngineField = "_engine";
         private const string EngineFieldRef = "this." + EngineField;
@@ -73,12 +75,12 @@ namespace Smart.Data.Accessor.Generator
         // Constructor
         //--------------------------------------------------------------------------------
 
-        public DaoSourceBuilder(Type targetType)
+        public SourceBuilder(Type targetType, string implementName)
         {
             this.targetType = targetType;
+            this.implementName = implementName;
 
             interfaceFullName = GeneratorHelper.MakeGlobalName(targetType);
-            implementName = TypeHelper.MakeDaoName(targetType) + ImplementSuffix;
             provider = targetType.GetCustomAttribute<ProviderAttribute>();
         }
 
@@ -91,7 +93,7 @@ namespace Smart.Data.Accessor.Generator
         // Build
         //--------------------------------------------------------------------------------
 
-        public DaoSource Build()
+        public string Build()
         {
             source.Clear();
             newLine = true;
@@ -150,10 +152,7 @@ namespace Smart.Data.Accessor.Generator
             End();  // Class
             End();  // Namespace
 
-            return new DaoSource(
-                targetType,
-                $"{targetType.Namespace}.{implementName}",
-                source.ToString());
+            return source.ToString();
         }
 
         //--------------------------------------------------------------------------------
@@ -1163,11 +1162,11 @@ namespace Smart.Data.Accessor.Generator
 
         private sealed class ProcedureBuildVisitor : NodeVisitorBase
         {
-            private readonly DaoSourceBuilder builder;
+            private readonly SourceBuilder builder;
 
             private readonly MethodMetadata mm;
 
-            public ProcedureBuildVisitor(DaoSourceBuilder builder, MethodMetadata mm)
+            public ProcedureBuildVisitor(SourceBuilder builder, MethodMetadata mm)
             {
                 this.builder = builder;
                 this.mm = mm;
@@ -1192,13 +1191,13 @@ namespace Smart.Data.Accessor.Generator
 
         private sealed class SimpleBuildVisitor : NodeVisitorBase
         {
-            private readonly DaoSourceBuilder builder;
+            private readonly SourceBuilder builder;
 
             private readonly MethodMetadata mm;
 
             private readonly StringBuilder sql = new StringBuilder();
 
-            public SimpleBuildVisitor(DaoSourceBuilder builder, MethodMetadata mm)
+            public SimpleBuildVisitor(SourceBuilder builder, MethodMetadata mm)
             {
                 this.builder = builder;
                 this.mm = mm;
@@ -1239,13 +1238,13 @@ namespace Smart.Data.Accessor.Generator
 
         private sealed class HasArrayBuildVisitor : NodeVisitorBase
         {
-            private readonly DaoSourceBuilder builder;
+            private readonly SourceBuilder builder;
 
             private readonly MethodMetadata mm;
 
             private readonly StringBuilder sql = new StringBuilder();
 
-            public HasArrayBuildVisitor(DaoSourceBuilder builder, MethodMetadata mm, int size)
+            public HasArrayBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
             {
                 this.builder = builder;
                 this.mm = mm;
@@ -1314,13 +1313,13 @@ namespace Smart.Data.Accessor.Generator
 
         private sealed class DynamicBuildVisitor : NodeVisitorBase
         {
-            private readonly DaoSourceBuilder builder;
+            private readonly SourceBuilder builder;
 
             private readonly MethodMetadata mm;
 
             private readonly StringBuilder sql = new StringBuilder();
 
-            public DynamicBuildVisitor(DaoSourceBuilder builder, MethodMetadata mm, int size)
+            public DynamicBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
             {
                 this.builder = builder;
                 this.mm = mm;
@@ -1412,45 +1411,6 @@ namespace Smart.Data.Accessor.Generator
                 }
 
                 builder.AppendLine($"{CommandVar}.CommandText = {SqlVar}.ToString();");
-            }
-        }
-
-        //--------------------------------------------------------------------------------
-        // Calc
-        //--------------------------------------------------------------------------------
-
-        private sealed class CalcSizeVisitor : NodeVisitorBase
-        {
-            private readonly MethodMetadata mm;
-
-            private int size;
-
-            private int args;
-
-            public int InitialSize => (int)(Math.Ceiling((double)size / 32) * 32);
-
-            public CalcSizeVisitor(MethodMetadata mm)
-            {
-                this.mm = mm;
-            }
-
-            public override void Visit(SqlNode node) => size += node.Sql.Length;
-
-            public override void Visit(RawSqlNode node) => size += 16;
-
-            public override void Visit(ParameterNode node)
-            {
-                var parameterSize = (int)Math.Log10(++args) + 2;
-
-                var parameter = mm.Parameters.First(x => x.Source == node.Source);
-                if (parameter.ParameterType == ParameterType.Simple)
-                {
-                    size += parameterSize;
-                }
-                else
-                {
-                    size += (parameterSize + 4) * 8;
-                }
             }
         }
 

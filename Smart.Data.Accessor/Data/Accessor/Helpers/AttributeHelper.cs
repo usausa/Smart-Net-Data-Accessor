@@ -7,6 +7,7 @@ namespace Smart.Data.Accessor.Helpers
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Nodes;
 
+    // TODO LoaderとあわせてGeneratorへ移動？
     public static class AttributeHelper
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]

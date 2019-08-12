@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Generator.Visitors
 {
     using System;
     using System.Collections.Generic;
@@ -7,6 +7,7 @@ namespace Smart.Data.Accessor.Generator
     using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Generator.Metadata;
     using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 

@@ -1,9 +1,9 @@
-namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Generator.Helpers
 {
     using System.Linq;
     using System.Runtime.CompilerServices;
 
-    public static class ParameterNames
+    internal static class ParameterNames
     {
         private static readonly string[] Names;
 

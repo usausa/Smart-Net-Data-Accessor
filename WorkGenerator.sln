@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Generat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Generator.Tools", "Smart.Data.Accessor.Generator.Tools\Smart.Data.Accessor.Generator.Tools.csproj", "{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Target", "Target\Target.csproj", "{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

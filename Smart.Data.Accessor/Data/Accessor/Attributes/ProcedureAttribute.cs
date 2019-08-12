@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Attributes
     using System.Reflection;
 
     using Smart.Data.Accessor.Helpers;
-    using Smart.Data.Accessor.Loaders;
+    using Smart.Data.Accessor.Loader;
     using Smart.Data.Accessor.Nodes;
 
     public sealed class ProcedureAttribute : MethodAttribute, IReturnValueBehavior

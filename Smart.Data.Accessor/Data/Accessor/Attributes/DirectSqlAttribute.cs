@@ -4,7 +4,7 @@ namespace Smart.Data.Accessor.Attributes
     using System.Data;
     using System.Reflection;
 
-    using Smart.Data.Accessor.Loaders;
+    using Smart.Data.Accessor.Loader;
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 

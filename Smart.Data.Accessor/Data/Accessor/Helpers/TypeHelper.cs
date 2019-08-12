@@ -4,8 +4,13 @@ namespace Smart.Data.Accessor.Helpers
     using System.Collections.Generic;
     using System.Linq;
 
-    internal static class TypeHelper
+    // TODO 一部Runtimeへ移行
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
+    public static class TypeHelper
     {
+        // TODO
+        //        private const string ImplementSuffix = "_Impl";
+
         //--------------------------------------------------------------------------------
         // Name
         //--------------------------------------------------------------------------------
