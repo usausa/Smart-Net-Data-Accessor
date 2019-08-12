@@ -4,8 +4,7 @@ namespace Smart.Data.Accessor.Attributes
     using System.Data;
     using System.Reflection;
 
-    using Smart.Data.Accessor.Helpers;
-    using Smart.Data.Accessor.Loader;
+    using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
 
     public sealed class InsertAttribute : MethodAttribute

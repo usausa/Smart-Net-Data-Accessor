@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Helpers
+namespace Smart.Data.Accessor.Generator
 {
     using System;
     using System.Data.Common;
@@ -8,7 +8,6 @@ namespace Smart.Data.Accessor.Helpers
     using Smart;
     using Smart.Data.Accessor.Attributes;
 
-    // TODO LoaderとあわせてGeneratorへ移動？
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class ParameterHelper
     {

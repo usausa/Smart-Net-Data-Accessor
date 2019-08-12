@@ -16,11 +16,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor", "Smart.Data.Accessor\Smart.Data.Accessor.csproj", "{BC856947-933A-4671-B678-9FE2806BBC8D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Generator.Core", "Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj", "{5DF146EC-7C5D-4BCC-AC5A-204D109F1181}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Generator.Core", "Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj", "{5DF146EC-7C5D-4BCC-AC5A-204D109F1181}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Generator.Tools", "Smart.Data.Accessor.Generator.Tools\Smart.Data.Accessor.Generator.Tools.csproj", "{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Generator.Tools", "Smart.Data.Accessor.Generator.Tools\Smart.Data.Accessor.Generator.Tools.csproj", "{634ACEBE-14B8-4855-AAD5-6FF45694A5C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Target", "Target\Target.csproj", "{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Target", "Target\Target.csproj", "{139A14BB-BF54-46D6-9706-2EB09D3C3D4B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

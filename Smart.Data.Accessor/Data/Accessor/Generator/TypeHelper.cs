@@ -1,16 +1,12 @@
-namespace Smart.Data.Accessor.Helpers
+namespace Smart.Data.Accessor.Generator
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
 
-    // TODO 一部Runtimeへ移行
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class TypeHelper
     {
-        // TODO
-        //        private const string ImplementSuffix = "_Impl";
-
         //--------------------------------------------------------------------------------
         // Name
         //--------------------------------------------------------------------------------
@@ -18,7 +14,7 @@ namespace Smart.Data.Accessor.Helpers
         public static string MakeDaoName(Type type)
         {
             var index = type.FullName.LastIndexOf('.');
-            return (index >= 0 ? type.FullName.Substring(index + 1) : type.FullName).Replace('+', '_');
+            return (index >= 0 ? type.FullName.Substring(index + 1) : type.FullName).Replace('+', '_') + "_Impl";
         }
 
         //--------------------------------------------------------------------------------

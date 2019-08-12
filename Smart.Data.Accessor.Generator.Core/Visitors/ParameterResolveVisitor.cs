@@ -8,7 +8,6 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Generator.Metadata;
-    using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 
     internal sealed class ParameterResolveVisitor : NodeVisitorBase

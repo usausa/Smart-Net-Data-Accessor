@@ -13,7 +13,6 @@ namespace Smart.Data.Accessor.Generator
     using Smart.Data.Accessor.Generator.Helpers;
     using Smart.Data.Accessor.Generator.Metadata;
     using Smart.Data.Accessor.Generator.Visitors;
-    using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Runtime;
     using Smart.Data.Accessor.Scripts;
@@ -75,7 +74,7 @@ namespace Smart.Data.Accessor.Generator
         // Constructor
         //--------------------------------------------------------------------------------
 
-        public SourceBuilder(Type targetType, string implementName)
+        internal SourceBuilder(Type targetType, string implementName)
         {
             this.targetType = targetType;
             this.implementName = implementName;

@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Property -->
+  <PropertyGroup>
+    <SmartDataAccessorTargetName>$(AssemblyName).DataAccessor</SmartDataAccessorTargetName>
+    <SmartDataAccessorAssembly>$(SmartDataAccessorTargetName).dll</SmartDataAccessorAssembly>
+    <SmartDataAccessorDebugSymbol>$(SmartDataAccessorTargetName).pdb</SmartDataAccessorDebugSymbol>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\..\tools\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+  </PropertyGroup>
+
+  <!-- Build -->
+  <Target Name="SmartDataAccessorBuild" AfterTargets="Build">
+    <PropertyGroup>
+      <SmartDataAccessorTargetFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorTargetFileName>
+      <SmartDataAccessorOutputDirectory>$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor</SmartDataAccessorOutputDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'==''">$(ProjectDir)</SqlRootDirectory>
+      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'!=''">$(SmartDataAccessorSqlRootDirectory)</SqlRootDirectory>
+    </PropertyGroup>
+    <PropertyGroup>
+      <SqlRootNamespace Condition="'$(SmartDataAccessorSqlRootNamespace)'==''">$(RootNamespace)</SqlRootNamespace>
+      <SqlRootNamespace Condition="'$(SmartDataAccessorSqlRootNamespace)'!=''">$(SmartDataAccessorSqlRootNamespace)</SqlRootNamespace>
+    </PropertyGroup>
+    <PropertyGroup>
+      <SqlSubDirectory Condition="'$(SmartDataAccessorSqlSubDirectory)'==''">Sql</SqlSubDirectory>
+      <SqlSubDirectory Condition="'$(SmartDataAccessorSqlSubDirectory)'!=''">$(SmartDataAccessorSqlSubDirectory)</SqlSubDirectory>
+    </PropertyGroup>
+
+    <Exec Command="dotnet $(SmartDataAccessorGenerator) &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; &quot;@(ReferencePath)&quot; $(SqlRootDirectory) $(SqlRootNamespace) $(SqlSubDirectory)" />
+
+    <ItemGroup>
+      <SmartDataAccessorSources Include="$([System.IO.Directory]::GetFiles(`$(SmartDataAccessorOutputDirectory)`))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ReferencesWithOutput Include="@(ReferencePath)" />
+      <ReferencesWithOutput Include="$(OutputPath)$(TargetFileName)" />
+    </ItemGroup>
+
+    <Csc TargetType="library"
+         DebugType="$(DebugType)"
+         DefineConstants="$(DefineConstants)"
+         Optimize="$(Optimize)"
+         Sources="@(SmartDataAccessorSources)"
+         References="@(ReferencesWithOutput)"
+         OutputAssembly="$(OutputPath)$(SmartDataAccessorAssembly)"/>
+  </Target>
+
+  <!-- Clean -->
+  <Target Name="SmartDataAccessorClean" AfterTargets="Clean">
+    <RemoveDir Directories="$(SmartDataAccessorOutputDirectory)"/>
+  </Target>
+
+  <!-- GetCopyToOutputDirectoryItems -->
+  <Target Name="SmartDataAccessorGetCopyToOutputDirectoryItems" BeforeTargets="GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <FileWrites Include="$(OutputPath)$(SmartDataAccessorAssembly)"/>
+      <FileWrites Include="$(OutputPath)$(SmartDataAccessorDebugSymbol)"/>
+
+      <AllItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorAssembly)">
+        <TargetPath>$(SmartDataAccessorAssembly)</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </AllItemsFullPathWithTargetPath>
+      <AllItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)">
+        <TargetPath>$(SmartDataAccessorDebugSymbol)</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </AllItemsFullPathWithTargetPath>
+    </ItemGroup>
+  </Target>
+
+  <!-- GetCopyToOutputDirectoryItems -->
+  <Target Name="SmartDataAccessorGetCopyToPublishDirectoryItems"
+          BeforeTargets="GetCopyToPublishDirectoryItems"
+          Returns="@(AllPublishItemsFullPathWithTargetPath)">
+    <ItemGroup>
+      <AllPublishItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorAssembly)">
+        <TargetPath>$(SmartDataAccessorAssembly)</TargetPath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </AllPublishItemsFullPathWithTargetPath>
+      <AllPublishItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)">
+        <TargetPath>$(SmartDataAccessorDebugSymbol)</TargetPath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </AllPublishItemsFullPathWithTargetPath>
+    </ItemGroup>
+  </Target>
+
+</Project>
