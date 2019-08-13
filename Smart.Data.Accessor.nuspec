@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Usa.Smart.Data.Accessor</id>
-    <version>0.3.0-beta2</version>
+    <version>0.3.0-beta4</version>
     <title>Smart.Data.Accessor .NET</title>
     <authors>machi_pon</authors>
     <owners>machi_pon</owners>
@@ -29,7 +29,7 @@
   <files>
     <!-- netstandard2.0 -->
     <file src="Smart.Data.Accessor\bin\Release\netstandard2.0\Smart.Data.Accessor.dll" target="lib\netstandard2.0" />
-    <file src="Smart.Data.Accessor.Generator.Tools\build\Smart.Data.Accessor.Generator.Tools.targets" target="build\netstandard2.0" />
+    <file src="Smart.Data.Accessor.Generator.Tools\build\Smart.Data.Accessor.targets" target="build\netstandard2.0\Usa.Smart.Data.Accessor.targets" />
     <file src="tools\**\*" target="tools" />
   </files>
 </package>

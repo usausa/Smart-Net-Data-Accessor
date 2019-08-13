@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,6 +20,6 @@
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)..\Smart.Data.Accessor.Generator.Tools\build\Smart.Data.Accessor.Generator.Tools.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Smart.Data.Accessor.Generator.Tools\build\Smart.Data.Accessor.targets" />
 
 </Project>

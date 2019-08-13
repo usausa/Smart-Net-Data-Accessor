@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor.Generator
             }
 
             var attr = parameter.ParameterType.GetCustomAttribute<NameAttribute>();
-            return attr != null ? attr.Name : parameter.Name;
+            return attr != null ? attr.Name : parameter.ParameterType.Name;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
