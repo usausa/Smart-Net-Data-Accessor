@@ -12,8 +12,7 @@ namespace Smart.Data.Accessor.Generator
         {
             var target = Path.GetFullPath(args[0]);
             var outputDirectory = Path.GetFullPath(args[1]);
-            var references = args[2]
-                .Split(";")
+            var references = File.ReadAllLines(Path.GetFullPath(args[2]))
                 .Select(x => new Reference(x))
                 .ToDictionary(x => x.Name);
             var sqlRootDirectory = Path.GetFullPath(args[3]);

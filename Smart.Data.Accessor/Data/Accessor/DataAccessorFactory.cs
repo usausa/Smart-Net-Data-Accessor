@@ -18,7 +18,12 @@ namespace Smart.Data.Accessor
 
         public T Create<T>()
         {
-            var type = typeof(T);
+            return (T)Create(typeof(T));
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
+        public object Create(Type type)
+        {
             var directory = Path.GetDirectoryName(type.Assembly.Location);
             var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
             var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
@@ -29,7 +34,7 @@ namespace Smart.Data.Accessor
                 throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
             }
 
-            return (T)Activator.CreateInstance(implType, engine);
+            return Activator.CreateInstance(implType, engine);
         }
     }
 }

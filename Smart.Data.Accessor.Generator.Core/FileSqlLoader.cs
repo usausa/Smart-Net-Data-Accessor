@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Generator
             var path = Path.Combine(dir, filename);
             if (!File.Exists(path))
             {
-                return null;
+                throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}] path=[{path}]");
             }
 
             return File.ReadAllText(path, Encoding.UTF8);

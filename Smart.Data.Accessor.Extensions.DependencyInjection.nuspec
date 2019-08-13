@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Usa.Smart.Data.Accessor.Extensions.DependencyInjection</id>
+    <version>0.2.0</version>
+    <title>Smart.Data.Accessor.Extensions.DependencyInjection .NET</title>
+    <authors>machi_pon</authors>
+    <owners>machi_pon</owners>
+    <description>Smart data accessor generator library for .NET</description>
+    <releaseNotes></releaseNotes>
+    <summary>Smart data accessor generator library for resolver extension .NET</summary>
+    <projectUrl>https://github.com/usausa/Smart-Net-Data-Accessor</projectUrl>
+    <repository type="git" url="https://github.com/usausa/Smart-Net-Data-Accessor" />
+    <copyright></copyright>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <dependencies>
+      <group targetFramework="netstandard2.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="2.2.0" />
+        <dependency id="Usa.Smart.Core" version="1.7.5" />
+        <dependency id="Usa.Smart.Data.Accessor" version="0.2.0" />
+      </group>
+    </dependencies>
+    <tags>smart ado.net orm dao ioc di dependencyinjection</tags>
+  </metadata>
+  <files>
+    <!-- netstandard2.0 -->
+    <file src="Smart.Data.Accessor.Extensions.DependencyInjection\bin\Release\netstandard2.0\Smart.Data.Accessor.Extensions.DependencyInjection.dll" target="lib\netstandard2.0" />
+  </files>
+</package>
