@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -15,14 +15,9 @@
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.6" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.3.0" />
+    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="0.3.0" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
-    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
-  </ItemGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)..\Smart.Data.Accessor.Generator.Tools\build\Smart.Data.Accessor.targets" />
 
 </Project>
