@@ -35,6 +35,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Generat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.ConsoleApplication", "Example.ConsoleApplication\Example.ConsoleApplication.csproj", "{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{DB21DE7C-EB00-4FC3-B141-6C2116979309}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmark", "Benchmark", "{8C59FF30-4E1D-4AE8-BA49-A7DB90153AB1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{8B1E9449-4262-4EC9-85E7-D3A9A78206EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +86,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{753BF011-C273-4B14-BA14-B81644CE3A68} = {DB21DE7C-EB00-4FC3-B141-6C2116979309}
+		{33F6C80F-50FC-4411-BA69-113B934826B5} = {8C59FF30-4E1D-4AE8-BA49-A7DB90153AB1}
+		{C24CD0E3-D070-4DFF-97A8-5788FCFE6AB4} = {8B1E9449-4262-4EC9-85E7-D3A9A78206EA}
+		{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4} = {DB21DE7C-EB00-4FC3-B141-6C2116979309}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1CAE6C1-48F0-4837-AD3C-0EF1261C2BDA}
