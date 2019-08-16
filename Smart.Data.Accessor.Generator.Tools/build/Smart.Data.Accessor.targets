@@ -16,6 +16,7 @@
     <SqlFiles Include="**\*.sql" />
   </ItemGroup>
 
+  <!-- FastUpToDateCheck -->
   <ItemGroup>
     <UpToDateCheckBuilt Include="$(OutputPath)$(SmartDataAccessorAssembly)" Original="@(SqlFiles)" />
   </ItemGroup>
