@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <!-- Build -->
-  <Target Name="SmartDataAccessorBuild" AfterTargets="Build" Inputs="@(SqlFiles)" Outputs="$(OutputPath)$(SmartDataAccessorAssembly)">
+  <Target Name="SmartDataAccessorBuild" AfterTargets="Build">
     <PropertyGroup>
       <SmartDataAccessorTargetFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorTargetFileName>
       <SmartDataAccessorOutputDirectory>$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor</SmartDataAccessorOutputDirectory>
