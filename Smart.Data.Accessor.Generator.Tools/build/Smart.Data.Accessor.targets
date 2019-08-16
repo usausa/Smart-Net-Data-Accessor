@@ -12,8 +12,16 @@
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\..\tools\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
 
+  <ItemGroup>
+    <SqlFiles Include="**\*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckBuilt Include="$(OutputPath)$(SmartDataAccessorAssembly)" Original="@(SqlFiles)" />
+  </ItemGroup>
+
   <!-- Build -->
-  <Target Name="SmartDataAccessorBuild" AfterTargets="Build">
+  <Target Name="SmartDataAccessorBuild" AfterTargets="Build" Inputs="@(SqlFiles)" Outputs="$(OutputPath)$(SmartDataAccessorAssembly)">
     <PropertyGroup>
       <SmartDataAccessorTargetFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorTargetFileName>
       <SmartDataAccessorOutputDirectory>$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor</SmartDataAccessorOutputDirectory>
