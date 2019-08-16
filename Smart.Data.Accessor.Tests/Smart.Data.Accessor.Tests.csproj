@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -32,7 +32,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Nodes\" />
+    <Folder Include="Data\Accessor\Mappers\" />
+    <Folder Include="Data\Accessor\Selectors\" />
+    <Folder Include="Data\Accessor\Nodes\" />
   </ItemGroup>
 
 </Project>

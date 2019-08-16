@@ -9,7 +9,6 @@ namespace Smart.Mock
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
 
-    using Smart.Data.Accessor;
     using Smart.Data.Accessor.Engine;
     using Smart.Data.Accessor.Generator;
 
@@ -31,6 +30,11 @@ namespace Smart.Mock
             var writer = new MemorySourceWriter();
             var generator = new DataAccessorGenerator(loader, writer);
             generator.Generate(new[] { type });
+
+            if (writer.Source == null)
+            {
+                throw new AccessorGeneratorException("Create dao instance failed.");
+            }
 
             var syntax = CSharpSyntaxTree.ParseText(writer.Source);
 
@@ -60,7 +64,7 @@ namespace Smart.Mock
 
                 if (!result.Success)
                 {
-                    throw new AccessorRuntimeException("Create dao instance failed.");
+                    throw new AccessorGeneratorException("Create dao instance failed.");
                 }
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -74,7 +78,7 @@ namespace Smart.Mock
                 }
                 catch (Exception e)
                 {
-                    throw new AccessorRuntimeException("Create dao instance failed.", e);
+                    throw new AccessorGeneratorException("Create dao instance failed.", e);
                 }
             }
         }
