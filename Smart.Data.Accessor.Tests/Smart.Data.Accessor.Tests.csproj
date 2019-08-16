@@ -26,7 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\Nodes\" />
   </ItemGroup>
 
 </Project>

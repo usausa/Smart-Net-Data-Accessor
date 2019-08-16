@@ -3,7 +3,7 @@ namespace Smart.Mock
     using System.Collections.Generic;
     using System.Reflection;
 
-    using Smart.Data.Accessor.Loaders;
+    using Smart.Data.Accessor.Generator;
 
     public sealed class ConstLoader : ISqlLoader
     {
