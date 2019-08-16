@@ -6,7 +6,7 @@ namespace Example.ConsoleApplication.Dao
 
     using Smart.Data.Accessor.Attributes;
 
-    [Dao]
+    [DataAccessor]
     public interface IExampleDao
     {
         [Execute]

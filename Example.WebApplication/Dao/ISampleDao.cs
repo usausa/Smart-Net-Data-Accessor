@@ -7,7 +7,7 @@ namespace Example.WebApplication.Dao
 
     using Smart.Data.Accessor.Attributes;
 
-    [Dao]
+    [DataAccessor]
     public interface ISampleDao
     {
         [ExecuteScalar]
