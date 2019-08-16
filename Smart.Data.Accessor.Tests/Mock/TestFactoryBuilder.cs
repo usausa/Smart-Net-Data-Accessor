@@ -1,27 +1,25 @@
 namespace Smart.Mock
 {
     using System;
+    using System.Collections.Generic;
 
     using Smart.Data;
-    using Smart.Data.Accessor;
     using Smart.Data.Accessor.Engine;
+    using Smart.Data.Accessor.Generator;
 
-    public class FactoryBuilder
+    public class TestFactoryBuilder
     {
         private readonly ExecuteEngineConfig config = new ExecuteEngineConfig();
 
-        public FactoryBuilder EnableDebug()
-        {
-            return this;
-        }
+        private ISqlLoader loader;
 
-        public FactoryBuilder Config(Action<ExecuteEngineConfig> action)
+        public TestFactoryBuilder Config(Action<ExecuteEngineConfig> action)
         {
             action(config);
             return this;
         }
 
-        public FactoryBuilder UseFileDatabase()
+        public TestFactoryBuilder UseFileDatabase()
         {
             config.ConfigureComponents(c =>
             {
@@ -30,7 +28,7 @@ namespace Smart.Mock
             return this;
         }
 
-        public FactoryBuilder UseMultipleDatabase()
+        public TestFactoryBuilder UseMultipleDatabase()
         {
             config.ConfigureComponents(c =>
             {
@@ -42,7 +40,7 @@ namespace Smart.Mock
             return this;
         }
 
-        public FactoryBuilder UseMemoryDatabase()
+        public TestFactoryBuilder UseMemoryDatabase()
         {
             config.ConfigureComponents(c =>
             {
@@ -51,9 +49,23 @@ namespace Smart.Mock
             return this;
         }
 
-        public DataAccessorFactory Build()
+        public TestFactoryBuilder SetSql(string sql)
         {
-            return new DataAccessorFactory(config.ToEngine());
+            loader = new ConstLoader(sql);
+            return this;
+        }
+
+        public TestFactoryBuilder SetSql(Action<Dictionary<string, string>> action)
+        {
+            var map = new Dictionary<string, string>();
+            action(map);
+            loader = new MapLoader(map);
+            return this;
+        }
+
+        public TestFactory Build()
+        {
+            return new TestFactory(loader, config.ToEngine());
         }
     }
 }
