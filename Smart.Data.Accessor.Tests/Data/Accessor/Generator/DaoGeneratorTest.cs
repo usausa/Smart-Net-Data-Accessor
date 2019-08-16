@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Generator
 
     public class DaoGeneratorTest
     {
-        [Dao]
+        [DataAccessor]
         public interface IInvalidMethodDao
         {
             int Execute();
@@ -27,7 +27,7 @@ namespace Smart.Data.Accessor.Generator
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidMethodDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IInvalidCodeDao
         {
             [DirectSql(CommandType.Text, MethodType.Execute, "/*% { */")]

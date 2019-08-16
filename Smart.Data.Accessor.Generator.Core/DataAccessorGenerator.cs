@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Generator
                 Directory.CreateDirectory(OutputDirectory);
             }
 
-            var targetTypes = types.Where(x => x.GetCustomAttribute<DaoAttribute>() != null).ToArray();
+            var targetTypes = types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() != null).ToArray();
             var newFiles = new List<string>();
             foreach (var targetType in targetTypes)
             {

@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderSimpleDao
         {
             [ExecuteReader]
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderSimpleAsyncDao
         {
             [ExecuteReader]
@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderWithConnectionDao
         {
             [ExecuteReader]
@@ -122,7 +122,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderWithConnectionAsyncDao
         {
             [ExecuteReader]
@@ -163,7 +163,7 @@ namespace Smart.Data.Accessor.Engine
         // Cancel
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderCancelAsyncDao
         {
             [ExecuteReader]
@@ -204,7 +204,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderInvalidDao
         {
             [ExecuteReader]
@@ -222,7 +222,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteReaderInvalidAsyncDao
         {
             [ExecuteReader]

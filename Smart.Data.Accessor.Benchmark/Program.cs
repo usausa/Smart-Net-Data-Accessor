@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor.Benchmark
         // TODO
     }
 
-    [Dao]
+    [DataAccessor]
     public interface IBenchmarkDao
     {
         [Execute]

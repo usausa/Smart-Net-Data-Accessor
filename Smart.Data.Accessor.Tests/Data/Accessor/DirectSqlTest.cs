@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor
 
     public class DirectSqlTest
     {
-        [Dao]
+        [DataAccessor]
         public interface IDirectSqlDao
         {
             [DirectSql(CommandType.Text, MethodType.ExecuteScalar, "SELECT COUNT(*) FROM Data")]

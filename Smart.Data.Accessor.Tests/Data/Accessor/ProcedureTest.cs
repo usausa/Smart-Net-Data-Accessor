@@ -63,7 +63,7 @@ namespace Smart.Data.Accessor
             public string Output7 { get; set; }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IParameterDao
         {
             [Procedure("PROC")]
@@ -145,7 +145,7 @@ namespace Smart.Data.Accessor
             public int Result { get; set; }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IDirectionParameterDao
         {
             [Procedure("PROC", false)]
@@ -196,7 +196,7 @@ namespace Smart.Data.Accessor
         // Argument
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IDirectionArgumentDao
         {
             [Procedure("PROC")]
@@ -244,7 +244,7 @@ namespace Smart.Data.Accessor
         // Parameter is object
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IObjectProcedureDao
         {
             [Procedure("PROC")]

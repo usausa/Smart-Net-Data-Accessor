@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor
 
     public class TimeoutTest
     {
-        [Dao]
+        [DataAccessor]
         public interface ITimeoutAttributeDao
         {
             [Execute]
@@ -42,7 +42,7 @@ namespace Smart.Data.Accessor
             dao.Execute(con);
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ITimeoutParameterDao
         {
             [Execute]
@@ -72,7 +72,7 @@ namespace Smart.Data.Accessor
             dao.Execute(con, 123);
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IInvalidTimeoutParameterDao
         {
             [Execute]

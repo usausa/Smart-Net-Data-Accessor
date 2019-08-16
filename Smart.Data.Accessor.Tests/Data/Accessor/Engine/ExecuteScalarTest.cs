@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarSimpleDao
         {
             [ExecuteScalar]
@@ -45,7 +45,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarSimpleAsyncDao
         {
             [ExecuteScalar]
@@ -117,7 +117,7 @@ namespace Smart.Data.Accessor.Engine
         // Result as object
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarObjectDao
         {
             [ExecuteScalar]
@@ -145,7 +145,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarObjectAsyncDao
         {
             [ExecuteScalar]
@@ -177,7 +177,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarWithConvertDao
         {
             [ExecuteScalar]
@@ -205,7 +205,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarWithConvertAsyncDao
         {
             [ExecuteScalar]
@@ -237,7 +237,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarWithConnectionDao
         {
             [ExecuteScalar]
@@ -267,7 +267,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarWithConnectionAsyncDao
         {
             [ExecuteScalar]
@@ -301,7 +301,7 @@ namespace Smart.Data.Accessor.Engine
         // Cancel
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarCancelAsyncDao
         {
             [ExecuteScalar]
@@ -336,7 +336,7 @@ namespace Smart.Data.Accessor.Engine
         // Invalid
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarInvalidDao
         {
             [ExecuteScalar]
@@ -354,7 +354,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteScalarInvalidAsyncDao
         {
             [ExecuteScalar]

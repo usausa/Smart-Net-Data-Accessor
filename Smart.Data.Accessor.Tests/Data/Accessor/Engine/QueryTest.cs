@@ -19,7 +19,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQuerySimpleDao
         {
             [Query]
@@ -79,7 +79,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQuerySimpleAsyncDao
         {
             [Query]
@@ -143,7 +143,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryWithConnectionDao
         {
             [Query]
@@ -207,7 +207,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryWithConnectionAsyncDao
         {
             [Query]
@@ -275,7 +275,7 @@ namespace Smart.Data.Accessor.Engine
         // Cancel
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryCancelAsyncDao
         {
             [Query]
@@ -337,7 +337,7 @@ namespace Smart.Data.Accessor.Engine
         // Invalid
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryInvalidDao
         {
             [Query]
@@ -355,7 +355,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryInvalidAsyncDao
         {
             [Query]

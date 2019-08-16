@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor
 
     public class RawSqlTest
     {
-        [Dao]
+        [DataAccessor]
         public interface IRawDao
         {
             [Query]

@@ -36,7 +36,7 @@ namespace Smart.Data.Accessor
             public Func<object, object> CreateParse(Type type) => throw new NotSupportedException();
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IEnumDao
         {
             [Execute]
@@ -104,7 +104,7 @@ namespace Smart.Data.Accessor
         // Attribute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IAnsiStringAttributeDao
         {
             [Execute]
@@ -136,7 +136,7 @@ namespace Smart.Data.Accessor
             dao.Execute(con, "xxx", "a");
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IDbTypeAttributeDao
         {
             [Execute]
@@ -172,7 +172,7 @@ namespace Smart.Data.Accessor
         // TypeHandler
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IDateTimeKindTypeHandlerDao
         {
             [Execute]
@@ -224,7 +224,7 @@ namespace Smart.Data.Accessor
             Assert.Equal(DateTimeKind.Local, result.Kind);
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IDateTimeTickTypeHandlerDao
         {
             [Execute]
@@ -289,7 +289,7 @@ namespace Smart.Data.Accessor
             public Func<object, object> CreateParse(Type type) => x => x;
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ITypeHandlerDao
         {
             [Execute]
@@ -413,7 +413,7 @@ namespace Smart.Data.Accessor
         // DbType
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IDbTypeDao
         {
             [Execute]
@@ -549,7 +549,7 @@ namespace Smart.Data.Accessor
         // DbType
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface ISetupFailedInDao
         {
             [Execute]
@@ -571,7 +571,7 @@ namespace Smart.Data.Accessor
             Assert.Throws<AccessorRuntimeException>(() => generator.Create<ISetupFailedInDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ISetupFailedInOutDao
         {
             [Execute]
@@ -593,7 +593,7 @@ namespace Smart.Data.Accessor
             Assert.Throws<AccessorRuntimeException>(() => generator.Create<ISetupFailedInOutDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ISetupFailedOutDao
         {
             [Execute]
@@ -615,7 +615,7 @@ namespace Smart.Data.Accessor
             Assert.Throws<AccessorRuntimeException>(() => generator.Create<ISetupFailedOutDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ISetupFailedArrayDao
         {
             [Execute]
@@ -637,7 +637,7 @@ namespace Smart.Data.Accessor
             Assert.Throws<AccessorRuntimeException>(() => generator.Create<ISetupFailedArrayDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ISetupFailedListDao
         {
             [Execute]

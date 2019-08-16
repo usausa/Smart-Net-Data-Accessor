@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultSimpleDao
         {
             [QueryFirstOrDefault]
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultSimpleAsyncDao
         {
             [QueryFirstOrDefault]
@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultWithConnectionDao
         {
             [QueryFirstOrDefault]
@@ -119,7 +119,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultWithConnectionAsyncDao
         {
             [QueryFirstOrDefault]
@@ -157,7 +157,7 @@ namespace Smart.Data.Accessor.Engine
         // Cancel
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultCancelAsyncDao
         {
             [QueryFirstOrDefault]
@@ -195,7 +195,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultInvalidDao
         {
             [QueryFirstOrDefault]
@@ -213,7 +213,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IQueryFirstOrDefaultInvalidAsyncDao
         {
             [QueryFirstOrDefault]

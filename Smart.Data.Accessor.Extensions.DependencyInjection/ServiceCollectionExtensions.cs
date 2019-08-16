@@ -35,7 +35,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
 
             foreach (var type in option.DaoAssemblies.SelectMany(x => x.ExportedTypes))
             {
-                if (type.GetCustomAttribute<DaoAttribute>() != null)
+                if (type.GetCustomAttribute<DataAccessorAttribute>() != null)
                 {
                     service.AddSingleton(type, c => c.GetService<DataAccessorFactory>().Create(type));
                 }

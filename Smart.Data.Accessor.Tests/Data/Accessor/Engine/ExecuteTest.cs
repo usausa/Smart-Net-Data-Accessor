@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteSimpleDao
         {
             [Execute]
@@ -48,7 +48,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteSimpleAsyncDao
         {
             [Execute]
@@ -83,7 +83,7 @@ namespace Smart.Data.Accessor.Engine
         // Result void
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteVoidDao
         {
             [Execute]
@@ -110,7 +110,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteVoidAsyncDao
         {
             [Execute]
@@ -141,7 +141,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteWithConnectionDao
         {
             [Execute]
@@ -174,7 +174,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteWithConnectionAsyncDao
         {
             [Execute]
@@ -211,7 +211,7 @@ namespace Smart.Data.Accessor.Engine
         // Cancel
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteCancelAsyncDao
         {
             [Execute]
@@ -244,7 +244,7 @@ namespace Smart.Data.Accessor.Engine
         // Invalid
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteInvalidDao
         {
             [Execute]
@@ -262,7 +262,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncDao>());
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IExecuteInvalidAsyncDao
         {
             [Execute]

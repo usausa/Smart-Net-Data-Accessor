@@ -7,7 +7,7 @@ namespace Smart.Data.Accessor.Selectors
 
     public class PropertySelectorTest
     {
-        [Dao]
+        [DataAccessor]
         public interface IPropertySelectorDao
         {
             [QueryFirstOrDefault]

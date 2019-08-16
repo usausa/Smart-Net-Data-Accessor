@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor
 
     public class TransactionTest
     {
-        [Dao]
+        [DataAccessor]
         public interface ITransactionDao
         {
             [Execute]
@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface ITransactionAsyncDao
         {
             [Execute]

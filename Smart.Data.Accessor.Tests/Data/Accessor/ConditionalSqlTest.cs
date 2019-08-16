@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor
         // Execute
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IDynamicDao
         {
             [Query]
@@ -120,7 +120,7 @@ namespace Smart.Data.Accessor
         // Etc
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IDynamicArrayDao
         {
             [Query]

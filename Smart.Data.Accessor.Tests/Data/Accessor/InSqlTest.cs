@@ -15,7 +15,7 @@ namespace Smart.Data.Accessor
         // Array
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IInArrayDao
         {
             [Query]
@@ -57,7 +57,7 @@ namespace Smart.Data.Accessor
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IInArrayMixedDao
         {
             [Query]
@@ -91,7 +91,7 @@ namespace Smart.Data.Accessor
         // Array
         //--------------------------------------------------------------------------------
 
-        [Dao]
+        [DataAccessor]
         public interface IInListDao
         {
             [Query]
@@ -133,7 +133,7 @@ namespace Smart.Data.Accessor
             }
         }
 
-        [Dao]
+        [DataAccessor]
         public interface IInListMixedDao
         {
             [Query]

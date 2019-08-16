@@ -7,7 +7,7 @@ namespace Smart.Data.Accessor
 
     public class InsertTest
     {
-        [Dao]
+        [DataAccessor]
         public interface IInsertDao
         {
             [Insert]

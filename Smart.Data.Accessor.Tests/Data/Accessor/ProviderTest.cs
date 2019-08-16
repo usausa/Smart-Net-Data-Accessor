@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor
 
     public class ProviderTest
     {
-        [Dao]
+        [DataAccessor]
         [Provider(ProviderNames.Main)]
         public interface IProviderForExecuteScalarDao
         {
@@ -50,7 +50,7 @@ namespace Smart.Data.Accessor
             }
         }
 
-        [Dao]
+        [DataAccessor]
         [Provider(ProviderNames.Main)]
         public interface IProviderForQueryDao
         {
