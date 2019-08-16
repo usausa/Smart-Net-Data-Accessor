@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Generator
 {
     using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
 
@@ -12,44 +10,24 @@ namespace Smart.Data.Accessor.Generator
 
     public class DataAccessorGenerator
     {
-        public string OutputDirectory { get; set; }
+        private readonly ISqlLoader sqlLoader;
 
-        public ISqlLoader SqlLoader { get; set; }
+        private readonly ISourceWriter sourceWriter;
+
+        public DataAccessorGenerator(ISqlLoader sqlLoader, ISourceWriter sourceWriter)
+        {
+            this.sqlLoader = sqlLoader;
+            this.sourceWriter = sourceWriter;
+        }
 
         public void Generate(Type[] types)
         {
-            if (!Directory.Exists(OutputDirectory))
-            {
-                Directory.CreateDirectory(OutputDirectory);
-            }
-
             var targetTypes = types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() != null).ToArray();
-            var newFiles = new List<string>();
             foreach (var targetType in targetTypes)
             {
-                var filename = targetType.FullName.Replace('.', '_').Replace('+', '_') + ".cs";
-                var path = Path.Combine(OutputDirectory, filename);
-
-                newFiles.Add(filename);
-
                 var source = CreateSource(targetType);
 
-                if (File.Exists(path))
-                {
-                    var currentSource = File.ReadAllText(path);
-                    if (currentSource == source)
-                    {
-                        continue;
-                    }
-                }
-
-                File.WriteAllText(path, source);
-            }
-
-            var currentFiles = Directory.GetFiles(OutputDirectory).Select(Path.GetFileName);
-            foreach (var file in currentFiles.Except(newFiles))
-            {
-                File.Delete(Path.Combine(OutputDirectory, file));
+                sourceWriter.Write(targetType, source);
             }
         }
 
@@ -66,7 +44,7 @@ namespace Smart.Data.Accessor.Generator
                     throw new AccessorGeneratorException($"Method is not supported for generation. type=[{type.FullName}], method=[{method.Name}]");
                 }
 
-                var nodes = attribute.GetNodes(SqlLoader, method);
+                var nodes = attribute.GetNodes(sqlLoader, method);
                 var visitor = new ParameterResolveVisitor(method);
                 visitor.Visit(nodes);
                 var methodMetadata = new MethodMetadata(
