@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -29,12 +29,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Data\Accessor\Mappers\" />
-    <Folder Include="Data\Accessor\Selectors\" />
-    <Folder Include="Data\Accessor\Nodes\" />
   </ItemGroup>
 
 </Project>
