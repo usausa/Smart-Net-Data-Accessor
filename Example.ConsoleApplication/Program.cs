@@ -43,7 +43,7 @@ namespace Example.ConsoleApplication
             var typeA = dao.QueryDataList("A");
             Console.WriteLine(typeA.Count);
 
-            var all = dao.QueryDataList(null);
+            var all = dao.QueryDataList();
             Console.WriteLine(all.Count);
         }
     }

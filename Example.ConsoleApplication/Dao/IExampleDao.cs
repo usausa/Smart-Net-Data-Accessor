@@ -16,6 +16,6 @@ namespace Example.ConsoleApplication.Dao
         void Insert(DataEntity entity);
 
         [Query]
-        List<DataEntity> QueryDataList(string type);
+        List<DataEntity> QueryDataList(string type = null);
     }
 }
