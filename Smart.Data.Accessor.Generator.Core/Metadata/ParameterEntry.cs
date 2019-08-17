@@ -5,9 +5,11 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
     internal sealed class ParameterEntry
     {
-        public string Source { get; }
+        public string Name { get; }
 
         public int Index { get; }
+
+        public string Source { get; }
 
         public Type Type { get; }
 
@@ -17,10 +19,11 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public ParameterType ParameterType { get; }
 
-        public ParameterEntry(string source, int index, Type type, ParameterDirection direction, string parameterName, ParameterType parameterType)
+        public ParameterEntry(string name, int index, string source, Type type, ParameterDirection direction, string parameterName, ParameterType parameterType)
         {
-            Source = source;
+            Name = name;
             Index = index;
+            Source = source;
             Type = type;
             Direction = direction;
             ParameterName = parameterName;

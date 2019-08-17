@@ -39,6 +39,7 @@ namespace Smart.Data.Accessor.Runtime
 
         private static ICustomAttributeProvider GetCustomAttributeProvider(MethodInfo method, string source)
         {
+            // TODO 入れ子
             var path = source.Split('.');
             var parameter = method.GetParameters().First(x => x.Name == path[0]);
             if (path.Length == 1)

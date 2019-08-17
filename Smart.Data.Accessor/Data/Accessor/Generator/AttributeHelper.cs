@@ -35,7 +35,7 @@ namespace Smart.Data.Accessor.Generator
                     nodes.AddRange(pmi.ParameterType.GetProperties()
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
                         .Select(pi => new ParameterNode(
-                            $"{pmi.Name}.{pi.Name}",
+                            pi.Name,
                             pi.GetCustomAttribute<NameAttribute>()?.Name ?? pi.Name)));
                 }
                 else

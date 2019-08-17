@@ -2,18 +2,18 @@ namespace Smart.Data.Accessor.Nodes
 {
     public sealed class ParameterNode : INode
     {
-        public string Source { get; }
+        public string Name { get; }
 
         public string ParameterName { get; }
 
-        public ParameterNode(string source)
-            : this(source, null)
+        public ParameterNode(string name)
+            : this(name, null)
         {
         }
 
-        public ParameterNode(string source, string parameterName)
+        public ParameterNode(string name, string parameterName)
         {
-            Source = source;
+            Name = name;
             ParameterName = parameterName;
         }
 

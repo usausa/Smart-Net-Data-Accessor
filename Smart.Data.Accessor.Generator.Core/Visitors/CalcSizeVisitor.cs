@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         {
             var parameterSize = (int)Math.Log10(++args) + 2;
 
-            var parameter = mm.Parameters.First(x => x.Source == node.Source);
+            var parameter = mm.FindParameterByName(node.Name);
             if (parameter.ParameterType == ParameterType.Simple)
             {
                 size += parameterSize;

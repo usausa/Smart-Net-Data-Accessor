@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
 
@@ -101,6 +102,12 @@ namespace Smart.Data.Accessor.Generator.Metadata
                     TransactionParameter = pmi;
                 }
             }
+        }
+
+        public ParameterEntry FindParameterByName(string name)
+        {
+            return Parameters.FirstOrDefault(x => String.Equals(x.Name, name, StringComparison.Ordinal)) ??
+                   Parameters.FirstOrDefault(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

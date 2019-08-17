@@ -100,7 +100,7 @@ namespace Smart.Data.Accessor.Mappers
         private static MapEntry[] CreateMapEntries(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
         {
             var selector = (IPropertySelector)context.ServiceProvider.GetService(typeof(IPropertySelector));
-            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            var properties = type.GetProperties()
                 .Where(IsTargetProperty)
                 .ToArray();
 
