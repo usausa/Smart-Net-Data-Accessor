@@ -11,8 +11,8 @@
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.6" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.3.2" />
-    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="0.3.2" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.3.3" />
+    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="0.3.3" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.0" />
   </ItemGroup>
 
