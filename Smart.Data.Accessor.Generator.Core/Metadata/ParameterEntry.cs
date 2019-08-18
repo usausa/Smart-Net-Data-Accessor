@@ -11,6 +11,12 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public string Source { get; }
 
+        public int ParameterIndex { get; }
+
+        public Type DeclaringType { get; }
+
+        public string PropertyName { get; }
+
         public Type Type { get; }
 
         public ParameterDirection Direction { get; }
@@ -19,11 +25,24 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public ParameterType ParameterType { get; }
 
-        public ParameterEntry(string name, int index, string source, Type type, ParameterDirection direction, string parameterName, ParameterType parameterType)
+        public ParameterEntry(
+            string name,
+            int index,
+            string source,
+            int parameterIndex,
+            Type declaringType,
+            string propertyName,
+            Type type,
+            ParameterDirection direction,
+            string parameterName,
+            ParameterType parameterType)
         {
             Name = name;
             Index = index;
             Source = source;
+            ParameterIndex = parameterIndex;
+            DeclaringType = declaringType;
+            PropertyName = propertyName;
             Type = type;
             Direction = direction;
             ParameterName = parameterName;

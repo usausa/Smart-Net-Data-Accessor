@@ -3,7 +3,6 @@ namespace Smart.Data.Accessor.Generator.Visitors
     using System;
     using System.Collections.Generic;
     using System.Data;
-    using System.Linq;
     using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
@@ -18,8 +17,6 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private readonly MethodInfo method;
 
-        private readonly ParameterInfo[] targetParameters;
-
         private readonly HashSet<string> processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private int index;
@@ -27,7 +24,6 @@ namespace Smart.Data.Accessor.Generator.Visitors
         public ParameterResolveVisitor(MethodInfo method)
         {
             this.method = method;
-            targetParameters = method.GetParameters().Where(ParameterHelper.IsSqlParameter).ToArray();
         }
 
         public override void Visit(ParameterNode node)
@@ -39,50 +35,23 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
             processed.Add(node.Name);
 
-            // TODO 以下は後で
-            // TODO a.bの場合
-            // TODO a.bでaだけはアル場合
-            // TODO Dynamic
-            if (!ResolveParameterInfo(node, false))
+            // [MEMO] Simple property only
+            var path = node.Name.Split('.');
+            for (var i = 0; i < method.GetParameters().Length; i++)
             {
-                ResolveParameterInfo(node, true);
-            }
-        }
-
-        private bool ResolveParameterInfo(ParameterNode node, bool ignoreCase)
-        {
-            var comparision = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            foreach (var pmi in targetParameters)
-            {
-                if (String.Equals(pmi.Name, node.Name, comparision))
+                var pmi = method.GetParameters()[i];
+                if (!ParameterHelper.IsSqlParameter(pmi))
                 {
-                    var type = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType() : pmi.ParameterType;
-                    var direction = GetParameterDirection(pmi);
-                    var parameterType = GetParameterType(type);
-                    if ((parameterType != ParameterType.Simple) && (direction != ParameterDirection.Input))
-                    {
-                        throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
-                    }
-
-                    parameters.Add(new ParameterEntry(
-                        node.Name,
-                        index++,
-                        pmi.Name,
-                        type,
-                        direction,
-                        node.ParameterName,
-                        parameterType));
-                    return true;
+                    continue;
                 }
 
-                if (ParameterHelper.IsNestedParameter(pmi))
+                var type = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType() : pmi.ParameterType;
+
+                if (pmi.Name == path[0])
                 {
-                    var pi = pmi.ParameterType.GetProperties()
-                        .FirstOrDefault(x => String.Equals(x.Name, node.Name, comparision));
-                    if (pi != null)
+                    if (path.Length == 1)
                     {
-                        var type = pi.PropertyType;
-                        var direction = GetParameterDirection(pi);
+                        var direction = GetParameterDirection(pmi);
                         var parameterType = GetParameterType(type);
                         if ((parameterType != ParameterType.Simple) && (direction != ParameterDirection.Input))
                         {
@@ -92,13 +61,27 @@ namespace Smart.Data.Accessor.Generator.Visitors
                         parameters.Add(new ParameterEntry(
                             node.Name,
                             index++,
-                            $"{pmi.Name}.{pi.Name}",
+                            pmi.Name,
+                            i,
+                            null,
+                            null,
                             type,
                             direction,
                             node.ParameterName,
                             parameterType));
-                        return true;
+                        return;
                     }
+
+                    if (ResolvePropertyParameter(type, path, 1, node, node.Name))
+                    {
+                        return;
+                    }
+                }
+
+                if (ParameterHelper.IsNestedParameter(pmi) &&
+                    ResolvePropertyParameter(type, path, 0, node, $"{pmi.Name}.{node.Name}"))
+                {
+                    return;
                 }
             }
 
@@ -106,13 +89,46 @@ namespace Smart.Data.Accessor.Generator.Visitors
             throw new AccessorGeneratorException($"DB parameter argument is not match. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
         }
 
+        private bool ResolvePropertyParameter(Type targetType, string[] path, int position, ParameterNode node, string source)
+        {
+            var pi = targetType.GetProperty(path[position]);
+            if (pi == null)
+            {
+                return false;
+            }
+
+            if (position < path.Length - 1)
+            {
+                return ResolvePropertyParameter(pi.PropertyType, path, position + 1, node, source);
+            }
+
+            var type = pi.PropertyType;
+            var direction = GetParameterDirection(pi);
+            var parameterType = GetParameterType(type);
+            if ((parameterType != ParameterType.Simple) && (direction != ParameterDirection.Input))
+            {
+                throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
+            }
+
+            parameters.Add(new ParameterEntry(
+                node.Name,
+                index++,
+                source,
+                -1,
+                pi.DeclaringType,
+                pi.Name,
+                type,
+                direction,
+                node.ParameterName,
+                parameterType));
+            return true;
+        }
+
         private static ParameterDirection GetParameterDirection(ParameterInfo pmi)
         {
             if (pmi.IsOut)
             {
-                return pmi.GetCustomAttribute<ReturnValueAttribute>() != null
-                    ? ParameterDirection.ReturnValue
-                    : ParameterDirection.Output;
+                return ParameterDirection.Output;
             }
 
             if (pmi.ParameterType.IsByRef)

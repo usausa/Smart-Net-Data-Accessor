@@ -384,9 +384,8 @@ namespace Smart.Data.Accessor.Generator
             if (useDefaultProvider)
             {
                 AppendLine($"private readonly {ProviderType} {ProviderField};");
+                NewLine();
             }
-
-            NewLine();
 
             // Per method
             foreach (var mm in methods)
@@ -522,28 +521,32 @@ namespace Smart.Data.Accessor.Generator
                         Indent();
                         Append($"{GetSetupParameterFieldRef(mm.No, parameter.Index)} = ");
 
+                        var declaringType = parameter.DeclaringType == null
+                            ? "null"
+                            : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
+
                         switch (parameter.Direction)
                         {
                             case ParameterDirection.ReturnValue:
                                 Append($"{CtorArg}.CreateReturnParameterSetup();");
                                 break;
                             case ParameterDirection.Output:
-                                Append($"{RuntimeHelperType}.CreateOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                                Append($"{RuntimeHelperType}.CreateOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 break;
                             case ParameterDirection.InputOutput:
-                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 break;
                             case ParameterDirection.Input:
                                 switch (parameter.ParameterType)
                                 {
                                     case ParameterType.Array:
-                                        Append($"{RuntimeHelperType}.CreateArrayParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type.GetElementType())}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                                        Append($"{RuntimeHelperType}.CreateArrayParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type.GetElementType())}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                         break;
                                     case ParameterType.List:
-                                        Append($"{RuntimeHelperType}.CreateListParameterSetup<{GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                                        Append($"{RuntimeHelperType}.CreateListParameterSetup<{GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                         break;
                                     default:
-                                        Append($"{RuntimeHelperType}.CreateInParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                                        Append($"{RuntimeHelperType}.CreateInParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                         break;
                                 }
                                 break;
@@ -575,7 +578,11 @@ namespace Smart.Data.Accessor.Generator
 
                     foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
                     {
-                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, \"{parameter.Source}\");");
+                        var declaringType = parameter.DeclaringType == null
+                            ? "null"
+                            : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
+
+                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                     }
                 }
             }
