@@ -15,7 +15,6 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
       <group targetFramework="netstandard2.0">
-        <dependency id="Microsoft.CodeAnalysis.CSharp" version="3.2.0" />
         <dependency id="System.Data.Common" version="4.3.0" />
         <dependency id="System.Reflection.Emit" version="4.3.0" />
         <dependency id="System.Reflection.Emit.Lightweight" version="4.3.0" />
