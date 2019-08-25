@@ -24,7 +24,7 @@ namespace Smart.Data.Accessor.Generator
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void Write(Type type, string source)
         {
-            var filename = type.FullName.Replace('.', '_').Replace('+', '_') + ".cs";
+            var filename = type.FullName.Replace('.', '_').Replace('+', '_') + ".g.cs";
             var path = Path.Combine(outputDirectory, filename);
 
             newFiles.Add(filename);

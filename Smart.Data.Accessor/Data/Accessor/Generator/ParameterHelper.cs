@@ -1,7 +1,9 @@
 namespace Smart.Data.Accessor.Generator
 {
     using System;
+    using System.Collections.Generic;
     using System.Data.Common;
+    using System.Linq;
     using System.Reflection;
     using System.Threading;
 
@@ -55,9 +57,12 @@ namespace Smart.Data.Accessor.Generator
                 return false;
             }
 
-            if (TypeHelper.IsArrayParameter(type) ||
-                TypeHelper.IsListParameter(type) ||
-                TypeHelper.IsEnumerableParameter(type))
+            if (type.IsArray)
+            {
+                return false;
+            }
+
+            if (type.GetInterfaces().Prepend(type).Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
             {
                 return false;
             }

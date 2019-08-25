@@ -11,93 +11,301 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
     public class ParameterResolverVisitorTest
     {
-        public class Parameter
-        {
-            public int Id { get; set; }
-        }
+        //--------------------------------------------------------------------------------
+        // Basic
+        //--------------------------------------------------------------------------------
 
         public class ChildParameter
         {
-            public int Id { get; set; }
+            public string Id { get; set; }
         }
 
-        public class ParentParameter
+        public class Parameter
         {
+            public int Id { get; set; }
+
+            public int[] Values { get; set; }
+
             public ChildParameter Child { get; set; }
+
+            public ChildParameter[] Children { get; set; }
+
+            public Dictionary<int, string> Map { get; set; }
+
+            public Dictionary<int, ChildParameter> ChildMap { get; set; }
+
+            public Dictionary<int, int[]> Nested { get; set; }
         }
 
         public interface IResolveTarget
         {
-            void Argument(int id, string name);
+            void Argument(int id, int[] values, ChildParameter child, ChildParameter[] children, Dictionary<int, string> map, Dictionary<int, ChildParameter> childMap, Dictionary<int, int[]> nested);
 
             void Parameter(Parameter parameter);
-
-            void Nested(ParentParameter parameter);
         }
 
         //--------------------------------------------------------------------------------
-        // Resolve
+        // Basic.Argument
         //--------------------------------------------------------------------------------
 
         [Fact]
-        public void TestArgumentResolve()
+        public void TestArgumentSimple()
         {
             var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
-            visitor.Visit(new[] { new ParameterNode("name") });
+            visitor.Visit(new[] { new ParameterNode("id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal("name", parameter.Name);
-            Assert.Equal("name", parameter.Source);
+            Assert.Equal("id", parameter.Source);
+            Assert.Equal(0, parameter.ParameterIndex);
+            Assert.Null(parameter.DeclaringType);
+            Assert.Null(parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMultiple()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("values") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("values", parameter.Source);
             Assert.Equal(1, parameter.ParameterIndex);
+            Assert.Null(parameter.DeclaringType);
+            Assert.Null(parameter.PropertyName);
+            Assert.Equal(typeof(int[]), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.True(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMultipleElement()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("values[0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("values[0]", parameter.Source);
+            Assert.Equal(1, parameter.ParameterIndex);
+            Assert.Null(parameter.DeclaringType);
+            Assert.Null(parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMultipleElementExpressionNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("values[data.Get()[0]]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("values[data.Get()[0]]", parameter.Source);
+            Assert.Equal(1, parameter.ParameterIndex);
+            Assert.Null(parameter.DeclaringType);
+            Assert.Null(parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentChildProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("child.Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("child.Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentNullConditionalChildProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("child?.Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("child?.Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMultipleElementProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("children[0].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("children[0].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentNullConditionalMultipleElementProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("children?[0].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("children?[0].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMultipleElementExpressionNestedProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("children[data.Get()[0]].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("children[data.Get()[0]].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentMap()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("map[0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("map[0]", parameter.Source);
+            Assert.Equal(4, parameter.ParameterIndex);
             Assert.Null(parameter.DeclaringType);
             Assert.Null(parameter.PropertyName);
             Assert.Equal(typeof(string), parameter.Type);
             Assert.Equal(ParameterDirection.Input, parameter.Direction);
-            Assert.Equal(ParameterType.Simple, parameter.ParameterType);
+            Assert.False(parameter.IsMultiple);
         }
 
         [Fact]
-        public void TestPropertyFullResolve()
+        public void TestArgumentChildMapProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
-            visitor.Visit(new[] { new ParameterNode("parameter.Id") });
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("childMap[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal("parameter.Id", parameter.Name);
-            Assert.Equal("parameter.Id", parameter.Source);
-            Assert.Equal(-1, parameter.ParameterIndex);
-            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
-            Assert.Equal(nameof(Parameter.Id), parameter.PropertyName);
-            Assert.Equal(typeof(int), parameter.Type);
-            Assert.Equal(ParameterDirection.Input, parameter.Direction);
-            Assert.Equal(ParameterType.Simple, parameter.ParameterType);
-        }
-
-        [Fact]
-        public void TestNestedFullResolve()
-        {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Nested)));
-            visitor.Visit(new[] { new ParameterNode("parameter.Child.Id") });
-
-            Assert.Equal(1, visitor.Parameters.Count);
-
-            var parameter = visitor.Parameters[0];
-            Assert.Equal("parameter.Child.Id", parameter.Name);
-            Assert.Equal("parameter.Child.Id", parameter.Source);
+            Assert.Equal("childMap[0].Id", parameter.Source);
             Assert.Equal(-1, parameter.ParameterIndex);
             Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
             Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
-            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(typeof(string), parameter.Type);
             Assert.Equal(ParameterDirection.Input, parameter.Direction);
-            Assert.Equal(ParameterType.Simple, parameter.ParameterType);
+            Assert.False(parameter.IsMultiple);
         }
 
         [Fact]
-        public void TestPropertyResolve()
+        public void TestArgumentChildMapPropertyExpressionNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("childMap[data.Get()[0]].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("childMap[data.Get()[0]].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentWithWhitespace()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("childMap [ 0 ] . Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("childMap [ 0 ] . Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestArgumentNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            visitor.Visit(new[] { new ParameterNode("nested[0][0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("nested[0][0]", parameter.Source);
+            Assert.Equal(6, parameter.ParameterIndex);
+            Assert.Null(parameter.DeclaringType);
+            Assert.Null(parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        //--------------------------------------------------------------------------------
+        // Basic.Parameter
+        //--------------------------------------------------------------------------------
+
+        [Fact]
+        public void TestParameterSimple()
         {
             var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
             visitor.Visit(new[] { new ParameterNode("Id") });
@@ -105,51 +313,247 @@ namespace Smart.Data.Accessor.Generator.Visitors
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal("Id", parameter.Name);
             Assert.Equal("parameter.Id", parameter.Source);
             Assert.Equal(-1, parameter.ParameterIndex);
             Assert.Equal(typeof(Parameter), parameter.DeclaringType);
-            Assert.Equal(nameof(Parameter.Id), parameter.PropertyName);
+            Assert.Equal("Id", parameter.PropertyName);
             Assert.Equal(typeof(int), parameter.Type);
             Assert.Equal(ParameterDirection.Input, parameter.Direction);
-            Assert.Equal(ParameterType.Simple, parameter.ParameterType);
+            Assert.False(parameter.IsMultiple);
         }
 
         [Fact]
-        public void TestNestedResolve()
+        public void TestParameterMultiple()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Nested)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Values") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Values", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
+            Assert.Equal(nameof(Parameter.Values), parameter.PropertyName);
+            Assert.Equal(typeof(int[]), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.True(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterMultipleElement()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Values[0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Values[0]", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
+            Assert.Equal(nameof(Parameter.Values), parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterMultipleElementExpressionNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Values[data.Get()[0]]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Values[data.Get()[0]]", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
+            Assert.Equal(nameof(Parameter.Values), parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterChildProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
             visitor.Visit(new[] { new ParameterNode("Child.Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal("Child.Id", parameter.Name);
             Assert.Equal("parameter.Child.Id", parameter.Source);
             Assert.Equal(-1, parameter.ParameterIndex);
             Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
             Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
-            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(typeof(string), parameter.Type);
             Assert.Equal(ParameterDirection.Input, parameter.Direction);
-            Assert.Equal(ParameterType.Simple, parameter.ParameterType);
-        }
-
-        //--------------------------------------------------------------------------------
-        // Resolve failed
-        //--------------------------------------------------------------------------------
-
-        [Fact]
-        public void TestArgumentResolveFailed()
-        {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
-            Assert.Throws<AccessorGeneratorException>(() => visitor.Visit(new[] { new ParameterNode("x") }));
+            Assert.False(parameter.IsMultiple);
         }
 
         [Fact]
-        public void TestParameterResolveFailed()
+        public void TestParameterNullConditionalChildProperty()
         {
             var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
-            Assert.Throws<AccessorGeneratorException>(() => visitor.Visit(new[] { new ParameterNode("parameter.x") }));
+            visitor.Visit(new[] { new ParameterNode("Child?.Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Child?.Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterMultipleElementProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Children[0].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Children[0].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterNullConditionalMultipleElementProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Children?[0].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Children?[0].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterMultipleElementExpressionNestedProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Children[data.Get()[0]].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Children[data.Get()[0]].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterMap()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Map[0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Map[0]", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
+            Assert.Equal(nameof(Parameter.Map), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterChildMapProperty()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("ChildMap[0].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.ChildMap[0].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterChildMapPropertyExpressionNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("ChildMap[data.Get()[0]].Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.ChildMap[data.Get()[0]].Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterWithWhitespace()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("ChildMap [ 0 ] . Id") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.ChildMap [ 0 ] . Id", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(ChildParameter), parameter.DeclaringType);
+            Assert.Equal(nameof(ChildParameter.Id), parameter.PropertyName);
+            Assert.Equal(typeof(string), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
+        }
+
+        [Fact]
+        public void TestParameterNested()
+        {
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            visitor.Visit(new[] { new ParameterNode("Nested[0][0]") });
+
+            Assert.Equal(1, visitor.Parameters.Count);
+
+            var parameter = visitor.Parameters[0];
+            Assert.Equal("parameter.Nested[0][0]", parameter.Source);
+            Assert.Equal(-1, parameter.ParameterIndex);
+            Assert.Equal(typeof(Parameter), parameter.DeclaringType);
+            Assert.Equal(nameof(Parameter.Nested), parameter.PropertyName);
+            Assert.Equal(typeof(int), parameter.Type);
+            Assert.Equal(ParameterDirection.Input, parameter.Direction);
+            Assert.False(parameter.IsMultiple);
         }
 
         //--------------------------------------------------------------------------------
@@ -248,7 +652,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal(ParameterType.Array, parameter.ParameterType);
+            Assert.True(parameter.IsMultiple);
         }
 
         [Fact]
@@ -260,7 +664,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             Assert.Equal(1, visitor.Parameters.Count);
 
             var parameter = visitor.Parameters[0];
-            Assert.Equal(ParameterType.List, parameter.ParameterType);
+            Assert.True(parameter.IsMultiple);
         }
     }
 }

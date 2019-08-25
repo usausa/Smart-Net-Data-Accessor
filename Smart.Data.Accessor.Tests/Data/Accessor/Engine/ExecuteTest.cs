@@ -51,11 +51,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteSimpleAsyncDao
         {
             [Execute]
-            Task<int> ExecuteAsync(long id, string name);
+            ValueTask<int> ExecuteAsync(long id, string name);
         }
 
         [Fact]
-        public async Task TestExecuteSimpleAsync()
+        public async ValueTask TestExecuteSimpleAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -111,11 +111,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteVoidAsyncDao
         {
             [Execute]
-            Task ExecuteAsync(long id, string name);
+            ValueTask ExecuteAsync(long id, string name);
         }
 
         [Fact]
-        public async Task TestExecuteVoidAsync()
+        public async ValueTask TestExecuteVoidAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -173,11 +173,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteWithConnectionAsyncDao
         {
             [Execute]
-            Task<int> ExecuteAsync(DbConnection con, long id, string name);
+            ValueTask<int> ExecuteAsync(DbConnection con, long id, string name);
         }
 
         [Fact]
-        public async Task TestExecuteWithConnectionAsync()
+        public async ValueTask TestExecuteWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -209,11 +209,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteCancelAsyncDao
         {
             [Execute]
-            Task<int> ExecuteAsync(long id, string name, CancellationToken cancel);
+            ValueTask<int> ExecuteAsync(long id, string name, CancellationToken cancel);
         }
 
         [Fact]
-        public async Task TestExecuteCancelAsync()
+        public async ValueTask TestExecuteCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable())
@@ -258,7 +258,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteInvalidAsyncDao
         {
             [Execute]
-            Task<string> ExecuteAsync();
+            ValueTask<string> ExecuteAsync();
         }
 
         [Fact]

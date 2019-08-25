@@ -48,11 +48,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarSimpleAsyncDao
         {
             [ExecuteScalar]
-            Task<long> ExecuteScalarAsync();
+            ValueTask<long> ExecuteScalarAsync();
         }
 
         [Fact]
-        public async Task TestExecuteScalarSimpleAsync()
+        public async ValueTask TestExecuteScalarSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -93,7 +93,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task TestExecuteScalarResultIsNullAsync()
+        public async ValueTask TestExecuteScalarResultIsNullAsync()
         {
             using (TestDatabase.Initialize())
             {
@@ -144,11 +144,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarObjectAsyncDao
         {
             [ExecuteScalar]
-            Task<object> ExecuteScalarAsync();
+            ValueTask<object> ExecuteScalarAsync();
         }
 
         [Fact]
-        public async Task TestExecuteScalarObjectAsync()
+        public async ValueTask TestExecuteScalarObjectAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -202,11 +202,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarWithConvertAsyncDao
         {
             [ExecuteScalar]
-            Task<string> ExecuteScalarWithConvertAsync();
+            ValueTask<string> ExecuteScalarWithConvertAsync();
         }
 
         [Fact]
-        public async Task TestExecuteScalarWithConvertAsync()
+        public async ValueTask TestExecuteScalarWithConvertAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -262,11 +262,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarWithConnectionAsyncDao
         {
             [ExecuteScalar]
-            Task<long> ExecuteScalarAsync(DbConnection con);
+            ValueTask<long> ExecuteScalarAsync(DbConnection con);
         }
 
         [Fact]
-        public async Task TestExecuteScalarWithConnectionAsync()
+        public async ValueTask TestExecuteScalarWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -295,11 +295,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarCancelAsyncDao
         {
             [ExecuteScalar]
-            Task<long> ExecuteScalarAsync(CancellationToken cancel);
+            ValueTask<long> ExecuteScalarAsync(CancellationToken cancel);
         }
 
         [Fact]
-        public async Task TestExecuteScalarCancelAsync()
+        public async ValueTask TestExecuteScalarCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -346,7 +346,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteScalarInvalidAsyncDao
         {
             [ExecuteScalar]
-            Task ExecuteScalarAsync();
+            ValueTask ExecuteScalarAsync();
         }
 
         [Fact]

@@ -52,11 +52,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultSimpleAsyncDao
         {
             [QueryFirstOrDefault]
-            Task<DataEntity> QueryFirstOrDefaultAsync(long id);
+            ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id);
         }
 
         [Fact]
-        public async Task TestQueryFirstOrDefaultSimpleAsync()
+        public async ValueTask TestQueryFirstOrDefaultSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -120,11 +120,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultWithConnectionAsyncDao
         {
             [QueryFirstOrDefault]
-            Task<DataEntity> QueryFirstOrDefaultAsync(DbConnection con, long id);
+            ValueTask<DataEntity> QueryFirstOrDefaultAsync(DbConnection con, long id);
         }
 
         [Fact]
-        public async Task TestQueryFirstOrDefaultWithConnectionAsync()
+        public async ValueTask TestQueryFirstOrDefaultWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -157,11 +157,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultCancelAsyncDao
         {
             [QueryFirstOrDefault]
-            Task<DataEntity> QueryFirstOrDefaultAsync(long id, CancellationToken cancel);
+            ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id, CancellationToken cancel);
         }
 
         [Fact]
-        public async Task TestQueryFirstOrDefaultCancelAsync()
+        public async ValueTask TestQueryFirstOrDefaultCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -211,7 +211,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultInvalidAsyncDao
         {
             [QueryFirstOrDefault]
-            Task QueryFirstOrDefaultAsync();
+            ValueTask QueryFirstOrDefaultAsync();
         }
 
         [Fact]

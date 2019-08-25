@@ -58,11 +58,11 @@ namespace Smart.Data.Accessor
         public interface ITransactionAsyncDao
         {
             [Execute]
-            Task<int> ExecuteAsync(DbTransaction tx, long id, string name);
+            ValueTask<int> ExecuteAsync(DbTransaction tx, long id, string name);
         }
 
         [Fact]
-        public async Task TestTransactionAsync()
+        public async ValueTask TestTransactionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())

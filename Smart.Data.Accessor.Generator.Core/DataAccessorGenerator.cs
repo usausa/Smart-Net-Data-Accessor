@@ -54,7 +54,8 @@ namespace Smart.Data.Accessor.Generator
                     attribute.MethodType,
                     (attribute as IReturnValueBehavior)?.ReturnValueAsResult ?? false,
                     nodes,
-                    visitor.Parameters);
+                    visitor.Parameters,
+                    visitor.DynamicParameters);
                 builder.AddMethod(methodMetadata);
 
                 no++;

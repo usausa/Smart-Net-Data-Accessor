@@ -8,6 +8,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Reflection;
     using System.Runtime.CompilerServices;
 
+    using Smart.Collections.Concurrent;
     using Smart.Converter;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Dialect;
@@ -27,6 +28,8 @@ namespace Smart.Data.Accessor.Engine
         private readonly IResultMapperFactory[] resultMapperFactories;
 
         private readonly ResultMapperCache resultMapperCache = new ResultMapperCache();
+
+        private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new ThreadsafeTypeHashArrayMap<DynamicParameterEntry>();
 
         private readonly string[] parameterSubNames;
 
@@ -56,6 +59,10 @@ namespace Smart.Data.Accessor.Engine
         int IEngineController.CountResultMapperCache => resultMapperCache.Count;
 
         void IEngineController.ClearResultMapperCache() => resultMapperCache.Clear();
+
+        int IEngineController.CountDynamicSetupCache => dynamicSetupCache.Count;
+
+        void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
 
         //--------------------------------------------------------------------------------
         // Lookup
@@ -101,7 +108,7 @@ namespace Smart.Data.Accessor.Engine
 
         Func<object, object> IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
         {
-            var converter = GetHandler(destinationType, provider);
+            var converter = CreateHandler(destinationType, provider);
             if (converter != null)
             {
                 return converter;
@@ -116,13 +123,7 @@ namespace Smart.Data.Accessor.Engine
             return objectConverter.CreateConverter(sourceType, destinationType);
         }
 
-        public Func<object, object> CreateHandler<T>(ICustomAttributeProvider provider)
-        {
-            var type = typeof(T);
-            return GetHandler(type, provider);
-        }
-
-        private Func<object, object> GetHandler(Type type, ICustomAttributeProvider provider)
+        public Func<object, object> CreateHandler(Type type, ICustomAttributeProvider provider)
         {
             // ResultAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();

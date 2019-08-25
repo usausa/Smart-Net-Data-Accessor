@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Visitors
 {
     using System;
-    using System.Linq;
 
     using Smart.Data.Accessor.Generator.Metadata;
     using Smart.Data.Accessor.Nodes;
@@ -27,16 +26,23 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         public override void Visit(ParameterNode node)
         {
-            var parameterSize = (int)Math.Log10(++args) + 2;
+            var parameterSize = (int)Math.Log10(++args) + 4;
 
             var parameter = mm.FindParameterByName(node.Name);
-            if (parameter.ParameterType == ParameterType.Simple)
+            if (parameter != null)
             {
-                size += parameterSize;
+                if (parameter.IsMultiple)
+                {
+                    size += (parameterSize + 4) * 8;
+                }
+                else
+                {
+                    size += parameterSize;
+                }
             }
             else
             {
-                size += (parameterSize + 4) * 8;
+                size += parameterSize + 4;
             }
         }
     }

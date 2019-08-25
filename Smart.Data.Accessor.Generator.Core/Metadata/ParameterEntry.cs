@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public string ParameterName { get; }
 
-        public ParameterType ParameterType { get; }
+        public bool IsMultiple { get; }
 
         public ParameterEntry(
             string name,
@@ -35,7 +35,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
             Type type,
             ParameterDirection direction,
             string parameterName,
-            ParameterType parameterType)
+            bool isMultiple)
         {
             Name = name;
             Index = index;
@@ -46,7 +46,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
             Type = type;
             Direction = direction;
             ParameterName = parameterName;
-            ParameterType = parameterType;
+            IsMultiple = isMultiple;
         }
     }
 }

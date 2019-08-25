@@ -34,7 +34,7 @@ namespace Smart.Data.Accessor.Generator
             }
             else if (ns != rootNamespace)
             {
-                return null;
+                throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}]");
             }
 
             if (!String.IsNullOrEmpty(subDirectory))
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Generator
             var path = Path.Combine(dir, filename);
             if (!File.Exists(path))
             {
-                throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}] path=[{path}]");
+                throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
             }
 
             return File.ReadAllText(path, Encoding.UTF8);

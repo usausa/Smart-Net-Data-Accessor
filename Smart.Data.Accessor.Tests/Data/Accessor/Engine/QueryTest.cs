@@ -81,14 +81,14 @@ namespace Smart.Data.Accessor.Engine
         public interface IQuerySimpleAsyncDao
         {
             [Query]
-            Task<IList<DataEntity>> QueryBufferdAsync();
+            ValueTask<IList<DataEntity>> QueryBufferdAsync();
 
             [Query]
-            Task<IEnumerable<DataEntity>> QueryNonBufferdAsync();
+            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync();
         }
 
         [Fact]
-        public async Task TestQueryBufferdSimpleAsync()
+        public async ValueTask TestQueryBufferdSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -112,7 +112,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task TestQueryNonBufferdSimpleAsync()
+        public async ValueTask TestQueryNonBufferdSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -205,14 +205,14 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryWithConnectionAsyncDao
         {
             [Query]
-            Task<IList<DataEntity>> QueryBufferdAsync(DbConnection con);
+            ValueTask<IList<DataEntity>> QueryBufferdAsync(DbConnection con);
 
             [Query]
-            Task<IEnumerable<DataEntity>> QueryNonBufferdAsync(DbConnection con);
+            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync(DbConnection con);
         }
 
         [Fact]
-        public async Task TestQueryBufferdWithConnectionAsync()
+        public async ValueTask TestQueryBufferdWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -238,7 +238,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task TestQueryNonBufferdWithConnectionAsync()
+        public async ValueTask TestQueryNonBufferdWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -271,14 +271,14 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryCancelAsyncDao
         {
             [Query]
-            Task<IList<DataEntity>> QueryBufferdAsync(CancellationToken cancel);
+            ValueTask<IList<DataEntity>> QueryBufferdAsync(CancellationToken cancel);
 
             [Query]
-            Task<IEnumerable<DataEntity>> QueryNonBufferdAsync(CancellationToken cancel);
+            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync(CancellationToken cancel);
         }
 
         [Fact]
-        public async Task TestQueryBufferdCancelAsync()
+        public async ValueTask TestQueryBufferdCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -301,7 +301,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [Fact]
-        public async Task TestQueryNonBufferdCancelAsync()
+        public async ValueTask TestQueryNonBufferdCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -348,7 +348,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryInvalidAsyncDao
         {
             [Query]
-            Task QueryAsync();
+            ValueTask QueryAsync();
         }
 
         [Fact]

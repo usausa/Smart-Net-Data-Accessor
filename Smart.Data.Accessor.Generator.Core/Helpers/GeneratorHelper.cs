@@ -1,10 +1,9 @@
 namespace Smart.Data.Accessor.Generator.Helpers
 {
     using System;
-    using System.Collections.Generic;
-    using System.Data.Common;
-    using System.Linq;
     using System.Text;
+
+    using Smart.Data.Accessor.Engine;
 
     internal static class GeneratorHelper
     {
@@ -50,44 +49,6 @@ namespace Smart.Data.Accessor.Generator.Helpers
             {
                 sb.Append("global::").Append(type.FullName.Replace('+', '.'));
             }
-        }
-
-        public static Type MakeInParameterType(Type type)
-        {
-            var openType = typeof(Action<,,>);
-            return openType.MakeGenericType(typeof(DbCommand), typeof(string), type);
-        }
-
-        public static Type MakeInOutParameterType(Type type)
-        {
-            var openType = typeof(Func<,,,>);
-            return openType.MakeGenericType(typeof(DbCommand), typeof(string), type, typeof(DbParameter));
-        }
-
-        public static Type MakeArraySqlType(Type type)
-        {
-            var openType = typeof(Action<,,>);
-            return openType.MakeGenericType(typeof(string), typeof(StringBuilder), type);
-        }
-
-        public static Type MakeArrayParameterType(Type type)
-        {
-            var openType = typeof(Action<,,>);
-            return openType.MakeGenericType(typeof(DbCommand), typeof(string), type);
-        }
-
-        public static Type MakeListSqlType(Type type)
-        {
-            var listType = type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>));
-            var openType = typeof(Action<,,>);
-            return openType.MakeGenericType(typeof(string), typeof(StringBuilder), listType);
-        }
-
-        public static Type MakeListParameterType(Type type)
-        {
-            var listType = type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>));
-            var openType = typeof(Action<,,>);
-            return openType.MakeGenericType(typeof(DbCommand), typeof(string), listType);
         }
     }
 }

@@ -126,14 +126,14 @@ namespace Smart.Data.Accessor.Nodes
             // Parameter
             if (value.StartsWith("@"))
             {
-                AddBody(new ParameterNode(value.Substring(1).Trim()), !lastParenthesis);
-                lastParenthesis = false;
-
+                var hasParenthesis = false;
                 var token = NextToken();
                 if (token != null)
                 {
                     if (token.TokenType == TokenType.OpenParenthesis)
                     {
+                        hasParenthesis = true;
+
                         var count = 1;
                         while ((count > 0) && ((token = NextToken()) != null))
                         {
@@ -148,6 +148,9 @@ namespace Smart.Data.Accessor.Nodes
                         }
                     }
                 }
+
+                AddBody(new ParameterNode(value.Substring(1).Trim(), hasParenthesis), !lastParenthesis);
+                lastParenthesis = false;
             }
         }
     }

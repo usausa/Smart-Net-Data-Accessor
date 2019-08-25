@@ -52,11 +52,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteReaderSimpleAsyncDao
         {
             [ExecuteReader]
-            Task<IDataReader> ExecuteReaderAsync();
+            ValueTask<IDataReader> ExecuteReaderAsync();
         }
 
         [Fact]
-        public async Task TestExecuteReaderSimpleAsync()
+        public async ValueTask TestExecuteReaderSimpleAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -123,11 +123,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteReaderWithConnectionAsyncDao
         {
             [ExecuteReader]
-            Task<IDataReader> ExecuteReaderAsync(DbConnection con);
+            ValueTask<IDataReader> ExecuteReaderAsync(DbConnection con);
         }
 
         [Fact]
-        public async Task TestExecuteReaderWithConnectionAsync()
+        public async ValueTask TestExecuteReaderWithConnectionAsync()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
@@ -163,11 +163,11 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteReaderCancelAsyncDao
         {
             [ExecuteReader]
-            Task<IDataReader> ExecuteReaderAsync(CancellationToken cancel);
+            ValueTask<IDataReader> ExecuteReaderAsync(CancellationToken cancel);
         }
 
         [Fact]
-        public async Task TestExecuteReaderCancelAsync()
+        public async ValueTask TestExecuteReaderCancelAsync()
         {
             using (TestDatabase.Initialize()
                 .SetupDataTable()
@@ -220,7 +220,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IExecuteReaderInvalidAsyncDao
         {
             [ExecuteReader]
-            Task ExecuteReaderAsync();
+            ValueTask ExecuteReaderAsync();
         }
 
         [Fact]

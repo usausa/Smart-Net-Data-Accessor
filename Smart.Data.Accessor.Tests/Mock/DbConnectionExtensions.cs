@@ -22,7 +22,5 @@ namespace Smart.Mock
         {
             return con.QueryFirstOrDefault<DataEntity>("SELECT * FROM Data WHERE Id = @Id", new { Id = id });
         }
-
-        // TODO
     }
 }

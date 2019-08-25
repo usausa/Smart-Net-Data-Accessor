@@ -26,6 +26,9 @@
     <Rule Id="SA1649" Action="Hidden" />
     <Rule Id="SA1652" Action="Hidden" />
   </Rules>
+  <Rules AnalyzerId="Microsoft.CodeQuality.Analyzers" RuleNamespace="Microsoft.CodeQuality.Analyzers">
+    <Rule Id="CA1034" Action="Hidden" />
+  </Rules>
   <Rules AnalyzerId="Microsoft.NetCore.Analyzers" RuleNamespace="Microsoft.NetCore.Analyzers">
     <Rule Id="CA1307" Action="Hidden" />
     <Rule Id="CA1303" Action="Hidden" />

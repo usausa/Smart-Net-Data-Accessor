@@ -27,7 +27,7 @@ namespace Smart.Data.Accessor.Generator
         private const string HandlerField = "_handler";
         private const string SetupReturnField = "_setupReturn";
         private const string SetupParameterField = "_setupParameter";
-        private const string SetupSqlField = "_setupSql";
+        private const string SetupDynamicParameterField = "_setupDynamicParameter";
 
         private const string ConnectionVar = "_con";
         private const string CommandVar = "_cmd";
@@ -38,6 +38,7 @@ namespace Smart.Data.Accessor.Generator
         private const string ReturnOutParamVar = "_outParamReturn";
         private const string FlagVar = "_flag";
         private const string SqlVar = "_sql";
+        private const string DynamicIndexVar = "_dynamicIndex";
 
         private static readonly string EngineType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine));
         private static readonly string RuntimeHelperType = GeneratorHelper.MakeGlobalName(typeof(RuntimeHelper));
@@ -51,8 +52,12 @@ namespace Smart.Data.Accessor.Generator
         private static readonly string StringBuilderType = GeneratorHelper.MakeGlobalName(typeof(StringBuilder));
         private static readonly string ExceptionType = GeneratorHelper.MakeGlobalName(typeof(Exception));
         private static readonly string HandlerType = GeneratorHelper.MakeGlobalName(typeof(Func<object, object>));
-        private static readonly string OutSetupType = GeneratorHelper.MakeGlobalName(typeof(Func<DbCommand, string, DbParameter>));
-        private static readonly string ReturnSetupType = GeneratorHelper.MakeGlobalName(typeof(Func<DbCommand, DbParameter>));
+        private static readonly string InSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.InParameterSetup));
+        private static readonly string InOutSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.InOutParameterSetup));
+        private static readonly string OutSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.OutParameterSetup));
+        private static readonly string ReturnSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.ReturnParameterSetup));
+        private static readonly string ListParameterSetup = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.ListParameterSetup));
+        private static readonly string DynamicSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.DynamicParameterSetup));
 
         private readonly Type targetType;
 
@@ -178,9 +183,9 @@ namespace Smart.Data.Accessor.Generator
 
         private static string GetSetupParameterFieldRef(int no, int index) => "this." + GetSetupParameterFieldName(no, index);
 
-        private static string GetSetupSqlFieldName(int no, int index) => SetupSqlField + no + "_" + index;
+        private static string GetSetupDynamicParameterFieldName(int no, int index) => SetupDynamicParameterField + no + "_" + index;
 
-        private static string GetSetupSqlFieldRef(int no, int index) => "this." + GetSetupSqlFieldName(no, index);
+        private static string GetSetupDynamicParameterFieldRef(int no, int index) => "this." + GetSetupDynamicParameterFieldName(no, index);
 
         private static string GetOutParamName(int index) => OutParamVar + index;
 
@@ -418,36 +423,24 @@ namespace Smart.Data.Accessor.Generator
                             AppendLine($"private readonly {OutSetupType} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
                             break;
                         case ParameterDirection.InputOutput:
-                            AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeInOutParameterType(parameter.Type))} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
+                            AppendLine($"private readonly {InOutSetupType} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
                             break;
                         case ParameterDirection.Input:
-                            switch (parameter.ParameterType)
+                            if (parameter.IsMultiple)
                             {
-                                case ParameterType.Array:
-                                    AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeArrayParameterType(parameter.Type))} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
-                                    break;
-                                case ParameterType.List:
-                                    AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeListParameterType(parameter.Type))} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
-                                    break;
-                                default:
-                                    AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeInParameterType(parameter.Type))} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
-                                    break;
+                                AppendLine($"private readonly {ListParameterSetup} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
+                            }
+                            else
+                            {
+                                AppendLine($"private readonly {InSetupType} {GetSetupParameterFieldName(mm.No, parameter.Index)};");
                             }
                             break;
                     }
                 }
 
-                foreach (var parameter in mm.Parameters)
+                foreach (var parameter in mm.DynamicParameters)
                 {
-                    switch (parameter.ParameterType)
-                    {
-                        case ParameterType.Array:
-                            AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeArraySqlType(parameter.Type))} {GetSetupSqlFieldName(mm.No, parameter.Index)};");
-                            break;
-                        case ParameterType.List:
-                            AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(GeneratorHelper.MakeListSqlType(parameter.Type))} {GetSetupSqlFieldName(mm.No, parameter.Index)};");
-                            break;
-                    }
+                    AppendLine($"private readonly {DynamicSetupType} {GetSetupDynamicParameterFieldName(mm.No, parameter.Index)};");
                 }
 
                 foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
@@ -496,7 +489,7 @@ namespace Smart.Data.Accessor.Generator
             {
                 var hasProvider = mm.Provider != null;
                 var hasConverter = IsResultConverterRequired(mm);
-                if (hasProvider || hasConverter || mm.ReturnValueAsResult || mm.Parameters.Count > 0)
+                if (hasProvider || hasConverter || mm.ReturnValueAsResult || (mm.Parameters.Count > 0) || (mm.DynamicParameters.Count > 0))
                 {
                     NewLine();
                     AppendLine($"var method{mm.No} = {RuntimeHelperType}.GetInterfaceMethodByNo(GetType(), typeof({interfaceFullName}), {mm.No});");
@@ -508,7 +501,7 @@ namespace Smart.Data.Accessor.Generator
 
                     if (hasConverter)
                     {
-                        AppendLine($"{GetHandlerFieldRef(mm.No)} = {CtorArg}.CreateHandler<{GeneratorHelper.MakeGlobalName(mm.EngineResultType)}>(method{mm.No});");
+                        AppendLine($"{GetHandlerFieldRef(mm.No)} = {CtorArg}.CreateHandler(typeof({GeneratorHelper.MakeGlobalName(mm.EngineResultType)}), method{mm.No});");
                     }
 
                     if (mm.ReturnValueAsResult)
@@ -531,23 +524,19 @@ namespace Smart.Data.Accessor.Generator
                                 Append($"{CtorArg}.CreateReturnParameterSetup();");
                                 break;
                             case ParameterDirection.Output:
-                                Append($"{RuntimeHelperType}.CreateOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                Append($"{RuntimeHelperType}.CreateOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 break;
                             case ParameterDirection.InputOutput:
-                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 break;
                             case ParameterDirection.Input:
-                                switch (parameter.ParameterType)
+                                if (parameter.IsMultiple)
                                 {
-                                    case ParameterType.Array:
-                                        Append($"{RuntimeHelperType}.CreateArrayParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type.GetElementType())}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
-                                        break;
-                                    case ParameterType.List:
-                                        Append($"{RuntimeHelperType}.CreateListParameterSetup<{GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
-                                        break;
-                                    default:
-                                        Append($"{RuntimeHelperType}.CreateInParameterSetup<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
-                                        break;
+                                    Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                }
+                                else
+                                {
+                                    Append($"{RuntimeHelperType}.CreateInParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 }
                                 break;
                         }
@@ -555,25 +544,11 @@ namespace Smart.Data.Accessor.Generator
                         NewLine();
                     }
 
-                    foreach (var parameter in mm.Parameters)
+                    foreach (var parameter in mm.DynamicParameters)
                     {
-                        if (parameter.ParameterType != ParameterType.Simple)
-                        {
-                            Indent();
-                            Append($"{GetSetupSqlFieldRef(mm.No, parameter.Index)} = ");
-
-                            switch (parameter.ParameterType)
-                            {
-                                case ParameterType.Array:
-                                    Append($"{CtorArg}.CreateArraySqlSetup<{GeneratorHelper.MakeGlobalName(parameter.Type.GetElementType())}>();");
-                                    break;
-                                case ParameterType.List:
-                                    Append($"{CtorArg}.CreateListSqlSetup<{GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}>();");
-                                    break;
-                            }
-
-                            NewLine();
-                        }
+                        Indent();
+                        var multiple = parameter.IsMultiple ? "true" : "false";
+                        AppendLine($"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)} = {CtorArg}.CreateDynamicParameterSetup({multiple});");
                     }
 
                     foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
@@ -582,7 +557,7 @@ namespace Smart.Data.Accessor.Generator
                             ? "null"
                             : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
 
-                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler<{GeneratorHelper.MakeGlobalName(parameter.Type)}>({CtorArg}, method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                     }
                 }
             }
@@ -605,7 +580,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (mm.ReturnValueAsResult && (mm.EngineResultType != typeof(void)))
             {
-                AppendLine($"var {ReturnOutParamVar} = {GetSetupReturnFieldRef(mm.No)}({CommandVar});");
+                AppendLine($"var {ReturnOutParamVar} = {GetSetupReturnFieldRef(mm.No)}.Setup({CommandVar});");
                 NewLine();
             }
 
@@ -1133,21 +1108,18 @@ namespace Smart.Data.Accessor.Generator
                 var checkVisitor = new DynamicCheckVisitor();
                 checkVisitor.Visit(mm.Nodes);
 
-                if (checkVisitor.IsDynamic)
+                if (checkVisitor.IsDynamic || (mm.DynamicParameters.Count > 0))
                 {
-                    var calc = new CalcSizeVisitor(mm);
-                    calc.Visit(mm.Nodes);
-
-                    var visitor = new DynamicBuildVisitor(this, mm, calc.InitialSize);
+                    var visitor = new DynamicBuildVisitor(this, mm, CalculateSqlSize(mm));
                     visitor.Visit(mm.Nodes);
                     visitor.Flush();
                 }
-                else if (mm.Parameters.Any(x => x.ParameterType != ParameterType.Simple))
+                else if (mm.Parameters.Any(x => x.IsMultiple))
                 {
                     var calc = new CalcSizeVisitor(mm);
                     calc.Visit(mm.Nodes);
 
-                    var visitor = new HasArrayBuildVisitor(this, mm, calc.InitialSize);
+                    var visitor = new HasMultipleBuildVisitor(this, mm, CalculateSqlSize(mm));
                     visitor.Visit(mm.Nodes);
                     visitor.Flush();
                 }
@@ -1160,6 +1132,18 @@ namespace Smart.Data.Accessor.Generator
             }
 
             NewLine();
+        }
+
+        private static int CalculateSqlSize(MethodMetadata mm)
+        {
+            if (mm.SqlSize != null)
+            {
+                return mm.SqlSize.Size;
+            }
+
+            var calc = new CalcSizeVisitor(mm);
+            calc.Visit(mm.Nodes);
+            return calc.InitialSize;
         }
 
         //--------------------------------------------------------------------------------
@@ -1242,7 +1226,7 @@ namespace Smart.Data.Accessor.Generator
         // Array
         //--------------------------------------------------------------------------------
 
-        private sealed class HasArrayBuildVisitor : NodeVisitorBase
+        private sealed class HasMultipleBuildVisitor : NodeVisitorBase
         {
             private readonly SourceBuilder builder;
 
@@ -1250,7 +1234,7 @@ namespace Smart.Data.Accessor.Generator
 
             private readonly StringBuilder sql = new StringBuilder();
 
-            public HasArrayBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
+            public HasMultipleBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
             {
                 this.builder = builder;
                 this.mm = mm;
@@ -1269,14 +1253,14 @@ namespace Smart.Data.Accessor.Generator
                 var parameter = mm.FindParameterByName(node.Name);
                 var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
 
-                if (parameter.ParameterType == ParameterType.Simple)
-                {
-                    sql.Append($"@{parameterName}");
-                }
-                else
+                if (parameter.IsMultiple)
                 {
                     FlushSql();
                     builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
+                }
+                else
+                {
+                    sql.Append($"@{parameterName}");
                 }
             }
 
@@ -1344,6 +1328,12 @@ namespace Smart.Data.Accessor.Generator
 
                 builder.AppendLine($"var {SqlVar} = new {StringBuilderType}({size});");
                 builder.NewLine();
+
+                if (mm.DynamicParameters.Count > 0)
+                {
+                    builder.AppendLine($"var {DynamicIndexVar} = 0;");
+                    builder.NewLine();
+                }
             }
 
             public override void Visit(SqlNode node)
@@ -1366,18 +1356,32 @@ namespace Smart.Data.Accessor.Generator
             public override void Visit(ParameterNode node)
             {
                 var parameter = mm.FindParameterByName(node.Name);
-                var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
-
-                if (parameter.ParameterType == ParameterType.Simple)
+                if (parameter != null)
                 {
-                    sql.Append($"@{parameterName}");
+                    var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
+
+                    if (parameter.IsMultiple)
+                    {
+                        FlushSql();
+                        builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
+                    }
+                    else
+                    {
+                        sql.Append($"@{parameterName}");
+                    }
+                    builder.AppendLine($"{FlagVar}{parameter.Index} = true;");
                 }
                 else
                 {
+                    var dynamicParameter = mm.FindDynamicParameterByName(node.Name);
+                    if (dynamicParameter == null)
+                    {
+                        throw new AccessorGeneratorException($"Dynamic parameter not found. type=[{builder.targetType.FullName}], method=[{mm.MethodInfo.Name}], parameter=[{node.Name}]");
+                    }
+
                     FlushSql();
-                    builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
+                    builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"@{ParameterNames.GetDynamicParameterName()}"));
                 }
-                builder.AppendLine($"{FlagVar}{parameter.Index} = true;");
             }
 
             private void FlushSql()
@@ -1426,7 +1430,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static string MakeSqlSetup(MethodMetadata mm, ParameterEntry parameter, string name)
         {
-            return $"{GetSetupSqlFieldRef(mm.No, parameter.Index)}(\"{name}\", {BuilderVar}, {parameter.Source});";
+            return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.AppendSql({BuilderVar}, \"{name}\", {parameter.Source});";
         }
 
         private static string MakeParameterSetup(MethodMetadata mm, ParameterEntry parameter, string name)
@@ -1434,14 +1438,19 @@ namespace Smart.Data.Accessor.Generator
             switch (parameter.Direction)
             {
                 case ParameterDirection.ReturnValue:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar});";
+                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar});";
                 case ParameterDirection.Output:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\");";
+                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\");";
                 case ParameterDirection.InputOutput:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
+                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});";
                 default:
-                    return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}({CommandVar}, \"{name}\", {parameter.Source});";
+                    return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});";
             }
+        }
+
+        private static string MakeDynamicParameterSetup(MethodMetadata mm, DynamicParameterEntry parameter, string name)
+        {
+            return $"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, {BuilderVar}, $\"{name}{{{DynamicIndexVar}++}}\", {parameter.Name});";
         }
     }
 }

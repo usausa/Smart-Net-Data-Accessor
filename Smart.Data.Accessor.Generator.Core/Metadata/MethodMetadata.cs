@@ -27,6 +27,8 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public IReadOnlyList<ParameterEntry> Parameters { get; }
 
+        public IReadOnlyList<DynamicParameterEntry> DynamicParameters { get; }
+
         // Helper
 
         public bool IsAsync { get; }
@@ -38,6 +40,8 @@ namespace Smart.Data.Accessor.Generator.Metadata
         public ProviderAttribute Provider { get; }
 
         public TimeoutAttribute Timeout { get; }
+
+        public SqlSizeAttribute SqlSize { get; }
 
         // Parameter
 
@@ -60,7 +64,8 @@ namespace Smart.Data.Accessor.Generator.Metadata
             MethodType memberType,
             bool returnValueAsResult,
             IReadOnlyList<INode> nodes,
-            IReadOnlyList<ParameterEntry> parameters)
+            IReadOnlyList<ParameterEntry> parameters,
+            IReadOnlyList<DynamicParameterEntry> dynamicParameters)
         {
             No = no;
             MethodInfo = mi;
@@ -69,6 +74,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
             ReturnValueAsResult = returnValueAsResult;
             Nodes = nodes;
             Parameters = parameters;
+            DynamicParameters = dynamicParameters;
 
             IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
             EngineResultType = IsAsync
@@ -79,6 +85,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
             Provider = mi.GetCustomAttribute<ProviderAttribute>();
             Timeout = mi.GetCustomAttribute<TimeoutAttribute>();
+            SqlSize = mi.GetCustomAttribute<SqlSizeAttribute>();
 
             foreach (var pmi in mi.GetParameters())
             {
@@ -106,8 +113,12 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         public ParameterEntry FindParameterByName(string name)
         {
-            return Parameters.FirstOrDefault(x => String.Equals(x.Name, name, StringComparison.Ordinal)) ??
-                   Parameters.FirstOrDefault(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+            return Parameters.FirstOrDefault(x => x.Name == name);
+        }
+
+        public DynamicParameterEntry FindDynamicParameterByName(string name)
+        {
+            return DynamicParameters.FirstOrDefault(x => x.Name == name);
         }
     }
 }
