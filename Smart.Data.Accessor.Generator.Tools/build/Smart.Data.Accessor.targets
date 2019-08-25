@@ -30,8 +30,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'==''">$(ProjectDir)</SqlRootDirectory>
-      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'!=''">$(SmartDataAccessorSqlRootDirectory)</SqlRootDirectory>
+      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'==''">$([System.IO.Path]::GetDirectoryName($(ProjectDir)))</SqlRootDirectory>
+      <SqlRootDirectory Condition="'$(SmartDataAccessorSqlRootDirectory)'!=''">$([System.IO.Path]::GetDirectoryName($(SmartDataAccessorSqlRootDirectory)))</SqlRootDirectory>
     </PropertyGroup>
     <PropertyGroup>
       <SqlRootNamespace Condition="'$(SmartDataAccessorSqlRootNamespace)'==''">$(RootNamespace)</SqlRootNamespace>
@@ -44,7 +44,7 @@
 
     <WriteLinesToFile File="$(SmartDataAccessorReferencesFile)" Lines="@(ReferencePath)" Overwrite="true"/>
 
-    <Exec Command="dotnet $(SmartDataAccessorGenerator) &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; &quot;$(SmartDataAccessorReferencesFile)&quot; $(SqlRootDirectory) $(SqlRootNamespace) $(SqlSubDirectory)" />
+    <Exec Command="dotnet &quot;$(SmartDataAccessorGenerator)&quot; &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; $(SmartDataAccessorReferencesFile) &quot;$(SqlRootDirectory)&quot; $(SqlRootNamespace) $(SqlSubDirectory)" />
 
     <ItemGroup>
       <SmartDataAccessorSources Include="$([System.IO.Directory]::GetFiles(`$(SmartDataAccessorOutputDirectory)`))" />
