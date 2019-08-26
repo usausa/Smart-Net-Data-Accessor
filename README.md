@@ -105,10 +105,10 @@ public static class Program
 
         // Query
         var typeA = dao.QueryDataList("A");
-        Console.WriteLine(typeA.Count);
+        Console.WriteLine(typeA.Count); // 2
 
         var all = dao.QueryDataList();
-        Console.WriteLine(all.Count);
+        Console.WriteLine(all.Count); // 3
     }
 }
 ```
@@ -224,6 +224,10 @@ public static class Program
 (No documentation yet)
 
 ## ASP.NET Core integration
+
+(No documentation yet)
+
+## Code generation
 
 (No documentation yet)
 
