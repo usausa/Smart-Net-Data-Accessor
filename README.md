@@ -1,4 +1,4 @@
-# Smart.Data.Accessor .NET - data accessor generator library for .NET (PoC)
+# Smart.Data.Accessor .NET - data accessor generator library for .NET
 
 ## What is this?
 
@@ -188,6 +188,20 @@ public static class Program
 (No documentation yet)
 
 ## 2-way SQL
+
+### Parameter
+
+(No documentation yet)
+
+### Code block
+
+(No documentation yet)
+
+### Raw parameter
+
+(No documentation yet)
+
+### Pragma
 
 (No documentation yet)
 
