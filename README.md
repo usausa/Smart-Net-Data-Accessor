@@ -7,9 +7,7 @@
 
 ## Getting Started(.NET Core Console Application)
 
-Install library.
-
-> PM> Install-Package [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.Accessor)
+Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.Accessor).
 
 Create data accessor interafce and model class like this.
 
@@ -117,19 +115,92 @@ public static class Program
 
 ### Data accessor attribute
 
-(No documentation yet)
-
 * DataAccessorAttribute
+
+Data accessor interface marker.
 
 ### Method attributes
 
-(No documentation yet)
+* ExecuteAttribute
+
+```csharp
+[DataAccessor]
+public interface IExecuteDao
+{
+    // Call ExecuteNonQuery()
+    [Execute]
+    int Update(long id, string name);
+
+    [Execute]
+    ValueTask<int> UpdateAsync(long id, string name);
+}
+```
+
+* ExecuteScalarAttribute
+
+```csharp
+[DataAccessor]
+public interface IExecuteScalarDao
+{
+    // Call ExecuteScalar()
+    [ExecuteScalar]
+    long Count();
+
+    [ExecuteScalar]
+    ValueTask<long> CountAsync();
+}
+```
+* ExecuteReaderAttribute
+
+```csharp
+[DataAccessor]
+public interface IExecuteReaderDao
+{
+    // Call ExecuteReader()
+    [ExecuteReader]
+    IDataReader Enumerate();
+
+    [ExecuteReader]
+    ValueTask<IDataReader> EnumerateAsync();
+}
+```
+
+* QueryFirstOrDefaultAttribute
+
+```csharp
+[DataAccessor]
+public interface IQueryFirstOrDefaultDao
+{
+    // Call ExecuteReader() and map single object or default
+    [QueryFirstOrDefault]
+    DataEntity QueryData(long id);
+
+    [QueryFirstOrDefault]
+    ValueTask<DataEntity> QueryDataAsync(long id);
+}
+```
 
 * QueryAttribute
-* QueryFirstOrDefaultAttribute
-* ExecuteAttribute
-* ExecuteReaderAttribute
-* ExecuteScalarAttribute
+
+```csharp
+[DataAccessor]
+public interface IQueryDao
+{
+    // Call ExecuteReader() and map object list bufferd
+    [Query]
+    IList<DataEntity> QueryBufferd();
+
+    // Call ExecuteReader() and map object enumerable non-bufferd
+    [Query]
+    IEnumerable<DataEntity> QueryNonBufferd();
+
+    [Query]
+    ValueTask<IList<DataEntity>> QueryBufferdAsync();
+
+    [Query]
+    ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync();
+}
+```
 
 ### Auto generate SQL method attributes
 
@@ -225,7 +296,23 @@ public static class Program
 
 ## ASP.NET Core integration
 
-(No documentation yet)
+```csharp
+services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
+
+services.AddDataAccessor(config =>
+{
+    config.DaoAssemblies.Add(Assembly.GetExecutingAssembly());
+});
+```
+
+```csharp
+private readonly ISampleDao sampleDao;
+
+public HomeController(ISampleDao sampleDao)
+{
+    this.sampleDao = sampleDao;
+}
+```
 
 ## Code generation
 
