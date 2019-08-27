@@ -7,6 +7,6 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
     {
         public ExecuteEngineFactoryOptions EngineOption { get; } = new ExecuteEngineFactoryOptions();
 
-        public IList<Assembly> DaoAssemblies { get; } = new List<Assembly>();
+        public IList<Assembly> AccessorAssemblies { get; } = new List<Assembly>();
     }
 }

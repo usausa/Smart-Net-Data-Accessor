@@ -33,7 +33,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
             service.TryAddSingleton<IPropertySelector>(DefaultPropertySelector.Instance);
             service.TryAddSingleton<IEmptyDialect, EmptyDialect>();
 
-            foreach (var type in option.DaoAssemblies.SelectMany(x => x.ExportedTypes))
+            foreach (var type in option.AccessorAssemblies.SelectMany(x => x.ExportedTypes))
             {
                 if (type.GetCustomAttribute<DataAccessorAttribute>() != null)
                 {
