@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor
     using System.Reflection;
 
     using Smart.Data.Accessor.Engine;
-    using Smart.Data.Accessor.Generator;
+    using Smart.Data.Accessor.Helpers;
 
     public sealed class DataAccessorFactory
     {
@@ -27,7 +27,7 @@ namespace Smart.Data.Accessor
             var directory = Path.GetDirectoryName(type.Assembly.Location);
             var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
             var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
-            var accessorName = $"{type.Namespace}.{TypeHelper.MakeDaoName(type)}";
+            var accessorName = $"{type.Namespace}.{Naming.MakeAccessorName(type)}";
             var implType = assembly.GetType(accessorName);
             if (implType == null)
             {

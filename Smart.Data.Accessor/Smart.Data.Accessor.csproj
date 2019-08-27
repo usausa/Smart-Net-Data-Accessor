@@ -9,15 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\Accessor\Attributes\ConditionAttribute.cs" />
-    <Compile Remove="Data\Accessor\Attributes\DbValueAttribute.cs" />
-    <Compile Remove="Data\Accessor\Attributes\DeleteAttribute.cs" />
-    <Compile Remove="Data\Accessor\Attributes\Operand.cs" />
-    <Compile Remove="Data\Accessor\Attributes\Operation.cs" />
-    <Compile Remove="Data\Accessor\Attributes\UpdateAttribute.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />

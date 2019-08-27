@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor.Attributes
     using System.Data;
     using System.Reflection;
 
+    using Smart.Data.Accessor.Builders;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
 
@@ -42,7 +43,7 @@ namespace Smart.Data.Accessor.Attributes
                 new SqlNode(procedure)
             };
 
-            nodes.AddRange(AttributeHelper.CreateParameterNodes(mi));
+            nodes.AddRange(BuildHelper.CreateParameterNodes(mi));
 
             return nodes;
         }

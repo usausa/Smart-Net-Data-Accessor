@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Helpers
 {
     using System;
     using System.Collections.Generic;
@@ -13,6 +13,10 @@ namespace Smart.Data.Accessor.Generator
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class ParameterHelper
     {
+        //--------------------------------------------------------------------------------
+        // Special parameter
+        //--------------------------------------------------------------------------------
+
         public static bool IsTimeoutParameter(ParameterInfo pi) =>
             pi.GetCustomAttribute<TimeoutParameterAttribute>() != null;
 
@@ -30,6 +34,10 @@ namespace Smart.Data.Accessor.Generator
             !IsCancellationTokenParameter(pi) &&
             !IsConnectionParameter(pi) &&
             !IsTransactionParameter(pi);
+
+        //--------------------------------------------------------------------------------
+        // Parameter Type
+        //--------------------------------------------------------------------------------
 
         public static bool IsNestedParameter(ParameterInfo pi)
         {
@@ -73,6 +81,21 @@ namespace Smart.Data.Accessor.Generator
             }
 
             return true;
+        }
+
+        public static bool IsMultipleParameter(Type type)
+        {
+            return (type != typeof(byte[])) && (type.IsArray || type.GetInterfaces().Prepend(type).Any(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))));
+        }
+
+        public static Type GetMultipleParameterElementType(Type type)
+        {
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
         }
     }
 }

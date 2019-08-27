@@ -1,13 +1,14 @@
-namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Builders
 {
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 
-    public static class AttributeHelper
+    public static class BuildHelper
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetTableName(MethodInfo mi)

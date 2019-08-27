@@ -9,6 +9,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Generator.Helpers;
     using Smart.Data.Accessor.Generator.Metadata;
+    using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 
     internal sealed class ParameterResolveVisitor : NodeVisitorBase
@@ -65,7 +66,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
                     if (elements.Length == 1)
                     {
                         var direction = GetParameterDirection(pmi);
-                        var isMultiple = TypeHelper.IsMultipleParameter(type);
+                        var isMultiple = ParameterHelper.IsMultipleParameter(type);
                         if (isMultiple && (direction != ParameterDirection.Input))
                         {
                             throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
@@ -122,7 +123,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             }
 
             var direction = GetParameterDirection(pi);
-            var isMultiple = TypeHelper.IsMultipleParameter(type);
+            var isMultiple = ParameterHelper.IsMultipleParameter(type);
             if (isMultiple && (direction != ParameterDirection.Input))
             {
                 throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");

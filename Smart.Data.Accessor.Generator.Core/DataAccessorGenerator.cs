@@ -7,6 +7,7 @@ namespace Smart.Data.Accessor.Generator
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Generator.Metadata;
     using Smart.Data.Accessor.Generator.Visitors;
+    using Smart.Data.Accessor.Helpers;
 
     public class DataAccessorGenerator
     {
@@ -33,7 +34,7 @@ namespace Smart.Data.Accessor.Generator
 
         private string CreateSource(Type type)
         {
-            var builder = new SourceBuilder(type, TypeHelper.MakeDaoName(type));
+            var builder = new SourceBuilder(type, Naming.MakeAccessorName(type));
 
             var no = 0;
             foreach (var method in type.GetMethods())

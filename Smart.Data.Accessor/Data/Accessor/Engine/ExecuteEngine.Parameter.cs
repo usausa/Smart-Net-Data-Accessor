@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Text;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Generator;
+    using Smart.Data.Accessor.Helpers;
 
     public sealed partial class ExecuteEngine
     {
@@ -403,10 +403,10 @@ namespace Smart.Data.Accessor.Engine
 
         private DynamicParameterEntry CreateDynamicParameterEntry(Type type)
         {
-            if (TypeHelper.IsMultipleParameter(type))
+            if (ParameterHelper.IsMultipleParameter(type))
             {
                 var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic);
-                var elementType = TypeHelper.GetMultipleParameterElementType(type);
+                var elementType = ParameterHelper.GetMultipleParameterElementType(type);
                 return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType });
             }
             else

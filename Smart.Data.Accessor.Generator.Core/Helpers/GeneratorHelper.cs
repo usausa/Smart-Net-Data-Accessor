@@ -1,12 +1,16 @@
 namespace Smart.Data.Accessor.Generator.Helpers
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
-
-    using Smart.Data.Accessor.Engine;
 
     internal static class GeneratorHelper
     {
+        //--------------------------------------------------------------------------------
+        // Name
+        //--------------------------------------------------------------------------------
+
         public static string MakeGlobalName(Type type)
         {
             var sb = new StringBuilder();
@@ -49,6 +53,34 @@ namespace Smart.Data.Accessor.Generator.Helpers
             {
                 sb.Append("global::").Append(type.FullName.Replace('+', '.'));
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Type
+        //--------------------------------------------------------------------------------
+
+        public static bool IsEnumerable(Type type)
+        {
+            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        }
+
+        public static bool IsList(Type type)
+        {
+            return type.IsGenericType && ((type.GetGenericTypeDefinition() == typeof(IList<>)) || (type.GetGenericTypeDefinition() == typeof(List<>)));
+        }
+
+        //--------------------------------------------------------------------------------
+        // For parameter element
+        //--------------------------------------------------------------------------------
+
+        public static Type GetEnumerableElementType(Type type)
+        {
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IEnumerable<>))).GetGenericArguments()[0];
+        }
+
+        public static Type GetListElementType(Type type)
+        {
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
         }
     }
 }

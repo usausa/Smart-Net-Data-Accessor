@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor.Attributes
     using System.Data;
     using System.Reflection;
 
+    using Smart.Data.Accessor.Builders;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
 
@@ -24,12 +25,12 @@ namespace Smart.Data.Accessor.Attributes
 
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
-            var parameters = AttributeHelper.CreateParameterNodes(mi);
+            var parameters = BuildHelper.CreateParameterNodes(mi);
 
             var nodes = new List<INode>
             {
                 new SqlNode("INSERT INTO "),
-                new SqlNode(table ?? AttributeHelper.GetTableName(mi)),
+                new SqlNode(table ?? BuildHelper.GetTableName(mi)),
                 new SqlNode(" (")
             };
 

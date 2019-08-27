@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor.Generator
                         DefineMethodExecuteReader(mm);
                         break;
                     case MethodType.Query:
-                        if (!TypeHelper.IsList(mm.EngineResultType))
+                        if (!GeneratorHelper.IsList(mm.EngineResultType))
                         {
                             DefineMethodQueryNonBuffer(mm);
                         }
@@ -322,7 +322,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static bool IsValidQueryResultType(Type type)
         {
-            return TypeHelper.IsEnumerable(type) || TypeHelper.IsList(type);
+            return GeneratorHelper.IsEnumerable(type) || GeneratorHelper.IsList(type);
         }
 
         private static bool IsValidQueryFirstOrDefaultResultType(Type type)
@@ -532,7 +532,7 @@ namespace Smart.Data.Accessor.Generator
                             case ParameterDirection.Input:
                                 if (parameter.IsMultiple)
                                 {
-                                    Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                    Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
                                 }
                                 else
                                 {
@@ -785,7 +785,7 @@ namespace Smart.Data.Accessor.Generator
 
             NewLine();
 
-            var resultType = GeneratorHelper.MakeGlobalName(TypeHelper.GetEnumerableElementType(mm.EngineResultType));
+            var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetEnumerableElementType(mm.EngineResultType));
             AppendLine($"var {ResultVar} = {EngineFieldRef}.ReaderToDefer<{resultType}>({CommandVar}, {ReaderVar});");
             AppendLine($"{CommandVar} = null;");
             AppendLine($"{ReaderVar} = null;");
@@ -816,7 +816,7 @@ namespace Smart.Data.Accessor.Generator
             Indent();
             Append($"var {ResultVar} = ");
 
-            var resultType = GeneratorHelper.MakeGlobalName(TypeHelper.GetListElementType(mm.EngineResultType));
+            var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(mm.EngineResultType));
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
