@@ -32,7 +32,7 @@ namespace Example.WebApplication
 
             services.AddDataAccessor(config =>
             {
-                config.DaoAssemblies.Add(Assembly.GetExecutingAssembly());
+                config.AccessorAssemblies.Add(Assembly.GetExecutingAssembly());
             });
         }
 
