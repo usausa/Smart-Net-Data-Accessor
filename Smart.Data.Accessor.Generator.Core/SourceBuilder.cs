@@ -71,6 +71,8 @@ namespace Smart.Data.Accessor.Generator
 
         private readonly ProviderAttribute provider;
 
+        private readonly InjectAttribute[] injects;
+
         private bool newLine;
 
         private int indent;
@@ -86,6 +88,7 @@ namespace Smart.Data.Accessor.Generator
 
             interfaceFullName = GeneratorHelper.MakeGlobalName(targetType);
             provider = targetType.GetCustomAttribute<ProviderAttribute>();
+            injects = targetType.GetCustomAttributes<InjectAttribute>().ToArray();
         }
 
         public void AddMethod(MethodMetadata mm)
@@ -392,6 +395,15 @@ namespace Smart.Data.Accessor.Generator
                 NewLine();
             }
 
+            if (injects.Length > 0)
+            {
+                foreach (var inject in injects)
+                {
+                    AppendLine($"private readonly {GeneratorHelper.MakeGlobalName(inject.Type)} {inject.Name};");
+                }
+                NewLine();
+            }
+
             // Per method
             foreach (var mm in methods)
             {
@@ -481,6 +493,16 @@ namespace Smart.Data.Accessor.Generator
                 else
                 {
                     AppendLine($"{ProviderFieldRef} = {RuntimeHelperType}.GetDbProvider({CtorArg}, typeof({interfaceFullName}));");
+                }
+            }
+
+            if (injects.Length > 0)
+            {
+                NewLine();
+                foreach (var inject in injects)
+                {
+                    var injectType = GeneratorHelper.MakeGlobalName(inject.Type);
+                    AppendLine($"this.{inject.Name} = ({injectType}){CtorArg}.ServiceProvider.GetService(typeof({injectType}));");
                 }
             }
 
