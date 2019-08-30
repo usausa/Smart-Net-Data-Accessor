@@ -12,7 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 		Smart.Data.Accessor.Extensions.DependencyInjection.nuspec = Smart.Data.Accessor.Extensions.DependencyInjection.nuspec
 		Smart.Data.Accessor.nuspec = Smart.Data.Accessor.nuspec
-		Smart.Data.Accessor.Resolver.nuspec = Smart.Data.Accessor.Resolver.nuspec
 		Smart.Data.Accessor.ruleset = Smart.Data.Accessor.ruleset
 		Smart.Data.Accessor.sln.DotSettings = Smart.Data.Accessor.sln.DotSettings
 	EndProjectSection
@@ -27,13 +26,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Tests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Extensions.DependencyInjection", "Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj", "{9740D356-CC98-40A2-AC59-8AF204080F38}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Resolver", "Smart.Data.Accessor.Resolver\Smart.Data.Accessor.Resolver.csproj", "{F625023A-2B30-40A3-849A-8E0E87A37AC1}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Generator.Core", "Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj", "{056E520B-35EF-4D9D-90DD-AA0D6DD587C4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Generator.Tools", "Smart.Data.Accessor.Generator.Tools\Smart.Data.Accessor.Generator.Tools.csproj", "{0D70A45A-7468-4294-B739-F3B5A32BB1E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.ConsoleApplication", "Example.ConsoleApplication\Example.ConsoleApplication.csproj", "{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.ConsoleApplication", "Example.ConsoleApplication\Example.ConsoleApplication.csproj", "{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Example", "Example", "{DB21DE7C-EB00-4FC3-B141-6C2116979309}"
 EndProject
@@ -67,10 +64,6 @@ Global
 		{9740D356-CC98-40A2-AC59-8AF204080F38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9740D356-CC98-40A2-AC59-8AF204080F38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9740D356-CC98-40A2-AC59-8AF204080F38}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F625023A-2B30-40A3-849A-8E0E87A37AC1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{056E520B-35EF-4D9D-90DD-AA0D6DD587C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{056E520B-35EF-4D9D-90DD-AA0D6DD587C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{056E520B-35EF-4D9D-90DD-AA0D6DD587C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
