@@ -14,7 +14,6 @@ Create data accessor interafce and model class like this.
 ```csharp
 using Smart.Data.Accessor.Attributes;
 
-[Name("Data")]
 public class DataEntity
 {
     public long Id { get; set; }
