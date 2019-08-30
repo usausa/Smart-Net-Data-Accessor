@@ -5,13 +5,14 @@ namespace Smart.Data.Accessor.Builders
     using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 
     public static class BuildHelper
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public static string GetTableName(MethodInfo mi)
+        public static string GetTableName(MethodInfo mi, IGeneratorOption option)
         {
             var parameter = mi.GetParameters()
                 .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
@@ -21,7 +22,16 @@ namespace Smart.Data.Accessor.Builders
             }
 
             var attr = parameter.ParameterType.GetCustomAttribute<NameAttribute>();
-            return attr != null ? attr.Name : parameter.ParameterType.Name;
+            if (attr != null)
+            {
+                return attr.Name;
+            }
+
+            var suffix = option.GetValueAsStringArray("EntityClassSuffix");
+            var match = suffix.FirstOrDefault(x => parameter.ParameterType.Name.EndsWith(x));
+            return match == null
+                ? parameter.ParameterType.Name
+                : parameter.ParameterType.Name.Substring(0, parameter.ParameterType.Name.Length - match.Length);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]

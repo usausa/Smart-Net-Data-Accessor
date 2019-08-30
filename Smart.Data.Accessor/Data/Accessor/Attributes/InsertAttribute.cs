@@ -23,14 +23,14 @@ namespace Smart.Data.Accessor.Attributes
             this.table = table;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.CreateParameterNodes(mi);
 
             var nodes = new List<INode>
             {
                 new SqlNode("INSERT INTO "),
-                new SqlNode(table ?? BuildHelper.GetTableName(mi)),
+                new SqlNode(table ?? BuildHelper.GetTableName(mi, option)),
                 new SqlNode(" (")
             };
 

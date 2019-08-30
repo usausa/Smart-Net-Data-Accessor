@@ -18,6 +18,7 @@ namespace Smart.Data.Accessor.Generator
             var sqlRootDirectory = Path.GetFullPath(args[3]);
             var sqlRootNamespace = args[4];
             var sqlSubDirectory = args[5];
+            var option = new GeneratorOption(args[6]);
 
             var context = AssemblyLoadContext.GetLoadContext(Assembly.LoadFile(target));
             context.Resolving += (loadContext, name) =>
@@ -34,7 +35,7 @@ namespace Smart.Data.Accessor.Generator
 
             var loader = new FileSqlLoader(sqlRootDirectory, sqlRootNamespace, sqlSubDirectory);
             var writer = new FileSourceWriter(outputDirectory);
-            var generator = new DataAccessorGenerator(loader, writer);
+            var generator = new DataAccessorGenerator(loader, writer, option);
             generator.Generate(assembly.GetExportedTypes());
             writer.PostProcess();
         }

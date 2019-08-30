@@ -18,11 +18,14 @@ namespace Smart.Mock
     {
         private readonly ISqlLoader loader;
 
+        private readonly IGeneratorOption option;
+
         private readonly ExecuteEngine engine;
 
-        public TestFactory(ISqlLoader loader, ExecuteEngine engine)
+        public TestFactory(ISqlLoader loader, IGeneratorOption option, ExecuteEngine engine)
         {
             this.loader = loader;
+            this.option = option;
             this.engine = engine;
         }
 
@@ -30,7 +33,7 @@ namespace Smart.Mock
         {
             var type = typeof(T);
             var writer = new MemorySourceWriter();
-            var generator = new DataAccessorGenerator(loader, writer);
+            var generator = new DataAccessorGenerator(loader, writer, option);
             generator.Generate(new[] { type });
 
             if (writer.Source == null)

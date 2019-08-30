@@ -36,7 +36,7 @@ namespace Smart.Data.Accessor.Attributes
             ReturnValueAsResult = returnValueAsResult;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var nodes = new List<INode>
             {

@@ -22,7 +22,7 @@ namespace Smart.Data.Accessor.Attributes
             this.table = table;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             throw new System.NotImplementedException();
         }

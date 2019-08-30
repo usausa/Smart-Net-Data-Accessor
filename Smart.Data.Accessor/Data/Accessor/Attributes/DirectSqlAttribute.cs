@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Attributes
             this.sql = sql;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var tokenizer = new SqlTokenizer(sql);
             var tokens = tokenizer.Tokenize();

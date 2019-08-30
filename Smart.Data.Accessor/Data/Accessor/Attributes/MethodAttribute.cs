@@ -21,6 +21,6 @@ namespace Smart.Data.Accessor.Attributes
             MethodType = methodType;
         }
 
-        public abstract IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi);
+        public abstract IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi);
     }
 }

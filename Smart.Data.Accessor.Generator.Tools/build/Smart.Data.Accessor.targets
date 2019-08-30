@@ -12,6 +12,10 @@
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\..\tools\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <SmartDataAccessorGeneratorOption>EntityClassSuffix=Model,Entity</SmartDataAccessorGeneratorOption>
+  </PropertyGroup>
+
   <ItemGroup>
     <SqlFiles Include="**\*.sql" />
   </ItemGroup>
@@ -44,7 +48,7 @@
 
     <WriteLinesToFile File="$(SmartDataAccessorReferencesFile)" Lines="@(ReferencePath)" Overwrite="true"/>
 
-    <Exec Command="dotnet &quot;$(SmartDataAccessorGenerator)&quot; &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; $(SmartDataAccessorReferencesFile) &quot;$(SqlRootDirectory)&quot; $(SqlRootNamespace) $(SqlSubDirectory)" />
+    <Exec Command="dotnet &quot;$(SmartDataAccessorGenerator)&quot; &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; $(SmartDataAccessorReferencesFile) &quot;$(SqlRootDirectory)&quot; $(SqlRootNamespace) $(SqlSubDirectory) &quot;$(SmartDataAccessorGeneratorOption)&quot;" />
 
     <ItemGroup>
       <SmartDataAccessorSources Include="$([System.IO.Directory]::GetFiles(`$(SmartDataAccessorOutputDirectory)`))" />
