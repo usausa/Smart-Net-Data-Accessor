@@ -395,7 +395,6 @@ public HomeController(ISampleDao sampleDao)
 
 ## TODO
 
-* Inject component to 2-way sql code. (ver 0.4+?)
-* Enhanced auto generate SQL method attribute. (ver 0.5?)
-* Enhanced Result mapper. (ver 0.6?)
+* Enhanced auto generate SQL method attribute. (ver 0.6?)
+* Enhanced Result mapper. (ver 0.7?)
 * Enhanced handling of dynamic parameters. (ver 1.0+?)
