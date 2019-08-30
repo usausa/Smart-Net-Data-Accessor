@@ -206,7 +206,67 @@ public interface IQueryDao
 (No documentation yet)
 
 * InsertAttribute
+
 * ProcedureAttribute
+
+```sql
+CREATE PROCEDURE PROC1
+    @param1 INT,
+    @param2 INT OUTPUT,
+    @param3 INT OUTPUT
+AS
+BEGIN
+    SELECT @param2 = @param2 + 1
+    SELECT @param3 = @param1 + 1
+    RETURN 100
+END
+```
+
+```csharp
+public class Parameter
+{
+    [Input]
+    [Name("param1")]
+    public int Parameter1 { get; set; }
+
+    [InputOutput]
+    [Name("param2")]
+    public int Parameter2 { get; set; }
+
+    [Output]
+    [Name("param3")]
+    public int Parameter3 { get; set; }
+
+    [ReturnValue]
+    public int ReturnValue { get; set; }
+}
+```
+
+```csharp
+[DataAccessor]
+public interface IProcedureDao
+{
+    // Argument version
+    [Procedure("PROC1")]
+    int Execute(int param1, ref int param2, out int param3);
+
+    // Parameter class version
+    [Procedure("PROC1")]
+    void Execute(Parameter parameter);
+}
+```
+
+```csharp
+var param2 = 2;
+var ret = dao.Execute(1, ref param2, out var param3);
+// param2 = 3, param3 = 2, ret = 100
+```
+
+```csharp
+var parameter = new Parameter { Parameter1 = 1, Parameter2 = 2 };
+dao.Execute(parameter);
+// Parameter2 = 3, Parameter3 = 2, ReturnValue = 100
+```
 
 ### Mapping attributes
 
@@ -258,6 +318,13 @@ public interface IQueryDao
 (No documentation yet)
 
 ## 2-way SQL
+
+|   | Type          | Example                                     |
+|:-:|---------------|---------------------------------------------|
+| @ | parameter     | `/*@ id */`                                 |
+| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
+| # | raw parameter | `/*# order #/`                              |
+| ! | pragma        | `/*!using System.Text */`                   |
 
 ### Parameter
 
@@ -321,7 +388,7 @@ public HomeController(ISampleDao sampleDao)
 
 (Ref benchmark project)
 
-## Example Project 
+## Example Project
 
 * [Console example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.ConsoleApplication)
 * [Web example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.WebApplication)
