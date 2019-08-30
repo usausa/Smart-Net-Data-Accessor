@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor.Generator
 
         public GeneratorOption(string parameter)
         {
-            values = parameter.Split(',')
+            values = parameter.Split(';')
                 .Select(x => x.Split('='))
                 .Where(x => x.Length == 2)
                 .ToDictionary(x => x[0].Trim(), x => x[1].Trim());

@@ -22,6 +22,10 @@ namespace Smart.Data.Accessor
             {
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
+                    .ConfigureOptions(x =>
+                    {
+                        x["EntityClassSuffix"] = "Model,Entity";
+                    })
                     .Build();
                 var dao = generator.Create<IInsertDao>();
 
