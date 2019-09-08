@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes.Builders
 {
     public static class Operation
     {

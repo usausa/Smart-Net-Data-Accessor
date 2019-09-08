@@ -41,8 +41,17 @@ namespace Smart.Data.Accessor.Helpers
 
         public static bool IsNestedParameter(ParameterInfo pi)
         {
-            var type = pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType;
+            if (pi.GetCustomAttribute<ParameterBuilderAttribute>() != null)
+            {
+                return false;
+            }
 
+            var type = pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType;
+            return IsNestedType(type);
+        }
+
+        public static bool IsNestedType(Type type)
+        {
             if (type.IsNullableType())
             {
                 type = Nullable.GetUnderlyingType(type);
@@ -71,11 +80,6 @@ namespace Smart.Data.Accessor.Helpers
             }
 
             if (type.GetInterfaces().Prepend(type).Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
-            {
-                return false;
-            }
-
-            if (pi.GetCustomAttribute<ParameterBuilderAttribute>() != null)
             {
                 return false;
             }

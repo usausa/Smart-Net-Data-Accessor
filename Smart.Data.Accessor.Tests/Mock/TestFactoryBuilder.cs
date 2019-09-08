@@ -9,6 +9,11 @@ namespace Smart.Mock
 
     public class TestFactoryBuilder
     {
+        private static readonly Dictionary<string, string> DefaultOption = new Dictionary<string, string>
+        {
+            { "EntityClassSuffix", "Model,Entity" }
+        };
+
         private readonly ExecuteEngineConfig config = new ExecuteEngineConfig();
 
         private ISqlLoader loader;
@@ -75,7 +80,7 @@ namespace Smart.Mock
 
         public TestFactory Build()
         {
-            return new TestFactory(loader, option, config.ToEngine());
+            return new TestFactory(loader, option ?? new TestGeneratorOption(DefaultOption), config.ToEngine());
         }
     }
 }

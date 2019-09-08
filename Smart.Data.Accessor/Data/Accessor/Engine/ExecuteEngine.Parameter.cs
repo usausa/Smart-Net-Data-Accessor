@@ -330,13 +330,14 @@ namespace Smart.Data.Accessor.Engine
         // Dynamic
         //--------------------------------------------------------------------------------
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
         private sealed class DynamicParameterEntry
         {
             public static DynamicParameterEntry Empty { get; } = new DynamicParameterEntry(null, null);
 
-            public Type Type { get; }
+            public readonly Type Type;
 
-            public Action<DbCommand, StringBuilder, string, object> Handler { get; }
+            public readonly Action<DbCommand, StringBuilder, string, object> Handler;
 
             public DynamicParameterEntry(Type type, Action<DbCommand, StringBuilder, string, object> handler)
             {

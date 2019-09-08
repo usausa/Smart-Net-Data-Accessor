@@ -1,15 +1,15 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes.Builders
 {
     using System;
 
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class DbValueAttribute : Attribute
+    public class CodeValueAttribute : Attribute
     {
         public string Value { get; }
 
         public string When { get; }
 
-        public DbValueAttribute(string value = null, string when = null)
+        public CodeValueAttribute(string value = null, string when = null)
         {
             Value = value;
             When = when;

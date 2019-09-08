@@ -8,15 +8,17 @@ namespace Smart.Data.Accessor.Engine
     [DebuggerDisplay("Count = {" + nameof(Count) + "}")]
     internal sealed class ResultMapperCache
     {
-        private const int InitialSize = 256;
+        private static readonly Node EmptyNode = new Node(typeof(EmptyKey), Array.Empty<ColumnInfo>(), default);
 
-        private const double Factor = 2;
+        private const int InitialSize = 64;
 
-        private static readonly Node[] EmptyNodes = Array.Empty<Node>();
+        private const int Factor = 3;
 
         private readonly object sync = new object();
 
-        private Table table;
+        private Node[] nodes;
+
+        private int count;
 
         //--------------------------------------------------------------------------------
         // Constructor
@@ -24,7 +26,7 @@ namespace Smart.Data.Accessor.Engine
 
         public ResultMapperCache()
         {
-            table = CreateInitialTable();
+            nodes = CreateInitialTable();
         }
 
         //--------------------------------------------------------------------------------
@@ -45,120 +47,153 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        private static uint CalculateSize(int count)
+        private static int CalculateSize(int requestSize)
         {
             uint size = 0;
 
-            for (var i = 1L; i < count; i *= 2)
+            for (var i = 1L; i < requestSize; i *= 2)
             {
                 size = (size << 1) + 1;
             }
 
-            return size + 1;
+            return (int)(size + 1);
         }
 
-        private static Table CreateInitialTable()
+        private static int CalculateCount(Node[] targetNodes)
         {
-            var mask = InitialSize - 1;
-            var nodes = new Node[InitialSize][];
-
-            for (var i = 0; i < nodes.Length; i++)
+            var count = 0;
+            for (var i = 0; i < targetNodes.Length; i++)
             {
-                nodes[i] = EmptyNodes;
+                var node = targetNodes[i];
+                if (node != EmptyNode)
+                {
+                    do
+                    {
+                        count++;
+                        node = node.Next;
+                    }
+                    while (node != null);
+                }
             }
 
-            return new Table(mask, nodes, 0);
+            return count;
         }
 
-        private static Node[] AddNode(Node[] nodes, Node addNode)
+        private static Node[] CreateInitialTable()
         {
-            if (nodes == null)
-            {
-                return new[] { addNode };
-            }
+            var newNodes = new Node[InitialSize];
 
-            var newNodes = new Node[nodes.Length + 1];
-            Array.Copy(nodes, 0, newNodes, 0, nodes.Length);
-            newNodes[nodes.Length] = addNode;
+            for (var i = 0; i < newNodes.Length; i++)
+            {
+                newNodes[i] = EmptyNode;
+            }
 
             return newNodes;
         }
 
-        private static void RelocateNodes(Node[][] nodes, Node[][] oldNodes, int mask)
+        private static Node FindLastNode(Node node)
+        {
+            while (node.Next != null)
+            {
+                node = node.Next;
+            }
+
+            return node;
+        }
+
+        private static void UpdateLink(ref Node node, Node addNode)
+        {
+            if (node == EmptyNode)
+            {
+                node = addNode;
+            }
+            else
+            {
+                var last = FindLastNode(node);
+                last.Next = addNode;
+            }
+        }
+
+        private static void RelocateNodes(Node[] nodes, Node[] oldNodes)
         {
             for (var i = 0; i < oldNodes.Length; i++)
             {
-                for (var j = 0; j < oldNodes[i].Length; j++)
+                var node = oldNodes[i];
+                if (node == EmptyNode)
                 {
-                    var node = oldNodes[i][j];
-                    var relocateIndex = CalculateHash(node.TargetType, node.Columns) & mask;
-                    nodes[relocateIndex] = AddNode(nodes[relocateIndex], node);
+                    continue;
                 }
+
+                do
+                {
+                    var next = node.Next;
+                    node.Next = null;
+
+                    UpdateLink(ref nodes[CalculateHash(node.TargetType, node.Columns) & (nodes.Length - 1)], node);
+
+                    node = next;
+                }
+                while (node != null);
             }
         }
 
-        private static void FillEmptyIfNull(Node[][] nodes)
+        private void AddNode(Node node)
         {
-            for (var i = 0; i < nodes.Length; i++)
-            {
-                if (nodes[i] == null)
-                {
-                    nodes[i] = EmptyNodes;
-                }
-            }
-        }
-
-        private static Table CreateAddTable(Table oldTable, Node node)
-        {
-            var requestSize = Math.Max(InitialSize, (int)Math.Ceiling((oldTable.Count + 1) * Factor));
-
+            var requestSize = Math.Max(InitialSize, (nodes.Length + 1) * Factor);
             var size = CalculateSize(requestSize);
-            var mask = (int)(size - 1);
-            var newNodes = new Node[size][];
+            if (size > nodes.Length)
+            {
+                var newNodes = new Node[size];
+                for (var i = 0; i < newNodes.Length; i++)
+                {
+                    newNodes[i] = EmptyNode;
+                }
 
-            RelocateNodes(newNodes, oldTable.Nodes, mask);
+                RelocateNodes(newNodes, nodes);
 
-            var index = CalculateHash(node.TargetType, node.Columns) & mask;
-            newNodes[index] = AddNode(newNodes[index], node);
+                UpdateLink(ref newNodes[CalculateHash(node.TargetType, node.Columns) & (newNodes.Length - 1)], node);
 
-            FillEmptyIfNull(newNodes);
+                Interlocked.MemoryBarrier();
 
-            return new Table(mask, newNodes, oldTable.Count + 1);
+                nodes = newNodes;
+                count = CalculateCount(newNodes);
+            }
+            else
+            {
+                Interlocked.MemoryBarrier();
+
+                UpdateLink(ref nodes[CalculateHash(node.TargetType, node.Columns) & (nodes.Length - 1)], node);
+
+                count++;
+            }
         }
 
         //--------------------------------------------------------------------------------
         // Public
         //--------------------------------------------------------------------------------
 
-        public int Count => table.Count;
+        public int Count
+        {
+            get
+            {
+                lock (sync)
+                {
+                    return count;
+                }
+            }
+        }
 
         public void Clear()
         {
             lock (sync)
             {
-                var newTable = CreateInitialTable();
+                var newNodes = CreateInitialTable();
+
                 Interlocked.MemoryBarrier();
-                table = newTable;
-            }
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryGetValueInternal(Table targetTable, Type targetType, Span<ColumnInfo> columns, out object value)
-        {
-            var index = CalculateHash(targetType, columns) & targetTable.HashMask;
-            var array = targetTable.Nodes[index];
-            for (var i = 0; i < array.Length; i++)
-            {
-                var node = array[i];
-                if (node.TargetType == targetType && IsMatchColumn(node.Columns, columns))
-                {
-                    value = node.Value;
-                    return true;
-                }
+                nodes = newNodes;
+                count = 0;
             }
-
-            value = null;
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -191,7 +226,20 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(Type targetType, Span<ColumnInfo> columns, out object value)
         {
-            return TryGetValueInternal(table, targetType, columns, out value);
+            var node = nodes[CalculateHash(targetType, columns) & (nodes.Length - 1)];
+            do
+            {
+                if (node.TargetType == targetType && IsMatchColumn(node.Columns, columns))
+                {
+                    value = node.Value;
+                    return true;
+                }
+                node = node.Next;
+            }
+            while (node != null);
+
+            value = default;
+            return false;
         }
 
         public object AddIfNotExist(Type targetType, Span<ColumnInfo> columns, Func<Type, ColumnInfo[], object> valueFactory)
@@ -199,7 +247,7 @@ namespace Smart.Data.Accessor.Engine
             lock (sync)
             {
                 // Double checked locking
-                if (TryGetValueInternal(table, targetType, columns, out var currentValue))
+                if (TryGetValue(targetType, columns, out var currentValue))
                 {
                     return currentValue;
                 }
@@ -210,15 +258,12 @@ namespace Smart.Data.Accessor.Engine
                 var value = valueFactory(targetType, copyColumns);
 
                 // Check if added by recursive
-                if (TryGetValueInternal(table, targetType, columns, out currentValue))
+                if (TryGetValue(targetType, columns, out currentValue))
                 {
                     return currentValue;
                 }
 
-                // Rebuild
-                var newTable = CreateAddTable(table, new Node(targetType, copyColumns, value));
-                Interlocked.MemoryBarrier();
-                table = newTable;
+                AddNode(new Node(targetType, copyColumns, value));
 
                 return value;
             }
@@ -228,35 +273,27 @@ namespace Smart.Data.Accessor.Engine
         // Inner
         //--------------------------------------------------------------------------------
 
-        private class Node
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Framework only")]
+        private sealed class EmptyKey
         {
-            public Type TargetType { get; }
+        }
 
-            public ColumnInfo[] Columns { get; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
+        private sealed class Node
+        {
+            public readonly Type TargetType;
 
-            public object Value { get; }
+            public readonly ColumnInfo[] Columns;
+
+            public readonly object Value;
+
+            public Node Next;
 
             public Node(Type targetType, ColumnInfo[] columns, object value)
             {
                 TargetType = targetType;
                 Columns = columns;
                 Value = value;
-            }
-        }
-
-        private class Table
-        {
-            public int HashMask { get; }
-
-            public Node[][] Nodes { get; }
-
-            public int Count { get; }
-
-            public Table(int hashMask, Node[][] nodes, int count)
-            {
-                HashMask = hashMask;
-                Nodes = nodes;
-                Count = count;
             }
         }
     }

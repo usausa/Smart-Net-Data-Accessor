@@ -10,13 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.2.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
     <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
-    <PackageReference Include="Usa.Smart.Core" Version="1.7.5" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.0" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.6.2" />
     <PackageReference Include="xunit" Version="2.4.1" />

@@ -1,6 +1,7 @@
-namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor.Builders
 {
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Attributes.Builders;
     using Smart.Mock;
 
     using Xunit;
@@ -22,10 +23,6 @@ namespace Smart.Data.Accessor
             {
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
-                    .ConfigureOptions(x =>
-                    {
-                        x["EntityClassSuffix"] = "Model,Entity";
-                    })
                     .Build();
                 var dao = generator.Create<IInsertDao>();
 
