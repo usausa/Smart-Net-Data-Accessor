@@ -4,10 +4,12 @@ namespace Smart.Data.Accessor.Attributes.Builders
     using System.Collections.Generic;
     using System.Data;
     using System.Reflection;
+    using System.Text;
 
     using Smart.Data.Accessor.Attributes.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
+    using Smart.Data.Accessor.Tokenizer;
 
     public sealed class InsertAttribute : MethodAttribute
     {
@@ -40,50 +42,77 @@ namespace Smart.Data.Accessor.Attributes.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var tableName = table ??
+                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
+                            BuildHelper.GetTableName(option, mi);
 
-            // TODO sql based
-            var nodes = new List<INode>
+            if (String.IsNullOrEmpty(tableName))
             {
-                new SqlNode("INSERT INTO "),
-                new SqlNode(table ?? BuildHelper.GetTableName(option, mi)),
-                new SqlNode(" (")
-            };
-
-            var first = true;
-            foreach (var parameter in parameters)
-            {
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    nodes.Add(new SqlNode(", "));
-                }
-
-                nodes.Add(new SqlNode(parameter.ParameterName));
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
             }
 
-            nodes.Add(new SqlNode(") VALUES ("));
+            var sql = new StringBuilder();
+            sql.Append("INSERT INTO ");
+            sql.Append(tableName);
+            sql.Append(" (");
 
-            first = true;
-            foreach (var parameter in parameters)
+            var add = false;
+            for (var i = 0; i < parameters.Count; i++)
             {
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    nodes.Add(new SqlNode(", "));
-                }
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
 
-                nodes.Add(new ParameterNode(parameter.Name, parameter.ParameterName));
+                sql.Append(parameters[i].ParameterName);
             }
 
-            nodes.Add(new SqlNode(")"));
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
 
-            return nodes;
+                sql.Append(attribute.Column);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append(attribute.Column);
+            }
+
+            sql.Append(") VALUES (");
+
+            add = false;
+            foreach (var parameter in parameters)
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddParameter(sql, parameter, Operation.Insert);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddDbParameter(sql, attribute.Value);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddCodeParameter(sql, attribute.Value);
+            }
+
+            sql.Append(")");
+
+            var tokenizer = new SqlTokenizer(sql.ToString());
+            var builder = new NodeBuilder(tokenizer.Tokenize());
+            return builder.Build();
         }
     }
 }

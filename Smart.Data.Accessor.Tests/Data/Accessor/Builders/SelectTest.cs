@@ -11,6 +11,37 @@ namespace Smart.Data.Accessor.Builders
     public class SelectTest
     {
         //--------------------------------------------------------------------------------
+        // All
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface ISelectAllDao
+        {
+            [Select]
+            List<MultiKeyEntity> SelectAll();
+        }
+
+        [Fact]
+        public void TestSelectAll()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<ISelectAllDao>();
+
+                var list = dao.SelectAll();
+
+                Assert.Equal(3, list.Count);
+            }
+        }
+
+        //--------------------------------------------------------------------------------
         // Key
         //--------------------------------------------------------------------------------
 
@@ -106,6 +137,80 @@ namespace Smart.Data.Accessor.Builders
                 var list = dao.Select(new Parameter { Key1 = 1L, Key2 = 2L });
 
                 Assert.Equal(2, list.Count);
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Exclude
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface ISelectExcludeNullDao
+        {
+            [Select]
+            List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string type = null);
+        }
+
+        [Fact]
+        public void TestSelectExcludeNull()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<ISelectExcludeNullDao>();
+
+                var list = dao.Select("A");
+
+                Assert.Equal(2, list.Count);
+
+                list = dao.Select();
+
+                Assert.Equal(3, list.Count);
+
+                list = dao.Select(string.Empty);
+
+                Assert.Empty(list);
+            }
+        }
+
+        [DataAccessor]
+        public interface ISelectExcludeEmptyDao
+        {
+            [Select]
+            List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string type = null);
+        }
+
+        [Fact]
+        public void TestSelectExcludeEmpty()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<ISelectExcludeEmptyDao>();
+
+                var list = dao.Select("A");
+
+                Assert.Equal(2, list.Count);
+
+                list = dao.Select();
+
+                Assert.Equal(3, list.Count);
+
+                list = dao.Select(string.Empty);
+
+                Assert.Equal(3, list.Count);
             }
         }
     }

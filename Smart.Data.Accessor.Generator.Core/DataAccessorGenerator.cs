@@ -26,8 +26,7 @@ namespace Smart.Data.Accessor.Generator
 
         public void Generate(Type[] types)
         {
-            var targetTypes = types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() != null).ToArray();
-            foreach (var targetType in targetTypes)
+            foreach (var targetType in types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() != null))
             {
                 var source = CreateSource(targetType);
 

@@ -24,7 +24,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private readonly MethodInfo method;
 
-        private readonly HashSet<string> processed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> processed = new HashSet<string>();
 
         private int index;
 

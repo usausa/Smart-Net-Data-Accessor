@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Attributes.Builders
 
         public string When { get; }
 
-        public CodeValueAttribute(string value = null, string when = null)
+        public CodeValueAttribute(string value, string when = null)
         {
             Value = value;
             When = when;

@@ -75,16 +75,18 @@ namespace Smart.Data.Accessor.Attributes.Builders.Helpers
                     parameters.AddRange(pmi.ParameterType.GetProperties()
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
                         .Select(pi => new BuildParameterInfo(
+                            pmi,
                             pi,
-                            pi.Name,
-                            pi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pi.Name, naming))));
+                            $"{pmi.Name}.{pi.Name}",
+                            NormalizeName(pi.GetCustomAttribute<NameAttribute>()?.Name ?? pi.Name, naming))));
                 }
                 else
                 {
                     parameters.Add(new BuildParameterInfo(
                         pmi,
+                        null,
                         pmi.Name,
-                        pmi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pmi.Name, naming)));
+                        NormalizeName(pmi.GetCustomAttribute<NameAttribute>()?.Name ?? pmi.Name, naming)));
                 }
             }
 
@@ -104,36 +106,113 @@ namespace Smart.Data.Accessor.Attributes.Builders.Helpers
             }
         }
 
+        public static IReadOnlyList<BuildParameterInfo> GetKeyParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Select(x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
+                .Where(x => x.Key != null)
+                .OrderBy(x => x.Key.Order)
+                .Select(x => x.Parameter)
+                .ToList();
+        }
+
+        public static IReadOnlyList<BuildParameterInfo> GetNonKeyParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetAttribute<KeyAttribute>() == null)
+                .ToList();
+        }
+
+        public static IReadOnlyList<BuildParameterInfo> GetValueParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetParameterAttribute<ValuesAttribute>() != null)
+                .ToList();
+        }
+
+        public static IReadOnlyList<BuildParameterInfo> GetNonValueParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetParameterAttribute<ValuesAttribute>() == null)
+                .ToList();
+        }
+
+        public static IReadOnlyList<BuildParameterInfo> GetConditionParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetAttribute<ConditionAttribute>() != null)
+                .ToList();
+        }
+
+        public static IReadOnlyList<BuildParameterInfo> GetNonConditionParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetAttribute<ConditionAttribute>() == null)
+                .ToList();
+        }
+
         //--------------------------------------------------------------------------------
         // Helper
         //--------------------------------------------------------------------------------
 
-        public static void AddConditionNode(StringBuilder sql, IReadOnlyList<BuildParameterInfo> parameters)
+        public static void AddCondition(StringBuilder sql, IReadOnlyList<BuildParameterInfo> parameters)
         {
-            var keys = parameters
-                .Select(x => new { Parameter = x, Key = x.GetCustomAttribute<KeyAttribute>() })
-                .Where(x => x.Key != null)
-                .OrderBy(x => x.Key.Order)
-                .ToArray();
-            var target = keys.Length > 0 ? keys.Select(x => x.Parameter).ToArray() : parameters;
-
-            for (var i = 0; i < target.Count; i++)
+            if (parameters.Count == 0)
             {
-                var parameter = target[i];
+                return;
+            }
 
-                if (i != 0)
-                {
-                    sql.Append(" AND ");
-                }
+            var addAnd = parameters
+                .Select(x => x.GetAttribute<ConditionAttribute>())
+                .Any(x => (x?.ExcludeNull ?? false) || (x?.ExcludeEmpty ?? false));
 
-                sql.Append(parameter.ParameterName);
+            sql.Append(" WHERE");
+            if (addAnd)
+            {
+                sql.Append(" 1 = 1");
+            }
+            else
+            {
+                sql.Append(" ");
+            }
+
+            foreach (var parameter in parameters)
+            {
                 if (ParameterHelper.IsMultipleParameter(parameter.ParameterType))
                 {
+                    if (addAnd)
+                    {
+                        sql.Append(" AND ");
+                    }
+
+                    sql.Append(parameter.ParameterName);
                     sql.Append(" IN ");
+                    sql.Append($"/*@ {parameter.Name} */dummy");
                 }
                 else
                 {
-                    var condition = parameter.GetCustomAttribute<ConditionAttribute>();
+                    var condition = parameter.GetAttribute<ConditionAttribute>();
+                    var excludeNull = (condition?.ExcludeNull ?? false) || (condition?.ExcludeEmpty ?? false);
+
+                    if (excludeNull)
+                    {
+                        if (condition.ExcludeEmpty)
+                        {
+                            sql.Append($"/*% if (IsNotEmpty({parameter.Name})) {{ */");
+                        }
+                        else
+                        {
+                            sql.Append($"/*% if (IsNotNull({parameter.Name})) {{ */");
+                        }
+                    }
+
+                    if (addAnd)
+                    {
+                        sql.Append(" AND ");
+                    }
+
+                    sql.Append(parameter.ParameterName);
+
                     if (condition != null)
                     {
                         sql.Append($" {condition.Operand} ");
@@ -142,8 +221,55 @@ namespace Smart.Data.Accessor.Attributes.Builders.Helpers
                     {
                         sql.Append(" = ");
                     }
+
+                    sql.Append($"/*@ {parameter.Name} */dummy");
+
+                    if (excludeNull)
+                    {
+                        sql.Append("/*% } */");
+                    }
                 }
-                sql.Append($"/*@ {parameter.Name} */dummy");
+
+                addAnd = true;
+            }
+        }
+
+        public static void AddParameter(StringBuilder sql, BuildParameterInfo parameter, string operation)
+        {
+            var dbValue = parameter.GetAttributes<DbValueAttribute>()
+                .FirstOrDefault(x => x.When == null || x.When == operation);
+            if (dbValue != null)
+            {
+                sql.Append(dbValue.Value);
+                return;
+            }
+
+            var codeValue = parameter.GetAttributes<CodeValueAttribute>()
+                .FirstOrDefault(x => x.When == null || x.When == operation);
+            if (codeValue != null)
+            {
+                sql.Append($"/*# {codeValue.Value} */");
+                return;
+            }
+
+            sql.Append($"/*@ {parameter.Name} */dummy");
+        }
+
+        public static void AddDbParameter(StringBuilder sql, string value)
+        {
+            sql.Append(value);
+        }
+
+        public static void AddCodeParameter(StringBuilder sql, string value)
+        {
+            sql.Append($"/*# {value} */");
+        }
+
+        public static void AddSplitter(StringBuilder sql, bool add)
+        {
+            if (add)
+            {
+                sql.Append(", ");
             }
         }
     }

@@ -9,6 +9,52 @@ namespace Smart.Data.Accessor.Builders
     public class DeleteTest
     {
         //--------------------------------------------------------------------------------
+        // All
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface IDeleteAllDao
+        {
+            [Delete(typeof(MultiKeyEntity), Force = true)]
+            int DeleteAll();
+        }
+
+        [Fact]
+        public void TestDeleteAll()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<IDeleteAllDao>();
+
+                var effect = dao.DeleteAll();
+
+                Assert.Equal(3, effect);
+            }
+        }
+
+        [DataAccessor]
+        public interface IDeleteAllWithoutForceDao
+        {
+            [Delete(typeof(MultiKeyEntity))]
+            int DeleteAll();
+        }
+
+        [Fact]
+        public void TestDeleteAllWithoutForce()
+        {
+            var generator = new TestFactoryBuilder()
+                .Build();
+            Assert.Throws<BuilderException>(() => generator.Create<IDeleteAllWithoutForceDao>());
+        }
+
+        //--------------------------------------------------------------------------------
         // Key
         //--------------------------------------------------------------------------------
 

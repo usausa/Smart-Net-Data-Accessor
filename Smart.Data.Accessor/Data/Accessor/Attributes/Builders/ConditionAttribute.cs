@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Attributes.Builders
 
         public bool ExcludeNull { get; set; }
 
-        public bool EmptyStringAsNull { get; set; } = true;
+        public bool ExcludeEmpty { get; set; }
 
         public ConditionAttribute()
             : this(Builders.Operand.Equal)

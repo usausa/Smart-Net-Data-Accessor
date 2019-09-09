@@ -17,6 +17,8 @@ namespace Smart.Data.Accessor.Attributes.Builders
 
         private readonly Type type;
 
+        public string Order { get; set; }
+
         protected BaseSelectAttribute(string table, Type type, MethodType methodType)
             : base(CommandType.Text, methodType)
         {
@@ -24,13 +26,44 @@ namespace Smart.Data.Accessor.Attributes.Builders
             this.type = type;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
+            var parameters = BuildHelper.GetParameters(option, mi);
+            var keys = BuildHelper.GetKeyParameters(parameters);
+            var tableName = table ??
+                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
+                            BuildHelper.GetReturnTableName(option, mi);
+
+            if (String.IsNullOrEmpty(tableName))
+            {
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+            }
+
             var sql = new StringBuilder();
             sql.Append("SELECT * FROM ");
-            sql.Append(table ?? (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ?? BuildHelper.GetReturnTableName(option, mi));
-            sql.Append(" WHERE ");
-            BuildHelper.AddConditionNode(sql, BuildHelper.GetParameters(option, mi));
+            sql.Append(tableName);
+            BuildHelper.AddCondition(sql, keys.Count > 0 ? keys : parameters);
+
+            if (MethodType == MethodType.Query)
+            {
+                if (!String.IsNullOrEmpty(Order))
+                {
+                    sql.Append(" ORDER BY ");
+                    sql.Append(Order);
+                }
+                else if (keys.Count > 0)
+                {
+                    sql.Append(" ORDER BY ");
+                    foreach (var key in keys)
+                    {
+                        sql.Append(key.Name);
+                        sql.Append(", ");
+                    }
+
+                    sql.Length -= 2;
+                }
+            }
 
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());
