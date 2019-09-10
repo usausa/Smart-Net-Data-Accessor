@@ -10,10 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.11.5" />
-    <PackageReference Include="Dapper" Version="1.60.6" />
+    <PackageReference Include="Dapper" Version="2.0.4" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.5.0" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.6.2" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.6.2" />
   </ItemGroup>
 

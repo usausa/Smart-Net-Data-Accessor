@@ -17,7 +17,7 @@
     <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
     <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
     <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
-    <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.0" />
+    <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.1" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.6.2" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">

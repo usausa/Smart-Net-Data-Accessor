@@ -5,6 +5,7 @@ namespace Example.ConsoleApplication.Dao
     using Example.ConsoleApplication.Models;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Attributes.Builders;
 
     [DataAccessor]
     public interface IExampleDao

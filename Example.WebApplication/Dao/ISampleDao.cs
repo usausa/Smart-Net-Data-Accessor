@@ -6,6 +6,7 @@ namespace Example.WebApplication.Dao
     using Example.WebApplication.Models;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Attributes.Builders;
 
     [DataAccessor]
     public interface ISampleDao
