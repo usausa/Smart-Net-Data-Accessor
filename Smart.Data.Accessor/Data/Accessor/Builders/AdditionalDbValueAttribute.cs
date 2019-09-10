@@ -1,15 +1,15 @@
-namespace Smart.Data.Accessor.Attributes.Builders
+namespace Smart.Data.Accessor.Builders
 {
     using System;
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class AdditionalCodeValueAttribute : Attribute
+    public class AdditionalDbValueAttribute : Attribute
     {
         public string Column { get; }
 
         public string Value { get; }
 
-        public AdditionalCodeValueAttribute(string column, string value)
+        public AdditionalDbValueAttribute(string column, string value)
         {
             Column = column;
             Value = value;

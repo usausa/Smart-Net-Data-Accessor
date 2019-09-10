@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Attributes.Builders
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -6,7 +6,8 @@ namespace Smart.Data.Accessor.Attributes.Builders
     using System.Reflection;
     using System.Text;
 
-    using Smart.Data.Accessor.Attributes.Builders.Helpers;
+    using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;

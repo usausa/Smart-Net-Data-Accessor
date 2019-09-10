@@ -3,7 +3,6 @@ namespace Smart.Data.Accessor.Builders
     using System.Collections.Generic;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Attributes.Builders;
     using Smart.Mock;
 
     using Xunit;

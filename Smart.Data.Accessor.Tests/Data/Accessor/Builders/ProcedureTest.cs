@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Builders
     using System.Linq;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Attributes.Builders;
     using Smart.Mock;
     using Smart.Mock.Data;
 

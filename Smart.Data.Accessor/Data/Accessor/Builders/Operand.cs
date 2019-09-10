@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Attributes.Builders
+namespace Smart.Data.Accessor.Builders
 {
     public static class Operand
     {

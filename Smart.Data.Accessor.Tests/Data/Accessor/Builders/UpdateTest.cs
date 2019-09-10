@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Builders
 {
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Attributes.Builders;
     using Smart.Data.Mapper;
     using Smart.Mock;
 
