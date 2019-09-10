@@ -39,6 +39,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmark", "Benchmark", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{8B1E9449-4262-4EC9-85E7-D3A9A78206EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options.SqlServer", "Smart.Data.Accessor.Options.SqlServer\Smart.Data.Accessor.Options.SqlServer.csproj", "{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options.MySql", "Smart.Data.Accessor.Options.MySql\Smart.Data.Accessor.Options.MySql.csproj", "{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +81,14 @@ Global
 		{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D1AB72F-BEA8-45DF-8997-F46D1DAE4EA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
