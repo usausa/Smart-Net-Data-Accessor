@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Builders
 
             if (!Force && (conditions.Count == 0))
             {
-                throw new BuilderException($"Delete all is required force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();

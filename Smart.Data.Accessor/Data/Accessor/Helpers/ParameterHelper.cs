@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Helpers
         //--------------------------------------------------------------------------------
 
         public static bool IsTimeoutParameter(ParameterInfo pi) =>
-            pi.GetCustomAttribute<TimeoutParameterAttribute>() != null;
+            pi.GetCustomAttribute<TimeoutAttribute>() != null;
 
         public static bool IsCancellationTokenParameter(ParameterInfo pi) =>
             pi.ParameterType == typeof(CancellationToken);

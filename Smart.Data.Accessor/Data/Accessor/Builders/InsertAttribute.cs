@@ -40,6 +40,7 @@ namespace Smart.Data.Accessor.Builders
             this.type = type;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
@@ -56,59 +57,9 @@ namespace Smart.Data.Accessor.Builders
             sql.Append("INSERT INTO ");
             sql.Append(tableName);
             sql.Append(" (");
-
-            var add = false;
-            for (var i = 0; i < parameters.Count; i++)
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append(parameters[i].ParameterName);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append(attribute.Column);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append(attribute.Column);
-            }
-
+            BuildHelper.AddInsertColumns(sql, mi, parameters);
             sql.Append(") VALUES (");
-
-            add = false;
-            foreach (var parameter in parameters)
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                BuildHelper.AddParameter(sql, parameter, Operation.Insert);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                BuildHelper.AddDbParameter(sql, attribute.Value);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                BuildHelper.AddCodeParameter(sql, attribute.Value);
-            }
-
+            BuildHelper.AddInsertValues(sql, mi, parameters);
             sql.Append(")");
 
             var tokenizer = new SqlTokenizer(sql.ToString());

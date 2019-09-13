@@ -15,7 +15,7 @@ namespace Smart.Data.Accessor
         public interface ITimeoutAttributeDao
         {
             [Execute]
-            [Timeout(123)]
+            [CommandTimeout(123)]
             int Execute(DbConnection con);
         }
 
@@ -45,7 +45,7 @@ namespace Smart.Data.Accessor
         public interface ITimeoutParameterDao
         {
             [Execute]
-            int Execute(DbConnection con, [TimeoutParameter] int timeout);
+            int Execute(DbConnection con, [Timeout] int timeout);
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace Smart.Data.Accessor
         public interface IInvalidTimeoutParameterDao
         {
             [Execute]
-            int Execute(DbConnection con, [TimeoutParameter] string timeout);
+            int Execute(DbConnection con, [Timeout] string timeout);
         }
 
         [Fact]

@@ -155,6 +155,31 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Helper
         //--------------------------------------------------------------------------------
 
+        public static string MakeColumns(IGeneratorOption option, Type type, string[] values)
+        {
+            var naming = option.GetValue("FieldNaming");
+
+            return String.Join(", ", values
+                .Select(x =>
+                {
+                    var pi = type.GetProperty(x);
+                    if (pi != null)
+                    {
+                        var name = pi.GetCustomAttribute<NameAttribute>();
+                        if (name != null)
+                        {
+                            return NormalizeName(name.Name, naming);
+                        }
+                    }
+
+                    return NormalizeName(x, naming);
+                }));
+        }
+
+        //--------------------------------------------------------------------------------
+        // Add
+        //--------------------------------------------------------------------------------
+
         public static void AddCondition(StringBuilder sql, IReadOnlyList<BuildParameterInfo> parameters)
         {
             if (parameters.Count == 0)
@@ -270,6 +295,101 @@ namespace Smart.Data.Accessor.Builders.Helpers
             if (add)
             {
                 sql.Append(", ");
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Insert
+        //--------------------------------------------------------------------------------
+
+        public static void AddInsertColumns(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            var add = false;
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append(parameters[i].ParameterName);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append(attribute.Column);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append(attribute.Column);
+            }
+        }
+
+        public static void AddInsertValues(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            var add = false;
+            foreach (var parameter in parameters)
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddParameter(sql, parameter, Operation.Insert);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddDbParameter(sql, attribute.Value);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                BuildHelper.AddCodeParameter(sql, attribute.Value);
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Update
+        //--------------------------------------------------------------------------------
+
+        public static void AddUpdateSets(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        {
+            var add = false;
+            foreach (var parameter in parameters)
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append($" {parameter.ParameterName} = ");
+                BuildHelper.AddParameter(sql, parameter, Operation.Update);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append($" {attribute.Column} = ");
+                BuildHelper.AddDbParameter(sql, attribute.Value);
+            }
+
+            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append($" {attribute.Column} = ");
+                BuildHelper.AddCodeParameter(sql, attribute.Value);
             }
         }
     }

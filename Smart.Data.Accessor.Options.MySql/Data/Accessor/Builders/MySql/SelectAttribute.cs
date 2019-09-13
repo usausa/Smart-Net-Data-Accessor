@@ -6,6 +6,7 @@ namespace Smart.Data.Accessor.Builders.MySql
     using System.Reflection;
     using System.Text;
 
+    using Smart.Collections.Generic;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
@@ -18,9 +19,9 @@ namespace Smart.Data.Accessor.Builders.MySql
 
         private readonly Type type;
 
-        public string Group { get; set; }
+        public string[] Group { get; set; }
 
-        public string Order { get; set; }
+        public string[] Order { get; set; }
 
         public bool ForUpdate { get; set; }
 
@@ -67,15 +68,16 @@ namespace Smart.Data.Accessor.Builders.MySql
             sql.Append(tableName);
             BuildHelper.AddCondition(sql, parameters);
 
-            if (!String.IsNullOrEmpty(Group))
+            if (!Group.IsNullOrEmpty())
             {
                 sql.Append(" GROUP BY ");
-                sql.Append(Group);
+                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Group));
             }
 
-            if (!String.IsNullOrEmpty(Order))
+            if (!Order.IsNullOrEmpty())
             {
                 sql.Append(" ORDER BY ");
+                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Order));
                 sql.Append(Order);
             }
             else if (keys.Count > 0)

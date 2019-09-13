@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Builders
             var sql = new StringBuilder();
             sql.Append("UPDATE ");
             sql.Append(tableName);
-            sql.Append(" SET");
+            sql.Append(" SET ");
 
             if (values.Count > 0)
             {
@@ -66,10 +66,10 @@ namespace Smart.Data.Accessor.Builders
 
                 if (!Force && (conditions.Count == 0))
                 {
-                    throw new BuilderException($"Delete all is required force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                    throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
                 }
 
-                AddSetValues(sql, values, mi);
+                BuildHelper.AddUpdateSets(sql, mi, values);
                 BuildHelper.AddCondition(sql, conditions);
             }
             else
@@ -77,7 +77,7 @@ namespace Smart.Data.Accessor.Builders
                 var keys = BuildHelper.GetKeyParameters(parameters);
                 if (keys.Count > 0)
                 {
-                    AddSetValues(sql, BuildHelper.GetNonKeyParameters(parameters), mi);
+                    BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
                     BuildHelper.AddCondition(sql, keys);
                 }
                 else
@@ -86,10 +86,10 @@ namespace Smart.Data.Accessor.Builders
 
                     if (!Force && (conditions.Count == 0))
                     {
-                        throw new BuilderException($"Delete all is required force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                        throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
                     }
 
-                    AddSetValues(sql, BuildHelper.GetNonConditionParameters(parameters), mi);
+                    BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonConditionParameters(parameters));
                     BuildHelper.AddCondition(sql, conditions);
                 }
             }
@@ -97,37 +97,6 @@ namespace Smart.Data.Accessor.Builders
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());
             return builder.Build();
-        }
-
-        private static void AddSetValues(StringBuilder sql, IReadOnlyList<BuildParameterInfo> parameters, MethodInfo mi)
-        {
-            var add = false;
-            foreach (var parameter in parameters)
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append($" {parameter.ParameterName} = ");
-                BuildHelper.AddParameter(sql, parameter, Operation.Update);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append($" {attribute.Column} = ");
-                BuildHelper.AddDbParameter(sql, attribute.Value);
-            }
-
-            foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
-            {
-                BuildHelper.AddSplitter(sql, add);
-                add = true;
-
-                sql.Append($" {attribute.Column} = ");
-                BuildHelper.AddCodeParameter(sql, attribute.Value);
-            }
         }
     }
 }
