@@ -12,33 +12,29 @@ namespace Smart.Data.Accessor.Builders
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class SelectAttribute : MethodAttribute
+    public sealed class SelectSingleAttribute : MethodAttribute
     {
         private readonly string table;
 
         private readonly Type type;
 
-        public string Group { get; set; }
-
-        public string Order { get; set; }
-
-        public SelectAttribute()
+        public SelectSingleAttribute()
             : this(null, null)
         {
         }
 
-        public SelectAttribute(string table)
+        public SelectSingleAttribute(string table)
             : this(table, null)
         {
         }
 
-        public SelectAttribute(Type type)
+        public SelectSingleAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private SelectAttribute(string table, Type type)
-            : base(CommandType.Text, MethodType.Query)
+        private SelectSingleAttribute(string table, Type type)
+            : base(CommandType.Text, MethodType.QueryFirstOrDefault)
         {
             this.table = table;
             this.type = type;
@@ -61,30 +57,7 @@ namespace Smart.Data.Accessor.Builders
             var sql = new StringBuilder();
             sql.Append("SELECT * FROM ");
             sql.Append(tableName);
-            BuildHelper.AddCondition(sql, parameters);
-
-            if (!String.IsNullOrEmpty(Group))
-            {
-                sql.Append(" GROUP BY ");
-                sql.Append(Group);
-            }
-
-            if (!String.IsNullOrEmpty(Order))
-            {
-                sql.Append(" ORDER BY ");
-                sql.Append(Order);
-            }
-            else if (keys.Count > 0)
-            {
-                sql.Append(" ORDER BY ");
-                foreach (var key in keys)
-                {
-                    sql.Append(key.Name);
-                    sql.Append(", ");
-                }
-
-                sql.Length -= 2;
-            }
+            BuildHelper.AddCondition(sql, keys.Count > 0 ? keys : parameters);
 
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());

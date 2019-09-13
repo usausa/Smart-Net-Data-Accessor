@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Builders
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public abstract class BaseScalarAttribute : MethodAttribute
+    public abstract class ScalarAttribute : MethodAttribute
     {
         private readonly string table;
 
@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor.Builders
 
         private readonly string field;
 
-        protected BaseScalarAttribute(string table, Type type, string field)
+        protected ScalarAttribute(string table, Type type, string field)
             : base(CommandType.Text, MethodType.ExecuteScalar)
         {
             this.table = table;
@@ -32,7 +32,6 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
-            var keys = BuildHelper.GetKeyParameters(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetTableName(option, mi);
@@ -47,31 +46,11 @@ namespace Smart.Data.Accessor.Builders
             sql.Append(field);
             sql.Append(" FROM ");
             sql.Append(tableName);
-            BuildHelper.AddCondition(sql, keys.Count > 0 ? keys : parameters);
+            BuildHelper.AddCondition(sql, parameters);
 
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());
             return builder.Build();
-        }
-    }
-
-    public sealed class CountAttribute : BaseScalarAttribute
-    {
-        private const string Field = "COUNT(*)";
-
-        public CountAttribute()
-            : base(null, null, Field)
-        {
-        }
-
-        public CountAttribute(string table)
-            : base(table, null, Field)
-        {
-        }
-
-        public CountAttribute(Type type)
-            : base(null, type, Field)
-        {
         }
     }
 }
