@@ -41,7 +41,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IDeleteAllWithoutForceDao
         {
-            [Delete(typeof(MultiKeyEntity))]
+            [Delete("MultiKey")]
             int DeleteAll();
         }
 
@@ -152,6 +152,27 @@ namespace Smart.Data.Accessor.Builders
 
                 Assert.Equal(2, effect);
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface IDeleteInvalidDao
+        {
+            [Delete("")]
+            int Delete();
+        }
+
+        [Fact]
+        public void TestDeleteInvalid()
+        {
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+
+            Assert.Throws<BuilderException>(() => generator.Create<IDeleteInvalidDao>());
         }
     }
 }

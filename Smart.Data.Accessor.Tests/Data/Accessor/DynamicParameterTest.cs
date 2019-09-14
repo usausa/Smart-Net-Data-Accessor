@@ -4,8 +4,11 @@ namespace Smart.Data.Accessor
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Engine;
+    using Smart.Data.Accessor.Handlers;
     using Smart.Mock;
     using Smart.Mock.Data;
 
@@ -347,17 +350,144 @@ namespace Smart.Data.Accessor
         }
 
         //--------------------------------------------------------------------------------
-        // DbTye
+        // Handler
         //--------------------------------------------------------------------------------
 
-        // TODO Later
+        public class DummyTypeHandler : ITypeHandler
+        {
+            public void SetValue(DbParameter parameter, object value) => parameter.Size = 5;
+
+            public Func<object, object> CreateParse(Type type) => x => x;
+        }
+
+        [DataAccessor]
+        public interface IHandlerDao
+        {
+            [Execute]
+            void Execute(DbConnection con, string value);
+        }
+
+        [Fact]
+        public void TestHandler()
+        {
+            var generator = new TestFactoryBuilder()
+                .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
+                .Config(config =>
+                {
+                    config.ConfigureTypeHandlers(c =>
+                    {
+                        c[typeof(string)] = new DummyTypeHandler();
+                    });
+                })
+                .Build();
+
+            var dao = generator.Create<IHandlerDao>();
+
+            var con = new MockDbConnection();
+            con.SetupCommand(cmd =>
+            {
+                cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+                cmd.SetupResult(0);
+            });
+
+            dao.Execute(con, "1");
+
+            var controller = (IEngineController)generator.Engine;
+            Assert.Equal(1, controller.CountDynamicSetupCache);
+            controller.ClearDynamicSetupCache();
+            Assert.Equal(0, controller.CountDynamicSetupCache);
+        }
+
+        [DataAccessor]
+        public interface IListHandlerDao
+        {
+            [Execute]
+            void Execute(DbConnection con, List<string> values);
+        }
+
+        [Fact]
+        public void TestListHandler()
+        {
+            var generator = new TestFactoryBuilder()
+                .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
+                .Config(config =>
+                {
+                    config.ConfigureTypeHandlers(c =>
+                    {
+                        c[typeof(string)] = new DummyTypeHandler();
+                    });
+                })
+                .Build();
+
+            var dao = generator.Create<IListHandlerDao>();
+
+            var con = new MockDbConnection();
+            con.SetupCommand(cmd =>
+            {
+                cmd.Executing = c =>
+                {
+                    Assert.Equal(5, c.Parameters[0].Size);
+                    Assert.Equal(5, c.Parameters[1].Size);
+                };
+                cmd.SetupResult(0);
+            });
+
+            dao.Execute(con, new List<string>(new[] { "1", "2" }));
+
+            var controller = (IEngineController)generator.Engine;
+            Assert.Equal(1, controller.CountDynamicSetupCache);
+            controller.ClearDynamicSetupCache();
+            Assert.Equal(0, controller.CountDynamicSetupCache);
+        }
 
         //--------------------------------------------------------------------------------
         // Handler
         //--------------------------------------------------------------------------------
 
-        // TODO (*)
-        // TODO Later
-        // TODO Later
+        [DataAccessor]
+        public interface ISetupFailedDao
+        {
+            [Execute]
+            void Execute(DbConnection con, string value);
+        }
+
+        [Fact]
+        public void TestSetupFailed()
+        {
+            var generator = new TestFactoryBuilder()
+                .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
+                .Config(config =>
+                {
+                    config.ConfigureTypeMap(map => map.Clear());
+                })
+                .Build();
+
+            var dao = generator.Create<ISetupFailedDao>();
+
+            Assert.Throws<TargetInvocationException>(() => dao.Execute(new MockDbConnection(), "1"));
+        }
+
+        [DataAccessor]
+        public interface ISetupFailedListDao
+        {
+            [Execute]
+            void Execute(DbConnection con, List<string> values);
+        }
+
+        [Fact]
+        public void TestSetupFailedList()
+        {
+            var generator = new TestFactoryBuilder()
+                .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
+                .Config(config =>
+                {
+                    config.ConfigureTypeMap(map => map.Clear());
+                })
+                .Build();
+
+            var dao = generator.Create<ISetupFailedListDao>();
+
+            Assert.Throws<TargetInvocationException>(() => dao.Execute(new MockDbConnection(), new List<string>(new[] { "1", "2" })));
+        }
     }
 }

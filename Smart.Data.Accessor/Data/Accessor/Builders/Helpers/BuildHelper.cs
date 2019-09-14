@@ -58,11 +58,21 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 : type.Name.Substring(0, type.Name.Length - match.Length);
         }
 
+        public static string[] GetKeyNamesOfType(Type type)
+        {
+            return type.GetProperties()
+                .Select(x => new { Parameter = x, Key = x.GetCustomAttribute<KeyAttribute>() })
+                .Where(x => x.Key != null)
+                .OrderBy(x => x.Key.Order)
+                .Select(x => x.Parameter.Name)
+                .ToArray();
+        }
+
         //--------------------------------------------------------------------------------
         // Parameter
         //--------------------------------------------------------------------------------
 
-        public static IReadOnlyList<BuildParameterInfo> GetParameters(IGeneratorOption option, MethodInfo mi)
+        public static IList<BuildParameterInfo> GetParameters(IGeneratorOption option, MethodInfo mi)
         {
             var naming = option.GetValue("FieldNaming");
 
@@ -106,7 +116,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             }
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetKeyParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetKeyParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Select(x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
@@ -116,35 +126,35 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 .ToList();
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetNonKeyParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetNonKeyParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Where(x => x.GetAttribute<KeyAttribute>() == null)
                 .ToList();
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetValueParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetValueParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Where(x => x.GetParameterAttribute<ValuesAttribute>() != null)
                 .ToList();
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetNonValueParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetNonValueParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Where(x => x.GetParameterAttribute<ValuesAttribute>() == null)
                 .ToList();
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetConditionParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetConditionParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Where(x => x.GetAttribute<ConditionAttribute>() != null)
                 .ToList();
         }
 
-        public static IReadOnlyList<BuildParameterInfo> GetNonConditionParameters(IReadOnlyList<BuildParameterInfo> parameters)
+        public static IList<BuildParameterInfo> GetNonConditionParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
                 .Where(x => x.GetAttribute<ConditionAttribute>() == null)
@@ -155,32 +165,46 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Helper
         //--------------------------------------------------------------------------------
 
-        public static string MakeColumns(IGeneratorOption option, Type type, string[] values)
+        public static string MakeKeyColumns(IGeneratorOption option, Type type)
         {
             var naming = option.GetValue("FieldNaming");
 
-            return String.Join(", ", values
+            var elementType = ParameterHelper.IsMultipleParameter(type)
+                ? ParameterHelper.GetMultipleParameterElementType(type)
+                : type;
+
+            return String.Join(", ", elementType.GetProperties()
+                .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
+                .Where(x => x.Key != null)
+                .OrderBy(x => x.Key.Order)
                 .Select(x =>
                 {
-                    var pi = type.GetProperty(x);
-                    if (pi != null)
-                    {
-                        var name = pi.GetCustomAttribute<NameAttribute>();
-                        if (name != null)
-                        {
-                            return NormalizeName(name.Name, naming);
-                        }
-                    }
-
-                    return NormalizeName(x, naming);
+                    var name = x.Property.GetCustomAttribute<NameAttribute>();
+                    return NormalizeName(name != null ? name.Name : x.Property.Name, naming);
                 }));
+        }
+
+        public static BuildParameterInfo PickParameter<T>(IList<BuildParameterInfo> parameters)
+            where T : Attribute
+        {
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                var parameter = parameters[i];
+                if (parameter.GetAttribute<T>() != null)
+                {
+                    parameters.RemoveAt(i);
+                    return parameter;
+                }
+            }
+
+            return null;
         }
 
         //--------------------------------------------------------------------------------
         // Add
         //--------------------------------------------------------------------------------
 
-        public static void AddCondition(StringBuilder sql, IReadOnlyList<BuildParameterInfo> parameters)
+        public static void AddCondition(StringBuilder sql, IList<BuildParameterInfo> parameters)
         {
             if (parameters.Count == 0)
             {
@@ -302,7 +326,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Insert
         //--------------------------------------------------------------------------------
 
-        public static void AddInsertColumns(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        public static void AddInsertColumns(StringBuilder sql, MethodInfo mi, IList<BuildParameterInfo> parameters)
         {
             var add = false;
             for (var i = 0; i < parameters.Count; i++)
@@ -330,7 +354,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             }
         }
 
-        public static void AddInsertValues(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        public static void AddInsertValues(StringBuilder sql, MethodInfo mi, IList<BuildParameterInfo> parameters)
         {
             var add = false;
             foreach (var parameter in parameters)
@@ -362,7 +386,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Update
         //--------------------------------------------------------------------------------
 
-        public static void AddUpdateSets(StringBuilder sql, MethodInfo mi, IReadOnlyList<BuildParameterInfo> parameters)
+        public static void AddUpdateSets(StringBuilder sql, MethodInfo mi, IList<BuildParameterInfo> parameters)
         {
             var add = false;
             foreach (var parameter in parameters)

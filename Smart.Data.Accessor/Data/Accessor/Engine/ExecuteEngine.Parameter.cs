@@ -422,19 +422,19 @@ namespace Smart.Data.Accessor.Engine
             // ITypeHandler
             if (LookupTypeHandler(type, out var handler))
             {
-                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(handler.SetValue, DbType.Object, null));
+                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(handler.SetValue, DbType.Object));
             }
 
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(null, dbType, null));
+                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(null, dbType));
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private Action<DbCommand, StringBuilder, string, object> CreateDynamicListParameterHandler(Action<DbParameter, object> handler, DbType dbType, int? size)
+        private Action<DbCommand, StringBuilder, string, object> CreateDynamicListParameterHandler(Action<DbParameter, object> handler, DbType dbType)
         {
             return (cmd, sql, name, value) =>
             {
@@ -472,10 +472,6 @@ namespace Smart.Data.Accessor.Engine
                     {
                         parameter.Value = values[i];
                         parameter.DbType = dbType;
-                        if (size.HasValue)
-                        {
-                            parameter.Size = size.Value;
-                        }
                     }
                     parameter.ParameterName = name + GetParameterSubName(i);
                 }
@@ -487,19 +483,19 @@ namespace Smart.Data.Accessor.Engine
             // ITypeHandler
             if (LookupTypeHandler(type, out var handler))
             {
-                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(handler.SetValue, DbType.Object, null));
+                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(handler.SetValue, DbType.Object));
             }
 
             // Type
             if (LookupDbType(type, out var dbType))
             {
-                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(null, dbType, null));
+                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(null, dbType));
             }
 
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static Action<DbCommand, StringBuilder, string, object> CreateDynamicSimpleParameterHandler(Action<DbParameter, object> handler, DbType dbType, int? size)
+        private static Action<DbCommand, StringBuilder, string, object> CreateDynamicSimpleParameterHandler(Action<DbParameter, object> handler, DbType dbType)
         {
             return (cmd, sql, name, value) =>
             {
@@ -515,10 +511,6 @@ namespace Smart.Data.Accessor.Engine
                 {
                     parameter.Value = value;
                     parameter.DbType = dbType;
-                    if (size.HasValue)
-                    {
-                        parameter.Size = size.Value;
-                    }
                 }
                 parameter.ParameterName = name;
             };

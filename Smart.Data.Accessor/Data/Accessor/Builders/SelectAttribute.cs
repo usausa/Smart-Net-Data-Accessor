@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Builders
     using System.Reflection;
     using System.Text;
 
-    using Smart.Collections.Generic;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
@@ -19,9 +18,7 @@ namespace Smart.Data.Accessor.Builders
 
         private readonly Type type;
 
-        public string[] Group { get; set; }
-
-        public string[] Order { get; set; }
+        public string Order { get; set; }
 
         public SelectAttribute()
             : this(null, null)
@@ -49,7 +46,6 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
-            var keys = BuildHelper.GetKeyParameters(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetReturnTableName(option, mi);
@@ -64,28 +60,19 @@ namespace Smart.Data.Accessor.Builders
             sql.Append(tableName);
             BuildHelper.AddCondition(sql, parameters);
 
-            if (!Group.IsNullOrEmpty())
-            {
-                sql.Append(" GROUP BY ");
-                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Group));
-            }
-
-            if (!Order.IsNullOrEmpty())
+            if (!String.IsNullOrEmpty(Order))
             {
                 sql.Append(" ORDER BY ");
-                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Order));
                 sql.Append(Order);
             }
-            else if (keys.Count > 0)
+            else
             {
-                sql.Append(" ORDER BY ");
-                foreach (var key in keys)
+                var columns = BuildHelper.MakeKeyColumns(option, mi.ReturnType);
+                if (!String.IsNullOrEmpty(columns))
                 {
-                    sql.Append(key.Name);
-                    sql.Append(", ");
+                    sql.Append(" ORDER BY ");
+                    sql.Append(columns);
                 }
-
-                sql.Length -= 2;
             }
 
             var tokenizer = new SqlTokenizer(sql.ToString());

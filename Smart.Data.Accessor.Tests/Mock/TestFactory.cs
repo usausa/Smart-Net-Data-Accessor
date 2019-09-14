@@ -20,13 +20,13 @@ namespace Smart.Mock
 
         private readonly IGeneratorOption option;
 
-        private readonly ExecuteEngine engine;
+        public ExecuteEngine Engine { get; }
 
         public TestFactory(ISqlLoader loader, IGeneratorOption option, ExecuteEngine engine)
         {
             this.loader = loader;
             this.option = option;
-            this.engine = engine;
+            Engine = engine;
         }
 
         public T Create<T>()
@@ -83,7 +83,7 @@ namespace Smart.Mock
                 var implementType = assembly.GetType(accessorName);
                 try
                 {
-                    return (T)Activator.CreateInstance(implementType, engine);
+                    return (T)Activator.CreateInstance(implementType, Engine);
                 }
                 catch (Exception e)
                 {

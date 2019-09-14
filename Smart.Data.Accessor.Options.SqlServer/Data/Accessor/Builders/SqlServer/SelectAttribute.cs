@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Builders.SqlServer
     using System.Reflection;
     using System.Text;
 
-    using Smart.Collections.Generic;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
@@ -21,9 +20,7 @@ namespace Smart.Data.Accessor.Builders.SqlServer
 
         public int? Top { get; set; }
 
-        public string[] Group { get; set; }
-
-        public string[] Order { get; set; }
+        public string Order { get; set; }
 
         public bool ForUpdate { get; set; }
 
@@ -52,10 +49,9 @@ namespace Smart.Data.Accessor.Builders.SqlServer
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
-            // TODO LIMIT @Size OFFSET @Offset
-
             var parameters = BuildHelper.GetParameters(option, mi);
-            var keys = BuildHelper.GetKeyParameters(parameters);
+            var limit = BuildHelper.PickParameter<LimitAttribute>(parameters);
+            var offset = BuildHelper.PickParameter<OffsetAttribute>(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetReturnTableName(option, mi);
@@ -79,28 +75,31 @@ namespace Smart.Data.Accessor.Builders.SqlServer
             }
             BuildHelper.AddCondition(sql, parameters);
 
-            if (!Group.IsNullOrEmpty())
-            {
-                sql.Append(" GROUP BY ");
-                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Group));
-            }
-
-            if (!Order.IsNullOrEmpty())
+            if (!String.IsNullOrEmpty(Order))
             {
                 sql.Append(" ORDER BY ");
-                sql.Append(BuildHelper.MakeColumns(option, type ?? mi.ReturnType, Order));
                 sql.Append(Order);
             }
-            else if (keys.Count > 0)
+            else
             {
-                sql.Append(" ORDER BY ");
-                foreach (var key in keys)
+                var columns = BuildHelper.MakeKeyColumns(option, mi.ReturnType);
+                if (!String.IsNullOrEmpty(columns))
                 {
-                    sql.Append(key.Name);
-                    sql.Append(", ");
+                    sql.Append(" ORDER BY ");
+                    sql.Append(columns);
                 }
+            }
 
-                sql.Length -= 2;
+            if (limit != null)
+            {
+                sql.Append(" LIMIT ");
+                BuildHelper.AddParameter(sql, limit, null);
+            }
+
+            if (offset != null)
+            {
+                sql.Append(" OFFSET ");
+                BuildHelper.AddParameter(sql, offset, null);
             }
 
             var tokenizer = new SqlTokenizer(sql.ToString());

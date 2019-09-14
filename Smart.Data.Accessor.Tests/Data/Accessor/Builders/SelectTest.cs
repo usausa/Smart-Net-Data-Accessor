@@ -10,18 +10,21 @@ namespace Smart.Data.Accessor.Builders
     public class SelectTest
     {
         //--------------------------------------------------------------------------------
-        // All
+        // Order
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectAllDao
+        public interface ISelectOrderDao
         {
             [Select]
-            List<MultiKeyEntity> SelectAll();
+            List<MultiKeyEntity> SelectKeyOrder();
+
+            [Select(Order = "Name DESC")]
+            List<MultiKeyEntity> SelectCustomOrder();
         }
 
         [Fact]
-        public void TestSelectAll()
+        public void TestSelectOrder()
         {
             using (TestDatabase.Initialize()
                 .SetupMultiKeyTable()
@@ -32,41 +35,98 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectAllDao>();
+                var dao = generator.Create<ISelectOrderDao>();
 
-                var list = dao.SelectAll();
+                var list = dao.SelectKeyOrder();
 
                 Assert.Equal(3, list.Count);
+                Assert.Equal("Data-1", list[0].Name);
+                Assert.Equal("Data-2", list[1].Name);
+                Assert.Equal("Data-3", list[2].Name);
+
+                list = dao.SelectCustomOrder();
+
+                Assert.Equal(3, list.Count);
+                Assert.Equal("Data-3", list[0].Name);
+                Assert.Equal("Data-2", list[1].Name);
+                Assert.Equal("Data-1", list[2].Name);
             }
         }
 
         //--------------------------------------------------------------------------------
-        // Key
+        // Other
         //--------------------------------------------------------------------------------
 
-        [DataAccessor]
-        public interface ISelectByKeyDao
+        public class OtherEntity
         {
-            [SelectSingle]
-            MultiKeyEntity SelectSingle(MultiKeyEntity entity);
+            [Key(1)]
+            public long Key1 { get; set; }
+
+            [Key(2)]
+            public long Key2 { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        [DataAccessor]
+        public interface ISelectOtherDao
+        {
+            [Select(typeof(MultiKeyEntity))]
+            List<OtherEntity> SelectByType();
+
+            [Select("MultiKey")]
+            List<OtherEntity> SelectByName();
         }
 
         [Fact]
-        public void TestSelectByKey()
+        public void TestSelectOther()
         {
             using (TestDatabase.Initialize()
                 .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "A", Name = "Data-1" }))
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
             {
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectByKeyDao>();
+                var dao = generator.Create<ISelectOtherDao>();
 
-                var entity = dao.SelectSingle(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
+                var list = dao.SelectByType();
 
-                Assert.NotNull(entity);
+                Assert.Equal(3, list.Count);
+                Assert.Equal("Data-1", list[0].Name);
+                Assert.Equal("Data-2", list[1].Name);
+                Assert.Equal("Data-3", list[2].Name);
+
+                list = dao.SelectByName();
+
+                Assert.Equal(3, list.Count);
+                Assert.Equal("Data-1", list[0].Name);
+                Assert.Equal("Data-2", list[1].Name);
+                Assert.Equal("Data-3", list[2].Name);
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface ISelectInvalidDao
+        {
+            [Select("")]
+            List<MultiKeyEntity> Select();
+        }
+
+        [Fact]
+        public void TestSelectInvalid()
+        {
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidDao>());
         }
 
         //--------------------------------------------------------------------------------

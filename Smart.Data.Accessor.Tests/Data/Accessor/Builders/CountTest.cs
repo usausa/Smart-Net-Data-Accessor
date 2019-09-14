@@ -52,7 +52,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface ICountByParameterDao
         {
-            [Count(typeof(MultiKeyEntity))]
+            [Count("MultiKey")]
             long Count(Parameter parameter);
         }
 
@@ -74,6 +74,27 @@ namespace Smart.Data.Accessor.Builders
 
                 Assert.Equal(2, count);
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface ICountInvalidDao
+        {
+            [Count("")]
+            long Count();
+        }
+
+        [Fact]
+        public void TestCountInvalid()
+        {
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+
+            Assert.Throws<BuilderException>(() => generator.Create<ICountInvalidDao>());
         }
     }
 }

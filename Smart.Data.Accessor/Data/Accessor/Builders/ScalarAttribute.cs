@@ -32,9 +32,7 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
-            var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
-                            BuildHelper.GetTableName(option, mi);
+            var tableName = table ?? BuildHelper.GetTableNameOfType(option, type);
 
             if (String.IsNullOrEmpty(tableName))
             {

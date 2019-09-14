@@ -6,11 +6,6 @@ namespace Smart.Data.Accessor.Builders
     {
         private const string Field = "COUNT(*)";
 
-        public CountAttribute()
-            : base(null, null, Field)
-        {
-        }
-
         public CountAttribute(string table)
             : base(table, null, Field)
         {

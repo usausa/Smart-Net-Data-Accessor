@@ -9,18 +9,18 @@ namespace Smart.Data.Accessor.Builders
     public class InsertTest
     {
         //--------------------------------------------------------------------------------
-        // Default
+        // Entity
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInsertDao
+        public interface IInsertEntityDao
         {
             [Insert]
             int Insert(DataEntity entity);
         }
 
         [Fact]
-        public void TestInsert()
+        public void TestInsertEntity()
         {
             using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
@@ -28,7 +28,7 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IInsertDao>();
+                var dao = generator.Create<IInsertEntityDao>();
 
                 var effect = dao.Insert(new DataEntity { Id = 1, Name = "xxx" });
 
@@ -39,6 +39,60 @@ namespace Smart.Data.Accessor.Builders
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("xxx", entity.Name);
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Parameter
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface IInsertParameterDao
+        {
+            [Insert(typeof(DataEntity))]
+            int Insert(long id, string name);
+        }
+
+        [Fact]
+        public void TestInsertParameter()
+        {
+            using (var con = TestDatabase.Initialize()
+                .SetupDataTable())
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<IInsertParameterDao>();
+
+                var effect = dao.Insert(1, "xxx");
+
+                Assert.Equal(1, effect);
+
+                var entity = con.QueryData(1);
+                Assert.NotNull(entity);
+                Assert.Equal(1, entity.Id);
+                Assert.Equal("xxx", entity.Name);
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface IInsertInvalidDao
+        {
+            [Insert]
+            int Insert();
+        }
+
+        [Fact]
+        public void TestInsertInvalid()
+        {
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+
+            Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidDao>());
         }
 
         //--------------------------------------------------------------------------------
