@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor
     public class TransactionTest
     {
         [DataAccessor]
-        public interface ITransactionDao
+        public interface ITransactionAccessor
         {
             [Execute]
             int Execute(DbTransaction tx, long id, string name);
@@ -26,13 +26,13 @@ namespace Smart.Data.Accessor
                 var generator = new TestFactoryBuilder()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<ITransactionDao>();
+                var accessor = generator.Create<ITransactionAccessor>();
 
                 con.Open();
 
                 using (var tx = con.BeginTransaction())
                 {
-                    var effect = dao.Execute(tx, 1L, "xxx");
+                    var effect = accessor.Execute(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
                     tx.Rollback();
@@ -43,7 +43,7 @@ namespace Smart.Data.Accessor
 
                 using (var tx = con.BeginTransaction())
                 {
-                    var effect = dao.Execute(tx, 1L, "xxx");
+                    var effect = accessor.Execute(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
                     tx.Commit();
@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface ITransactionAsyncDao
+        public interface ITransactionAsyncAccessor
         {
             [Execute]
             ValueTask<int> ExecuteAsync(DbTransaction tx, long id, string name);
@@ -70,13 +70,13 @@ namespace Smart.Data.Accessor
                 var generator = new TestFactoryBuilder()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<ITransactionAsyncDao>();
+                var accessor = generator.Create<ITransactionAsyncAccessor>();
 
                 con.Open();
 
                 using (var tx = con.BeginTransaction())
                 {
-                    var effect = await dao.ExecuteAsync(tx, 1L, "xxx");
+                    var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
                     tx.Rollback();
@@ -87,7 +87,7 @@ namespace Smart.Data.Accessor
 
                 using (var tx = con.BeginTransaction())
                 {
-                    var effect = await dao.ExecuteAsync(tx, 1L, "xxx");
+                    var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
                     tx.Commit();

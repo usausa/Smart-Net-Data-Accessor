@@ -1,4 +1,4 @@
-namespace Example.WebApplication.Dao
+namespace Example.WebApplication.Accessor
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -9,7 +9,7 @@ namespace Example.WebApplication.Dao
     using Smart.Data.Accessor.Attributes.Builders;
 
     [DataAccessor]
-    public interface ISampleDao
+    public interface ISampleAccessor
     {
         [ExecuteScalar]
         Task<int> CountDataAsync();

@@ -38,7 +38,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface IEnumDao
+        public interface IEnumAccessor
         {
             [Execute]
             void Execute(DbConnection con, Value value);
@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*@ value */")
                 .Build();
 
-            var dao = generator.Create<IEnumDao>();
+            var accessor = generator.Create<IEnumAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -66,7 +66,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, Value.One);
+            accessor.Execute(con, Value.One);
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IEnumDao>();
+            var accessor = generator.Create<IEnumAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -96,7 +96,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, Value.One);
+            accessor.Execute(con, Value.One);
         }
 
         //--------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IAnsiStringAttributeDao
+        public interface IAnsiStringAttributeAccessor
         {
             [Execute]
             int Execute(DbConnection con, [AnsiString(3)] string id1, [AnsiString] string id2);
@@ -117,7 +117,7 @@ namespace Smart.Data.Accessor
                 .SetSql("Id1 = /*@ id1 */'xxx' AND Id2 = /*@ id2 */'a'")
                 .Build();
 
-            var dao = generator.Create<IAnsiStringAttributeDao>();
+            var accessor = generator.Create<IAnsiStringAttributeAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -131,11 +131,11 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, "xxx", "a");
+            accessor.Execute(con, "xxx", "a");
         }
 
         [DataAccessor]
-        public interface IDbTypeAttributeDao
+        public interface IDbTypeAttributeAccessor
         {
             [Execute]
             int Execute(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 3)] string id1, [DbType(DbType.AnsiString)] string id2);
@@ -148,7 +148,7 @@ namespace Smart.Data.Accessor
                 .SetSql("Id1 = /*@ id1 */'xxx' AND Id2 = /*@ id2 */'a'")
                 .Build();
 
-            var dao = generator.Create<IDbTypeAttributeDao>();
+            var accessor = generator.Create<IDbTypeAttributeAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -162,7 +162,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, "xxx", "a");
+            accessor.Execute(con, "xxx", "a");
         }
 
         //--------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDateTimeKindTypeHandlerDao
+        public interface IDateTimeKindTypeHandlerAccessor
         {
             [Execute]
             void Execute(DbConnection con, DateTime value);
@@ -185,8 +185,8 @@ namespace Smart.Data.Accessor
             var generator = new TestFactoryBuilder()
                 .SetSql(map =>
                 {
-                    map[nameof(IDateTimeKindTypeHandlerDao.Execute)] = "/*@ value */";
-                    map[nameof(IDateTimeKindTypeHandlerDao.ExecuteScalar)] = string.Empty;
+                    map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
+                    map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
                 })
                 .Config(config =>
                 {
@@ -197,7 +197,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IDateTimeKindTypeHandlerDao>();
+            var accessor = generator.Create<IDateTimeKindTypeHandlerAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -213,15 +213,15 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Unspecified));
             });
 
-            dao.Execute(con, new DateTime(2000, 1, 1));
+            accessor.Execute(con, new DateTime(2000, 1, 1));
 
-            var result = dao.ExecuteScalar(con);
+            var result = accessor.ExecuteScalar(con);
 
             Assert.Equal(DateTimeKind.Local, result.Kind);
         }
 
         [DataAccessor]
-        public interface IDateTimeTickTypeHandlerDao
+        public interface IDateTimeTickTypeHandlerAccessor
         {
             [Execute]
             void Execute(DbConnection con, DateTime value);
@@ -236,8 +236,8 @@ namespace Smart.Data.Accessor
             var generator = new TestFactoryBuilder()
                 .SetSql(map =>
                 {
-                    map[nameof(IDateTimeKindTypeHandlerDao.Execute)] = "/*@ value */";
-                    map[nameof(IDateTimeKindTypeHandlerDao.ExecuteScalar)] = string.Empty;
+                    map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
+                    map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
                 })
                 .Config(config =>
                 {
@@ -248,7 +248,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IDateTimeTickTypeHandlerDao>();
+            var accessor = generator.Create<IDateTimeTickTypeHandlerAccessor>();
 
             var date = new DateTime(2000, 1, 1);
 
@@ -266,9 +266,9 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(date.Ticks);
             });
 
-            dao.Execute(con, new DateTime(2000, 1, 1));
+            accessor.Execute(con, new DateTime(2000, 1, 1));
 
-            var result = dao.ExecuteScalar(con);
+            var result = accessor.ExecuteScalar(con);
 
             Assert.Equal(date, result);
         }
@@ -285,7 +285,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface ITypeHandlerDao
+        public interface ITypeHandlerAccessor
         {
             [Execute]
             void ExecuteIn(DbConnection con, string value);
@@ -314,7 +314,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<ITypeHandlerDao>();
+            var accessor = generator.Create<ITypeHandlerAccessor>();
 
             var con = new MockDbConnection();
 
@@ -325,7 +325,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteIn(con, "x");
+            accessor.ExecuteIn(con, "x");
 
             con.SetupCommand(cmd =>
             {
@@ -333,7 +333,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteIn(con, null);
+            accessor.ExecuteIn(con, null);
 
             // IN/OUT
             con.SetupCommand(cmd =>
@@ -343,7 +343,7 @@ namespace Smart.Data.Accessor
             });
 
             var value = "x";
-            dao.ExecuteInOut(con, ref value);
+            accessor.ExecuteInOut(con, ref value);
 
             con.SetupCommand(cmd =>
             {
@@ -352,7 +352,7 @@ namespace Smart.Data.Accessor
             });
 
             value = null;
-            dao.ExecuteInOut(con, ref value);
+            accessor.ExecuteInOut(con, ref value);
 
             // Array
             con.SetupCommand(cmd =>
@@ -365,7 +365,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteArray(con, new[] { string.Empty, null });
+            accessor.ExecuteArray(con, new[] { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {
@@ -376,7 +376,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteArray(con, null);
+            accessor.ExecuteArray(con, null);
 
             // List
             con.SetupCommand(cmd =>
@@ -389,7 +389,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteList(con, new List<string> { string.Empty, null });
+            accessor.ExecuteList(con, new List<string> { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {
@@ -400,7 +400,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteList(con, null);
+            accessor.ExecuteList(con, null);
         }
 
         //--------------------------------------------------------------------------------
@@ -408,7 +408,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDbTypeDao
+        public interface IDbTypeAccessor
         {
             [Execute]
             void ExecuteIn(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] string value);
@@ -440,7 +440,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IDbTypeDao>();
+            var accessor = generator.Create<IDbTypeAccessor>();
 
             var con = new MockDbConnection();
 
@@ -451,7 +451,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteIn(con, "x");
+            accessor.ExecuteIn(con, "x");
 
             con.SetupCommand(cmd =>
             {
@@ -459,7 +459,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteIn(con, null);
+            accessor.ExecuteIn(con, null);
 
             // IN/OUT
             con.SetupCommand(cmd =>
@@ -469,7 +469,7 @@ namespace Smart.Data.Accessor
             });
 
             var value = "x";
-            dao.ExecuteInOut(con, ref value);
+            accessor.ExecuteInOut(con, ref value);
 
             con.SetupCommand(cmd =>
             {
@@ -478,7 +478,7 @@ namespace Smart.Data.Accessor
             });
 
             value = null;
-            dao.ExecuteInOut(con, ref value);
+            accessor.ExecuteInOut(con, ref value);
 
             // OUT
             con.SetupCommand(cmd =>
@@ -487,7 +487,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteOut(con, out _);
+            accessor.ExecuteOut(con, out _);
 
             // Array
             con.SetupCommand(cmd =>
@@ -500,7 +500,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteArray(con, new[] { string.Empty, null });
+            accessor.ExecuteArray(con, new[] { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {
@@ -511,7 +511,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteArray(con, null);
+            accessor.ExecuteArray(con, null);
 
             // List
             con.SetupCommand(cmd =>
@@ -524,7 +524,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteList(con, new List<string> { string.Empty, null });
+            accessor.ExecuteList(con, new List<string> { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {
@@ -535,7 +535,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.ExecuteList(con, null);
+            accessor.ExecuteList(con, null);
         }
 
         //--------------------------------------------------------------------------------
@@ -543,7 +543,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISetupFailedInDao
+        public interface ISetupFailedInAccessor
         {
             [Execute]
             void ExecuteIn(DbConnection con, string value);
@@ -560,11 +560,11 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInAccessor>());
         }
 
         [DataAccessor]
-        public interface ISetupFailedInOutDao
+        public interface ISetupFailedInOutAccessor
         {
             [Execute]
             void ExecuteInOut(DbConnection con, ref string value);
@@ -581,11 +581,11 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInOutDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInOutAccessor>());
         }
 
         [DataAccessor]
-        public interface ISetupFailedOutDao
+        public interface ISetupFailedOutAccessor
         {
             [Execute]
             void ExecuteOut(DbConnection con, out string value);
@@ -602,11 +602,11 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedOutDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedOutAccessor>());
         }
 
         [DataAccessor]
-        public interface ISetupFailedArrayDao
+        public interface ISetupFailedArrayAccessor
         {
             [Execute]
             void ExecuteArray(DbConnection con, string[] value);
@@ -623,11 +623,11 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedArrayDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedArrayAccessor>());
         }
 
         [DataAccessor]
-        public interface ISetupFailedListDao
+        public interface ISetupFailedListAccessor
         {
             [Execute]
             void ExecuteList(DbConnection con, List<string> value);
@@ -644,7 +644,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedListDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedListAccessor>());
         }
     }
 }

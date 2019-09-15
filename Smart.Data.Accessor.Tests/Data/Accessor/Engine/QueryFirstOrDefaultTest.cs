@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultSimpleDao
+        public interface IQueryFirstOrDefaultSimpleAccessor
         {
             [QueryFirstOrDefault]
             DataEntity QueryFirstOrDefault(long id);
@@ -35,21 +35,21 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
                     .Build();
-                var dao = generator.Create<IQueryFirstOrDefaultSimpleDao>();
+                var accessor = generator.Create<IQueryFirstOrDefaultSimpleAccessor>();
 
-                var entity = dao.QueryFirstOrDefault(1L);
+                var entity = accessor.QueryFirstOrDefault(1L);
 
                 Assert.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
-                entity = dao.QueryFirstOrDefault(2L);
+                entity = accessor.QueryFirstOrDefault(2L);
                 Assert.Null(entity);
             }
         }
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultSimpleAsyncDao
+        public interface IQueryFirstOrDefaultSimpleAsyncAccessor
         {
             [QueryFirstOrDefault]
             ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id);
@@ -66,15 +66,15 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
                     .Build();
-                var dao = generator.Create<IQueryFirstOrDefaultSimpleAsyncDao>();
+                var accessor = generator.Create<IQueryFirstOrDefaultSimpleAsyncAccessor>();
 
-                var entity = await dao.QueryFirstOrDefaultAsync(1L);
+                var entity = await accessor.QueryFirstOrDefaultAsync(1L);
 
                 Assert.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
-                entity = await dao.QueryFirstOrDefaultAsync(2L);
+                entity = await accessor.QueryFirstOrDefaultAsync(2L);
                 Assert.Null(entity);
             }
         }
@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultWithConnectionDao
+        public interface IQueryFirstOrDefaultWithConnectionAccessor
         {
             [QueryFirstOrDefault]
             DataEntity QueryFirstOrDefault(DbConnection con, long id);
@@ -100,24 +100,24 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
                     .Build();
-                var dao = generator.Create<IQueryFirstOrDefaultWithConnectionDao>();
+                var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAccessor>();
 
                 con.Open();
 
-                var entity = dao.QueryFirstOrDefault(con, 1L);
+                var entity = accessor.QueryFirstOrDefault(con, 1L);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
-                entity = dao.QueryFirstOrDefault(con, 2L);
+                entity = accessor.QueryFirstOrDefault(con, 2L);
                 Assert.Null(entity);
             }
         }
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultWithConnectionAsyncDao
+        public interface IQueryFirstOrDefaultWithConnectionAsyncAccessor
         {
             [QueryFirstOrDefault]
             ValueTask<DataEntity> QueryFirstOrDefaultAsync(DbConnection con, long id);
@@ -133,18 +133,18 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
                     .Build();
-                var dao = generator.Create<IQueryFirstOrDefaultWithConnectionAsyncDao>();
+                var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAsyncAccessor>();
 
                 con.Open();
 
-                var entity = await dao.QueryFirstOrDefaultAsync(con, 1L);
+                var entity = await accessor.QueryFirstOrDefaultAsync(con, 1L);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
-                entity = await dao.QueryFirstOrDefaultAsync(con, 2L);
+                entity = await accessor.QueryFirstOrDefaultAsync(con, 2L);
                 Assert.Null(entity);
             }
         }
@@ -154,7 +154,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultCancelAsyncDao
+        public interface IQueryFirstOrDefaultCancelAsyncAccessor
         {
             [QueryFirstOrDefault]
             ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id, CancellationToken cancel);
@@ -171,14 +171,14 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
                     .Build();
-                var dao = generator.Create<IQueryFirstOrDefaultCancelAsyncDao>();
+                var accessor = generator.Create<IQueryFirstOrDefaultCancelAsyncAccessor>();
 
-                var entity = await dao.QueryFirstOrDefaultAsync(1L, default);
+                var entity = await accessor.QueryFirstOrDefaultAsync(1L, default);
 
                 Assert.NotNull(entity);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await dao.QueryFirstOrDefaultAsync(1L, cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryFirstOrDefaultAsync(1L, cancel));
             }
         }
 
@@ -191,7 +191,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultInvalidDao
+        public interface IQueryFirstOrDefaultInvalidAccessor
         {
             [QueryFirstOrDefault]
             void QueryFirstOrDefault();
@@ -204,11 +204,11 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidAccessor>());
         }
 
         [DataAccessor]
-        public interface IQueryFirstOrDefaultInvalidAsyncDao
+        public interface IQueryFirstOrDefaultInvalidAsyncAccessor
         {
             [QueryFirstOrDefault]
             ValueTask QueryFirstOrDefaultAsync();
@@ -221,7 +221,7 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidAsyncAccessor>());
         }
     }
 }

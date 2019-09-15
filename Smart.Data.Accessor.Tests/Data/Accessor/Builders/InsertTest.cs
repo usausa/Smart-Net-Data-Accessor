@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInsertEntityDao
+        public interface IInsertEntityAccessor
         {
             [Insert]
             int Insert(DataEntity entity);
@@ -28,9 +28,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IInsertEntityDao>();
+                var accessor = generator.Create<IInsertEntityAccessor>();
 
-                var effect = dao.Insert(new DataEntity { Id = 1, Name = "xxx" });
+                var effect = accessor.Insert(new DataEntity { Id = 1, Name = "xxx" });
 
                 Assert.Equal(1, effect);
 
@@ -46,7 +46,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInsertParameterDao
+        public interface IInsertParameterAccessor
         {
             [Insert(typeof(DataEntity))]
             int Insert(long id, string name);
@@ -61,9 +61,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IInsertParameterDao>();
+                var accessor = generator.Create<IInsertParameterAccessor>();
 
-                var effect = dao.Insert(1, "xxx");
+                var effect = accessor.Insert(1, "xxx");
 
                 Assert.Equal(1, effect);
 
@@ -79,7 +79,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInsertInvalidDao
+        public interface IInsertInvalidAccessor
         {
             [Insert]
             int Insert();
@@ -92,7 +92,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidAccessor>());
         }
 
         //--------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IInsertDbValueDao
+        public interface IInsertDbValueAccessor
         {
             [Insert]
             void Insert(DbValueEntity entity);
@@ -129,11 +129,11 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IInsertDbValueDao>();
+                var accessor = generator.Create<IInsertDbValueAccessor>();
 
-                dao.Insert(new DbValueEntity { Id = 1 });
+                accessor.Insert(new DbValueEntity { Id = 1 });
 
-                var entity = dao.QueryEntity(1);
+                var entity = accessor.QueryEntity(1);
 
                 Assert.NotNull(entity);
                 Assert.NotEmpty(entity.DateTime);
@@ -141,7 +141,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IInsertAdditionalDbValueDao
+        public interface IInsertAdditionalDbValueAccessor
         {
             [Insert("DbValue")]
             [AdditionalDbValue("DateTime", "CURRENT_TIMESTAMP")]
@@ -162,11 +162,11 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IInsertAdditionalDbValueDao>();
+                var accessor = generator.Create<IInsertAdditionalDbValueAccessor>();
 
-                dao.Insert(1);
+                accessor.Insert(1);
 
-                var entity = dao.QueryEntity(1);
+                var entity = accessor.QueryEntity(1);
 
                 Assert.NotNull(entity);
                 Assert.NotEmpty(entity.DateTime);
@@ -195,7 +195,7 @@ namespace Smart.Data.Accessor.Builders
 
         [DataAccessor]
         [Inject(typeof(Counter), "counter")]
-        public interface IInsertCodeValueDao
+        public interface IInsertCodeValueAccessor
         {
             [Insert]
             void Insert(CodeValueEntity entity);
@@ -216,13 +216,13 @@ namespace Smart.Data.Accessor.Builders
                     .UseFileDatabase()
                     .ConfigureComponents(c => c.Add(new Counter()))
                     .Build();
-                var dao = generator.Create<IInsertCodeValueDao>();
+                var accessor = generator.Create<IInsertCodeValueAccessor>();
 
-                dao.Insert(new CodeValueEntity { Key = "A" });
-                dao.Insert(new CodeValueEntity { Key = "B" });
+                accessor.Insert(new CodeValueEntity { Key = "A" });
+                accessor.Insert(new CodeValueEntity { Key = "B" });
 
-                var entityA = dao.QueryEntity("A");
-                var entityB = dao.QueryEntity("B");
+                var entityA = accessor.QueryEntity("A");
+                var entityB = accessor.QueryEntity("B");
 
                 Assert.NotNull(entityA);
                 Assert.Equal(1, entityA.Value);
@@ -234,7 +234,7 @@ namespace Smart.Data.Accessor.Builders
 
         [DataAccessor]
         [Inject(typeof(Counter), "counter")]
-        public interface IInsertAdditionalCodeValueDao
+        public interface IInsertAdditionalCodeValueAccessor
         {
             [Insert("CodeValue")]
             [AdditionalCodeValue("Value", "counter.Next()")]
@@ -256,13 +256,13 @@ namespace Smart.Data.Accessor.Builders
                     .UseFileDatabase()
                     .ConfigureComponents(c => c.Add(new Counter()))
                     .Build();
-                var dao = generator.Create<IInsertAdditionalCodeValueDao>();
+                var accessor = generator.Create<IInsertAdditionalCodeValueAccessor>();
 
-                dao.Insert("A");
-                dao.Insert("B");
+                accessor.Insert("A");
+                accessor.Insert("B");
 
-                var entityA = dao.QueryEntity("A");
-                var entityB = dao.QueryEntity("B");
+                var entityA = accessor.QueryEntity("A");
+                var entityB = accessor.QueryEntity("B");
 
                 Assert.NotNull(entityA);
                 Assert.Equal(1, entityA.Value);

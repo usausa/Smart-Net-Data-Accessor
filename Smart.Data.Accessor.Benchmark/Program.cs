@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor.Benchmark
     {
         public static void Main()
         {
-            BenchmarkRunner.Run<DaoBenchmark>();
+            BenchmarkRunner.Run<AccessorBenchmark>();
         }
     }
 
@@ -38,15 +38,15 @@ namespace Smart.Data.Accessor.Benchmark
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", Justification = "Ignore")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Ignore")]
     [Config(typeof(BenchmarkConfig))]
-    public class DaoBenchmark
+    public class AccessorBenchmark
     {
         private MockRepeatDbConnection mockExecute;
         private MockRepeatDbConnection mockExecuteScalar;
         private MockRepeatDbConnection mockQuery;
         private MockRepeatDbConnection mockQueryFirst;
 
-        private IBenchmarkDao dapperExecuteDao;
-        private IBenchmarkDao smartExecuteDao;
+        private IBenchmarkAccessor dapperExecuteAccessor;
+        private IBenchmarkAccessor smartExecuteAccessor;
 
         // TODO
 
@@ -99,11 +99,11 @@ namespace Smart.Data.Accessor.Benchmark
 
             // DAO
             var executeProvider = new DelegateDbProvider(() => mockExecute);
-            dapperExecuteDao = new DapperDao(executeProvider);
-            smartExecuteDao = CreateSmartDao(executeProvider);
+            dapperExecuteAccessor = new DapperAccessor(executeProvider);
+            smartExecuteAccessor = CreateSmartAccessor(executeProvider);
         }
 
-        private static IBenchmarkDao CreateSmartDao(IDbProvider provider)
+        private static IBenchmarkAccessor CreateSmartAccessor(IDbProvider provider)
         {
             var engine = new ExecuteEngineConfig()
                 .ConfigureComponents(components =>
@@ -113,7 +113,7 @@ namespace Smart.Data.Accessor.Benchmark
                 .ToEngine();
 
             var factory = new DataAccessorFactory(engine);
-            return factory.Create<IBenchmarkDao>();
+            return factory.Create<IBenchmarkAccessor>();
         }
 
         [GlobalCleanup]
@@ -130,16 +130,16 @@ namespace Smart.Data.Accessor.Benchmark
         //--------------------------------------------------------------------------------
 
         [Benchmark]
-        public void DapperExecute() => dapperExecuteDao.Execute(new DataEntity { Id = 1, Name = "xxx" });
+        public void DapperExecute() => dapperExecuteAccessor.Execute(new DataEntity { Id = 1, Name = "xxx" });
 
         [Benchmark]
-        public void SmartExecute() => smartExecuteDao.Execute(new DataEntity { Id = 1, Name = "xxx" });
+        public void SmartExecute() => smartExecuteAccessor.Execute(new DataEntity { Id = 1, Name = "xxx" });
 
         // TODO
     }
 
     [DataAccessor]
-    public interface IBenchmarkDao
+    public interface IBenchmarkAccessor
     {
         [Execute]
         int Execute(DataEntity entity);
@@ -147,11 +147,11 @@ namespace Smart.Data.Accessor.Benchmark
         // TODO
     }
 
-    public sealed class DapperDao : IBenchmarkDao
+    public sealed class DapperAccessor : IBenchmarkAccessor
     {
         private readonly IDbProvider provider;
 
-        public DapperDao(IDbProvider provider)
+        public DapperAccessor(IDbProvider provider)
         {
             this.provider = provider;
         }

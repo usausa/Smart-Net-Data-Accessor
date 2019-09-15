@@ -16,7 +16,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInArrayDao
+        public interface IInArrayAccessor
         {
             [Query]
             IList<DataEntity> QueryData(int[] ids);
@@ -36,28 +36,28 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id IN /*@ ids */(2, 4)")
                     .Build();
-                var dao = generator.Create<IInArrayDao>();
+                var accessor = generator.Create<IInArrayAccessor>();
 
-                var list = dao.QueryData(null);
-
-                Assert.Equal(0, list.Count);
-
-                list = dao.QueryData(Array.Empty<int>());
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(0, list.Count);
 
-                list = dao.QueryData(new[] { 2, 4 });
+                list = accessor.QueryData(Array.Empty<int>());
+
+                Assert.Equal(0, list.Count);
+
+                list = accessor.QueryData(new[] { 2, 4 });
 
                 Assert.Equal(2, list.Count);
 
-                list = dao.QueryData(Enumerable.Range(1, 257).ToArray());
+                list = accessor.QueryData(Enumerable.Range(1, 257).ToArray());
 
                 Assert.Equal(4, list.Count);
             }
         }
 
         [DataAccessor]
-        public interface IInArrayMixedDao
+        public interface IInArrayMixedAccessor
         {
             [Query]
             IList<DataEntity> QueryData(int[] ids, string name);
@@ -77,9 +77,9 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id IN /*@ ids */(2, 4) AND Name = /*@ name */'AAA'")
                     .Build();
-                var dao = generator.Create<IInArrayMixedDao>();
+                var accessor = generator.Create<IInArrayMixedAccessor>();
 
-                var list = dao.QueryData(new[] { 2, 4 }, "AAA");
+                var list = accessor.QueryData(new[] { 2, 4 }, "AAA");
 
                 Assert.Equal(1, list.Count);
             }
@@ -90,7 +90,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IInListDao
+        public interface IInListAccessor
         {
             [Query]
             IList<DataEntity> QueryData(List<int> ids);
@@ -110,28 +110,28 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id IN /*@ ids */(2, 4)")
                     .Build();
-                var dao = generator.Create<IInListDao>();
+                var accessor = generator.Create<IInListAccessor>();
 
-                var list = dao.QueryData(null);
-
-                Assert.Equal(0, list.Count);
-
-                list = dao.QueryData(new List<int>());
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(0, list.Count);
 
-                list = dao.QueryData(new List<int> { 2, 4 });
+                list = accessor.QueryData(new List<int>());
+
+                Assert.Equal(0, list.Count);
+
+                list = accessor.QueryData(new List<int> { 2, 4 });
 
                 Assert.Equal(2, list.Count);
 
-                list = dao.QueryData(Enumerable.Range(1, 257).ToList());
+                list = accessor.QueryData(Enumerable.Range(1, 257).ToList());
 
                 Assert.Equal(4, list.Count);
             }
         }
 
         [DataAccessor]
-        public interface IInListMixedDao
+        public interface IInListMixedAccessor
         {
             [Query]
             IList<DataEntity> QueryData(List<int> ids, string name);
@@ -151,9 +151,9 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data WHERE Id IN /*@ ids */(2, 4) AND Name = /*@ name */'AAA'")
                     .Build();
-                var dao = generator.Create<IInListMixedDao>();
+                var accessor = generator.Create<IInListMixedAccessor>();
 
-                var list = dao.QueryData(new List<int> { 2, 4 }, "AAA");
+                var list = accessor.QueryData(new List<int> { 2, 4 }, "AAA");
 
                 Assert.Equal(1, list.Count);
             }

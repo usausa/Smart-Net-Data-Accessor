@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ICountByArgumentDao
+        public interface ICountByArgumentAccessor
         {
             [Count(typeof(MultiKeyEntity))]
             long Count(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
@@ -29,9 +29,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ICountByArgumentDao>();
+                var accessor = generator.Create<ICountByArgumentAccessor>();
 
-                var count = dao.Count(1L, 2L);
+                var count = accessor.Count(1L, 2L);
 
                 Assert.Equal(2, count);
             }
@@ -50,7 +50,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface ICountByParameterDao
+        public interface ICountByParameterAccessor
         {
             [Count("MultiKey")]
             long Count(Parameter parameter);
@@ -68,9 +68,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ICountByParameterDao>();
+                var accessor = generator.Create<ICountByParameterAccessor>();
 
-                var count = dao.Count(new Parameter { Key1 = 1L, Key2 = 2L });
+                var count = accessor.Count(new Parameter { Key1 = 1L, Key2 = 2L });
 
                 Assert.Equal(2, count);
             }
@@ -81,7 +81,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ICountInvalidDao
+        public interface ICountInvalidAccessor
         {
             [Count("")]
             long Count();
@@ -94,7 +94,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ICountInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<ICountInvalidAccessor>());
         }
     }
 }

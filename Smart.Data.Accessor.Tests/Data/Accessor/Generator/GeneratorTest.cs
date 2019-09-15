@@ -7,10 +7,10 @@ namespace Smart.Data.Accessor.Generator
 
     using Xunit;
 
-    public class DaoGeneratorTest
+    public class AccessorGeneratorTest
     {
         [DataAccessor]
-        public interface IInvalidMethodDao
+        public interface IInvalidMethodAccessor
         {
             int Execute();
         }
@@ -22,11 +22,11 @@ namespace Smart.Data.Accessor.Generator
 
             Assert.Throws<AccessorGeneratorException>(() => generator.Create<object>());
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidMethodDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidMethodAccessor>());
         }
 
         [DataAccessor]
-        public interface IInvalidCodeDao
+        public interface IInvalidCodeAccessor
         {
             [DirectSql(CommandType.Text, MethodType.Execute, "/*% { */")]
             int Execute();
@@ -37,7 +37,7 @@ namespace Smart.Data.Accessor.Generator
         {
             var generator = new TestFactoryBuilder().Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidCodeDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidCodeAccessor>());
         }
     }
 }

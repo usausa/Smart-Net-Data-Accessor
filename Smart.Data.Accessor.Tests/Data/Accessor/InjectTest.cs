@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor
 
         [DataAccessor]
         [Inject(typeof(Counter), "counter")]
-        public interface IInjectDao
+        public interface IInjectAccessor
         {
             [Execute]
             void Execute(DbConnection con);
@@ -33,7 +33,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*@ counter.Next() */0, /*@ counter.Next() */0")
                 .Config(config => config.ConfigureComponents(c => c.Add<Counter>()))
                 .Build();
-            var dao = generator.Create<IInjectDao>();
+            var accessor = generator.Create<IInjectAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -48,7 +48,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con);
+            accessor.Execute(con);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectOrderDao
+        public interface ISelectOrderAccessor
         {
             [Select]
             List<MultiKeyEntity> SelectKeyOrder();
@@ -38,23 +38,23 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectOrderDao>();
+                var accessor = generator.Create<ISelectOrderAccessor>();
 
-                var list = dao.SelectKeyOrder();
+                var list = accessor.SelectKeyOrder();
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-1", list[0].Name);
                 Assert.Equal("Data-2", list[1].Name);
                 Assert.Equal("Data-3", list[2].Name);
 
-                list = dao.SelectCustomOrder();
+                list = accessor.SelectCustomOrder();
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-3", list[0].Name);
                 Assert.Equal("Data-2", list[1].Name);
                 Assert.Equal("Data-1", list[2].Name);
 
-                list = dao.SelectParameterOrder("Name DESC");
+                list = accessor.SelectParameterOrder("Name DESC");
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-3", list[0].Name);
@@ -79,7 +79,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface ISelectOtherDao
+        public interface ISelectOtherAccessor
         {
             [Select(typeof(MultiKeyEntity))]
             List<OtherEntity> SelectByType();
@@ -100,16 +100,16 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectOtherDao>();
+                var accessor = generator.Create<ISelectOtherAccessor>();
 
-                var list = dao.SelectByType();
+                var list = accessor.SelectByType();
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-1", list[0].Name);
                 Assert.Equal("Data-2", list[1].Name);
                 Assert.Equal("Data-3", list[2].Name);
 
-                list = dao.SelectByName();
+                list = accessor.SelectByName();
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-1", list[0].Name);
@@ -123,7 +123,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectInvalidDao
+        public interface ISelectInvalidAccessor
         {
             [Select("")]
             List<MultiKeyEntity> Select();
@@ -136,7 +136,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
         }
 
         //--------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectByArgumentDao
+        public interface ISelectByArgumentAccessor
         {
             [Select]
             List<MultiKeyEntity> Select(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
@@ -162,9 +162,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectByArgumentDao>();
+                var accessor = generator.Create<ISelectByArgumentAccessor>();
 
-                var list = dao.Select(1L, 2L);
+                var list = accessor.Select(1L, 2L);
 
                 Assert.Equal(2, list.Count);
             }
@@ -183,7 +183,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface ISelectByParameterDao
+        public interface ISelectByParameterAccessor
         {
             [Select]
             List<MultiKeyEntity> Select(Parameter parameter);
@@ -201,9 +201,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectByParameterDao>();
+                var accessor = generator.Create<ISelectByParameterAccessor>();
 
-                var list = dao.Select(new Parameter { Key1 = 1L, Key2 = 2L });
+                var list = accessor.Select(new Parameter { Key1 = 1L, Key2 = 2L });
 
                 Assert.Equal(2, list.Count);
             }
@@ -214,7 +214,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectExcludeNullDao
+        public interface ISelectExcludeNullAccessor
         {
             [Select]
             List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string type = null);
@@ -232,24 +232,24 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectExcludeNullDao>();
+                var accessor = generator.Create<ISelectExcludeNullAccessor>();
 
-                var list = dao.Select("A");
+                var list = accessor.Select("A");
 
                 Assert.Equal(2, list.Count);
 
-                list = dao.Select();
+                list = accessor.Select();
 
                 Assert.Equal(3, list.Count);
 
-                list = dao.Select(string.Empty);
+                list = accessor.Select(string.Empty);
 
                 Assert.Empty(list);
             }
         }
 
         [DataAccessor]
-        public interface ISelectExcludeEmptyDao
+        public interface ISelectExcludeEmptyAccessor
         {
             [Select]
             List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string type = null);
@@ -267,17 +267,17 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectExcludeEmptyDao>();
+                var accessor = generator.Create<ISelectExcludeEmptyAccessor>();
 
-                var list = dao.Select("A");
+                var list = accessor.Select("A");
 
                 Assert.Equal(2, list.Count);
 
-                list = dao.Select();
+                list = accessor.Select();
 
                 Assert.Equal(3, list.Count);
 
-                list = dao.Select(string.Empty);
+                list = accessor.Select(string.Empty);
 
                 Assert.Equal(3, list.Count);
             }

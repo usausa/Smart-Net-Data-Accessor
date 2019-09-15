@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor
     public class TimeoutTest
     {
         [DataAccessor]
-        public interface ITimeoutAttributeDao
+        public interface ITimeoutAttributeAccessor
         {
             [Execute]
             [CommandTimeout(123)]
@@ -26,7 +26,7 @@ namespace Smart.Data.Accessor
                 .SetSql(string.Empty)
                 .Build();
 
-            var dao = generator.Create<ITimeoutAttributeDao>();
+            var accessor = generator.Create<ITimeoutAttributeAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -38,11 +38,11 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con);
+            accessor.Execute(con);
         }
 
         [DataAccessor]
-        public interface ITimeoutParameterDao
+        public interface ITimeoutParameterAccessor
         {
             [Execute]
             int Execute(DbConnection con, [Timeout] int timeout);
@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor
                 .SetSql(string.Empty)
                 .Build();
 
-            var dao = generator.Create<ITimeoutParameterDao>();
+            var accessor = generator.Create<ITimeoutParameterAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -67,11 +67,11 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, 123);
+            accessor.Execute(con, 123);
         }
 
         [DataAccessor]
-        public interface IInvalidTimeoutParameterDao
+        public interface IInvalidTimeoutParameterAccessor
         {
             [Execute]
             int Execute(DbConnection con, [Timeout] string timeout);
@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidTimeoutParameterDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidTimeoutParameterAccessor>());
         }
     }
 }

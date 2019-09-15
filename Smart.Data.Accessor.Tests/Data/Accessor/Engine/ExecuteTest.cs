@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteSimpleDao
+        public interface IExecuteSimpleAccessor
         {
             [Execute]
             int Execute(long id, string name);
@@ -34,9 +34,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteSimpleDao>();
+                var accessor = generator.Create<IExecuteSimpleAccessor>();
 
-                var effect = dao.Execute(2, "xxx");
+                var effect = accessor.Execute(2, "xxx");
 
                 Assert.Equal(1, effect);
 
@@ -48,7 +48,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteSimpleAsyncDao
+        public interface IExecuteSimpleAsyncAccessor
         {
             [Execute]
             ValueTask<int> ExecuteAsync(long id, string name);
@@ -64,9 +64,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteSimpleAsyncDao>();
+                var accessor = generator.Create<IExecuteSimpleAsyncAccessor>();
 
-                var effect = await dao.ExecuteAsync(2, "xxx");
+                var effect = await accessor.ExecuteAsync(2, "xxx");
 
                 Assert.Equal(1, effect);
 
@@ -82,7 +82,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteVoidDao
+        public interface IExecuteVoidAccessor
         {
             [Execute]
             void Execute(long id, string name);
@@ -98,9 +98,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteVoidDao>();
+                var accessor = generator.Create<IExecuteVoidAccessor>();
 
-                dao.Execute(2, "xxx");
+                accessor.Execute(2, "xxx");
 
                 var entity = con.QueryData(2);
                 Assert.NotNull(entity);
@@ -108,7 +108,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteVoidAsyncDao
+        public interface IExecuteVoidAsyncAccessor
         {
             [Execute]
             ValueTask ExecuteAsync(long id, string name);
@@ -124,9 +124,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteVoidAsyncDao>();
+                var accessor = generator.Create<IExecuteVoidAsyncAccessor>();
 
-                await dao.ExecuteAsync(2, "xxx");
+                await accessor.ExecuteAsync(2, "xxx");
 
                 var entity = con.QueryData(2);
                 Assert.NotNull(entity);
@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteWithConnectionDao
+        public interface IExecuteWithConnectionAccessor
         {
             [Execute]
             int Execute(DbConnection con, long id, string name);
@@ -153,11 +153,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteWithConnectionDao>();
+                var accessor = generator.Create<IExecuteWithConnectionAccessor>();
 
                 con.Open();
 
-                var effect = dao.Execute(con, 2, "xxx");
+                var effect = accessor.Execute(con, 2, "xxx");
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(1, effect);
@@ -170,7 +170,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteWithConnectionAsyncDao
+        public interface IExecuteWithConnectionAsyncAccessor
         {
             [Execute]
             ValueTask<int> ExecuteAsync(DbConnection con, long id, string name);
@@ -185,11 +185,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteWithConnectionAsyncDao>();
+                var accessor = generator.Create<IExecuteWithConnectionAsyncAccessor>();
 
                 con.Open();
 
-                var effect = await dao.ExecuteAsync(con, 2, "xxx");
+                var effect = await accessor.ExecuteAsync(con, 2, "xxx");
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(1, effect);
@@ -206,7 +206,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteCancelAsyncDao
+        public interface IExecuteCancelAsyncAccessor
         {
             [Execute]
             ValueTask<int> ExecuteAsync(long id, string name, CancellationToken cancel);
@@ -222,14 +222,14 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
                     .Build();
-                var dao = generator.Create<IExecuteCancelAsyncDao>();
+                var accessor = generator.Create<IExecuteCancelAsyncAccessor>();
 
-                var effect = await dao.ExecuteAsync(2, "xxx", default);
+                var effect = await accessor.ExecuteAsync(2, "xxx", default);
 
                 Assert.Equal(1, effect);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await dao.ExecuteAsync(2, "xxx", cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.ExecuteAsync(2, "xxx", cancel));
             }
         }
 
@@ -238,7 +238,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteInvalidDao
+        public interface IExecuteInvalidAccessor
         {
             [Execute]
             string Execute();
@@ -251,11 +251,11 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncAccessor>());
         }
 
         [DataAccessor]
-        public interface IExecuteInvalidAsyncDao
+        public interface IExecuteInvalidAsyncAccessor
         {
             [Execute]
             ValueTask<string> ExecuteAsync();
@@ -268,7 +268,7 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncAccessor>());
         }
     }
 }

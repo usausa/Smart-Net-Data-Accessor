@@ -21,7 +21,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISimpleDao
+        public interface ISimpleAccessor
         {
             [Execute]
             void Execute(DbConnection con, int value);
@@ -34,7 +34,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
                 .Build();
 
-            var dao = generator.Create<ISimpleDao>();
+            var accessor = generator.Create<ISimpleAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -56,8 +56,8 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, 1);
-            dao.Execute(con, 2);
+            accessor.Execute(con, 1);
+            accessor.Execute(con, 2);
         }
 
         //--------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface INullableDao
+        public interface INullableAccessor
         {
             [Execute]
             void Execute(DbConnection con, string value);
@@ -78,7 +78,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*% var id = value; */ WHERE Id = /*@ id */'a'")
                 .Build();
 
-            var dao = generator.Create<INullableDao>();
+            var accessor = generator.Create<INullableAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -108,9 +108,9 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, "a");
-            dao.Execute(con, null);
-            dao.Execute(con, "b");
+            accessor.Execute(con, "a");
+            accessor.Execute(con, null);
+            accessor.Execute(con, "b");
         }
 
         //--------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IArrayDao
+        public interface IArrayAccessor
         {
             [Execute]
             void Execute(DbConnection con, int[] values);
@@ -131,7 +131,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
                 .Build();
 
-            var dao = generator.Create<IArrayDao>();
+            var accessor = generator.Create<IArrayAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -163,9 +163,9 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, null);
-            dao.Execute(con, Array.Empty<int>());
-            dao.Execute(con, new[] { 1, 2 });
+            accessor.Execute(con, null);
+            accessor.Execute(con, Array.Empty<int>());
+            accessor.Execute(con, new[] { 1, 2 });
         }
 
         //--------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IListDao
+        public interface IListAccessor
         {
             [Execute]
             void Execute(DbConnection con, List<int> values);
@@ -186,7 +186,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
                 .Build();
 
-            var dao = generator.Create<IListDao>();
+            var accessor = generator.Create<IListAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -218,9 +218,9 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, null);
-            dao.Execute(con, new List<int>());
-            dao.Execute(con, new List<int>(new[] { 1, 2 }));
+            accessor.Execute(con, null);
+            accessor.Execute(con, new List<int>());
+            accessor.Execute(con, new List<int>(new[] { 1, 2 }));
         }
 
         //--------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IMixedDao
+        public interface IMixedAccessor
         {
             [Execute]
             void Execute(DbConnection con, object value);
@@ -241,7 +241,7 @@ namespace Smart.Data.Accessor
                 .SetSql("/*% var id = value; */ WHERE Id = /*@ id */'a'")
                 .Build();
 
-            var dao = generator.Create<IMixedDao>();
+            var accessor = generator.Create<IMixedAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -272,9 +272,9 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(1);
             });
 
-            dao.Execute(con, "a");
-            dao.Execute(con, 1);
-            dao.Execute(con, "b");
+            accessor.Execute(con, "a");
+            accessor.Execute(con, 1);
+            accessor.Execute(con, "b");
         }
 
         //--------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface IForEachDao
+        public interface IForEachAccessor
         {
             [Execute]
             void Execute(DbConnection con, Parameter[] parameters);
@@ -307,7 +307,7 @@ namespace Smart.Data.Accessor
                     ")")
                 .Build();
 
-            var dao = generator.Create<IForEachDao>();
+            var accessor = generator.Create<IForEachAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -346,7 +346,7 @@ namespace Smart.Data.Accessor
                 new Parameter { Key1 = 2, Key2 = "b" },
                 new Parameter { Key1 = 3, Key2 = "c" }
             };
-            dao.Execute(con, parameters);
+            accessor.Execute(con, parameters);
         }
 
         //--------------------------------------------------------------------------------
@@ -361,7 +361,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface IHandlerDao
+        public interface IHandlerAccessor
         {
             [Execute]
             void Execute(DbConnection con, string value);
@@ -381,7 +381,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IHandlerDao>();
+            var accessor = generator.Create<IHandlerAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -390,7 +390,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.Execute(con, "1");
+            accessor.Execute(con, "1");
 
             var controller = (IEngineController)generator.Engine;
             Assert.Equal(1, controller.CountDynamicSetupCache);
@@ -399,7 +399,7 @@ namespace Smart.Data.Accessor
         }
 
         [DataAccessor]
-        public interface IListHandlerDao
+        public interface IListHandlerAccessor
         {
             [Execute]
             void Execute(DbConnection con, List<string> values);
@@ -419,7 +419,7 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<IListHandlerDao>();
+            var accessor = generator.Create<IListHandlerAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -432,7 +432,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            dao.Execute(con, new List<string>(new[] { "1", "2" }));
+            accessor.Execute(con, new List<string>(new[] { "1", "2" }));
 
             var controller = (IEngineController)generator.Engine;
             Assert.Equal(1, controller.CountDynamicSetupCache);
@@ -445,7 +445,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISetupFailedDao
+        public interface ISetupFailedAccessor
         {
             [Execute]
             void Execute(DbConnection con, string value);
@@ -462,13 +462,13 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<ISetupFailedDao>();
+            var accessor = generator.Create<ISetupFailedAccessor>();
 
-            Assert.Throws<TargetInvocationException>(() => dao.Execute(new MockDbConnection(), "1"));
+            Assert.Throws<TargetInvocationException>(() => accessor.Execute(new MockDbConnection(), "1"));
         }
 
         [DataAccessor]
-        public interface ISetupFailedListDao
+        public interface ISetupFailedListAccessor
         {
             [Execute]
             void Execute(DbConnection con, List<string> values);
@@ -485,9 +485,9 @@ namespace Smart.Data.Accessor
                 })
                 .Build();
 
-            var dao = generator.Create<ISetupFailedListDao>();
+            var accessor = generator.Create<ISetupFailedListAccessor>();
 
-            Assert.Throws<TargetInvocationException>(() => dao.Execute(new MockDbConnection(), new List<string>(new[] { "1", "2" })));
+            Assert.Throws<TargetInvocationException>(() => accessor.Execute(new MockDbConnection(), new List<string>(new[] { "1", "2" })));
         }
     }
 }

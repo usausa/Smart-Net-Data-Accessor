@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteReaderSimpleDao
+        public interface IExecuteReaderSimpleAccessor
         {
             [ExecuteReader]
             IDataReader ExecuteReader();
@@ -37,9 +37,9 @@ namespace Smart.Data.Accessor.Engine
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
 
-                var dao = generator.Create<IExecuteReaderSimpleDao>();
+                var accessor = generator.Create<IExecuteReaderSimpleAccessor>();
 
-                using (var reader = dao.ExecuteReader())
+                using (var reader = accessor.ExecuteReader())
                 {
                     Assert.True(reader.Read());
                     Assert.True(reader.Read());
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteReaderSimpleAsyncDao
+        public interface IExecuteReaderSimpleAsyncAccessor
         {
             [ExecuteReader]
             ValueTask<IDataReader> ExecuteReaderAsync();
@@ -68,9 +68,9 @@ namespace Smart.Data.Accessor.Engine
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
 
-                var dao = generator.Create<IExecuteReaderSimpleAsyncDao>();
+                var accessor = generator.Create<IExecuteReaderSimpleAsyncAccessor>();
 
-                using (var reader = await dao.ExecuteReaderAsync())
+                using (var reader = await accessor.ExecuteReaderAsync())
                 {
                     Assert.True(reader.Read());
                     Assert.True(reader.Read());
@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteReaderWithConnectionDao
+        public interface IExecuteReaderWithConnectionAccessor
         {
             [ExecuteReader]
             IDataReader ExecuteReader(DbConnection con);
@@ -104,11 +104,11 @@ namespace Smart.Data.Accessor.Engine
 
                 con.Open();
 
-                var dao = generator.Create<IExecuteReaderWithConnectionDao>();
+                var accessor = generator.Create<IExecuteReaderWithConnectionAccessor>();
 
                 Assert.Equal(ConnectionState.Open, con.State);
 
-                using (var reader = dao.ExecuteReader(con))
+                using (var reader = accessor.ExecuteReader(con))
                 {
                     Assert.True(reader.Read());
                     Assert.True(reader.Read());
@@ -120,7 +120,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteReaderWithConnectionAsyncDao
+        public interface IExecuteReaderWithConnectionAsyncAccessor
         {
             [ExecuteReader]
             ValueTask<IDataReader> ExecuteReaderAsync(DbConnection con);
@@ -140,11 +140,11 @@ namespace Smart.Data.Accessor.Engine
 
                 con.Open();
 
-                var dao = generator.Create<IExecuteReaderWithConnectionAsyncDao>();
+                var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
 
                 Assert.Equal(ConnectionState.Open, con.State);
 
-                using (var reader = await dao.ExecuteReaderAsync(con))
+                using (var reader = await accessor.ExecuteReaderAsync(con))
                 {
                     Assert.True(reader.Read());
                     Assert.True(reader.Read());
@@ -160,7 +160,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteReaderCancelAsyncDao
+        public interface IExecuteReaderCancelAsyncAccessor
         {
             [ExecuteReader]
             ValueTask<IDataReader> ExecuteReaderAsync(CancellationToken cancel);
@@ -179,16 +179,16 @@ namespace Smart.Data.Accessor.Engine
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
 
-                var dao = generator.Create<IExecuteReaderCancelAsyncDao>();
+                var accessor = generator.Create<IExecuteReaderCancelAsyncAccessor>();
 
-                using (await dao.ExecuteReaderAsync(default))
+                using (await accessor.ExecuteReaderAsync(default))
                 {
                 }
 
                 await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 {
                     var cancel = new CancellationToken(true);
-                    using (await dao.ExecuteReaderAsync(cancel))
+                    using (await accessor.ExecuteReaderAsync(cancel))
                     {
                     }
                 });
@@ -200,7 +200,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteReaderInvalidDao
+        public interface IExecuteReaderInvalidAccessor
         {
             [ExecuteReader]
             void ExecuteReader();
@@ -213,11 +213,11 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAccessor>());
         }
 
         [DataAccessor]
-        public interface IExecuteReaderInvalidAsyncDao
+        public interface IExecuteReaderInvalidAsyncAccessor
         {
             [ExecuteReader]
             ValueTask ExecuteReaderAsync();
@@ -230,7 +230,7 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAsyncAccessor>());
         }
     }
 }

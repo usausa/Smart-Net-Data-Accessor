@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Builders
     public class UpdateTest
     {
         [DataAccessor]
-        public interface IUpdateAllDao
+        public interface IUpdateAllAccessor
         {
             [Update(typeof(MultiKeyEntity), Force = true)]
             int Update([Values] string type, [Values] string name);
@@ -27,16 +27,16 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateAllDao>();
+                var accessor = generator.Create<IUpdateAllAccessor>();
 
-                var effect = dao.Update("C", "Xxx");
+                var effect = accessor.Update("C", "Xxx");
 
                 Assert.Equal(3, effect);
             }
         }
 
         [DataAccessor]
-        public interface IUpdateAllWithoutValuesDao
+        public interface IUpdateAllWithoutValuesAccessor
         {
             [Update(typeof(MultiKeyEntity), Force = true)]
             int Update(string type, string name);
@@ -54,16 +54,16 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateAllWithoutValuesDao>();
+                var accessor = generator.Create<IUpdateAllWithoutValuesAccessor>();
 
-                var effect = dao.Update("C", "Xxx");
+                var effect = accessor.Update("C", "Xxx");
 
                 Assert.Equal(3, effect);
             }
         }
 
         [DataAccessor]
-        public interface IUpdateAllWithoutForceDao
+        public interface IUpdateAllWithoutForceAccessor
         {
             [Update(typeof(MultiKeyEntity))]
             int Update([Values] string type, [Values] string name);
@@ -74,11 +74,11 @@ namespace Smart.Data.Accessor.Builders
         {
             var generator = new TestFactoryBuilder()
                 .Build();
-            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutForceDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutForceAccessor>());
         }
 
         [DataAccessor]
-        public interface IUpdateAllWithoutValuesWithoutForceDao
+        public interface IUpdateAllWithoutValuesWithoutForceAccessor
         {
             [Update(typeof(MultiKeyEntity))]
             int Update(string type, string name);
@@ -89,7 +89,7 @@ namespace Smart.Data.Accessor.Builders
         {
             var generator = new TestFactoryBuilder()
                 .Build();
-            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutValuesWithoutForceDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutValuesWithoutForceAccessor>());
         }
 
         //--------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IUpdateByKeyDao
+        public interface IUpdateByKeyAccessor
         {
             [Update]
             int Update(MultiKeyEntity entity);
@@ -113,9 +113,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateByKeyDao>();
+                var accessor = generator.Create<IUpdateByKeyAccessor>();
 
-                var effect = dao.Update(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" });
+                var effect = accessor.Update(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" });
 
                 Assert.Equal(1, effect);
 
@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IUpdateWithValuesDao
+        public interface IUpdateWithValuesAccessor
         {
             [Update(typeof(MultiKeyEntity))]
             int Update([Values] UpdateValues values, long key1, string type);
@@ -156,9 +156,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateWithValuesDao>();
+                var accessor = generator.Create<IUpdateWithValuesAccessor>();
 
-                var effect = dao.Update(new UpdateValues { Type = "B", Name = "Xxx" }, 1, "A");
+                var effect = accessor.Update(new UpdateValues { Type = "B", Name = "Xxx" }, 1, "A");
 
                 Assert.Equal(2, effect);
 
@@ -179,7 +179,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IUpdateByConditionDao
+        public interface IUpdateByConditionAccessor
         {
             [Update(typeof(MultiKeyEntity))]
             int Update(string type, string name, [Condition] long key1, [Condition][Name("type")] string conditionType);
@@ -197,9 +197,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateByConditionDao>();
+                var accessor = generator.Create<IUpdateByConditionAccessor>();
 
-                var effect = dao.Update("B", "Xxx", 1, "A");
+                var effect = accessor.Update("B", "Xxx", 1, "A");
 
                 Assert.Equal(2, effect);
 
@@ -229,7 +229,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IUpdateDbValueDao
+        public interface IUpdateDbValueAccessor
         {
             [Update]
             void Update(DbValueEntity entity);
@@ -250,11 +250,11 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateDbValueDao>();
+                var accessor = generator.Create<IUpdateDbValueAccessor>();
 
-                dao.Update(new DbValueEntity { Id = 1 });
+                accessor.Update(new DbValueEntity { Id = 1 });
 
-                var entity = dao.QueryEntity(1);
+                var entity = accessor.QueryEntity(1);
 
                 Assert.NotNull(entity);
                 Assert.NotEmpty(entity.DateTime);
@@ -262,7 +262,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IUpdateAdditionalDbValueDao
+        public interface IUpdateAdditionalDbValueAccessor
         {
             [Update("DbValue")]
             [AdditionalDbValue("DateTime", "CURRENT_TIMESTAMP")]
@@ -284,11 +284,11 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IUpdateAdditionalDbValueDao>();
+                var accessor = generator.Create<IUpdateAdditionalDbValueAccessor>();
 
-                dao.Update(1);
+                accessor.Update(1);
 
-                var entity = dao.QueryEntity(1);
+                var entity = accessor.QueryEntity(1);
 
                 Assert.NotNull(entity);
                 Assert.NotEmpty(entity.DateTime);
@@ -317,7 +317,7 @@ namespace Smart.Data.Accessor.Builders
 
         [DataAccessor]
         [Inject(typeof(Counter), "counter")]
-        public interface IUpdateCodeValueDao
+        public interface IUpdateCodeValueAccessor
         {
             [Update]
             void Update(CodeValueEntity entity);
@@ -340,13 +340,13 @@ namespace Smart.Data.Accessor.Builders
                     .UseFileDatabase()
                     .ConfigureComponents(c => c.Add(new Counter()))
                     .Build();
-                var dao = generator.Create<IUpdateCodeValueDao>();
+                var accessor = generator.Create<IUpdateCodeValueAccessor>();
 
-                dao.Update(new CodeValueEntity { Key = "A" });
-                dao.Update(new CodeValueEntity { Key = "B" });
+                accessor.Update(new CodeValueEntity { Key = "A" });
+                accessor.Update(new CodeValueEntity { Key = "B" });
 
-                var entityA = dao.QueryEntity("A");
-                var entityB = dao.QueryEntity("B");
+                var entityA = accessor.QueryEntity("A");
+                var entityB = accessor.QueryEntity("B");
 
                 Assert.NotNull(entityA);
                 Assert.Equal(1, entityA.Value);
@@ -358,7 +358,7 @@ namespace Smart.Data.Accessor.Builders
 
         [DataAccessor]
         [Inject(typeof(Counter), "counter")]
-        public interface IUpdateAdditionalCodeValueDao
+        public interface IUpdateAdditionalCodeValueAccessor
         {
             [Update("CodeValue")]
             [AdditionalCodeValue("Value", "counter.Next()")]
@@ -382,13 +382,13 @@ namespace Smart.Data.Accessor.Builders
                     .UseFileDatabase()
                     .ConfigureComponents(c => c.Add(new Counter()))
                     .Build();
-                var dao = generator.Create<IUpdateAdditionalCodeValueDao>();
+                var accessor = generator.Create<IUpdateAdditionalCodeValueAccessor>();
 
-                dao.Update("A");
-                dao.Update("B");
+                accessor.Update("A");
+                accessor.Update("B");
 
-                var entityA = dao.QueryEntity("A");
-                var entityB = dao.QueryEntity("B");
+                var entityA = accessor.QueryEntity("A");
+                var entityB = accessor.QueryEntity("B");
 
                 Assert.NotNull(entityA);
                 Assert.Equal(1, entityA.Value);
@@ -403,7 +403,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IUpdateInvalidDao
+        public interface IUpdateInvalidAccessor
         {
             [Update("")]
             int Update();
@@ -416,7 +416,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<IUpdateInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateInvalidAccessor>());
         }
     }
 }

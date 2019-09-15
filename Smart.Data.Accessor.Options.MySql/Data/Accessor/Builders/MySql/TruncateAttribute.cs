@@ -16,11 +16,6 @@ namespace Smart.Data.Accessor.Builders.MySql
 
         private readonly Type type;
 
-        public TruncateAttribute()
-            : this(null, null)
-        {
-        }
-
         public TruncateAttribute(string table)
             : this(table, null)
         {

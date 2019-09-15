@@ -3,7 +3,7 @@ namespace Example.ConsoleApplication
     using System;
     using System.IO;
 
-    using Example.ConsoleApplication.Dao;
+    using Example.ConsoleApplication.Accessor;
     using Example.ConsoleApplication.Models;
 
     using Microsoft.Data.Sqlite;
@@ -32,18 +32,18 @@ namespace Example.ConsoleApplication
                 .ToEngine();
             var factory = new DataAccessorFactory(engine);
 
-            var dao = factory.Create<IExampleDao>();
+            var accessor = factory.Create<IExampleAccessor>();
 
-            dao.Create();
+            accessor.Create();
 
-            dao.Insert(new DataEntity { Id = 1L, Name = "Data-1", Type = "A" });
-            dao.Insert(new DataEntity { Id = 2L, Name = "Data-2", Type = "B" });
-            dao.Insert(new DataEntity { Id = 3L, Name = "Data-3", Type = "A" });
+            accessor.Insert(new DataEntity { Id = 1L, Name = "Data-1", Type = "A" });
+            accessor.Insert(new DataEntity { Id = 2L, Name = "Data-2", Type = "B" });
+            accessor.Insert(new DataEntity { Id = 3L, Name = "Data-3", Type = "A" });
 
-            var typeA = dao.QueryDataList("A");
+            var typeA = accessor.QueryDataList("A");
             Console.WriteLine(typeA.Count);
 
-            var all = dao.QueryDataList();
+            var all = accessor.QueryDataList();
             Console.WriteLine(all.Count);
         }
     }

@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor
     public class DirectSqlTest
     {
         [DataAccessor]
-        public interface IDirectSqlDao
+        public interface IDirectSqlAccessor
         {
             [DirectSql(CommandType.Text, MethodType.ExecuteScalar, "SELECT COUNT(*) FROM Data")]
             long Count();
@@ -27,9 +27,9 @@ namespace Smart.Data.Accessor
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IDirectSqlDao>();
+                var accessor = generator.Create<IDirectSqlAccessor>();
 
-                var count = dao.Count();
+                var count = accessor.Count();
 
                 Assert.Equal(2, count);
             }

@@ -8,7 +8,7 @@ namespace Smart.Data.Accessor.Selectors
     public class PropertySelectorTest
     {
         [DataAccessor]
-        public interface IPropertySelectorDao
+        public interface IPropertySelectorAccessor
         {
             [QueryFirstOrDefault]
             SelectEntity QueryFirstOrDefault();
@@ -33,9 +33,9 @@ namespace Smart.Data.Accessor.Selectors
                         "7 AS ColumnName7")
                     .Build();
 
-                var dao = generator.Create<IPropertySelectorDao>();
+                var accessor = generator.Create<IPropertySelectorAccessor>();
 
-                var entity = dao.QueryFirstOrDefault();
+                var entity = accessor.QueryFirstOrDefault();
 
                 Assert.NotNull(entity);
                 Assert.Equal(1, entity.ColumnName1);

@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectByKeyDao
+        public interface ISelectByKeyAccessor
         {
             [SelectSingle]
             MultiKeyEntity SelectSingle(MultiKeyEntity entity);
@@ -28,9 +28,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectByKeyDao>();
+                var accessor = generator.Create<ISelectByKeyAccessor>();
 
-                var entity = dao.SelectSingle(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
+                var entity = accessor.SelectSingle(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
 
                 Assert.NotNull(entity);
             }
@@ -41,7 +41,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectByArgumentDao
+        public interface ISelectByArgumentAccessor
         {
             [SelectSingle(typeof(MultiKeyEntity))]
             MultiKeyEntity SelectByType(long key1, long key2);
@@ -60,13 +60,13 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<ISelectByArgumentDao>();
+                var accessor = generator.Create<ISelectByArgumentAccessor>();
 
-                var entity = dao.SelectByType(1, 2);
+                var entity = accessor.SelectByType(1, 2);
 
                 Assert.NotNull(entity);
 
-                entity = dao.SelectByName(1, 2);
+                entity = accessor.SelectByName(1, 2);
 
                 Assert.NotNull(entity);
             }
@@ -77,7 +77,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectInvalidDao
+        public interface ISelectInvalidAccessor
         {
             [SelectSingle("")]
             MultiKeyEntity SelectSingle();
@@ -90,7 +90,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
         }
     }
 }

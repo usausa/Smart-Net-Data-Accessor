@@ -64,7 +64,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IParameterDao
+        public interface IParameterAccessor
         {
             [Procedure("PROC")]
             void Call(DbConnection con, Parameter parameter);
@@ -76,7 +76,7 @@ namespace Smart.Data.Accessor.Builders
             var generator = new TestFactoryBuilder()
                 .Build();
 
-            var dao = generator.Create<IParameterDao>();
+            var accessor = generator.Create<IParameterAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -111,7 +111,7 @@ namespace Smart.Data.Accessor.Builders
                 Value5 = Value.One,
                 Value6 = null
             };
-            dao.Call(con, parameter);
+            accessor.Call(con, parameter);
 
             Assert.Equal(1, parameter.Output1);
             Assert.Equal(0, parameter.Output2);
@@ -142,7 +142,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IDirectionParameterDao
+        public interface IDirectionParameterAccessor
         {
             [Procedure("PROC", false)]
             void Call(DbConnection con, DirectionParameter parameter);
@@ -154,7 +154,7 @@ namespace Smart.Data.Accessor.Builders
             var generator = new TestFactoryBuilder()
                 .Build();
 
-            var dao = generator.Create<IDirectionParameterDao>();
+            var accessor = generator.Create<IDirectionParameterAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -177,7 +177,7 @@ namespace Smart.Data.Accessor.Builders
                 InParam = "1",
                 InOutParam = 2
             };
-            dao.Call(con, parameter);
+            accessor.Call(con, parameter);
 
             Assert.Equal(3, parameter.InOutParam);
             Assert.Equal(4, parameter.OutParam);
@@ -189,7 +189,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDirectionArgumentDao
+        public interface IDirectionArgumentAccessor
         {
             [Procedure("PROC")]
             int Call(DbConnection con, int param1, ref int param2, out int param3);
@@ -201,7 +201,7 @@ namespace Smart.Data.Accessor.Builders
             var generator = new TestFactoryBuilder()
                 .Build();
 
-            var dao = generator.Create<IDirectionArgumentDao>();
+            var accessor = generator.Create<IDirectionArgumentAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -220,7 +220,7 @@ namespace Smart.Data.Accessor.Builders
             });
 
             var param2 = 2;
-            var ret = dao.Call(con, 1, ref param2, out var param3);
+            var ret = accessor.Call(con, 1, ref param2, out var param3);
 
             Assert.Equal(3, param2);
             Assert.Equal(4, param3);
@@ -232,7 +232,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IObjectProcedureDao
+        public interface IObjectProcedureAccessor
         {
             [Procedure("PROC")]
             object Call(DbConnection con, object param1, ref object param2, out object param3);
@@ -244,7 +244,7 @@ namespace Smart.Data.Accessor.Builders
             var generator = new TestFactoryBuilder()
                 .Build();
 
-            var dao = generator.Create<IObjectProcedureDao>();
+            var accessor = generator.Create<IObjectProcedureAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
@@ -263,7 +263,7 @@ namespace Smart.Data.Accessor.Builders
             });
 
             var param2 = (object)2;
-            var ret = dao.Call(con, 1, ref param2, out var param3);
+            var ret = accessor.Call(con, 1, ref param2, out var param3);
 
             Assert.Equal(3, param2);
             Assert.Equal(4, param3);

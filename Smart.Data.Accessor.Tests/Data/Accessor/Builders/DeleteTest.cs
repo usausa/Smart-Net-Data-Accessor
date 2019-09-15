@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDeleteAllDao
+        public interface IDeleteAllAccessor
         {
             [Delete(typeof(MultiKeyEntity), Force = true)]
             int DeleteAll();
@@ -30,16 +30,16 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IDeleteAllDao>();
+                var accessor = generator.Create<IDeleteAllAccessor>();
 
-                var effect = dao.DeleteAll();
+                var effect = accessor.DeleteAll();
 
                 Assert.Equal(3, effect);
             }
         }
 
         [DataAccessor]
-        public interface IDeleteAllWithoutForceDao
+        public interface IDeleteAllWithoutForceAccessor
         {
             [Delete("MultiKey")]
             int DeleteAll();
@@ -50,7 +50,7 @@ namespace Smart.Data.Accessor.Builders
         {
             var generator = new TestFactoryBuilder()
                 .Build();
-            Assert.Throws<BuilderException>(() => generator.Create<IDeleteAllWithoutForceDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IDeleteAllWithoutForceAccessor>());
         }
 
         //--------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDeleteByKeyDao
+        public interface IDeleteByKeyAccessor
         {
             [Delete]
             int Delete(MultiKeyEntity entity);
@@ -74,9 +74,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IDeleteByKeyDao>();
+                var accessor = generator.Create<IDeleteByKeyAccessor>();
 
-                var effect = dao.Delete(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
+                var effect = accessor.Delete(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
 
                 Assert.Equal(1, effect);
 
@@ -89,7 +89,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDeleteByArgumentDao
+        public interface IDeleteByArgumentAccessor
         {
             [Count(typeof(MultiKeyEntity))]
             int Delete(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
@@ -107,9 +107,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IDeleteByArgumentDao>();
+                var accessor = generator.Create<IDeleteByArgumentAccessor>();
 
-                var effect = dao.Delete(1L, 2L);
+                var effect = accessor.Delete(1L, 2L);
 
                 Assert.Equal(2, effect);
             }
@@ -128,7 +128,7 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [DataAccessor]
-        public interface IDeleteByParameterDao
+        public interface IDeleteByParameterAccessor
         {
             [Count(typeof(MultiKeyEntity))]
             int Delete(Parameter parameter);
@@ -146,9 +146,9 @@ namespace Smart.Data.Accessor.Builders
                 var generator = new TestFactoryBuilder()
                     .UseFileDatabase()
                     .Build();
-                var dao = generator.Create<IDeleteByParameterDao>();
+                var accessor = generator.Create<IDeleteByParameterAccessor>();
 
-                var effect = dao.Delete(new Parameter { Key1 = 1L, Key2 = 2L });
+                var effect = accessor.Delete(new Parameter { Key1 = 1L, Key2 = 2L });
 
                 Assert.Equal(2, effect);
             }
@@ -159,7 +159,7 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDeleteInvalidDao
+        public interface IDeleteInvalidAccessor
         {
             [Delete("")]
             int Delete();
@@ -172,7 +172,7 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<IDeleteInvalidDao>());
+            Assert.Throws<BuilderException>(() => generator.Create<IDeleteInvalidAccessor>());
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarSimpleDao
+        public interface IExecuteScalarSimpleAccessor
         {
             [ExecuteScalar]
             long ExecuteScalar();
@@ -36,16 +36,16 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarSimpleDao>();
+                var accessor = generator.Create<IExecuteScalarSimpleAccessor>();
 
-                var count = dao.ExecuteScalar();
+                var count = accessor.ExecuteScalar();
 
                 Assert.Equal(2, count);
             }
         }
 
         [DataAccessor]
-        public interface IExecuteScalarSimpleAsyncDao
+        public interface IExecuteScalarSimpleAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask<long> ExecuteScalarAsync();
@@ -63,9 +63,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarSimpleAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarSimpleAsyncAccessor>();
 
-                var count = await dao.ExecuteScalarAsync();
+                var count = await accessor.ExecuteScalarAsync();
 
                 Assert.Equal(2, count);
             }
@@ -84,9 +84,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseMemoryDatabase()
                     .SetSql("SELECT NULL")
                     .Build();
-                var dao = generator.Create<IExecuteScalarSimpleDao>();
+                var accessor = generator.Create<IExecuteScalarSimpleAccessor>();
 
-                var count = dao.ExecuteScalar();
+                var count = accessor.ExecuteScalar();
 
                 Assert.Equal(0, count);
             }
@@ -101,9 +101,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseMemoryDatabase()
                     .SetSql("SELECT NULL")
                     .Build();
-                var dao = generator.Create<IExecuteScalarSimpleAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarSimpleAsyncAccessor>();
 
-                var count = await dao.ExecuteScalarAsync();
+                var count = await accessor.ExecuteScalarAsync();
 
                 Assert.Equal(0, count);
             }
@@ -114,7 +114,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarObjectDao
+        public interface IExecuteScalarObjectAccessor
         {
             [ExecuteScalar]
             object ExecuteScalar();
@@ -132,16 +132,16 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarObjectDao>();
+                var accessor = generator.Create<IExecuteScalarObjectAccessor>();
 
-                var count = dao.ExecuteScalar();
+                var count = accessor.ExecuteScalar();
 
                 Assert.Equal(2L, count);
             }
         }
 
         [DataAccessor]
-        public interface IExecuteScalarObjectAsyncDao
+        public interface IExecuteScalarObjectAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask<object> ExecuteScalarAsync();
@@ -159,9 +159,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarObjectAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarObjectAsyncAccessor>();
 
-                var count = await dao.ExecuteScalarAsync();
+                var count = await accessor.ExecuteScalarAsync();
 
                 Assert.Equal(2L, count);
             }
@@ -172,7 +172,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarWithConvertDao
+        public interface IExecuteScalarWithConvertAccessor
         {
             [ExecuteScalar]
             string ExecuteScalarWithConvert();
@@ -190,16 +190,16 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarWithConvertDao>();
+                var accessor = generator.Create<IExecuteScalarWithConvertAccessor>();
 
-                var count = dao.ExecuteScalarWithConvert();
+                var count = accessor.ExecuteScalarWithConvert();
 
                 Assert.Equal("2", count);
             }
         }
 
         [DataAccessor]
-        public interface IExecuteScalarWithConvertAsyncDao
+        public interface IExecuteScalarWithConvertAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask<string> ExecuteScalarWithConvertAsync();
@@ -217,9 +217,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarWithConvertAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarWithConvertAsyncAccessor>();
 
-                var count = await dao.ExecuteScalarWithConvertAsync();
+                var count = await accessor.ExecuteScalarWithConvertAsync();
 
                 Assert.Equal("2", count);
             }
@@ -230,7 +230,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarWithConnectionDao
+        public interface IExecuteScalarWithConnectionAccessor
         {
             [ExecuteScalar]
             long ExecuteScalar(DbConnection con);
@@ -247,11 +247,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarWithConnectionDao>();
+                var accessor = generator.Create<IExecuteScalarWithConnectionAccessor>();
 
                 con.Open();
 
-                var count = dao.ExecuteScalar(con);
+                var count = accessor.ExecuteScalar(con);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, count);
@@ -259,7 +259,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IExecuteScalarWithConnectionAsyncDao
+        public interface IExecuteScalarWithConnectionAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask<long> ExecuteScalarAsync(DbConnection con);
@@ -276,11 +276,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarWithConnectionAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarWithConnectionAsyncAccessor>();
 
                 con.Open();
 
-                var count = await dao.ExecuteScalarAsync(con);
+                var count = await accessor.ExecuteScalarAsync(con);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, count);
@@ -292,7 +292,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarCancelAsyncDao
+        public interface IExecuteScalarCancelAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask<long> ExecuteScalarAsync(CancellationToken cancel);
@@ -310,14 +310,14 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IExecuteScalarCancelAsyncDao>();
+                var accessor = generator.Create<IExecuteScalarCancelAsyncAccessor>();
 
-                var count = await dao.ExecuteScalarAsync(default);
+                var count = await accessor.ExecuteScalarAsync(default);
 
                 Assert.Equal(2, count);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await dao.ExecuteScalarAsync(cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.ExecuteScalarAsync(cancel));
             }
         }
 
@@ -326,7 +326,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IExecuteScalarInvalidDao
+        public interface IExecuteScalarInvalidAccessor
         {
             [ExecuteScalar]
             void ExecuteScalar();
@@ -339,11 +339,11 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidAccessor>());
         }
 
         [DataAccessor]
-        public interface IExecuteScalarInvalidAsyncDao
+        public interface IExecuteScalarInvalidAsyncAccessor
         {
             [ExecuteScalar]
             ValueTask ExecuteScalarAsync();
@@ -356,7 +356,7 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidAsyncAccessor>());
         }
     }
 }

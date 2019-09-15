@@ -10,7 +10,7 @@ namespace Smart.Data.Accessor
     public class RawSqlTest
     {
         [DataAccessor]
-        public interface IRawDao
+        public interface IRawAccessor
         {
             [Query]
             IList<DataEntity> QueryData(string sort);
@@ -29,17 +29,17 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY /*# sort */")
                     .Build();
-                var dao = generator.Create<IRawDao>();
+                var accessor = generator.Create<IRawAccessor>();
 
-                var list = dao.QueryData("Id");
+                var list = accessor.QueryData("Id");
 
                 Assert.Equal(1, list[0].Id);
 
-                list = dao.QueryData("Id DESC");
+                list = accessor.QueryData("Id DESC");
 
                 Assert.Equal(3, list[0].Id);
 
-                list = dao.QueryData("Name DESC");
+                list = accessor.QueryData("Name DESC");
 
                 Assert.Equal(2, list[0].Id);
             }

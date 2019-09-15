@@ -3,24 +3,24 @@ namespace Example.WebApplication.Controllers
     using System.Diagnostics;
     using System.Threading.Tasks;
 
-    using Example.WebApplication.Dao;
+    using Example.WebApplication.Accessor;
     using Example.WebApplication.Models;
 
     using Microsoft.AspNetCore.Mvc;
 
     public class HomeController : Controller
     {
-        private readonly ISampleDao sampleDao;
+        private readonly ISampleAccessor sampleAccessor;
 
-        public HomeController(ISampleDao sampleDao)
+        public HomeController(ISampleAccessor sampleAccessor)
         {
-            this.sampleDao = sampleDao;
+            this.sampleAccessor = sampleAccessor;
         }
 
         public async Task<IActionResult> Index(DataListForm form)
         {
-            ViewBag.Count = await sampleDao.CountDataAsync().ConfigureAwait(false);
-            ViewBag.List = await sampleDao.QueryDataAsync(form.Type).ConfigureAwait(false);
+            ViewBag.Count = await sampleAccessor.CountDataAsync().ConfigureAwait(false);
+            ViewBag.List = await sampleAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
 
             return View();
         }

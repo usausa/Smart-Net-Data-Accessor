@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor
     public class SqlSizeTest
     {
         [DataAccessor]
-        public interface IInvalidSqlSizeDao
+        public interface IInvalidSqlSizeAccessor
         {
             [Execute]
             [SqlSize(-1)]
@@ -26,9 +26,9 @@ namespace Smart.Data.Accessor
                 .SetSql("SELECT * FROM Data WHERE /*% // dummy */")
                 .Build();
 
-            var dao = generator.Create<IInvalidSqlSizeDao>();
+            var accessor = generator.Create<IInvalidSqlSizeAccessor>();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => dao.Execute(new MockDbConnection()));
+            Assert.Throws<ArgumentOutOfRangeException>(() => accessor.Execute(new MockDbConnection()));
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Smart.Mock
 
             if (writer.Source == null)
             {
-                throw new AccessorGeneratorException("Create dao instance failed.");
+                throw new AccessorGeneratorException("Create accessor instance failed.");
             }
 
             Debug.WriteLine("----------");
@@ -73,7 +73,7 @@ namespace Smart.Mock
 
                 if (!result.Success)
                 {
-                    throw new AccessorGeneratorException("Create dao instance failed.");
+                    throw new AccessorGeneratorException("Create accessor instance failed.");
                 }
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -87,7 +87,7 @@ namespace Smart.Mock
                 }
                 catch (Exception e)
                 {
-                    throw new AccessorGeneratorException("Create dao instance failed.", e);
+                    throw new AccessorGeneratorException("Create accessor instance failed.", e);
                 }
             }
         }

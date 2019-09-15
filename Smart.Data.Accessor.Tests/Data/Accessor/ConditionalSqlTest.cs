@@ -14,7 +14,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDynamicDao
+        public interface IDynamicAccessor
         {
             [Query]
             IList<DataEntity> QueryData(int? id);
@@ -37,13 +37,13 @@ namespace Smart.Data.Accessor
                         "WHERE Id >= /*@ id */0" +
                         "/*% } */")
                     .Build();
-                var dao = generator.Create<IDynamicDao>();
+                var accessor = generator.Create<IDynamicAccessor>();
 
-                var list = dao.QueryData(null);
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(3, list.Count);
 
-                list = dao.QueryData(2);
+                list = accessor.QueryData(2);
 
                 Assert.Equal(2, list.Count);
             }
@@ -71,13 +71,13 @@ namespace Smart.Data.Accessor
                         "WHERE Id >= /*@ id */0" +
                         "/*% } */")
                     .Build();
-                var dao = generator.Create<IDynamicDao>();
+                var accessor = generator.Create<IDynamicAccessor>();
 
-                var list = dao.QueryData(null);
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(3, list.Count);
 
-                list = dao.QueryData(2);
+                list = accessor.QueryData(2);
 
                 Assert.Equal(2, list.Count);
             }
@@ -101,13 +101,13 @@ namespace Smart.Data.Accessor
                         "WHERE Id >= /*@ id */0" +
                         "/*% } */")
                     .Build();
-                var dao = generator.Create<IDynamicDao>();
+                var accessor = generator.Create<IDynamicAccessor>();
 
-                var list = dao.QueryData(null);
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(3, list.Count);
 
-                list = dao.QueryData(2);
+                list = accessor.QueryData(2);
 
                 Assert.Equal(2, list.Count);
             }
@@ -118,7 +118,7 @@ namespace Smart.Data.Accessor
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IDynamicArrayDao
+        public interface IDynamicArrayAccessor
         {
             [Query]
             IList<DataEntity> QueryData(int[] ids);
@@ -142,13 +142,13 @@ namespace Smart.Data.Accessor
                         "WHERE Id IN /*@ ids */(2, 4)" +
                         "/*% } */")
                     .Build();
-                var dao = generator.Create<IDynamicArrayDao>();
+                var accessor = generator.Create<IDynamicArrayAccessor>();
 
-                var list = dao.QueryData(null);
+                var list = accessor.QueryData(null);
 
                 Assert.Equal(4, list.Count);
 
-                list = dao.QueryData(new[] { 2, 4 });
+                list = accessor.QueryData(new[] { 2, 4 });
 
                 Assert.Equal(2, list.Count);
             }

@@ -13,4 +13,12 @@
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <SqlFiles Remove="Accessor\Sql\IExampleAccessor.Create.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SqlFiles Remove="Accessor\Sql\IExampleAccessor.QueryDataList.sql" />
+  </ItemGroup>
+
 </Project>

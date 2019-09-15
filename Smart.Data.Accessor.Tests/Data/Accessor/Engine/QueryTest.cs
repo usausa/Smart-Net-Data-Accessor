@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQuerySimpleDao
+        public interface IQuerySimpleAccessor
         {
             [Query]
             IList<DataEntity> QueryBufferd();
@@ -41,9 +41,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQuerySimpleDao>();
+                var accessor = generator.Create<IQuerySimpleAccessor>();
 
-                var list = dao.QueryBufferd();
+                var list = accessor.QueryBufferd();
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(1, list[0].Id);
@@ -65,9 +65,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQuerySimpleDao>();
+                var accessor = generator.Create<IQuerySimpleAccessor>();
 
-                var list = dao.QueryNonBufferd().ToList();
+                var list = accessor.QueryNonBufferd().ToList();
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(1, list[0].Id);
@@ -78,7 +78,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IQuerySimpleAsyncDao
+        public interface IQuerySimpleAsyncAccessor
         {
             [Query]
             ValueTask<IList<DataEntity>> QueryBufferdAsync();
@@ -99,9 +99,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQuerySimpleAsyncDao>();
+                var accessor = generator.Create<IQuerySimpleAsyncAccessor>();
 
-                var list = await dao.QueryBufferdAsync();
+                var list = await accessor.QueryBufferdAsync();
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(1, list[0].Id);
@@ -123,9 +123,9 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQuerySimpleAsyncDao>();
+                var accessor = generator.Create<IQuerySimpleAsyncAccessor>();
 
-                var list = (await dao.QueryNonBufferdAsync()).ToList();
+                var list = (await accessor.QueryNonBufferdAsync()).ToList();
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(1, list[0].Id);
@@ -140,7 +140,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryWithConnectionDao
+        public interface IQueryWithConnectionAccessor
         {
             [Query]
             IList<DataEntity> QueryBufferd(DbConnection con);
@@ -160,11 +160,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryWithConnectionDao>();
+                var accessor = generator.Create<IQueryWithConnectionAccessor>();
 
                 con.Open();
 
-                var list = dao.QueryBufferd(con);
+                var list = accessor.QueryBufferd(con);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, list.Count);
@@ -186,11 +186,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryWithConnectionDao>();
+                var accessor = generator.Create<IQueryWithConnectionAccessor>();
 
                 con.Open();
 
-                var list = dao.QueryNonBufferd(con).ToList();
+                var list = accessor.QueryNonBufferd(con).ToList();
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, list.Count);
@@ -202,7 +202,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [DataAccessor]
-        public interface IQueryWithConnectionAsyncDao
+        public interface IQueryWithConnectionAsyncAccessor
         {
             [Query]
             ValueTask<IList<DataEntity>> QueryBufferdAsync(DbConnection con);
@@ -222,11 +222,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryWithConnectionAsyncDao>();
+                var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
                 con.Open();
 
-                var list = await dao.QueryBufferdAsync(con);
+                var list = await accessor.QueryBufferdAsync(con);
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, list.Count);
@@ -248,11 +248,11 @@ namespace Smart.Data.Accessor.Engine
                 var generator = new TestFactoryBuilder()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryWithConnectionAsyncDao>();
+                var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
                 con.Open();
 
-                var list = (await dao.QueryNonBufferdAsync(con)).ToList();
+                var list = (await accessor.QueryNonBufferdAsync(con)).ToList();
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, list.Count);
@@ -268,7 +268,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryCancelAsyncDao
+        public interface IQueryCancelAsyncAccessor
         {
             [Query]
             ValueTask<IList<DataEntity>> QueryBufferdAsync(CancellationToken cancel);
@@ -289,14 +289,14 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryCancelAsyncDao>();
+                var accessor = generator.Create<IQueryCancelAsyncAccessor>();
 
-                var list = await dao.QueryBufferdAsync(default);
+                var list = await accessor.QueryBufferdAsync(default);
 
                 Assert.Equal(2, list.Count);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await dao.QueryBufferdAsync(cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryBufferdAsync(cancel));
             }
         }
 
@@ -312,14 +312,14 @@ namespace Smart.Data.Accessor.Engine
                     .UseFileDatabase()
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
-                var dao = generator.Create<IQueryCancelAsyncDao>();
+                var accessor = generator.Create<IQueryCancelAsyncAccessor>();
 
-                var list = (await dao.QueryNonBufferdAsync(default)).ToList();
+                var list = (await accessor.QueryNonBufferdAsync(default)).ToList();
 
                 Assert.Equal(2, list.Count);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await dao.QueryNonBufferdAsync(cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryNonBufferdAsync(cancel));
             }
         }
 
@@ -328,7 +328,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface IQueryInvalidDao
+        public interface IQueryInvalidAccessor
         {
             [Query]
             void Query();
@@ -341,11 +341,11 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidAccessor>());
         }
 
         [DataAccessor]
-        public interface IQueryInvalidAsyncDao
+        public interface IQueryInvalidAsyncAccessor
         {
             [Query]
             ValueTask QueryAsync();
@@ -358,7 +358,7 @@ namespace Smart.Data.Accessor.Engine
                 .SetSql(string.Empty)
                 .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidAsyncDao>());
+            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidAsyncAccessor>());
         }
     }
 }

@@ -1,4 +1,4 @@
-namespace Example.ConsoleApplication.Dao
+namespace Example.ConsoleApplication.Accessor
 {
     using System.Collections.Generic;
 
@@ -8,7 +8,7 @@ namespace Example.ConsoleApplication.Dao
     using Smart.Data.Accessor.Attributes.Builders;
 
     [DataAccessor]
-    public interface IExampleDao
+    public interface IExampleAccessor
     {
         [Execute]
         void Create();

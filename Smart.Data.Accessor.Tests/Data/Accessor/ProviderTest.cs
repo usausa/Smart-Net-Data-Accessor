@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor
     {
         [DataAccessor]
         [Provider(ProviderNames.Main)]
-        public interface IProviderForExecuteScalarDao
+        public interface IProviderForExecuteScalarAccessor
         {
             [ExecuteScalar]
             long Count();
@@ -37,13 +37,13 @@ namespace Smart.Data.Accessor
                     .UseMultipleDatabase()
                     .SetSql("SELECT COUNT(*) FROM Data")
                     .Build();
-                var dao = generator.Create<IProviderForExecuteScalarDao>();
+                var accessor = generator.Create<IProviderForExecuteScalarAccessor>();
 
-                var count = dao.Count();
+                var count = accessor.Count();
 
                 Assert.Equal(2, count);
 
-                var count2 = dao.Count2();
+                var count2 = accessor.Count2();
 
                 Assert.Equal(1, count2);
             }
@@ -51,7 +51,7 @@ namespace Smart.Data.Accessor
 
         [DataAccessor]
         [Provider(ProviderNames.Main)]
-        public interface IProviderForQueryDao
+        public interface IProviderForQueryAccessor
         {
             [Query]
             IEnumerable<DataEntity> Query();
@@ -76,13 +76,13 @@ namespace Smart.Data.Accessor
                     .UseMultipleDatabase()
                     .SetSql("SELECT * FROM Data")
                     .Build();
-                var dao = generator.Create<IProviderForQueryDao>();
+                var accessor = generator.Create<IProviderForQueryAccessor>();
 
-                var count = dao.Query().Count();
+                var count = accessor.Query().Count();
 
                 Assert.Equal(2, count);
 
-                var count2 = dao.Query2().Count();
+                var count2 = accessor.Query2().Count();
 
                 Assert.Equal(1, count2);
             }
