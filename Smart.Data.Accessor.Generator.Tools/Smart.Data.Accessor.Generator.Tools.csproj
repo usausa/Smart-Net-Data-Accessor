@@ -18,4 +18,8 @@
     <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
+  </ItemGroup>
+
 </Project>
