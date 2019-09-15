@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -15,6 +15,10 @@
     <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.6.2" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SqlFiles Remove="Sql\IBenchmarkAccessor.Execute.sql" />
   </ItemGroup>
 
 </Project>
