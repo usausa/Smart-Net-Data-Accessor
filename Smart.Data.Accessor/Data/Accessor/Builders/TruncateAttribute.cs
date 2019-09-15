@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.MySql
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -36,9 +36,7 @@ namespace Smart.Data.Accessor.Builders.MySql
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
-            var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
-                            BuildHelper.GetReturnTableName(option, mi);
+            var tableName = table ?? BuildHelper.GetTableNameOfType(option, type);
 
             if (String.IsNullOrEmpty(tableName))
             {

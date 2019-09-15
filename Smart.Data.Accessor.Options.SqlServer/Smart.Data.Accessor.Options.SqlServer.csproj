@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Smart.Data.Accessor.Options\Smart.Data.Accessor.Options.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
   </ItemGroup>
 

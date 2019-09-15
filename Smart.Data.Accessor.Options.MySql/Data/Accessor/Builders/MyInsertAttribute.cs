@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.MySql
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Builders.MySql
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class InsertAttribute : MethodAttribute
+    public sealed class MyInsertAttribute : MethodAttribute
     {
         private readonly string table;
 
@@ -22,22 +22,22 @@ namespace Smart.Data.Accessor.Builders.MySql
 
         public bool OrUpdate { get; set; }
 
-        public InsertAttribute()
+        public MyInsertAttribute()
             : this(null, null)
         {
         }
 
-        public InsertAttribute(string table)
+        public MyInsertAttribute(string table)
             : this(table, null)
         {
         }
 
-        public InsertAttribute(Type type)
+        public MyInsertAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private InsertAttribute(string table, Type type)
+        private MyInsertAttribute(string table, Type type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;

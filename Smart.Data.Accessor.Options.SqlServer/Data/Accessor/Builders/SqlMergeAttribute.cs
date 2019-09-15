@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.SqlServer
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -12,28 +12,28 @@ namespace Smart.Data.Accessor.Builders.SqlServer
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class MergeAttribute : MethodAttribute
+    public sealed class SqlMergeAttribute : MethodAttribute
     {
         private readonly string table;
 
         private readonly Type type;
 
-        public MergeAttribute()
+        public SqlMergeAttribute()
             : this(null, null)
         {
         }
 
-        public MergeAttribute(string table)
+        public SqlMergeAttribute(string table)
             : this(table, null)
         {
         }
 
-        public MergeAttribute(Type type)
+        public SqlMergeAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private MergeAttribute(string table, Type type)
+        private SqlMergeAttribute(string table, Type type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;

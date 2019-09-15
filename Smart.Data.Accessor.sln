@@ -39,9 +39,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmark", "Benchmark", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{8B1E9449-4262-4EC9-85E7-D3A9A78206EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options.SqlServer", "Smart.Data.Accessor.Options.SqlServer\Smart.Data.Accessor.Options.SqlServer.csproj", "{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Options.SqlServer", "Smart.Data.Accessor.Options.SqlServer\Smart.Data.Accessor.Options.SqlServer.csproj", "{44C8A6B0-3041-4B9F-9006-A5F3395DE28A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options.MySql", "Smart.Data.Accessor.Options.MySql\Smart.Data.Accessor.Options.MySql.csproj", "{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Options.MySql", "Smart.Data.Accessor.Options.MySql\Smart.Data.Accessor.Options.MySql.csproj", "{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options", "Smart.Data.Accessor.Options\Smart.Data.Accessor.Options.csproj", "{538C632B-CB56-4E00-A52F-4CAD2399AD4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -89,6 +91,10 @@ Global
 		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

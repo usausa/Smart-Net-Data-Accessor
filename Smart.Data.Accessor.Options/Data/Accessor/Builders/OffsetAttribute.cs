@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.MySql
+namespace Smart.Data.Accessor.Builders
 {
     using System;
 

@@ -1,6 +1,7 @@
 namespace Smart.Mock
 {
     using Smart.Data.Accessor.Attributes;
+    using Smart.Mock.Data;
 
     public class DataEntity
     {
@@ -20,5 +21,13 @@ namespace Smart.Mock
         public string Type { get; set; }
 
         public string Name { get; set; }
+
+        public static MockColumn[] Columns { get; } =
+        {
+            new MockColumn(typeof(long), nameof(Key1)),
+            new MockColumn(typeof(long), nameof(Key2)),
+            new MockColumn(typeof(string), nameof(Type)),
+            new MockColumn(typeof(string), nameof(Name))
+        };
     }
 }

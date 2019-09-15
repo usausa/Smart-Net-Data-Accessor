@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.MySql
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -12,31 +12,33 @@ namespace Smart.Data.Accessor.Builders.MySql
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class SelectSingleAttribute : MethodAttribute
+    public sealed class MySelectAttribute : MethodAttribute
     {
         private readonly string table;
 
         private readonly Type type;
 
+        public string Order { get; set; }
+
         public bool ForUpdate { get; set; }
 
-        public SelectSingleAttribute()
+        public MySelectAttribute()
             : this(null, null)
         {
         }
 
-        public SelectSingleAttribute(string table)
+        public MySelectAttribute(string table)
             : this(table, null)
         {
         }
 
-        public SelectSingleAttribute(Type type)
+        public MySelectAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private SelectSingleAttribute(string table, Type type)
-            : base(CommandType.Text, MethodType.QueryFirstOrDefault)
+        private MySelectAttribute(string table, Type type)
+            : base(CommandType.Text, MethodType.Query)
         {
             this.table = table;
             this.type = type;
@@ -46,7 +48,9 @@ namespace Smart.Data.Accessor.Builders.MySql
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
-            var keys = BuildHelper.GetKeyParameters(parameters);
+            var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
+            var limit = BuildHelper.PickParameter<LimitAttribute>(parameters);
+            var offset = BuildHelper.PickParameter<OffsetAttribute>(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetReturnTableName(option, mi);
@@ -59,7 +63,39 @@ namespace Smart.Data.Accessor.Builders.MySql
             var sql = new StringBuilder();
             sql.Append("SELECT * FROM ");
             sql.Append(tableName);
-            BuildHelper.AddCondition(sql, keys.Count > 0 ? keys : parameters);
+            BuildHelper.AddCondition(sql, parameters);
+
+            if (order != null)
+            {
+                sql.Append(" ORDER BY ");
+                sql.Append($"/*# {order.Name} */dummy");
+            }
+            else if (!String.IsNullOrEmpty(Order))
+            {
+                sql.Append(" ORDER BY ");
+                sql.Append(Order);
+            }
+            else
+            {
+                var columns = BuildHelper.MakeKeyColumns(option, mi.ReturnType);
+                if (!String.IsNullOrEmpty(columns))
+                {
+                    sql.Append(" ORDER BY ");
+                    sql.Append(columns);
+                }
+            }
+
+            if (limit != null)
+            {
+                sql.Append(" LIMIT ");
+                sql.Append($"/*@ {limit.Name} */dummy");
+            }
+
+            if (offset != null)
+            {
+                sql.Append(" OFFSET ");
+                sql.Append($"/*@ {offset.Name} */dummy");
+            }
 
             if (ForUpdate)
             {
