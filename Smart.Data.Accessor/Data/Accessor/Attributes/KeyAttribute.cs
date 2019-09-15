@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Attributes
 {
     using System;
 
-    [AttributeUsage(AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
     public sealed class KeyAttribute : Attribute
     {
         public int Order { get; }

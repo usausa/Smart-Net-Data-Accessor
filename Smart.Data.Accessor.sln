@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Options
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Options.Postgres", "Smart.Data.Accessor.Options.Postgres\Smart.Data.Accessor.Options.Postgres.csproj", "{9F69E616-C560-4BE0-8943-8DCD1132F0E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,10 @@ Global
 		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{538C632B-CB56-4E00-A52F-4CAD2399AD4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F69E616-C560-4BE0-8943-8DCD1132F0E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F69E616-C560-4BE0-8943-8DCD1132F0E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F69E616-C560-4BE0-8943-8DCD1132F0E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F69E616-C560-4BE0-8943-8DCD1132F0E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,6 +119,7 @@ Global
 		{44C8A6B0-3041-4B9F-9006-A5F3395DE28A} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
 		{A9DAA14E-9511-4A03-BEB8-5D11535F7F99} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
 		{538C632B-CB56-4E00-A52F-4CAD2399AD4C} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
+		{9F69E616-C560-4BE0-8943-8DCD1132F0E4} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1CAE6C1-48F0-4837-AD3C-0EF1261C2BDA}

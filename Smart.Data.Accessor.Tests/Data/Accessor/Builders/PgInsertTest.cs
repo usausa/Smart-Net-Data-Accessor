@@ -8,7 +8,7 @@ namespace Smart.Data.Accessor.Builders
 
     using Xunit;
 
-    public class MyInsertTest
+    public class PgInsertTest
     {
         //--------------------------------------------------------------------------------
         // Entity
@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertEntityAccessor
         {
-            [MyInsert]
+            [PgInsert]
             void Insert(DbConnection con, DataEntity entity);
         }
 
@@ -45,10 +45,10 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertParameterAccessor
         {
-            [MyInsert(typeof(DataEntity))]
+            [PgInsert(typeof(DataEntity))]
             void InsertByType(DbConnection con, long id, string name);
 
-            [MyInsert("Data")]
+            [PgInsert("Data")]
             void InsertByName(DbConnection con, long id, string name);
         }
 
@@ -82,7 +82,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertInvalidAccessor
         {
-            [MyInsert]
+            [PgInsert]
             void Insert();
         }
 
@@ -103,8 +103,8 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertIgnoreAccessor
         {
-            [MyInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Ignore)]
-            void InsertIgnore(DbConnection con, long id, string name);
+            [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Ignore)]
+            void InsertIgnore(DbConnection con, [Key] long id, string name);
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace Smart.Data.Accessor.Builders
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
             {
-                cmd.Executing = c => Assert.Equal("INSERT IGNORE INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+                cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
                 cmd.SetupResult(0);
             });
 
@@ -131,7 +131,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertOrUpdateAccessor
         {
-            [MyInsert(OnDuplicate = DuplicateBehavior.Update)]
+            [PgInsert(OnDuplicate = DuplicateBehavior.Update)]
             void InsertOrUpdate(DbConnection con, MultiKeyEntity entity);
         }
 
@@ -145,7 +145,7 @@ namespace Smart.Data.Accessor.Builders
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
             {
-                cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) ON DUPLICATE KEY UPDATE Type = @_p2, Name = @_p3", c.CommandText);
+                cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @_p2, Name = @_p3", c.CommandText);
                 cmd.SetupResult(0);
             });
 
@@ -159,7 +159,7 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface IInsertOrUpdateInvalidAccessor
         {
-            [MyInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Update)]
+            [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Update)]
             void InsertOrUpdate(DbConnection con, long id, string name);
         }
 

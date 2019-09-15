@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor.Builders
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class MyInsertAttribute : MethodAttribute
+    public sealed class PgInsertAttribute : MethodAttribute
     {
         private readonly string table;
 
@@ -20,22 +20,22 @@ namespace Smart.Data.Accessor.Builders
 
         public DuplicateBehavior OnDuplicate { get; set; }
 
-        public MyInsertAttribute()
+        public PgInsertAttribute()
             : this(null, null)
         {
         }
 
-        public MyInsertAttribute(string table)
+        public PgInsertAttribute(string table)
             : this(table, null)
         {
         }
 
-        public MyInsertAttribute(Type type)
+        public PgInsertAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private MyInsertAttribute(string table, Type type)
+        private PgInsertAttribute(string table, Type type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;
@@ -57,12 +57,7 @@ namespace Smart.Data.Accessor.Builders
             }
 
             var sql = new StringBuilder();
-            sql.Append("INSERT");
-            if (OnDuplicate == DuplicateBehavior.Ignore)
-            {
-                sql.Append(" IGNORE");
-            }
-            sql.Append(" INTO ");
+            sql.Append("INSERT INTO ");
             sql.Append(tableName);
             sql.Append(" (");
             BuildHelper.AddInsertColumns(sql, mi, parameters);
@@ -70,7 +65,7 @@ namespace Smart.Data.Accessor.Builders
             BuildHelper.AddInsertValues(sql, mi, parameters);
             sql.Append(")");
 
-            if (OnDuplicate == DuplicateBehavior.Update)
+            if (OnDuplicate != DuplicateBehavior.Default)
             {
                 var keys = BuildHelper.GetKeyParameters(parameters);
                 if (keys.Count == 0)
@@ -78,8 +73,19 @@ namespace Smart.Data.Accessor.Builders
                     throw new BuilderException($"Insert or Update requires key columns. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
                 }
 
-                sql.Append(" ON DUPLICATE KEY UPDATE ");
-                BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
+                sql.Append(" ON CONFLICT (");
+                BuildHelper.AddColumns(sql, keys);
+                sql.Append(")");
+
+                if (OnDuplicate == DuplicateBehavior.Ignore)
+                {
+                    sql.Append(" DO NOTHING");
+                }
+                else if (OnDuplicate == DuplicateBehavior.Update)
+                {
+                    sql.Append(" DO UPDATE SET ");
+                    BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
+                }
             }
 
             var tokenizer = new SqlTokenizer(sql.ToString());

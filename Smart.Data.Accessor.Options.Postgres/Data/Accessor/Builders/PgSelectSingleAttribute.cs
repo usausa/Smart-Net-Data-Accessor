@@ -12,31 +12,31 @@ namespace Smart.Data.Accessor.Builders
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Tokenizer;
 
-    public sealed class MyInsertAttribute : MethodAttribute
+    public sealed class PgSelectSingleAttribute : MethodAttribute
     {
         private readonly string table;
 
         private readonly Type type;
 
-        public DuplicateBehavior OnDuplicate { get; set; }
+        public bool ForUpdate { get; set; }
 
-        public MyInsertAttribute()
+        public PgSelectSingleAttribute()
             : this(null, null)
         {
         }
 
-        public MyInsertAttribute(string table)
+        public PgSelectSingleAttribute(string table)
             : this(table, null)
         {
         }
 
-        public MyInsertAttribute(Type type)
+        public PgSelectSingleAttribute(Type type)
             : this(null, type)
         {
         }
 
-        private MyInsertAttribute(string table, Type type)
-            : base(CommandType.Text, MethodType.Execute)
+        private PgSelectSingleAttribute(string table, Type type)
+            : base(CommandType.Text, MethodType.QueryFirstOrDefault)
         {
             this.table = table;
             this.type = type;
@@ -46,40 +46,24 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var keys = BuildHelper.GetKeyParameters(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
-                            BuildHelper.GetTableName(option, mi);
+                            BuildHelper.GetReturnTableName(option, mi);
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException(
-                    $"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();
-            sql.Append("INSERT");
-            if (OnDuplicate == DuplicateBehavior.Ignore)
-            {
-                sql.Append(" IGNORE");
-            }
-            sql.Append(" INTO ");
+            sql.Append("SELECT * FROM ");
             sql.Append(tableName);
-            sql.Append(" (");
-            BuildHelper.AddInsertColumns(sql, mi, parameters);
-            sql.Append(") VALUES (");
-            BuildHelper.AddInsertValues(sql, mi, parameters);
-            sql.Append(")");
+            BuildHelper.AddCondition(sql, keys.Count > 0 ? keys : parameters);
 
-            if (OnDuplicate == DuplicateBehavior.Update)
+            if (ForUpdate)
             {
-                var keys = BuildHelper.GetKeyParameters(parameters);
-                if (keys.Count == 0)
-                {
-                    throw new BuilderException($"Insert or Update requires key columns. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
-                }
-
-                sql.Append(" ON DUPLICATE KEY UPDATE ");
-                BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
+                sql.Append(" FOR UPDATE");
             }
 
             var tokenizer = new SqlTokenizer(sql.ToString());

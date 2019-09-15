@@ -319,11 +319,27 @@ namespace Smart.Data.Accessor.Builders.Helpers
             sql.Append($"/*@ {parameter.Name} */dummy");
         }
 
-        public static void AddSplitter(StringBuilder sql, bool add)
+        private static void AddSplitter(StringBuilder sql, bool add)
         {
             if (add)
             {
                 sql.Append(", ");
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Columns
+        //--------------------------------------------------------------------------------
+
+        public static void AddColumns(StringBuilder sql, IList<BuildParameterInfo> parameters)
+        {
+            var add = false;
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                BuildHelper.AddSplitter(sql, add);
+                add = true;
+
+                sql.Append(parameters[i].ParameterName);
             }
         }
 
