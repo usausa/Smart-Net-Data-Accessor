@@ -60,7 +60,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static string[] GetKeyNamesOfType(Type type)
         {
-            return type.GetProperties()
+            return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(x => new { Parameter = x, Key = x.GetCustomAttribute<KeyAttribute>() })
                 .Where(x => x.Key != null)
                 .OrderBy(x => x.Key.Order)
@@ -82,7 +82,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             {
                 if (ParameterHelper.IsNestedParameter(pmi))
                 {
-                    parameters.AddRange(pmi.ParameterType.GetProperties()
+                    parameters.AddRange(pmi.ParameterType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
                         .Select(pi => new BuildParameterInfo(
                             pmi,
@@ -173,7 +173,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 ? ParameterHelper.GetMultipleParameterElementType(type)
                 : type;
 
-            return String.Join(", ", elementType.GetProperties()
+            return String.Join(", ", elementType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
                 .Where(x => x.Key != null)
                 .OrderBy(x => x.Key.Order)

@@ -39,7 +39,7 @@ namespace Smart.Data.Accessor.Runtime
         {
             if (declaringType != null)
             {
-                return declaringType.GetProperty(propertyName);
+                return declaringType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
             }
 
             return method.GetParameters()[parameterIndex];

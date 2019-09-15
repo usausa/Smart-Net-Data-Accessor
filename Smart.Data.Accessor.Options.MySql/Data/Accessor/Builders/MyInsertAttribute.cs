@@ -64,7 +64,6 @@ namespace Smart.Data.Accessor.Builders
             {
                 sql.Append(" IGNORE");
             }
-            sql.Append("INSERT IGNORE INTO ");
             sql.Append(" INTO ");
             sql.Append(tableName);
             sql.Append(" (");

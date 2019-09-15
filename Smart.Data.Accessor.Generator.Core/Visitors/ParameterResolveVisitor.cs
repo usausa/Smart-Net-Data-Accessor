@@ -105,7 +105,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private bool ResolvePropertyParameter(Type targetType, PathElement[] elements, int position, ParameterNode node, string source)
         {
-            var pi = targetType.GetProperty(elements[position].Name);
+            var pi = targetType.GetProperty(elements[position].Name, BindingFlags.Instance | BindingFlags.Public);
             if (pi == null)
             {
                 return false;
