@@ -8,6 +8,90 @@ namespace Smart.Data.Accessor.Builders
 
     public class UpdateTest
     {
+        [DataAccessor]
+        public interface IUpdateAllDao
+        {
+            [Update(typeof(MultiKeyEntity), Force = true)]
+            int Update([Values] string type, [Values] string name);
+        }
+
+        [Fact]
+        public void TestUpdateAll()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<IUpdateAllDao>();
+
+                var effect = dao.Update("C", "Xxx");
+
+                Assert.Equal(3, effect);
+            }
+        }
+
+        [DataAccessor]
+        public interface IUpdateAllWithoutValuesDao
+        {
+            [Update(typeof(MultiKeyEntity), Force = true)]
+            int Update(string type, string name);
+        }
+
+        [Fact]
+        public void TestUpdateAllWithoutValues()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var dao = generator.Create<IUpdateAllWithoutValuesDao>();
+
+                var effect = dao.Update("C", "Xxx");
+
+                Assert.Equal(3, effect);
+            }
+        }
+
+        [DataAccessor]
+        public interface IUpdateAllWithoutForceDao
+        {
+            [Update(typeof(MultiKeyEntity))]
+            int Update([Values] string type, [Values] string name);
+        }
+
+        [Fact]
+        public void TestUpdateAllWithoutForce()
+        {
+            var generator = new TestFactoryBuilder()
+                .Build();
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutForceDao>());
+        }
+
+        [DataAccessor]
+        public interface IUpdateAllWithoutValuesWithoutForceDao
+        {
+            [Update(typeof(MultiKeyEntity))]
+            int Update(string type, string name);
+        }
+
+        [Fact]
+        public void TestUpdateAllWithoutValuesWithoutForce()
+        {
+            var generator = new TestFactoryBuilder()
+                .Build();
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutValuesWithoutForceDao>());
+        }
+
         //--------------------------------------------------------------------------------
         // Key
         //--------------------------------------------------------------------------------
@@ -312,6 +396,27 @@ namespace Smart.Data.Accessor.Builders
                 Assert.NotNull(entityB);
                 Assert.Equal(2, entityB.Value);
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        [DataAccessor]
+        public interface IUpdateInvalidDao
+        {
+            [Update("")]
+            int Update();
+        }
+
+        [Fact]
+        public void TestUpdateInvalid()
+        {
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+
+            Assert.Throws<BuilderException>(() => generator.Create<IUpdateInvalidDao>());
         }
     }
 }

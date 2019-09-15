@@ -297,7 +297,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 .FirstOrDefault(x => x.When == null || x.When == operation);
             if (codeValue != null)
             {
-                sql.Append($"/*# {codeValue.Value} */");
+                sql.Append($"/*# {codeValue.Value} */dummy");
                 return;
             }
 
@@ -311,7 +311,12 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static void AddCodeParameter(StringBuilder sql, string value)
         {
-            sql.Append($"/*# {value} */");
+            sql.Append($"/*# {value} */dummy");
+        }
+
+        public static void AddBindParameter(StringBuilder sql, BuildParameterInfo parameter)
+        {
+            sql.Append($"/*@ {parameter.Name} */dummy");
         }
 
         public static void AddSplitter(StringBuilder sql, bool add)

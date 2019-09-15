@@ -46,6 +46,7 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetReturnTableName(option, mi);
@@ -60,7 +61,12 @@ namespace Smart.Data.Accessor.Builders
             sql.Append(tableName);
             BuildHelper.AddCondition(sql, parameters);
 
-            if (!String.IsNullOrEmpty(Order))
+            if (order != null)
+            {
+                sql.Append(" ORDER BY ");
+                sql.Append($"/*# {order.Name} */dummy");
+            }
+            else if (!String.IsNullOrEmpty(Order))
             {
                 sql.Append(" ORDER BY ");
                 sql.Append(Order);

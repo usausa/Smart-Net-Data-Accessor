@@ -21,6 +21,9 @@ namespace Smart.Data.Accessor.Builders
 
             [Select(Order = "Name DESC")]
             List<MultiKeyEntity> SelectCustomOrder();
+
+            [Select]
+            List<MultiKeyEntity> SelectParameterOrder([Order] string order);
         }
 
         [Fact]
@@ -45,6 +48,13 @@ namespace Smart.Data.Accessor.Builders
                 Assert.Equal("Data-3", list[2].Name);
 
                 list = dao.SelectCustomOrder();
+
+                Assert.Equal(3, list.Count);
+                Assert.Equal("Data-3", list[0].Name);
+                Assert.Equal("Data-2", list[1].Name);
+                Assert.Equal("Data-1", list[2].Name);
+
+                list = dao.SelectParameterOrder("Name DESC");
 
                 Assert.Equal(3, list.Count);
                 Assert.Equal("Data-3", list[0].Name);

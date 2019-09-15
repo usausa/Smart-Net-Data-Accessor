@@ -120,38 +120,45 @@ namespace Smart.Data.Accessor.Nodes
             // Raw
             if (value.StartsWith("#"))
             {
+                SkipToken();
                 AddBody(new RawSqlNode(value.Substring(1).Trim()), true);
             }
 
             // Parameter
             if (value.StartsWith("@"))
             {
-                var hasParenthesis = false;
-                var token = NextToken();
-                if (token != null)
-                {
-                    if (token.TokenType == TokenType.OpenParenthesis)
-                    {
-                        hasParenthesis = true;
-
-                        var count = 1;
-                        while ((count > 0) && ((token = NextToken()) != null))
-                        {
-                            if (token.TokenType == TokenType.OpenParenthesis)
-                            {
-                                count++;
-                            }
-                            else if (token.TokenType == TokenType.CloseParenthesis)
-                            {
-                                count--;
-                            }
-                        }
-                    }
-                }
-
+                bool hasParenthesis = SkipToken();
                 AddBody(new ParameterNode(value.Substring(1).Trim(), hasParenthesis), !lastParenthesis);
                 lastParenthesis = false;
             }
+        }
+
+        private bool SkipToken()
+        {
+            var hasParenthesis = false;
+            var token = NextToken();
+            if (token != null)
+            {
+                if (token.TokenType == TokenType.OpenParenthesis)
+                {
+                    hasParenthesis = true;
+
+                    var count = 1;
+                    while ((count > 0) && ((token = NextToken()) != null))
+                    {
+                        if (token.TokenType == TokenType.OpenParenthesis)
+                        {
+                            count++;
+                        }
+                        else if (token.TokenType == TokenType.CloseParenthesis)
+                        {
+                            count--;
+                        }
+                    }
+                }
+            }
+
+            return hasParenthesis;
         }
     }
 }

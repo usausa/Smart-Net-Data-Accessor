@@ -71,7 +71,7 @@ namespace Smart.Data.Accessor.Builders.SqlServer
                     sql.Append(", ");
                 }
 
-                BuildHelper.AddParameter(sql, keys[i], null);
+                BuildHelper.AddBindParameter(sql, keys[i]);
                 sql.Append(" AS ");
                 sql.Append(keys[i].ParameterName);
             }

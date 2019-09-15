@@ -48,6 +48,7 @@ namespace Smart.Data.Accessor.Builders.MySql
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
             var limit = BuildHelper.PickParameter<LimitAttribute>(parameters);
             var offset = BuildHelper.PickParameter<OffsetAttribute>(parameters);
             var tableName = table ??
@@ -64,7 +65,12 @@ namespace Smart.Data.Accessor.Builders.MySql
             sql.Append(tableName);
             BuildHelper.AddCondition(sql, parameters);
 
-            if (!String.IsNullOrEmpty(Order))
+            if (order != null)
+            {
+                sql.Append(" ORDER BY ");
+                sql.Append($"/*# {order.Name} */dummy");
+            }
+            else if (!String.IsNullOrEmpty(Order))
             {
                 sql.Append(" ORDER BY ");
                 sql.Append(Order);
@@ -82,13 +88,13 @@ namespace Smart.Data.Accessor.Builders.MySql
             if (limit != null)
             {
                 sql.Append(" LIMIT ");
-                BuildHelper.AddParameter(sql, limit, null);
+                sql.Append($"/*@ {limit.Name} */dummy");
             }
 
             if (offset != null)
             {
                 sql.Append(" OFFSET ");
-                BuildHelper.AddParameter(sql, offset, null);
+                sql.Append($"/*@ {offset.Name} */dummy");
             }
 
             if (ForUpdate)
