@@ -12,24 +12,41 @@ namespace Smart.Data.Accessor.Resolver
 
     public static class ResolverConfigExtensions
     {
-        public static ResolverConfig UseAccessor(this ResolverConfig config)
+        public static ResolverConfig UseDataAccessor(this ResolverConfig config)
         {
-            return UseAccessor(config, null);
+            return UseDataAccessor(config, null);
         }
 
-        public static ResolverConfig UseAccessor(this ResolverConfig config, Action<ExecuteEngineConfig> action)
+        public static ResolverConfig UseDataAccessor(this ResolverConfig config, Action<ExecuteEngineFactoryOptions> action)
         {
             if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
 
-            var engineConfig = new ExecuteEngineConfig();
-            action?.Invoke(engineConfig);
+            var options = new ExecuteEngineFactoryOptions();
+            action?.Invoke(options);
 
-            config.Bind<ExecuteEngine>().ToMethod(p =>
+            config.Bind<ExecuteEngine>().ToMethod(r =>
             {
-                engineConfig.SetServiceProvider(p.Get<IServiceProvider>());
+                var engineConfig = new ExecuteEngineConfig();
+                engineConfig.SetServiceProvider(new ServiceProviderAdapter(r));
+
+                if (options.TypeMapConfig != null)
+                {
+                    engineConfig.ConfigureTypeMap(options.TypeMapConfig);
+                }
+
+                if (options.TypeHandlersConfig != null)
+                {
+                    engineConfig.ConfigureTypeHandlers(options.TypeHandlersConfig);
+                }
+
+                if (options.ResultMapperFactoriesConfig != null)
+                {
+                    engineConfig.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
+                }
+
                 return engineConfig.ToEngine();
             }).InSingletonScope();
 

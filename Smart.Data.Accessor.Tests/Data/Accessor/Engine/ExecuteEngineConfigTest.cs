@@ -21,10 +21,10 @@ namespace Smart.Data.Accessor.Engine
 
             var provider = new ComponentConfig().ToContainer();
             config.SetServiceProvider(provider);
-            Assert.Equal(provider, config.GetServiceProvider());
+            Assert.Equal(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
 
             config.ConfigureComponents(components => { });
-            Assert.NotEqual(provider, config.GetServiceProvider());
+            Assert.NotEqual(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
         }
     }
 }

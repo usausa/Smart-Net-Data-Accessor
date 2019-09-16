@@ -143,7 +143,7 @@ namespace Smart.Data.Accessor.Engine
         // Interface
         //--------------------------------------------------------------------------------
 
-        public IServiceProvider GetServiceProvider()
+        IServiceProvider IExecuteEngineConfig.GetServiceProvider()
         {
             if (serviceProvider != null)
             {
