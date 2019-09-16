@@ -63,6 +63,8 @@ namespace Smart.Data.Accessor.Generator
             {
                 source.AppendLine($"[assembly: AssemblyInformationalVersion(\"{informationVersion.InformationalVersion}\")]");
             }
+
+            File.WriteAllText(path, source.ToString());
         }
     }
 }
