@@ -12,7 +12,7 @@ namespace Smart.Data.Accessor
     public class TimeoutTest
     {
         [DataAccessor]
-        public interface ITimeoutAttributeAccessor
+        public interface ICommandTimeoutAttributeAccessor
         {
             [Execute]
             [CommandTimeout(123)]
@@ -20,13 +20,13 @@ namespace Smart.Data.Accessor
         }
 
         [Fact]
-        public void TestTimeoutAttribute()
+        public void TestCommandTimeoutAttribute()
         {
             var generator = new TestFactoryBuilder()
                 .SetSql(string.Empty)
                 .Build();
 
-            var accessor = generator.Create<ITimeoutAttributeAccessor>();
+            var accessor = generator.Create<ICommandTimeoutAttributeAccessor>();
 
             var con = new MockDbConnection();
             con.SetupCommand(cmd =>
