@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Secondary Page";
+
+    var count = (int)ViewBag.Count;
+    var list = (IList<DataEntity>)ViewBag.List;
+}
+
+<h6>Total count: @count</h6>
+
+<div class="btn-toolbar" role="toolbar">
+    <div class="btn-group btn-group-sm" role="group">
+        <a class="btn btn-secondary" asp-action="Secondary" asp-route-type="">All</a>
+        <a class="btn btn-secondary" asp-action="Secondary" asp-route-type="A">Type A</a>
+        <a class="btn btn-secondary" asp-action="Secondary" asp-route-type="B">Type B</a>
+    </div>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Type</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var entity in list)
+    {
+        <tr>
+            <td>@entity.Id</td>
+            <td>@entity.Name</td>
+            <td>@entity.Type</td>
+        </tr>
+    }
+    </tbody>
+</table>

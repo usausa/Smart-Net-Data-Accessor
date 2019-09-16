@@ -11,15 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.6" />
     <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.6.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <SqlFiles Remove="Accessor\Sql\IExampleAccessor.Create.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <SqlFiles Remove="Accessor\Sql\IExampleAccessor.QueryDataList.sql" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="0.9.0" />
   </ItemGroup>
 
 </Project>

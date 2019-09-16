@@ -6,18 +6,15 @@ namespace Example.WebApplication2.Accessor
     using Example.WebApplication2.Models;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Attributes.Builders;
 
     [DataAccessor]
-    public interface ISampleAccessor
+    [Provider(DataSource.Primary)]
+    public interface IPrimaryAccessor
     {
         [ExecuteScalar]
         Task<int> CountDataAsync();
 
         [Query]
         Task<IList<DataEntity>> QueryDataAsync(string type);
-
-        [Insert]
-        Task<int> InsertData(DataEntity entity);
     }
 }
