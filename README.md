@@ -30,7 +30,7 @@ using System.Collections.Generic;
 using Smart.Data.Accessor.Attributes;
 
 [DataAccessor]
-public interface IExampleDao
+public interface IExampleAccessor
 {
     [Execute]
     void Create();
@@ -47,15 +47,15 @@ Create an SQL file with the naming convention of interface name + method name.
 
 Methods with [Insert] attribute automatically generate SQL, so no file is required.
 
-By default, SQL files are placed in the Sql subfolder of the interface file.
+By default, SQL files are placed in the 'Sql' subfolder of the interface file.
 
-* IExampleDao.Create.sql
+* IExampleAccessor.Create.sql
 
 ```sql
 CREATE TABLE IF NOT EXISTS Data (Id int PRIMARY KEY, Name text, Type text)
 ```
 
-* IExampleDao.QueryDataList.sql
+* IExampleAccessor.QueryDataList.sql
 
 ```sql
 SELECT * FROM Data
@@ -90,7 +90,7 @@ public static class Program
         var factory = new DataAccessorFactory(engine);
 
         // Create data accessor
-        var dao = factory.Create<IExampleDao>();
+        var dao = factory.Create<IExampleAccessor>();
 
         // Create
         dao.Create();
@@ -110,13 +110,97 @@ public static class Program
 }
 ```
 
+## 2-way SQL
+
+|   | Type          | Example                                     |
+|:-:|---------------|---------------------------------------------|
+| @ | parameter     | `/*@ id */`                                 |
+| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
+| # | raw parameter | `/*# order #/`                              |
+| ! | pragma        | `/*!using System.Text */`                   |
+
+### Parameter
+
+```sql
+SELECT * FROM Data WHERE Id = /*@ id */1
+```
+
+### Code block
+
+```sql
+SELECT * FROM Data
+/*% if (IsNotNull(id)) { */
+WHERE Id >= /*@ id */0
+/*% } */
+```
+
+### Raw parameter
+
+```sql
+SELECT * FROM Data ORDER BY /*# order */Name
+```
+
+### Pragma
+
+* Using static
+
+```sql
+/*!using System.Text */
+```
+
+* Using static
+
+```csharp
+public static class CustomScriptHelper
+{
+    public static bool HasValue(int? value)
+    {
+        return value.HasValue;
+    }
+}
+```
+
+```sql
+/*!helper MyLibrary.CustomScriptHelper */
+SELECT * FROM Data
+/*% if (HasValue(id)) { */
+WHERE Id >= /*@ id */0
+*% } *
+```
+
+### Built-in helper
+
+```csharp
+public static class ScriptHelper
+{
+    public static bool IsNull(object value);
+
+    public static bool IsNotNull(object value);
+
+    public static bool IsEmpty(string value);
+
+    public static bool IsNotEmpty(string value);
+
+    public static bool Any(Array array);
+
+    public static bool Any(ICollection ic);
+}
+```
+
 ## Attributes
 
 ### Data accessor attribute
 
 * DataAccessorAttribute
 
-Data accessor interface marker.
+```csharp
+// Data accessor interface marker
+[DataAccessor]
+public interface IExampleAccessor
+{
+...
+}
+```
 
 ### Method attributes
 
@@ -124,7 +208,7 @@ Data accessor interface marker.
 
 ```csharp
 [DataAccessor]
-public interface IExecuteDao
+public interface IExecuteAccessor
 {
     // Call ExecuteNonQuery()
     [Execute]
@@ -139,7 +223,7 @@ public interface IExecuteDao
 
 ```csharp
 [DataAccessor]
-public interface IExecuteScalarDao
+public interface IExecuteScalarAccessor
 {
     // Call ExecuteScalar()
     [ExecuteScalar]
@@ -149,11 +233,12 @@ public interface IExecuteScalarDao
     ValueTask<long> CountAsync();
 }
 ```
+
 * ExecuteReaderAttribute
 
 ```csharp
 [DataAccessor]
-public interface IExecuteReaderDao
+public interface IExecuteReaderAccessor
 {
     // Call ExecuteReader()
     [ExecuteReader]
@@ -168,7 +253,7 @@ public interface IExecuteReaderDao
 
 ```csharp
 [DataAccessor]
-public interface IQueryFirstOrDefaultDao
+public interface IQueryFirstOrDefaultAccessor
 {
     // Call ExecuteReader() and map single object or default
     [QueryFirstOrDefault]
@@ -183,7 +268,7 @@ public interface IQueryFirstOrDefaultDao
 
 ```csharp
 [DataAccessor]
-public interface IQueryDao
+public interface IQueryAccessor
 {
     // Call ExecuteReader() and map object list bufferd
     [Query]
@@ -201,11 +286,337 @@ public interface IQueryDao
 }
 ```
 
-### Auto generate SQL method attributes
+### Mapping attributes
 
-(No documentation yet)
+* IgnoreAttribute
+
+```csharp
+public class DataEntity
+{
+    // Ignore mapping
+    [Ignore]
+    public int IgnoreMember { get; set; }
+}
+```
+
+* NameAttribute
+
+```csharp
+public class UserEntity
+{
+    // Map from USER_NAME column
+    [Name("USER_NAME")]
+    public string UserName { get; set; }
+}
+```
+
+* DirectionAttribute
+
+```csharp
+public class Parameter
+{
+    // ParameterDirection.Input is used
+    [Input]
+    public int InputParameter { get; set; }
+
+    // ParameterDirection.InputOutput is used
+    [InputOutput]
+    public int InputOutputParameter { get; set; }
+
+    // ParameterDirection.Output is used
+    [Output]
+    public int OutputParameter { get; set; }
+
+    // ParameterDirection.ReturnValue is used
+    [ReturnValue]
+    public int ReturnValue { get; set; }
+}
+```
+
+### Parameter builder attributes
+
+* AnsiStringAttribute
+
+```csharp
+[DataAccessor]
+public interface IAnsiStringAccessor
+{
+    // DbType.AnsiStringFixedLength is set
+    [QueryFirstOrDefault]
+    DataEntity QueryEntity([AnsiString(3)] string id);
+}
+```
+
+* DbTypeAttribute
+
+```csharp
+public class Parameter
+{
+    // DbType.AnsiStringFixedLength is set
+    [DbType(DbType.AnsiStringFixedLength, 3)]
+    public string Id { get; set; }
+}
+```
+
+```csharp
+[DataAccessor]
+public interface IDbTypeAccessor
+{
+    [QueryFirstOrDefault]
+    DataEntity QueryEntity(Parameter parameter);
+}
+```
+
+### Result parser attribute
+
+* ResultParserAttribute
+
+```csharp
+public sealed class CustomParserAttribute : ResultParserAttribute
+{
+    public override Func<object, object> CreateParser(IServiceProvider serviceProvider, Type type)
+    {
+        return x => Convert.ChangeType(x, type, CultureInfo.InvariantCulture);
+    }
+}
+```
+
+```csharp
+public class ParserEntity
+{
+    // DB value parsed by CustomParserAttribute
+    [CustomParser]
+    public long Value { get; set; }
+}
+```
+
+### Injection attribute
+
+```csharp
+public class Counter
+{
+    private long counter;
+
+    public long Next() => ++counter;
+}
+```
+
+```csharp
+[DataAccessor]
+[Inject(typeof(Counter), "counter")]
+public interface IInjectAccessor
+{
+...
+}
+```
+
+```sql
+INSERT INTO Data (Value) VALUES (/*@ counter.Next() */)
+```
+
+### Connection selector attribute
+
+* ProviderAttribute
+
+```csharp
+// IDbProvider named 'Primary' selected by IDbProviderSelector
+[DataAccessor]
+[Provider("Primary")]
+public interface IPrimaryAccessor
+{
+...
+}
+```
+
+```csharp
+// IDbProvider named 'Secondary' selected by IDbProviderSelector
+[DataAccessor]
+[Provider("Secondary")]
+public interface ISecondaryAccessor
+{
+...
+}
+```
+
+### Option attribute
+
+* TimeoutAttribute
+
+```csharp
+[DataAccessor]
+public interface ITimeoutAccessor
+{
+    // timeout is used for IDbCommand.CommandTimeout
+    [Execute]
+    int Execute([Timeout] int timeout);
+}
+```
+
+* CommandTimeoutAttribute
+
+```csharp
+[DataAccessor]
+public interface ICommandTimeoutAccessor
+{
+    // IDbCommand.CommandTimeout = 300000;
+    [Execute]
+    [CommandTimeout(30000)]
+    int Execute();
+}
+```
+
+## SQL builder method attributes
+
+Attributes that automatically generate SQL.
+
+It is extensible and can implement its own attributes.
+
+### Builder attribute
 
 * InsertAttribute
+
+```csharp
+[DataAccessor]
+public interface IInsertAccessor
+{
+    // DataEntity property is used
+    [Insert]
+    int Insert(DataEntity entity);
+
+    // Method arguments is used
+    [Insert(typeof(DataEntity))]
+    int Insert(long id, string name);
+}
+```
+
+* UpdateAttribute
+
+```csharp
+public class UpdateValues
+{
+    [Key]
+    public long Id { get; set; }
+
+    public string Name { get; set; }
+}
+```
+
+```csharp
+public class UpdateValues
+{
+    public string Type { get; set; }
+
+    public string Name { get; set; }
+}
+```
+
+```csharp
+[DataAccessor]
+public interface IUpdateAccessor
+{
+    // By entity key memember
+    [Update]
+    int Update(DataEntity entity);
+
+    // UPDATE Type and Name by id
+    [Update(typeof(DataEntity))]
+    int Update([Values] UpdateValues values, long id);
+}
+```
+
+* DeleteAttribute
+
+```csharp
+[DataAccessor]
+public interface IDeleteAccessor
+{
+    // Id = /*@ id */
+    [Delete]
+    int Delete(long id);
+
+    // By entity key memember
+    [Delete]
+    int Delete(DataEntity entity);
+
+    // Force option is required to delete all
+    [Delete(typeof(DataEntity), Force = true)]
+    int DeleteAll();
+
+    // Key1 = @key1 AND Key2 >= @key2
+    [Delete]
+    int Delete(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
+}
+```
+
+* SelectAttribute
+
+```csharp
+[DataAccessor]
+public interface ISelectAccessor
+{
+    // Conditoon
+
+    // Key1 = @key1 AND Key2 >= @key2
+    [Select]
+    List<DataEntity> SelectListByCondition(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
+
+    // Order
+
+    // Key order is default
+    [Select]
+    List<DataEntity> SelectListKeyOrder();
+
+    // Attribute property based order
+    [Select(Order = "Name DESC")]
+    List<DataEntity> SelectListCustomOrder();
+
+    // ORDER BY /*# order */
+    [Select]
+    List<DataEntity> SelectParameterOrder([Order] string order);
+
+    //  map to other entity
+
+    // SQL is generated based on DataEntity and map to OtherEntity
+    [Select(typeof(DataEntity))]
+    List<OtherEntity> SelectListByType();
+
+    // SQL is generated with table name 'Data' and map to OtherEntity
+    [Select("Data")]
+    List<OtherEntity> SelectListByName();
+}
+```
+
+* SelectSingleAttribute
+
+```csharp
+[DataAccessor]
+public interface ISelectAccessor
+{
+    // Id = /*@ id */
+    [SelectSingle]
+    DataEntity SelectSingle(long id);
+
+    // By entity key memember
+    [SelectSingle]
+    DataEntity SelectSingle(DataEntity entity);
+}
+```
+
+* CountAttribute
+
+```csharp
+[DataAccessor]
+public interface ICountAccessor
+{
+    // Count all
+    [Count(typeof(DataEntity))]
+    long CountAll();
+
+    // Count where Value >= /*@ value */
+    [Count(typeof(DataEntity))]
+    long CountAll([Condition(Operand.GreaterEqualThan)] long value);
+}
+```
 
 * ProcedureAttribute
 
@@ -244,7 +655,7 @@ public class Parameter
 
 ```csharp
 [DataAccessor]
-public interface IProcedureDao
+public interface IProcedureAccessor
 {
     // Argument version
     [Procedure("PROC1")]
@@ -268,93 +679,174 @@ dao.Execute(parameter);
 // Parameter2 = 3, Parameter3 = 2, ReturnValue = 100
 ```
 
-### Mapping attributes
+### Condition attribute
 
-(No documentation yet)
+```csharp
+// Generate condition
 
-* IgnoreAttribute
-* NameAttribute
-* DirectionAttribute
+// Kye >= /*@ key */
+[Delete]
+int Delete([Condition(Operand.GreaterEqualThan)] long key);
 
-### Parameter builder attributes
+// /*% if (IsNotNull(type)) { %//*@ type *//*% } */
+[Select]
+List<DataEntity> Select([Condition(ExcludeNull = true)] string type);
 
-(No documentation yet)
+// /*% if (IsNotEmpty(type)) { %//*@ type *//*% } */
+[Select]
+List<DataEntity> Select([Condition(ExcludeEmpty = true)] string typel);
+```
 
-* AnsiStringAttribute
-* DbTypeAttribute
+### Value attribute
 
-### Connection selector attribute
+* DbValueAttribute
 
-(No documentation yet)
+```csharp
+public class DbValueEntity
+{
+    [Key]
+    public long Id { get; set; }
 
-* ProviderAttribute
+    // DB value CURRENT_TIMESTAMP is used
+    [DbValue("CURRENT_TIMESTAMP")]
+    public string DateTime { get; set; }
+}
+```
 
-### Result parser attribute
+* CodeValueAttribute
 
-(No documentation yet)
+```csharp
+public class DataEntity
+{
+    [Key]
+    public string Key { get; set; }
 
-* ResultParserAttribute
+    // Code counter.Next() is used
+    [CodeValue("counter.Next()")]
+    public long Value { get; set; }
+}
+```
 
-### Option attribute
+```csharp
+[DataAccessor]
+[Inject(typeof(Counter), "counter")]
+public interface ICodeValueAccessor
+{
+    [Insert]
+    void Insert(DataEntity entity);
+}
+```
 
-(No documentation yet)
+### Option builders
 
-* TimeoutAttribute
-* TimeoutParameterAttribute
-* SqlSizeAttribute
+Support database specific UPSERT, SELECT FOR UPDATE, etc.
+
+| Package                               | Database   |
+|---------------------------------------|------------|
+| Smart.Data.Accessor.Options.SqlServer | SQL Server |
+| Smart.Data.Accessor.Options.MySql     | MySQL      |
+| Smart.Data.Accessor.Options.Postgres  | PostgreSQL |
 
 ## Special arguments
 
 ### DbConnection
 
-(No documentation yet)
+```csharp
+[DataAccessor]
+public interface IDbConnectionAccessor
+{
+    // DbConnection con is used insted of default IDbProvider connection
+    [Execute]
+    int Execute(DbConnection con);
+}
+```
 
 ### DbTransaction
 
-(No documentation yet)
+```csharp
+[DataAccessor]
+public interface ITransactionAccessor
+{
+    // DbTransaction tx is used as transaction and connection
+    [Execute]
+    int Execute(DbTransaction tx, long id, string name);
+}
+```
+
+```csharp
+using (var tx = con.BeginTransaction())
+{
+    var effect = accessor.Execute(tx, 1L, "xxx");
+
+    tx.Commit();
+}
+```
 
 ### CancellationToken
 
-(No documentation yet)
-
-## 2-way SQL
-
-|   | Type          | Example                                     |
-|:-:|---------------|---------------------------------------------|
-| @ | parameter     | `/*@ id */`                                 |
-| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
-| # | raw parameter | `/*# order #/`                              |
-| ! | pragma        | `/*!using System.Text */`                   |
-
-### Parameter
-
-(No documentation yet)
-
-### Code block
-
-(No documentation yet)
-
-### Raw parameter
-
-(No documentation yet)
-
-### Pragma
-
-(No documentation yet)
+```csharp
+[DataAccessor]
+public interface IExecuteCancelAsyncAccessor
+{
+    // Cancelable async method
+    [Execute]
+    ValueTask<int> ExecuteAsync(CancellationToken cancel);
+}
+```
 
 ## Configuration
 
+ExecuteEngineConfig configuration.
+
 ### IDbProvider
 
-(No documentation yet)
+```csharp
+// Default IDbProvider configuration
+var engine = new ExecuteEngineConfig()
+    .ConfigureComponents(c => c.Add<IDbProvider>(new DelegateDbProvider(() => new SqlConnection(ConnectionString))))
+    .ToEngine();
+```
+
+```csharp
+// Use multiple provider
+config.ConfigureComponents(c =>
+{
+    var selector = new NamedDbProviderSelector();
+    selector.AddProvider("Main", new DelegateDbProvider(() => new SqlConnection(MainConnectionString)));
+    selector.AddProvider("Sub", new DelegateDbProvider(() => new SqlConnection(SubConnectionString)));
+    c.Add<IDbProviderSelector>(selector);
+});
+```
 
 ### Type map
 
-(No documentation yet)
+```csharp
+// Use DbType.AnsiString for string
+config.ConfigureTypeMap(map => map[typeof(string)] = DbType.AnsiString);
+```
 
 ### Type handler
 
-(No documentation yet)
+```csharp
+public sealed class DateTimeTickTypeHandler : ITypeHandler
+{
+    public void SetValue(DbParameter parameter, object value)
+    {
+        parameter.DbType = DbType.Int64;
+        parameter.Value = ((DateTime)value).Ticks;
+    }
+
+    public Func<object, object> CreateParse(Type type)
+    {
+        return x => new DateTime((long)x);
+    }
+}
+```
+
+```csharp
+// In database, store DateTime using bigint
+config.ConfigureTypeHandlers(handlers => handlers[typeof(DateTime)] = new DateTimeTickTypeHandler());
+```
 
 ### Result mapper factory
 
@@ -367,20 +859,26 @@ services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnec
 
 services.AddDataAccessor(config =>
 {
-    config.DaoAssemblies.Add(Assembly.GetExecutingAssembly());
+    config.AccessorAssemblies.Add(Assembly.GetExecutingAssembly());
 });
 ```
 
 ```csharp
-private readonly ISampleDao sampleDao;
+private readonly ISampleAccessor sampleAccessor;
 
-public HomeController(ISampleDao sampleDao)
+public HomeController(ISampleAccessor sampleAccessor)
 {
-    this.sampleDao = sampleDao;
+    this.sampleAccessor = sampleAccessor;
 }
 ```
 
 ## Code generation
+
+### Build option
+
+(No documentation yet)
+
+### Generated source
 
 (No documentation yet)
 
@@ -395,6 +893,5 @@ public HomeController(ISampleDao sampleDao)
 
 ## TODO
 
-* Enhanced auto generate SQL method attribute. (ver 0.6?)
-* Enhanced Result mapper. (ver 0.7?)
-* Enhanced handling of dynamic parameters. (ver 1.0+?)
+* Enhanced Result mapper(constructor argument, tuple). (ver 1.0+)
+* Enhanced handling of dynamic parameters by roslyn. (ver 1.0+)
