@@ -9,7 +9,7 @@
 
 Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.Accessor).
 
-Create data accessor interafce and model class like this.
+Create data accessor interface and model class like this.
 
 ```csharp
 using Smart.Data.Accessor.Attributes;
@@ -107,83 +107,6 @@ public static class Program
         var all = dao.QueryDataList();
         Console.WriteLine(all.Count); // 3
     }
-}
-```
-
-## 2-way SQL
-
-|   | Type          | Example                                     |
-|:-:|---------------|---------------------------------------------|
-| @ | parameter     | `/*@ id */`                                 |
-| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
-| # | raw parameter | `/*# order #/`                              |
-| ! | pragma        | `/*!using System.Text */`                   |
-
-### Parameter
-
-```sql
-SELECT * FROM Data WHERE Id = /*@ id */1
-```
-
-### Code block
-
-```sql
-SELECT * FROM Data
-/*% if (IsNotNull(id)) { */
-WHERE Id >= /*@ id */0
-/*% } */
-```
-
-### Raw parameter
-
-```sql
-SELECT * FROM Data ORDER BY /*# order */Name
-```
-
-### Pragma
-
-* Using static
-
-```sql
-/*!using System.Text */
-```
-
-* Using static
-
-```csharp
-public static class CustomScriptHelper
-{
-    public static bool HasValue(int? value)
-    {
-        return value.HasValue;
-    }
-}
-```
-
-```sql
-/*!helper MyLibrary.CustomScriptHelper */
-SELECT * FROM Data
-/*% if (HasValue(id)) { */
-WHERE Id >= /*@ id */0
-*% } *
-```
-
-### Built-in helper
-
-```csharp
-public static class ScriptHelper
-{
-    public static bool IsNull(object value);
-
-    public static bool IsNotNull(object value);
-
-    public static bool IsEmpty(string value);
-
-    public static bool IsNotEmpty(string value);
-
-    public static bool Any(Array array);
-
-    public static bool Any(ICollection ic);
 }
 ```
 
@@ -794,6 +717,83 @@ public interface IExecuteCancelAsyncAccessor
 }
 ```
 
+## 2-way SQL
+
+|   | Type          | Example                                     |
+|:-:|---------------|---------------------------------------------|
+| @ | parameter     | `/*@ id */`                                 |
+| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
+| # | raw parameter | `/*# order #/`                              |
+| ! | pragma        | `/*!using System.Text */`                   |
+
+### Parameter
+
+```sql
+SELECT * FROM Data WHERE Id = /*@ id */1
+```
+
+### Code block
+
+```sql
+SELECT * FROM Data
+/*% if (IsNotNull(id)) { */
+WHERE Id >= /*@ id */0
+/*% } */
+```
+
+### Raw parameter
+
+```sql
+SELECT * FROM Data ORDER BY /*# order */
+```
+
+### Pragma
+
+* Using static
+
+```sql
+/*!using System.Text */
+```
+
+* Using static
+
+```csharp
+public static class CustomScriptHelper
+{
+    public static bool HasValue(int? value)
+    {
+        return value.HasValue;
+    }
+}
+```
+
+```sql
+/*!helper MyLibrary.CustomScriptHelper */
+SELECT * FROM Data
+/*% if (HasValue(id)) { */
+WHERE Id >= /*@ id */0
+*% } *
+```
+
+### Built-in helper
+
+```csharp
+public static class ScriptHelper
+{
+    public static bool IsNull(object value);
+
+    public static bool IsNotNull(object value);
+
+    public static bool IsEmpty(string value);
+
+    public static bool IsNotEmpty(string value);
+
+    public static bool Any(Array array);
+
+    public static bool Any(ICollection ic);
+}
+```
+
 ## Configuration
 
 ExecuteEngineConfig configuration.
@@ -850,7 +850,20 @@ config.ConfigureTypeHandlers(handlers => handlers[typeof(DateTime)] = new DateTi
 
 ### Result mapper factory
 
-(No documentation yet)
+```csharp
+// Implement custom result mapper factory
+public interface IResultMapperFactory
+{
+    bool IsMatch(Type type);
+
+    Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns);
+}
+```
+
+```csharp
+// Use custom result mapper factory
+config.ConfigureResultMapperFactories(mappers => mappers.Add(new CustomResultMapperFactory));
+```
 
 ## ASP.NET Core integration
 
@@ -876,20 +889,41 @@ public HomeController(ISampleAccessor sampleAccessor)
 
 ### Build option
 
-(No documentation yet)
+* SmartDataAccessorGeneratorOption
+
+```xml
+<PropertyGroup>
+  <SmartDataAccessorGeneratorOption>EntityClassSuffix=Model,Entity;FieldNaming=Pascal</SmartDataAccessorGeneratorOption>
+</PropertyGroup>
+```
+
+| Option            | Description                        |
+|-------------------|------------------------------------|
+| EntityClassSuffix | Class suffix to convert table name |
+| FieldNaming       | Naming rule to convert column name |
 
 ### Generated source
 
-(No documentation yet)
+Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor`.
 
 ## Benchmark (for reference purpose only)
 
-(Ref benchmark project)
+|                    Method |       Mean |      Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
+|-------------------------- |-----------:|-----------:|----------:|-------:|------:|------:|----------:|
+|             DapperExecute |   399.3 ns |  2.1018 ns |  3.146 ns | 0.1101 |     - |     - |     464 B |
+|              SmartExecute |   177.5 ns |  1.3176 ns |  1.890 ns | 0.0894 |     - |     - |     376 B |
+|       DapperExecuteScalar |   154.9 ns |  1.3411 ns |  2.007 ns | 0.0362 |     - |     - |     152 B |
+|        SmartExecuteScalar |   108.6 ns |  0.9663 ns |  1.446 ns | 0.0362 |     - |     - |     152 B |
+|     DapperQueryBufferd100 | 4,742.0 ns | 36.4373 ns | 53.409 ns | 1.3885 |     - |     - |    5856 B |
+|      SmartQueryBufferd100 | 3,434.9 ns | 21.0124 ns | 29.457 ns | 1.3199 |     - |     - |    5552 B |
+| DapperQueryFirstOrDefault |   434.9 ns |  6.0099 ns |  8.619 ns | 0.1030 |     - |     - |     432 B |
+|  SmartQueryFirstOrDefault |   302.6 ns |  1.7062 ns |  2.447 ns | 0.0758 |     - |     - |     320 B |
 
 ## Example Project
 
 * [Console example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.ConsoleApplication)
 * [Web example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.WebApplication)
+* [Web example with Smart.Resolver](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.WebApplication2)
 
 ## TODO
 

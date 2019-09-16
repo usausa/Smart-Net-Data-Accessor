@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Benchmark
 {
-    using System;
+    using System.Collections.Generic;
+    using System.Data.Common;
     using System.Linq;
 
     using BenchmarkDotNet.Attributes;
@@ -45,10 +46,8 @@ namespace Smart.Data.Accessor.Benchmark
         private MockRepeatDbConnection mockQuery;
         private MockRepeatDbConnection mockQueryFirst;
 
-        private IBenchmarkAccessor dapperExecuteAccessor;
+        private IBenchmarkAccessorForDapper dapperExecuteAccessor;
         private IBenchmarkAccessor smartExecuteAccessor;
-
-        // TODO
 
         [GlobalSetup]
         public void Setup()
@@ -74,46 +73,20 @@ namespace Smart.Data.Accessor.Benchmark
                 {
                     new MockColumn(typeof(long), "Id"),
                     new MockColumn(typeof(string), "Name"),
-                    new MockColumn(typeof(int), "Amount"),
-                    new MockColumn(typeof(int), "Qty"),
-                    new MockColumn(typeof(bool), "Flag1"),
-                    new MockColumn(typeof(bool), "Flag2"),
-                    new MockColumn(typeof(DateTimeOffset), "CreatedAt"),
-                    new MockColumn(typeof(string), "CreatedBy"),
-                    new MockColumn(typeof(DateTimeOffset?), "UpdatedAt"),
-                    new MockColumn(typeof(string), "UpdatedBy"),
                 },
                 Enumerable.Range(1, 1).Select(x => new object[]
                 {
                     (long)x,
-                    "test",
-                    1,
-                    2,
-                    true,
-                    false,
-                    DateTimeOffset.Now,
-                    "user",
-                    DBNull.Value,
-                    DBNull.Value
+                    "test"
                 })));
 
             // DAO
-            var executeProvider = new DelegateDbProvider(() => mockExecute);
-            dapperExecuteAccessor = new DapperAccessor(executeProvider);
-            smartExecuteAccessor = CreateSmartAccessor(executeProvider);
-        }
+            dapperExecuteAccessor = new DapperAccessor();
 
-        private static IBenchmarkAccessor CreateSmartAccessor(IDbProvider provider)
-        {
             var engine = new ExecuteEngineConfig()
-                .ConfigureComponents(components =>
-                {
-                    components.Add(provider);
-                })
                 .ToEngine();
-
             var factory = new DataAccessorFactory(engine);
-            return factory.Create<IBenchmarkAccessor>();
+            smartExecuteAccessor = factory.Create<IBenchmarkAccessor>();
         }
 
         [GlobalCleanup]
@@ -130,41 +103,78 @@ namespace Smart.Data.Accessor.Benchmark
         //--------------------------------------------------------------------------------
 
         [Benchmark]
-        public void DapperExecute() => dapperExecuteAccessor.Execute(new DataEntity { Id = 1, Name = "xxx" });
+        public int DapperExecute() => dapperExecuteAccessor.Execute(mockExecute, new DataEntity { Id = 1, Name = "xxx" });
 
         [Benchmark]
-        public void SmartExecute() => smartExecuteAccessor.Execute(new DataEntity { Id = 1, Name = "xxx" });
+        public int SmartExecute() => smartExecuteAccessor.Execute(mockExecute, new DataEntity { Id = 1, Name = "xxx" });
 
-        // TODO
+        [Benchmark]
+        public long DapperExecuteScalar() => dapperExecuteAccessor.ExecuteScalar(mockExecuteScalar);
+
+        [Benchmark]
+        public long SmartExecuteScalar() => smartExecuteAccessor.ExecuteScalar(mockExecuteScalar);
+
+        [Benchmark]
+        public long DapperQueryBufferd100() => dapperExecuteAccessor.QueryBufferd(mockQuery).Count();
+
+        [Benchmark]
+        public long SmartQueryBufferd100() => smartExecuteAccessor.QueryBufferd(mockQuery).Count;
+
+        [Benchmark]
+        public DataEntity DapperQueryFirstOrDefault() => dapperExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
+
+        [Benchmark]
+        public DataEntity SmartQueryFirstOrDefault() => smartExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
     }
 
     [DataAccessor]
     public interface IBenchmarkAccessor
     {
         [Execute]
-        int Execute(DataEntity entity);
+        int Execute(DbConnection con, DataEntity entity);
 
-        // TODO
+        [ExecuteScalar]
+        long ExecuteScalar(DbConnection con);
+
+        [Query]
+        List<DataEntity> QueryBufferd(DbConnection con);
+
+        [QueryFirstOrDefault]
+        DataEntity QueryFirstOrDefault(DbConnection con, long id);
     }
 
-    public sealed class DapperAccessor : IBenchmarkAccessor
+    public interface IBenchmarkAccessorForDapper
     {
-        private readonly IDbProvider provider;
+        int Execute(DbConnection con, DataEntity entity);
 
-        public DapperAccessor(IDbProvider provider)
+        long ExecuteScalar(DbConnection con);
+
+        IEnumerable<DataEntity> QueryBufferd(DbConnection con);
+
+        DataEntity QueryFirstOrDefault(DbConnection con, long id);
+    }
+
+    public sealed class DapperAccessor : IBenchmarkAccessorForDapper
+    {
+        public int Execute(DbConnection con, DataEntity entity)
         {
-            this.provider = provider;
+            return con.Execute("INSERT INTO Data (Id, Name) VALUES (@Id, @Name)", entity);
         }
 
-        public int Execute(DataEntity entity)
+        public long ExecuteScalar(DbConnection con)
         {
-            using (var con = provider.CreateConnection())
-            {
-                return con.Execute("INSERT INTO Data (Id, Name) VALUES (@Id, @Name)", entity);
-            }
+            return con.ExecuteScalar<long>("SELECT COUNT(*) FROM Data");
         }
 
-        // TODO
+        public IEnumerable<DataEntity> QueryBufferd(DbConnection con)
+        {
+            return con.Query<DataEntity>("SELECT * FROM Data");
+        }
+
+        public DataEntity QueryFirstOrDefault(DbConnection con, long id)
+        {
+            return con.QueryFirstOrDefault<DataEntity>("SELECT * FROM Data WHERE Id = @Id", new { Id = id });
+        }
     }
 
     public class DataEntity
@@ -172,28 +182,5 @@ namespace Smart.Data.Accessor.Benchmark
         public long Id { get; set; }
 
         public string Name { get; set; }
-    }
-
-    public class LargeDataEntity
-    {
-        public long Id { get; set; }
-
-        public string Name { get; set; }
-
-        public int Amount { get; set; }
-
-        public int Qty { get; set; }
-
-        public bool Flag1 { get; set; }
-
-        public bool Flag2 { get; set; }
-
-        public DateTimeOffset CreatedAt { get; set; }
-
-        public string CreatedBy { get; set; }
-
-        public DateTimeOffset? UpdatedAt { get; set; }
-
-        public string UpdatedBy { get; set; }
     }
 }
