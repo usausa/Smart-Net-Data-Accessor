@@ -110,6 +110,83 @@ public static class Program
 }
 ```
 
+## 2-way SQL
+
+|   | Type          | Example                                     |
+|:-:|---------------|---------------------------------------------|
+| @ | parameter     | `/*@ id */`                                 |
+| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
+| # | raw parameter | `/*# order #/`                              |
+| ! | pragma        | `/*!using System.Text */`                   |
+
+### Parameter
+
+```sql
+SELECT * FROM Data WHERE Id = /*@ id */1
+```
+
+### Code block
+
+```sql
+SELECT * FROM Data
+/*% if (IsNotNull(id)) { */
+WHERE Id >= /*@ id */0
+/*% } */
+```
+
+### Raw parameter
+
+```sql
+SELECT * FROM Data ORDER BY /*# order */
+```
+
+### Pragma
+
+* Using static
+
+```sql
+/*!using System.Text */
+```
+
+* Using static
+
+```csharp
+public static class CustomScriptHelper
+{
+    public static bool HasValue(int? value)
+    {
+        return value.HasValue;
+    }
+}
+```
+
+```sql
+/*!helper MyLibrary.CustomScriptHelper */
+SELECT * FROM Data
+/*% if (HasValue(id)) { */
+WHERE Id >= /*@ id */0
+*% } *
+```
+
+### Built-in helper
+
+```csharp
+public static class ScriptHelper
+{
+    public static bool IsNull(object value);
+
+    public static bool IsNotNull(object value);
+
+    public static bool IsEmpty(string value);
+
+    public static bool IsNotEmpty(string value);
+
+    public static bool Any(Array array);
+
+    public static bool Any(ICollection ic);
+}
+```
+
 ## Attributes
 
 ### Data accessor attribute
@@ -714,83 +791,6 @@ public interface IExecuteCancelAsyncAccessor
     // Cancelable async method
     [Execute]
     ValueTask<int> ExecuteAsync(CancellationToken cancel);
-}
-```
-
-## 2-way SQL
-
-|   | Type          | Example                                     |
-|:-:|---------------|---------------------------------------------|
-| @ | parameter     | `/*@ id */`                                 |
-| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
-| # | raw parameter | `/*# order #/`                              |
-| ! | pragma        | `/*!using System.Text */`                   |
-
-### Parameter
-
-```sql
-SELECT * FROM Data WHERE Id = /*@ id */1
-```
-
-### Code block
-
-```sql
-SELECT * FROM Data
-/*% if (IsNotNull(id)) { */
-WHERE Id >= /*@ id */0
-/*% } */
-```
-
-### Raw parameter
-
-```sql
-SELECT * FROM Data ORDER BY /*# order */
-```
-
-### Pragma
-
-* Using static
-
-```sql
-/*!using System.Text */
-```
-
-* Using static
-
-```csharp
-public static class CustomScriptHelper
-{
-    public static bool HasValue(int? value)
-    {
-        return value.HasValue;
-    }
-}
-```
-
-```sql
-/*!helper MyLibrary.CustomScriptHelper */
-SELECT * FROM Data
-/*% if (HasValue(id)) { */
-WHERE Id >= /*@ id */0
-*% } *
-```
-
-### Built-in helper
-
-```csharp
-public static class ScriptHelper
-{
-    public static bool IsNull(object value);
-
-    public static bool IsNotNull(object value);
-
-    public static bool IsEmpty(string value);
-
-    public static bool IsNotEmpty(string value);
-
-    public static bool Any(Array array);
-
-    public static bool Any(ICollection ic);
 }
 ```
 
