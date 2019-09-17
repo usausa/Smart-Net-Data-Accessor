@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>Smart.Data.Accessor.Options.Postgres</id>
+    <id>Usa.Smart.Data.Accessor.Options.Postgres</id>
     <version>0.9.1</version>
     <title>Smart.Data.Accessor.Options.Postgres .NET</title>
     <authors>machi_pon</authors>
