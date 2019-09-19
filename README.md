@@ -137,7 +137,7 @@ WHERE Id >= /*@ id */0
 ### Raw parameter
 
 ```sql
-SELECT * FROM Data ORDER BY /*# order */
+SELECT * FROM Data ORDER BY /*# order */Name
 ```
 
 ### Pragma
