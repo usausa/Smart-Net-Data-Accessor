@@ -12,8 +12,6 @@ Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.
 Create data accessor interface and model class like this.
 
 ```csharp
-using Smart.Data.Accessor.Attributes;
-
 public class DataEntity
 {
     public long Id { get; set; }
