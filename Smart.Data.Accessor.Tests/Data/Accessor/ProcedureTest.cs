@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor
 {
     using System;
     using System.Data;

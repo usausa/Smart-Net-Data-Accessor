@@ -1,11 +1,10 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Attributes
 {
     using System.Collections.Generic;
     using System.Data;
     using System.Linq;
     using System.Reflection;
 
-    using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Builders.Helpers;
     using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Nodes;
