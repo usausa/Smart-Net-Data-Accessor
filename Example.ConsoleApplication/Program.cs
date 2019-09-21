@@ -45,6 +45,9 @@ namespace Example.ConsoleApplication
 
             var all = accessor.QueryDataList();
             Console.WriteLine(all.Count);
+
+            var ordered = accessor.QueryDataList(order: "Name DESC");
+            Console.WriteLine(ordered[0].Name);
         }
     }
 }

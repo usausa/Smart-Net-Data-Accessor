@@ -17,6 +17,6 @@ namespace Example.ConsoleApplication.Accessor
         void Insert(DataEntity entity);
 
         [Query]
-        List<DataEntity> QueryDataList(string type = null);
+        List<DataEntity> QueryDataList(string type = null, string order = null);
     }
 }
