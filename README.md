@@ -113,14 +113,20 @@ public static class Program
 |   | Type          | Example                                     |
 |:-:|---------------|---------------------------------------------|
 | @ | parameter     | `/*@ id */`                                 |
-| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
 | # | raw parameter | `/*# order #/`                              |
+| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
 | ! | pragma        | `/*!using System.Text */`                   |
 
 ### Parameter
 
 ```sql
 SELECT * FROM Data WHERE Id = /*@ id */1
+```
+
+### Raw parameter
+
+```sql
+SELECT * FROM Data ORDER BY /*# order */Name
 ```
 
 ### Code block
@@ -132,15 +138,9 @@ WHERE Id >= /*@ id */0
 /*% } */
 ```
 
-### Raw parameter
-
-```sql
-SELECT * FROM Data ORDER BY /*# order */Name
-```
-
 ### Pragma
 
-* Using static
+* Using
 
 ```sql
 /*!using System.Text */
