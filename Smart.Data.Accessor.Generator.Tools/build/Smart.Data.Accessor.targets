@@ -78,13 +78,13 @@
   <Target Name="SmartDataAccessorGetCopyToOutputDirectoryItems" BeforeTargets="GetCopyToOutputDirectoryItems">
     <ItemGroup>
       <FileWrites Include="$(OutputPath)$(SmartDataAccessorAssembly)"/>
-      <FileWrites Include="$(OutputPath)$(SmartDataAccessorDebugSymbol)"/>
-
       <AllItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorAssembly)">
         <TargetPath>$(SmartDataAccessorAssembly)</TargetPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </AllItemsFullPathWithTargetPath>
-      <AllItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)">
+
+      <FileWrites Include="$(OutputPath)$(SmartDataAccessorDebugSymbol)" Condition="Exists('$(OutputPath)$(SmartDataAccessorDebugSymbol)')"/>
+      <AllItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)" Condition="Exists('$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)')">
         <TargetPath>$(SmartDataAccessorDebugSymbol)</TargetPath>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </AllItemsFullPathWithTargetPath>
@@ -99,7 +99,7 @@
         <TargetPath>$(SmartDataAccessorAssembly)</TargetPath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </AllPublishItemsFullPathWithTargetPath>
-      <AllPublishItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)">
+      <AllPublishItemsFullPathWithTargetPath Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)" Condition="Exists('$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)')">
         <TargetPath>$(SmartDataAccessorDebugSymbol)</TargetPath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </AllPublishItemsFullPathWithTargetPath>
