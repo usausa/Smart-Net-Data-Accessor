@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Usa.Smart.Data.Accessor.Options.MySql</id>
-    <version>0.9.2</version>
+    <version>0.9.3</version>
     <title>Smart.Data.Accessor.Options.MySql .NET</title>
     <authors>machi_pon</authors>
     <owners>machi_pon</owners>
@@ -16,8 +16,8 @@
     <dependencies>
       <group targetFramework="netstandard2.0">
         <dependency id="Usa.Smart.Core" version="1.7.8" />
-        <dependency id="Usa.Smart.Data.Accessor.Core" version="0.9.2" />
-        <dependency id="Usa.Smart.Data.Accessor.Options" version="0.9.2" />
+        <dependency id="Usa.Smart.Data.Accessor.Core" version="0.9.3" />
+        <dependency id="Usa.Smart.Data.Accessor.Options" version="0.9.3" />
       </group>
     </dependencies>
     <tags>smart ado.net orm dao</tags>
