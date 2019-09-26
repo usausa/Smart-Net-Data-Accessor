@@ -8,13 +8,15 @@ namespace Example.WebApplication.Controllers
 
     using Microsoft.AspNetCore.Mvc;
 
+    using Smart.Data.Accessor;
+
     public class HomeController : Controller
     {
         private readonly ISampleAccessor sampleAccessor;
 
-        public HomeController(ISampleAccessor sampleAccessor)
+        public HomeController(IAccessorResolver<ISampleAccessor> sampleAccessor)
         {
-            this.sampleAccessor = sampleAccessor;
+            this.sampleAccessor = sampleAccessor.Accessor;
         }
 
         public async Task<IActionResult> Index(DataListForm form)
