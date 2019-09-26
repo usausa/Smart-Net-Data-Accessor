@@ -14,15 +14,15 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
 
     public static class ServiceCollectionExtensions
     {
+        public static IServiceCollection AddDataAccessor(this IServiceCollection service)
+        {
+            return service.AddDataAccessor(null);
+        }
+
         public static IServiceCollection AddDataAccessor(this IServiceCollection service, Action<DataAccessorOption> action)
         {
-            if (action is null)
-            {
-                throw new ArgumentNullException(nameof(action));
-            }
-
             var option = new DataAccessorOption();
-            action(option);
+            action?.Invoke(option);
 
             service.AddSingleton(option.EngineOption);
             service.AddSingleton<ExecuteEngineFactory>();
@@ -32,6 +32,8 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
             service.TryAddSingleton<IObjectConverter>(ObjectConverter.Default);
             service.TryAddSingleton<IPropertySelector>(DefaultPropertySelector.Instance);
             service.TryAddSingleton<IEmptyDialect, EmptyDialect>();
+
+            service.AddSingleton(typeof(IAccessorResolver<>), typeof(AccessorResolver<>));
 
             foreach (var type in option.AccessorAssemblies.SelectMany(x => x.ExportedTypes))
             {
