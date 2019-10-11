@@ -88,7 +88,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                             pmi,
                             pi,
                             $"{pmi.Name}.{pi.Name}",
-                            NormalizeName(pi.GetCustomAttribute<NameAttribute>()?.Name ?? pi.Name, naming))));
+                            pi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pi.Name, naming))));
                 }
                 else
                 {
@@ -96,7 +96,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                         pmi,
                         null,
                         pmi.Name,
-                        NormalizeName(pmi.GetCustomAttribute<NameAttribute>()?.Name ?? pmi.Name, naming)));
+                        pmi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pmi.Name, naming)));
                 }
             }
 
