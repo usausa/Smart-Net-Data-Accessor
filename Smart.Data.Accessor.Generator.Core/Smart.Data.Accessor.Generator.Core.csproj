@@ -4,7 +4,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
-    <NoWarn>$(NoWarn),1573,1591,1712</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

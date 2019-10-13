@@ -4,8 +4,6 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <IsPackable>false</IsPackable>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
-    <RootNamespace>Smart</RootNamespace>
-    <NoWarn>$(NoWarn),1573,1591,1712</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
