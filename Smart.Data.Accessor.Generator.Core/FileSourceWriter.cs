@@ -3,13 +3,14 @@ namespace Smart.Data.Accessor.Generator
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
 
     public class FileSourceWriter : ISourceWriter
     {
         private readonly string outputDirectory;
 
         private readonly List<string> newFiles = new List<string>();
+
+        public IEnumerable<string> NewFiles => newFiles;
 
         public FileSourceWriter(string outputDirectory)
         {
@@ -39,15 +40,6 @@ namespace Smart.Data.Accessor.Generator
             }
 
             File.WriteAllText(path, source);
-        }
-
-        public void PostProcess()
-        {
-            var currentFiles = Directory.GetFiles(outputDirectory).Select(Path.GetFileName);
-            foreach (var file in currentFiles.Except(newFiles))
-            {
-                File.Delete(Path.Combine(outputDirectory, file));
-            }
         }
     }
 }

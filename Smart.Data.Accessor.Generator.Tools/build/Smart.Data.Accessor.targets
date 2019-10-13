@@ -6,6 +6,7 @@
     <SmartDataAccessorTargetName>$(AssemblyName).DataAccessor</SmartDataAccessorTargetName>
     <SmartDataAccessorAssembly>$(SmartDataAccessorTargetName).dll</SmartDataAccessorAssembly>
     <SmartDataAccessorDebugSymbol>$(SmartDataAccessorTargetName).pdb</SmartDataAccessorDebugSymbol>
+    <SmartDataAccessorReferenceFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorReferenceFileName>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -21,10 +22,15 @@
     <UpToDateCheckBuilt Include="$(OutputPath)$(SmartDataAccessorAssembly)" Original="@(SqlFiles)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <SmartDataAccessorBuildInputs Include="@(SqlFiles)" />
+    <SmartDataAccessorBuildInputs Include="$(SmartDataAccessorReferenceFileName)" />
+  </ItemGroup>
+
   <!-- Build -->
-  <Target Name="SmartDataAccessorBuild" AfterTargets="Build">
+  <Target Name="SmartDataAccessorBuild" AfterTargets="Build" Inputs="@(SmartDataAccessorBuildInputs)" Outputs="$(OutputPath)$(SmartDataAccessorAssembly)">
+
     <PropertyGroup>
-      <SmartDataAccessorTargetFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorTargetFileName>
       <SmartDataAccessorOutputDirectory>$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor</SmartDataAccessorOutputDirectory>
       <SmartDataAccessorReferencesFile>$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessorReference.txt</SmartDataAccessorReferencesFile>
       <SmartDataAccessorGeneratorOptionDefault>EntityClassSuffix=Model,Entity</SmartDataAccessorGeneratorOptionDefault>
@@ -49,7 +55,7 @@
 
     <WriteLinesToFile File="$(SmartDataAccessorReferencesFile)" Lines="@(ReferencePath)" Overwrite="true"/>
 
-    <Exec Command="dotnet &quot;$(SmartDataAccessorGenerator)&quot; &quot;$(SmartDataAccessorTargetFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; $(SmartDataAccessorReferencesFile) &quot;$(SqlRootDirectory)&quot; $(SqlRootNamespace) $(SqlSubDirectory) &quot;$(GeneratorOption)&quot;" />
+    <Exec Command="dotnet &quot;$(SmartDataAccessorGenerator)&quot; &quot;$(SmartDataAccessorReferenceFileName)&quot; &quot;$(SmartDataAccessorOutputDirectory)&quot; $(SmartDataAccessorReferencesFile) &quot;$(SqlRootDirectory)&quot; $(SqlRootNamespace) $(SqlSubDirectory) &quot;$(GeneratorOption)&quot;" />
 
     <ItemGroup>
       <SmartDataAccessorSources Include="$([System.IO.Directory]::GetFiles(`$(SmartDataAccessorOutputDirectory)`))" />

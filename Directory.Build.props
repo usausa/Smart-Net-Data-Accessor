@@ -8,13 +8,8 @@
     <PathMap>$(RepoRoot)=.</PathMap>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugType>pdbonly</DebugType>
+  <PropertyGroup>
+    <MSBuildWarningsAsMessages>SA0001</MSBuildWarningsAsMessages>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
