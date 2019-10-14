@@ -7,7 +7,7 @@
     <PathMap>$(RepoRoot)=.</PathMap>
     <NoWarn>$(NoWarn),1573,1591,1712</NoWarn>
     <MSBuildWarningsAsMessages>SA0001</MSBuildWarningsAsMessages>
-    <Version>0.9.5</Version>
+    <Version>0.9.6</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
