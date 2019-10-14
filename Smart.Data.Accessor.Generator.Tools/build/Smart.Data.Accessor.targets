@@ -19,15 +19,15 @@
 
   <!-- FastUpToDateCheck -->
   <ItemGroup>
-    <UpToDateCheckBuilt Include="$(OutputPath)$(SmartDataAccessorAssembly)" Original="@(SqlFiles)" />
+    <UpToDateCheckInput Include="@(SqlFiles)" />
   </ItemGroup>
 
+  <!-- Build -->
   <ItemGroup>
     <SmartDataAccessorBuildInputs Include="@(SqlFiles)" />
     <SmartDataAccessorBuildInputs Include="$(SmartDataAccessorReferenceFileName)" />
   </ItemGroup>
 
-  <!-- Build -->
   <Target Name="SmartDataAccessorBuild" AfterTargets="Build" Inputs="@(SmartDataAccessorBuildInputs)" Outputs="$(OutputPath)$(SmartDataAccessorAssembly)">
 
     <PropertyGroup>
