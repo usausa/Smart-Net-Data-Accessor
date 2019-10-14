@@ -5,6 +5,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using System.Linq;
     using System.Reflection;
     using System.Text;
+    using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Generator;
@@ -38,9 +39,18 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static string GetReturnTableName(IGeneratorOption option, MethodInfo mi)
         {
-            var elementType = ParameterHelper.IsMultipleParameter(mi.ReturnType)
-                ? ParameterHelper.GetMultipleParameterElementType(mi.ReturnType)
+            var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
+            if (isAsync && !mi.ReturnType.IsGenericType)
+            {
+                return null;
+            }
+
+            var returnType = isAsync
+                ? mi.ReturnType.GetGenericArguments()[0]
                 : mi.ReturnType;
+            var elementType = ParameterHelper.IsMultipleParameter(returnType)
+                ? ParameterHelper.GetMultipleParameterElementType(returnType)
+                : returnType;
             if (!ParameterHelper.IsNestedType(elementType))
             {
                 return null;
@@ -109,6 +119,8 @@ namespace Smart.Data.Accessor.Builders.Helpers
             {
                 case "Snake":
                     return Inflector.Underscore(name);
+                case "UpperSnake":
+                    return Inflector.Underscore(name, true);
                 case "Camel":
                     return Inflector.Camelize(name);
                 default:
