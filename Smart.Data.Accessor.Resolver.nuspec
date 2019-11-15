@@ -15,10 +15,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
       <group targetFramework="netstandard2.0">
-        <dependency id="Usa.Smart.Core" version="1.7.8" />
-        <dependency id="Usa.Smart.Data" version="1.2.0" />
+        <dependency id="Usa.Smart.Core" version="1.7.9" />
+        <dependency id="Usa.Smart.Data" version="1.2.2" />
         <dependency id="Usa.Smart.Data.Accessor.Core" version="1.0.0" />
-        <dependency id="Usa.Smart.Resolver" version="1.8.2" />
+        <dependency id="Usa.Smart.Resolver" version="1.8.5" />
       </group>
     </dependencies>
     <tags>smart ado.net orm dao</tags>

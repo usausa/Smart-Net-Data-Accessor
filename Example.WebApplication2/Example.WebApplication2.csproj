@@ -8,14 +8,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.2.6" />
-    <PackageReference Include="Usa.Smart.Core" Version="1.7.8" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.0.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.7.9" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.0.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="1.0.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="1.0.0" />
-    <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.1" />
-    <PackageReference Include="Usa.Smart.Resolver" Version="1.8.2" />
-    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="1.8.2" />
+    <PackageReference Include="Usa.Smart.Data.Mapper" Version="1.2.2" />
+    <PackageReference Include="Usa.Smart.Resolver" Version="1.8.5" />
+    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="1.8.5" />
   </ItemGroup>
 
 </Project>
