@@ -20,7 +20,7 @@
         <dependency id="System.Reflection.Emit.Lightweight" version="4.6.0" />
         <dependency id="System.Memory" version="4.5.3" />
         <dependency id="Usa.Smart.Core" version="1.7.9" />
-        <dependency id="Usa.Smart.Data" version="1.2.2" />
+        <dependency id="Usa.Smart.Data" version="1.3.1" />
       </group>
     </dependencies>
     <tags>smart ado.net orm dao</tags>
