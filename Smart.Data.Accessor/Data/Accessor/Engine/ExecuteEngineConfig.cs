@@ -39,7 +39,8 @@ namespace Smart.Data.Accessor.Engine
 
         private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new List<IResultMapperFactory>
         {
-            ObjectResultMapperFactory.Instance
+            new SingleResultMapperFactory(),
+            ObjectResultMapperFactory.Instance,
         };
 
         private IServiceProvider serviceProvider;
