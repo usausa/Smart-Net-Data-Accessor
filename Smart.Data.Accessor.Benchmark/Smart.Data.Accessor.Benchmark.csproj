@@ -11,7 +11,7 @@
     <PackageReference Include="Dapper" Version="2.0.30" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="Usa.Smart.Core" Version="1.7.9" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.0.3" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.0.4" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.6.2" />
   </ItemGroup>
 
