@@ -145,7 +145,7 @@ namespace Smart.Data.Accessor.Engine
         {
             if (handler != null)
             {
-                if (source is DBNull)
+                if ((source is null) || (source is DBNull))
                 {
                     return default;
                 }
@@ -158,7 +158,7 @@ namespace Smart.Data.Accessor.Engine
                 return value;
             }
 
-            if (source is DBNull)
+            if ((source is null) || (source is DBNull))
             {
                 return default;
             }
