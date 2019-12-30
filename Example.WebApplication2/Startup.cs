@@ -2,10 +2,10 @@ namespace Example.WebApplication2
 {
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
-    using Microsoft.AspNetCore.Mvc;
     using Microsoft.Data.Sqlite;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
 
     using Smart.Data;
     using Smart.Data.Accessor.Resolver;
@@ -25,7 +25,7 @@ namespace Example.WebApplication2
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddControllersWithViews();
         }
 
         public void ConfigureContainer(ResolverConfig config)
@@ -42,7 +42,7 @@ namespace Example.WebApplication2
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IDbProviderSelector selector)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IDbProviderSelector selector)
         {
             if (env.IsDevelopment())
             {
@@ -55,11 +55,13 @@ namespace Example.WebApplication2
 
             app.UseStaticFiles();
 
-            app.UseMvc(routes =>
+            app.UseRouting();
+
+            app.UseEndpoints(routes =>
             {
-                routes.MapRoute(
+                routes.MapControllerRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
 
             var provider1 = selector.GetProvider(DataSource.Primary);
