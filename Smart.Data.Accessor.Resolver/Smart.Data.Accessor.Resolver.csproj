@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Core" Version="1.7.9" />
-    <PackageReference Include="Usa.Smart.Data" Version="1.3.1" />
-    <PackageReference Include="Usa.Smart.Resolver" Version="1.8.5" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.8.0" />
+    <PackageReference Include="Usa.Smart.Data" Version="1.4.0" />
+    <PackageReference Include="Usa.Smart.Resolver" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>

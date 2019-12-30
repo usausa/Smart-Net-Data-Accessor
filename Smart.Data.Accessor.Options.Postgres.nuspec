@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Usa.Smart.Data.Accessor.Options.Postgres</id>
-    <version>1.0.4</version>
+    <version>1.1.0-beta3</version>
     <title>Smart.Data.Accessor.Options.Postgres .NET</title>
     <authors>machi_pon</authors>
     <owners>machi_pon</owners>
@@ -14,16 +14,14 @@
     <copyright></copyright>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
-      <group targetFramework="netstandard2.0">
-        <dependency id="Usa.Smart.Core" version="1.7.9" />
-        <dependency id="Usa.Smart.Data.Accessor.Core" version="1.0.4" />
-        <dependency id="Usa.Smart.Data.Accessor.Options" version="1.0.4" />
-      </group>
+      <dependency id="Usa.Smart.Core" version="1.8.0" />
+      <dependency id="Usa.Smart.Data.Accessor.Core" version="1.1.0-beta3" />
+      <dependency id="Usa.Smart.Data.Accessor.Options" version="1.1.0-beta3" />
     </dependencies>
     <tags>smart ado.net orm dao</tags>
   </metadata>
   <files>
-    <!-- netstandard2.0 -->
-    <file src="Smart.Data.Accessor.Options.Postgres\bin\Release\netstandard2.0\Smart.Data.Accessor.Options.Postgres.dll" target="lib\netstandard2.0" />
+    <!-- netstandard2.1 -->
+    <file src="Smart.Data.Accessor.Options.Postgres\bin\Release\netstandard2.1\Smart.Data.Accessor.Options.Postgres.dll" target="lib\netstandard2.1" />
   </files>
 </package>

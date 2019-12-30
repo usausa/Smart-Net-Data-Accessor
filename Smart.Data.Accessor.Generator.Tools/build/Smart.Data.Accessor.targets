@@ -69,6 +69,8 @@
     <Csc TargetType="library"
          DebugType="$(DebugType)"
          DefineConstants="$(DefineConstants)"
+         NoConfig="True"
+         NoStandardLib="True"
          Optimize="$(Optimize)"
          Sources="@(SmartDataAccessorSources)"
          References="@(ReferencesWithOutput)"
