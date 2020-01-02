@@ -44,6 +44,7 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var values = BuildHelper.GetInsertParameters(parameters);
             var keys = BuildHelper.GetKeyParameters(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
@@ -91,9 +92,9 @@ namespace Smart.Data.Accessor.Builders
             sql.Append(") ");
 
             sql.Append("WHEN NOT MATCHED THEN INSERT (");
-            BuildHelper.AddInsertColumns(sql, mi, parameters);
+            BuildHelper.AddInsertColumns(sql, mi, values);
             sql.Append(") VALUES (");
-            BuildHelper.AddInsertValues(sql, mi, parameters);
+            BuildHelper.AddInsertValues(sql, mi, values);
             sql.Append(") ");
 
             sql.Append("WHEN MATCHED THEN UPDATE SET ");

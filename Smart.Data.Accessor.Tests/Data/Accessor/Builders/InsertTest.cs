@@ -96,6 +96,51 @@ namespace Smart.Data.Accessor.Builders
         }
 
         //--------------------------------------------------------------------------------
+        // Auto Generate
+        //--------------------------------------------------------------------------------
+
+        public class AutoGenerateEntity
+        {
+            [Key]
+            public long Id { get; set; }
+
+            [AutoGenerate]
+            public string Name { get; set; }
+        }
+
+        [DataAccessor]
+        public interface IInsertAutoGenerateAccessor
+        {
+            [Insert]
+            void Insert(AutoGenerateEntity entity);
+
+            [SelectSingle]
+            AutoGenerateEntity QueryEntity(long id);
+        }
+
+        [Fact]
+        public void TestInsertAutoGenerateValue()
+        {
+            using (var con = TestDatabase.Initialize()
+                .SetupDataTable())
+            {
+                con.Execute("CREATE TABLE IF NOT EXISTS AutoGenerate (Id int, Name text)");
+
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var accessor = generator.Create<IInsertAutoGenerateAccessor>();
+
+                accessor.Insert(new AutoGenerateEntity { Id = 1, Name = "test" });
+
+                var entity = accessor.QueryEntity(1);
+
+                Assert.NotNull(entity);
+                Assert.Null(entity.Name);
+            }
+        }
+
+        //--------------------------------------------------------------------------------
         // DbValue
         //--------------------------------------------------------------------------------
 

@@ -46,6 +46,7 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(option, mi);
+            var values = BuildHelper.GetInsertParameters(parameters);
             var tableName = table ??
                             (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
                             BuildHelper.GetTableName(option, mi);
@@ -60,9 +61,9 @@ namespace Smart.Data.Accessor.Builders
             sql.Append("INSERT INTO ");
             sql.Append(tableName);
             sql.Append(" (");
-            BuildHelper.AddInsertColumns(sql, mi, parameters);
+            BuildHelper.AddInsertColumns(sql, mi, values);
             sql.Append(") VALUES (");
-            BuildHelper.AddInsertValues(sql, mi, parameters);
+            BuildHelper.AddInsertValues(sql, mi, values);
             sql.Append(")");
 
             if (OnDuplicate != DuplicateBehavior.Default)

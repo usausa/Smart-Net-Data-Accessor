@@ -128,6 +128,13 @@ namespace Smart.Data.Accessor.Builders.Helpers
             }
         }
 
+        public static IList<BuildParameterInfo> GetInsertParameters(IList<BuildParameterInfo> parameters)
+        {
+            return parameters
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
+                .ToList();
+        }
+
         public static IList<BuildParameterInfo> GetKeyParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
@@ -142,6 +149,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             return parameters
                 .Where(x => x.GetAttribute<KeyAttribute>() == null)
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
                 .ToList();
         }
 
@@ -149,6 +157,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             return parameters
                 .Where(x => x.GetParameterAttribute<ValuesAttribute>() != null)
+                .Where(x => x.GetParameterAttribute<AutoGenerateAttribute>() == null)
                 .ToList();
         }
 
@@ -170,6 +179,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             return parameters
                 .Where(x => x.GetAttribute<ConditionAttribute>() == null)
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
                 .ToList();
         }
 
