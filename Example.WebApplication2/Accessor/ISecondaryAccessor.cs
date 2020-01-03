@@ -12,9 +12,9 @@ namespace Example.WebApplication2.Accessor
     public interface ISecondaryAccessor
     {
         [ExecuteScalar]
-        Task<int> CountDataAsync();
+        ValueTask<int> CountDataAsync();
 
         [Query]
-        Task<IList<DataEntity>> QueryDataAsync(string type);
+        ValueTask<IList<DataEntity>> QueryDataAsync(string type);
     }
 }

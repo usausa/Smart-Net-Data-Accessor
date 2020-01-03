@@ -12,12 +12,12 @@ namespace Example.WebApplication.Accessor
     public interface ISampleAccessor
     {
         [ExecuteScalar]
-        Task<int> CountDataAsync();
+        ValueTask<int> CountDataAsync();
 
         [Query]
-        Task<IList<DataEntity>> QueryDataAsync(string type);
+        ValueTask<IList<DataEntity>> QueryDataAsync(string type);
 
         [Insert]
-        Task<int> InsertData(DataEntity entity);
+        ValueTask<int> InsertData(DataEntity entity);
     }
 }

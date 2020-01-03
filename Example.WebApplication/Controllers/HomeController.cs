@@ -19,7 +19,7 @@ namespace Example.WebApplication.Controllers
             this.sampleAccessor = sampleAccessor.Accessor;
         }
 
-        public async Task<IActionResult> Index(DataListForm form)
+        public async ValueTask<IActionResult> Index(DataListForm form)
         {
             ViewBag.Count = await sampleAccessor.CountDataAsync().ConfigureAwait(false);
             ViewBag.List = await sampleAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);

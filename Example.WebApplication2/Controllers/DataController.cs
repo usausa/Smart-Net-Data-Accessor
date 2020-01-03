@@ -19,14 +19,14 @@ namespace Example.WebApplication2.Controllers
             this.secondaryAccessor = secondaryAccessor;
         }
 
-        public async Task<IActionResult> Primary(DataListForm form)
+        public async ValueTask<IActionResult> Primary(DataListForm form)
         {
             ViewBag.Count = await primaryAccessor.CountDataAsync().ConfigureAwait(false);
             ViewBag.List = await primaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
             return View();
         }
 
-        public async Task<IActionResult> Secondary(DataListForm form)
+        public async ValueTask<IActionResult> Secondary(DataListForm form)
         {
             ViewBag.Count = await secondaryAccessor.CountDataAsync().ConfigureAwait(false);
             ViewBag.List = await secondaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
