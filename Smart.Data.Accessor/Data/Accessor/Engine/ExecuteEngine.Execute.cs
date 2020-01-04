@@ -79,9 +79,9 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<int> ExecuteAsync(DbCommand cmd, CancellationToken cancel = default)
+        public Task<int> ExecuteAsync(DbCommand cmd, CancellationToken cancel = default)
         {
-            return await cmd.ExecuteNonQueryAsync(cancel).ConfigureAwait(false);
+            return cmd.ExecuteNonQueryAsync(cancel);
         }
 
         //--------------------------------------------------------------------------------
@@ -95,9 +95,9 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<object> ExecuteScalarAsync(DbCommand cmd, CancellationToken cancel = default)
+        public Task<object> ExecuteScalarAsync(DbCommand cmd, CancellationToken cancel = default)
         {
-            return await cmd.ExecuteScalarAsync(cancel).ConfigureAwait(false);
+            return cmd.ExecuteScalarAsync(cancel);
         }
 
         //--------------------------------------------------------------------------------
