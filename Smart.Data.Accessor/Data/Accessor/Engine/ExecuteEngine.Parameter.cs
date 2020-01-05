@@ -39,6 +39,7 @@ namespace Smart.Data.Accessor.Engine
                 if (value == null)
                 {
                     parameter.Value = DBNull.Value;
+                    parameter.DbType = dbType;
                 }
                 else if (handler != null)
                 {
@@ -107,6 +108,7 @@ namespace Smart.Data.Accessor.Engine
                 if (value == null)
                 {
                     parameter.Value = DBNull.Value;
+                    parameter.DbType = dbType;
                 }
                 else if (handler != null)
                 {
@@ -283,6 +285,7 @@ namespace Smart.Data.Accessor.Engine
                     if (value == null)
                     {
                         parameter.Value = DBNull.Value;
+                        parameter.DbType = dbType;
                     }
                     else if (handler != null)
                     {
@@ -375,6 +378,7 @@ namespace Smart.Data.Accessor.Engine
                         var parameter = cmd.CreateParameter();
                         cmd.Parameters.Add(parameter);
                         parameter.Value = DBNull.Value;
+                        parameter.DbType = DbType.Object;
                         parameter.ParameterName = name;
                     }
                 }
