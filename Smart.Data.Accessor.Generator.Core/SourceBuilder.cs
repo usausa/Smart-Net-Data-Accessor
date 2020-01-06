@@ -805,7 +805,7 @@ namespace Smart.Data.Accessor.Generator
 
             // Execute
             Indent();
-            Append($"using (var {ReaderVar} = ");
+            Append($"await using (var {ReaderVar} = ");
             var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
             AppendLine($"await {EngineFieldRef}.ExecuteReaderAsync({CommandVar}{cancelOption}).ConfigureAwait(false))");
             AppendLine("{");
@@ -1019,13 +1019,15 @@ namespace Smart.Data.Accessor.Generator
 
         private void BeginConnectionSimple(MethodMetadata mm)
         {
+            var awaitOption = mm.IsAsync ? "await " : string.Empty;
+
             if (!mm.HasConnectionParameter)
             {
                 var providerName = mm.Provider != null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
-                AppendLine($"using (var {ConnectionVar} = {providerName}.CreateConnection())");
+                AppendLine($"{awaitOption}using (var {ConnectionVar} = {providerName}.CreateConnection())");
             }
 
-            AppendLine($"using (var {CommandVar} = {GetConnectionName(mm)}.CreateCommand())");
+            AppendLine($"{awaitOption}using (var {CommandVar} = {GetConnectionName(mm)}.CreateCommand())");
             AppendLine("{");
             indent++;
 
