@@ -72,7 +72,7 @@ namespace Smart.Data.Accessor.Benchmark
                 new[]
                 {
                     new MockColumn(typeof(long), "Id"),
-                    new MockColumn(typeof(string), "Name"),
+                    new MockColumn(typeof(string), "Name")
                 },
                 Enumerable.Range(1, 1).Select(x => new object[]
                 {

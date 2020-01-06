@@ -57,7 +57,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteSimpleAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
             {
                 var generator = new TestFactoryBuilder()
@@ -117,7 +117,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteVoidAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
             {
                 var generator = new TestFactoryBuilder()
@@ -179,7 +179,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteWithConnectionAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
             {
                 var generator = new TestFactoryBuilder()
@@ -215,7 +215,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteCancelAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable())
             {
                 var generator = new TestFactoryBuilder()

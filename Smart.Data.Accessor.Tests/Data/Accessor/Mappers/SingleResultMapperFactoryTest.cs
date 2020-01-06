@@ -21,7 +21,7 @@ namespace Smart.Data.Accessor.Mappers
 
             var columns = new[]
             {
-                new MockColumn(typeof(int), "Column1"),
+                new MockColumn(typeof(int), "Column1")
             };
             var values = new List<object[]>
             {

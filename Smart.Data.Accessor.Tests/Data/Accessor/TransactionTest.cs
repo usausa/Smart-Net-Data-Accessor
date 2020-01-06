@@ -64,7 +64,7 @@ namespace Smart.Data.Accessor
         [Fact]
         public async ValueTask TestTransactionAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable())
             {
                 var generator = new TestFactoryBuilder()
@@ -74,7 +74,7 @@ namespace Smart.Data.Accessor
 
                 con.Open();
 
-                using (var tx = con.BeginTransaction())
+                await using (var tx = con.BeginTransaction())
                 {
                     var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor
                 var entity = con.QueryData(1L);
                 Assert.Null(entity);
 
-                using (var tx = con.BeginTransaction())
+                await using (var tx = con.BeginTransaction())
                 {
                     var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);

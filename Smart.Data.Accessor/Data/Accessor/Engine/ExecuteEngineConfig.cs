@@ -34,13 +34,13 @@ namespace Smart.Data.Accessor.Engine
             { typeof(DateTimeOffset), DbType.DateTimeOffset },
             { typeof(TimeSpan), DbType.Time },
             { typeof(byte[]), DbType.Binary },
-            { typeof(object), DbType.Object },
+            { typeof(object), DbType.Object }
         };
 
         private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new List<IResultMapperFactory>
         {
             new SingleResultMapperFactory(),
-            ObjectResultMapperFactory.Instance,
+            ObjectResultMapperFactory.Instance
         };
 
         private IServiceProvider serviceProvider;

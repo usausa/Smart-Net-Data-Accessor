@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestQueryFirstOrDefaultSimpleAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" }))
             {
@@ -126,7 +126,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestQueryFirstOrDefaultWithConnectionAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" }))
             {
@@ -163,7 +163,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestQueryFirstOrDefaultCancelAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" }))
             {

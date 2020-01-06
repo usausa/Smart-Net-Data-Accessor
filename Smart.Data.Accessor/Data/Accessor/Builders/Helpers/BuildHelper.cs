@@ -7,10 +7,10 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using System.Text;
     using System.Threading.Tasks;
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Generator;
+    using Attributes;
+    using Generator;
     using Smart.Data.Accessor.Helpers;
-    using Smart.Text;
+    using Text;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class BuildHelper
@@ -358,7 +358,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             var add = false;
             for (var i = 0; i < parameters.Count; i++)
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append(parameters[i].ParameterName);
@@ -374,7 +374,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             var add = false;
             for (var i = 0; i < parameters.Count; i++)
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append(parameters[i].ParameterName);
@@ -382,7 +382,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append(attribute.Column);
@@ -390,7 +390,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append(attribute.Column);
@@ -402,26 +402,26 @@ namespace Smart.Data.Accessor.Builders.Helpers
             var add = false;
             foreach (var parameter in parameters)
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
-                BuildHelper.AddParameter(sql, parameter, Operation.Insert);
+                AddParameter(sql, parameter, Operation.Insert);
             }
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
-                BuildHelper.AddDbParameter(sql, attribute.Value);
+                AddDbParameter(sql, attribute.Value);
             }
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
-                BuildHelper.AddCodeParameter(sql, attribute.Value);
+                AddCodeParameter(sql, attribute.Value);
             }
         }
 
@@ -434,29 +434,29 @@ namespace Smart.Data.Accessor.Builders.Helpers
             var add = false;
             foreach (var parameter in parameters)
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append($" {parameter.ParameterName} = ");
-                BuildHelper.AddParameter(sql, parameter, Operation.Update);
+                AddParameter(sql, parameter, Operation.Update);
             }
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalDbValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append($" {attribute.Column} = ");
-                BuildHelper.AddDbParameter(sql, attribute.Value);
+                AddDbParameter(sql, attribute.Value);
             }
 
             foreach (var attribute in mi.GetCustomAttributes<AdditionalCodeValueAttribute>())
             {
-                BuildHelper.AddSplitter(sql, add);
+                AddSplitter(sql, add);
                 add = true;
 
                 sql.Append($" {attribute.Column} = ");
-                BuildHelper.AddCodeParameter(sql, attribute.Value);
+                AddCodeParameter(sql, attribute.Value);
             }
         }
     }

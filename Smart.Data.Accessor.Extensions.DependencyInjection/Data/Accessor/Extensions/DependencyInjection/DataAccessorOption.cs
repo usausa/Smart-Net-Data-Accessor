@@ -7,6 +7,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
     {
         public ExecuteEngineFactoryOptions EngineOption { get; } = new ExecuteEngineFactoryOptions();
 
+        // ReSharper disable once CollectionNeverUpdated.Global
         public IList<Assembly> AccessorAssemblies { get; } = new List<Assembly>();
     }
 }

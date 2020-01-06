@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarSimpleAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
                 .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
@@ -95,7 +95,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarResultIsNullAsync()
         {
-            using (TestDatabase.Initialize())
+            await using (TestDatabase.Initialize())
             {
                 var generator = new TestFactoryBuilder()
                     .UseMemoryDatabase()
@@ -150,7 +150,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarObjectAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
                 .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
@@ -208,7 +208,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarWithConvertAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
                 .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
@@ -268,7 +268,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarWithConnectionAsync()
         {
-            using (var con = TestDatabase.Initialize()
+            await using (var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
                 .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
@@ -301,7 +301,7 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarCancelAsync()
         {
-            using (TestDatabase.Initialize()
+            await using (TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
                 .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))

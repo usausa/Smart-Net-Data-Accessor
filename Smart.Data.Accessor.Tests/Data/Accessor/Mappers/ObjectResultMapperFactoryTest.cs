@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor.Mappers
                 new MockColumn(typeof(int), "Column5"),
                 new MockColumn(typeof(int), "Column6"),
                 new MockColumn(typeof(int), "Column7"),
-                new MockColumn(typeof(int), "Column8"),
+                new MockColumn(typeof(int), "Column8")
             };
             var values = new List<object[]>
             {
@@ -119,7 +119,7 @@ namespace Smart.Data.Accessor.Mappers
             };
             var values = new List<object[]>
             {
-                new object[] { "1", 2 },
+                new object[] { "1", 2 }
             };
 
             var cmd = new MockDbCommand();
@@ -138,6 +138,7 @@ namespace Smart.Data.Accessor.Mappers
 
         public class NoConstructor
         {
+            // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
             public int Id { get; set; }
 
             public NoConstructor(int id)
@@ -153,11 +154,11 @@ namespace Smart.Data.Accessor.Mappers
 
             var columns = new[]
             {
-                new MockColumn(typeof(int), "Id"),
+                new MockColumn(typeof(int), "Id")
             };
             var values = new List<object[]>
             {
-                new object[] { 1 },
+                new object[] { 1 }
             };
 
             var cmd = new MockDbCommand();
