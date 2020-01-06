@@ -7,10 +7,10 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using System.Text;
     using System.Threading.Tasks;
 
-    using Attributes;
-    using Generator;
+    using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Generator;
     using Smart.Data.Accessor.Helpers;
-    using Text;
+    using Smart.Text;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class BuildHelper

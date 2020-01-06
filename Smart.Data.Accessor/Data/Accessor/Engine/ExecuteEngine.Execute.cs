@@ -129,24 +129,6 @@ namespace Smart.Data.Accessor.Engine
         }
 
         //--------------------------------------------------------------------------------
-        // ReaderToDefer
-        //--------------------------------------------------------------------------------
-
-        public IEnumerable<T> ReaderToDefer<T>(DbCommand cmd, DbDataReader reader)
-        {
-            var mapper = CreateResultMapper<T>(reader);
-
-            using (cmd)
-            using (reader)
-            {
-                while (reader.Read())
-                {
-                    yield return mapper(reader);
-                }
-            }
-        }
-
-        //--------------------------------------------------------------------------------
         // QueryBuffer
         //--------------------------------------------------------------------------------
 

@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor.Engine
             ValueTask<IList<DataEntity>> QueryBufferdAsync();
 
             [Query]
-            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync();
+            IAsyncEnumerable<DataEntity> QueryNonBufferdAsync();
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IQuerySimpleAsyncAccessor>();
 
-                var list = (await accessor.QueryNonBufferdAsync()).ToList();
+                var list = await accessor.QueryNonBufferdAsync().ToListAsync();
 
                 Assert.Equal(2, list.Count);
                 Assert.Equal(1, list[0].Id);
@@ -134,33 +134,6 @@ namespace Smart.Data.Accessor.Engine
                 Assert.Equal("Data-2", list[1].Name);
             }
         }
-
-        //[DataAccessor]
-        //public interface IQueryAsyncAccessor
-        //{
-        //    [Query]
-        //    IAsyncEnumerable<DataEntity> QueryEnumerableAsync(CancellationToken token = default);
-        //}
-
-        //[Fact]
-        //public async ValueTask TestQueryAsyncSimpleAsync()
-        //{
-        //    using (TestDatabase.Initialize()
-        //        .SetupDataTable()
-        //        .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-        //        .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-        //    {
-        //        var generator = new TestFactoryBuilder()
-        //            .UseFileDatabase()
-        //            .SetSql("SELECT * FROM Data ORDER BY Id")
-        //            .Build();
-        //        var accessor = generator.Create<IQueryAsyncAccessor>();
-
-        //        await foreach (var entity in accessor.QueryEnumerableAsync())
-        //        {
-        //        }
-        //    }
-        //}
 
         //--------------------------------------------------------------------------------
         // With Connection
@@ -235,7 +208,7 @@ namespace Smart.Data.Accessor.Engine
             ValueTask<IList<DataEntity>> QueryBufferdAsync(DbConnection con);
 
             [Query]
-            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync(DbConnection con);
+            IAsyncEnumerable<DataEntity> QueryNonBufferdAsync(DbConnection con);
         }
 
         [Fact]
@@ -279,7 +252,7 @@ namespace Smart.Data.Accessor.Engine
 
                 con.Open();
 
-                var list = (await accessor.QueryNonBufferdAsync(con)).ToList();
+                var list = await accessor.QueryNonBufferdAsync(con).ToListAsync();
 
                 Assert.Equal(ConnectionState.Open, con.State);
                 Assert.Equal(2, list.Count);
@@ -301,7 +274,7 @@ namespace Smart.Data.Accessor.Engine
             ValueTask<IList<DataEntity>> QueryBufferdAsync(CancellationToken cancel);
 
             [Query]
-            ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync(CancellationToken cancel);
+            IAsyncEnumerable<DataEntity> QueryNonBufferdAsync(CancellationToken cancel);
         }
 
         [Fact]
@@ -341,12 +314,12 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IQueryCancelAsyncAccessor>();
 
-                var list = (await accessor.QueryNonBufferdAsync(default)).ToList();
+                var list = await accessor.QueryNonBufferdAsync(default).ToListAsync();
 
                 Assert.Equal(2, list.Count);
 
                 var cancel = new CancellationToken(true);
-                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryNonBufferdAsync(cancel));
+                await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryNonBufferdAsync(cancel).ToListAsync(cancel));
             }
         }
 

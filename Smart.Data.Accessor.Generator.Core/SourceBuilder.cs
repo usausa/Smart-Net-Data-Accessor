@@ -305,7 +305,7 @@ namespace Smart.Data.Accessor.Generator
                     }
                     break;
                 case MethodType.Query:
-                    if (!IsValidQueryResultType(mm.EngineResultType))
+                    if (!IsValidQueryResultType(mm.EngineResultType, mm.IsAsync))
                     {
                         throw new AccessorGeneratorException($"ReturnType is not match for MethodType.Query. type=[{targetType.FullName}], method=[{mm.MethodInfo.Name}], returnType=[{mm.MethodInfo.ReturnType}]");
                     }
@@ -334,9 +334,11 @@ namespace Smart.Data.Accessor.Generator
             return type.IsAssignableFrom(typeof(DbDataReader));
         }
 
-        private static bool IsValidQueryResultType(Type type)
+        private static bool IsValidQueryResultType(Type type, bool isAsync)
         {
-            return GeneratorHelper.IsAsyncEnumerable(type) || GeneratorHelper.IsEnumerable(type) || GeneratorHelper.IsList(type);
+            return GeneratorHelper.IsAsyncEnumerable(type) ||
+                   (GeneratorHelper.IsEnumerable(type) && !isAsync) ||
+                   GeneratorHelper.IsList(type);
         }
 
         private static bool IsValidQueryFirstOrDefaultResultType(Type type)
@@ -804,7 +806,6 @@ namespace Smart.Data.Accessor.Generator
             // Execute
             Indent();
             Append($"using (var {ReaderVar} = ");
-
             var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
             AppendLine($"await {EngineFieldRef}.ExecuteReaderAsync({CommandVar}{cancelOption}).ConfigureAwait(false))");
             AppendLine("{");
@@ -841,7 +842,7 @@ namespace Smart.Data.Accessor.Generator
         {
             BeginMethod(mm, false);
 
-            BeginConnectionForReader(mm);
+            BeginConnectionSimple(mm);
 
             // PreProcess
             DefinePreProcess(mm);
@@ -850,34 +851,31 @@ namespace Smart.Data.Accessor.Generator
 
             DefineConnectionOpen(mm);
 
-            // Body
+            // Execute
             Indent();
-            Append($"{ReaderVar} = ");
-
-            var closeOption = mm.HasConnectionParameter ? string.Empty : "WithClose";
-            if (mm.IsAsync)
-            {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.ExecuteReader{closeOption}Async({CommandVar}{cancelOption}).ConfigureAwait(false);");
-            }
-            else
-            {
-                Append($"{EngineFieldRef}.ExecuteReader{closeOption}({CommandVar});");
-            }
-
-            NewLine();
+            AppendLine($"using (var {ReaderVar} = {EngineFieldRef}.ExecuteReader({CommandVar}))");
+            AppendLine("{");
+            indent++;
 
             // PostProcess
-            DefinePostProcess(mm, true);
-
-            NewLine();
+            DefinePostProcess(mm, false);
 
             var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetEnumerableElementType(mm.EngineResultType));
-            AppendLine($"var {ResultVar} = {EngineFieldRef}.ReaderToDefer<{resultType}>({CommandVar}, {ReaderVar});");
-            AppendLine($"{CommandVar} = null;");
-            AppendLine($"{ReaderVar} = null;");
-            AppendLine($"return {ResultVar};");
-            EndConnectionForReader(mm);
+            AppendLine($"var {MapperVar} = {EngineFieldRef}.CreateResultMapper<{resultType}>({ReaderVar});");
+
+            AppendLine($"while ({ReaderVar}.Read())");
+            AppendLine("{");
+            indent++;
+
+            AppendLine($"yield return {MapperVar}({ReaderVar});");
+
+            indent--;
+            AppendLine("}");
+
+            indent--;
+            AppendLine("}");
+
+            EndConnectionSimple(null);
 
             End();
         }

@@ -280,7 +280,7 @@ public interface IQueryAccessor
     ValueTask<IList<DataEntity>> QueryBufferdAsync();
 
     [Query]
-    ValueTask<IEnumerable<DataEntity>> QueryNonBufferdAsync();
+    IAsyncEnumerable<DataEntity> QueryNonBufferdAsync();
 }
 ```
 
