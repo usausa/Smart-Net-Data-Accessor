@@ -8,6 +8,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
     using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Generator.Helpers;
     using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
 
@@ -76,12 +77,11 @@ namespace Smart.Data.Accessor.Generator.Metadata
             Parameters = parameters;
             DynamicParameters = dynamicParameters;
 
-            IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
-            EngineResultType = IsAsync
-                ? (mi.ReturnType.IsGenericType
-                    ? mi.ReturnType.GetGenericArguments()[0]
-                    : typeof(void))
-                : mi.ReturnType;
+            var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
+            IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;
+            EngineResultType = !IsAsync || isAsyncEnumerable
+                ? mi.ReturnType
+                : (mi.ReturnType.IsGenericType ? mi.ReturnType.GetGenericArguments()[0] : typeof(void));
 
             Provider = mi.GetCustomAttribute<ProviderAttribute>();
             Timeout = mi.GetCustomAttribute<CommandTimeoutAttribute>();

@@ -6,6 +6,7 @@ namespace Smart.Data.Accessor.Generator
     using System.Data.Common;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Text;
 
     using Smart.Data.Accessor.Attributes;
@@ -13,6 +14,7 @@ namespace Smart.Data.Accessor.Generator
     using Smart.Data.Accessor.Generator.Helpers;
     using Smart.Data.Accessor.Generator.Metadata;
     using Smart.Data.Accessor.Generator.Visitors;
+    using Smart.Data.Accessor.Helpers;
     using Smart.Data.Accessor.Nodes;
     using Smart.Data.Accessor.Runtime;
     using Smart.Data.Accessor.Scripts;
@@ -33,6 +35,7 @@ namespace Smart.Data.Accessor.Generator
         private const string CommandVar = "_cmd";
         private const string ReaderVar = "_reader";
         private const string ResultVar = "_result";
+        private const string MapperVar = "_mapper";
         private const string BuilderVar = "_sql";
         private const string OutParamVar = "_outParam";
         private const string ReturnOutParamVar = "_outParamReturn";
@@ -51,6 +54,7 @@ namespace Smart.Data.Accessor.Generator
         private static readonly string WrappedReaderType = GeneratorHelper.MakeGlobalName(typeof(WrappedReader));
         private static readonly string StringBuilderType = GeneratorHelper.MakeGlobalName(typeof(StringBuilder));
         private static readonly string ExceptionType = GeneratorHelper.MakeGlobalName(typeof(Exception));
+        private static readonly string EnumeratorCancellationAttributeType = GeneratorHelper.MakeGlobalName(typeof(EnumeratorCancellationAttribute));
         private static readonly string HandlerType = GeneratorHelper.MakeGlobalName(typeof(Func<object, object>));
         private static readonly string InSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.InParameterSetup));
         private static readonly string InOutSetupType = GeneratorHelper.MakeGlobalName(typeof(ExecuteEngine.InOutParameterSetup));
@@ -144,13 +148,17 @@ namespace Smart.Data.Accessor.Generator
                         DefineMethodExecuteReader(mm);
                         break;
                     case MethodType.Query:
-                        if (!GeneratorHelper.IsList(mm.EngineResultType))
+                        if (GeneratorHelper.IsAsyncEnumerable(mm.EngineResultType))
                         {
-                            DefineMethodQueryNonBuffer(mm);
+                            DefineMethodQueryAsyncEnumerable(mm);
+                        }
+                        else if (GeneratorHelper.IsList(mm.EngineResultType))
+                        {
+                            DefineMethodQueryBuffer(mm);
                         }
                         else
                         {
-                            DefineMethodQueryBuffer(mm);
+                            DefineMethodQueryNonBuffer(mm);
                         }
                         break;
                     case MethodType.QueryFirstOrDefault:
@@ -328,7 +336,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static bool IsValidQueryResultType(Type type)
         {
-            return GeneratorHelper.IsEnumerable(type) || GeneratorHelper.IsList(type);
+            return GeneratorHelper.IsAsyncEnumerable(type) || GeneratorHelper.IsEnumerable(type) || GeneratorHelper.IsList(type);
         }
 
         private static bool IsValidQueryFirstOrDefaultResultType(Type type)
@@ -599,7 +607,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void DefineMethodExecute(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionSimple(mm);
 
@@ -637,7 +645,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             if (mm.ReturnValueAsResult && (mm.EngineResultType != typeof(void)))
             {
@@ -675,7 +683,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void DefineMethodExecuteScalar(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionSimple(mm);
 
@@ -724,7 +732,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             EndConnectionSimple(mm);
 
@@ -737,7 +745,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void DefineMethodExecuteReader(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionForReader(mm);
 
@@ -766,7 +774,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             NewLine();
 
@@ -777,12 +785,61 @@ namespace Smart.Data.Accessor.Generator
         }
 
         //--------------------------------------------------------------------------------
+        // QueryAsyncEnumerable
+        //--------------------------------------------------------------------------------
+
+        private void DefineMethodQueryAsyncEnumerable(MethodMetadata mm)
+        {
+            BeginMethod(mm, true);
+
+            BeginConnectionSimple(mm);
+
+            // PreProcess
+            DefinePreProcess(mm);
+
+            DefineSql(mm);
+
+            DefineConnectionOpen(mm);
+
+            // Execute
+            Indent();
+            Append($"using (var {ReaderVar} = ");
+
+            var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+            AppendLine($"await {EngineFieldRef}.ExecuteReaderAsync({CommandVar}{cancelOption}).ConfigureAwait(false))");
+            AppendLine("{");
+            indent++;
+
+            // PostProcess
+            DefinePostProcess(mm, false);
+
+            var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetAsyncEnumerableElementType(mm.EngineResultType));
+            AppendLine($"var {MapperVar} = {EngineFieldRef}.CreateResultMapper<{resultType}>({ReaderVar});");
+
+            AppendLine($"while (await {ReaderVar}.ReadAsync({mm.CancelParameter?.Name}).ConfigureAwait(false))");
+            AppendLine("{");
+            indent++;
+
+            AppendLine($"yield return {MapperVar}({ReaderVar});");
+
+            indent--;
+            AppendLine("}");
+
+            indent--;
+            AppendLine("}");
+
+            EndConnectionSimple(null);
+
+            End();
+        }
+
+        //--------------------------------------------------------------------------------
         // QueryNonBuffer
         //--------------------------------------------------------------------------------
 
         private void DefineMethodQueryNonBuffer(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionForReader(mm);
 
@@ -811,7 +868,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             NewLine();
 
@@ -831,7 +888,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void DefineMethodQueryBuffer(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionSimple(mm);
 
@@ -860,7 +917,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             EndConnectionSimple(mm);
 
@@ -873,7 +930,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void DefineMethodQueryFirstOrDefault(MethodMetadata mm)
         {
-            BeginMethod(mm);
+            BeginMethod(mm, false);
 
             BeginConnectionSimple(mm);
 
@@ -902,7 +959,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // PostProcess
-            DefinePostProcess(mm);
+            DefinePostProcess(mm, true);
 
             EndConnectionSimple(mm);
 
@@ -913,7 +970,7 @@ namespace Smart.Data.Accessor.Generator
         // Helper
         //--------------------------------------------------------------------------------
 
-        private void BeginMethod(MethodMetadata mm)
+        private void BeginMethod(MethodMetadata mm, bool isAsyncEnumerable)
         {
             AppendLine($"[{MethodNoAttributeType}({mm.No})]");
 
@@ -936,6 +993,11 @@ namespace Smart.Data.Accessor.Generator
                 else
                 {
                     first = false;
+                }
+
+                if (isAsyncEnumerable && ParameterHelper.IsCancellationTokenParameter(pmi))
+                {
+                    Append($"[{EnumeratorCancellationAttributeType}] ");
                 }
 
                 if (pmi.IsOut)
@@ -981,7 +1043,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void EndConnectionSimple(MethodMetadata mm)
         {
-            if (mm.EngineResultType != typeof(void))
+            if ((mm != null) && (mm.EngineResultType != typeof(void)))
             {
                 NewLine();
                 AppendLine($"return {ResultVar};");
@@ -1087,14 +1149,17 @@ namespace Smart.Data.Accessor.Generator
             }
         }
 
-        private void DefinePostProcess(MethodMetadata mm)
+        private void DefinePostProcess(MethodMetadata mm, bool blankBefore)
         {
             var first = true;
             foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input))
             {
                 if (first)
                 {
-                    NewLine();
+                    if (blankBefore)
+                    {
+                        NewLine();
+                    }
                     first = false;
                 }
 
@@ -1118,6 +1183,11 @@ namespace Smart.Data.Accessor.Generator
                     Append($"{GetOutParamName(parameter.Index)}.Value;");
                 }
 
+                NewLine();
+            }
+
+            if (!first && !blankBefore)
+            {
                 NewLine();
             }
         }

@@ -31,7 +31,7 @@ namespace Smart.Data.Accessor.Engine
         // ResultMapper
         //--------------------------------------------------------------------------------
 
-        private Func<IDataRecord, T> CreateResultMapper<T>(IDataReader reader)
+        public Func<IDataRecord, T> CreateResultMapper<T>(IDataReader reader)
         {
             var fieldCount = reader.FieldCount;
             if ((columnInfoPool == null) || (columnInfoPool.Length < fieldCount))
@@ -168,9 +168,9 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<List<T>> QueryBufferAsync<T>(DbCommand cmd, CancellationToken cancel = default)
+        public async ValueTask<List<T>> QueryBufferAsync<T>(DbCommand cmd, CancellationToken cancel = default)
         {
-            using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
+            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
             {
                 var mapper = CreateResultMapper<T>(reader);
 
@@ -181,6 +181,24 @@ namespace Smart.Data.Accessor.Engine
                 }
 
                 return list;
+            }
+        }
+
+        //--------------------------------------------------------------------------------
+        // QueryAsyncEnumerable
+        //--------------------------------------------------------------------------------
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async IAsyncEnumerable<T> QueryAsyncEnumerable<T>(DbCommand cmd, [EnumeratorCancellation] CancellationToken cancel = default)
+        {
+            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
+            {
+                var mapper = CreateResultMapper<T>(reader);
+
+                while (await reader.ReadAsync(cancel).ConfigureAwait(false))
+                {
+                    yield return mapper(reader);
+                }
             }
         }
 
@@ -206,7 +224,7 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<T> QueryFirstOrDefaultAsync<T>(DbCommand cmd, CancellationToken cancel = default)
         {
-            using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false))
+            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false))
             {
                 if (await reader.ReadAsync(cancel).ConfigureAwait(false))
                 {

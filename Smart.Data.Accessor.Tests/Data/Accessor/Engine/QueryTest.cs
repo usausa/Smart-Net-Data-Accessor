@@ -135,6 +135,33 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
+        //[DataAccessor]
+        //public interface IQueryAsyncAccessor
+        //{
+        //    [Query]
+        //    IAsyncEnumerable<DataEntity> QueryEnumerableAsync(CancellationToken token = default);
+        //}
+
+        //[Fact]
+        //public async ValueTask TestQueryAsyncSimpleAsync()
+        //{
+        //    using (TestDatabase.Initialize()
+        //        .SetupDataTable()
+        //        .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+        //        .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
+        //    {
+        //        var generator = new TestFactoryBuilder()
+        //            .UseFileDatabase()
+        //            .SetSql("SELECT * FROM Data ORDER BY Id")
+        //            .Build();
+        //        var accessor = generator.Create<IQueryAsyncAccessor>();
+
+        //        await foreach (var entity in accessor.QueryEnumerableAsync())
+        //        {
+        //        }
+        //    }
+        //}
+
         //--------------------------------------------------------------------------------
         // With Connection
         //--------------------------------------------------------------------------------

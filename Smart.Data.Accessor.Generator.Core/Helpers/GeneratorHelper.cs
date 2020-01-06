@@ -64,6 +64,11 @@ namespace Smart.Data.Accessor.Generator.Helpers
             return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
         }
 
+        public static bool IsAsyncEnumerable(Type type)
+        {
+            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>));
+        }
+
         public static bool IsList(Type type)
         {
             return type.IsGenericType && ((type.GetGenericTypeDefinition() == typeof(IList<>)) || (type.GetGenericTypeDefinition() == typeof(List<>)));
@@ -76,6 +81,11 @@ namespace Smart.Data.Accessor.Generator.Helpers
         public static Type GetEnumerableElementType(Type type)
         {
             return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IEnumerable<>))).GetGenericArguments()[0];
+        }
+
+        public static Type GetAsyncEnumerableElementType(Type type)
+        {
+            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))).GetGenericArguments()[0];
         }
 
         public static Type GetListElementType(Type type)
