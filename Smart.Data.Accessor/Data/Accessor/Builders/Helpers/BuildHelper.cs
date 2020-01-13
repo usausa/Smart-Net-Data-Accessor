@@ -28,12 +28,6 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 return null;
             }
 
-            var attr = parameter.ParameterType.GetCustomAttribute<NameAttribute>();
-            if (attr != null)
-            {
-                return attr.Name;
-            }
-
             return GetTableNameOfType(option, parameter.ParameterType);
         }
 
@@ -61,6 +55,12 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static string GetTableNameOfType(IGeneratorOption option, Type type)
         {
+            var attr = type.GetCustomAttribute<NameAttribute>();
+            if (attr != null)
+            {
+                return attr.Name;
+            }
+
             var suffix = option.GetValueAsStringArray("EntityClassSuffix");
             var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x));
             return match == null
