@@ -99,7 +99,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- GetCopyToOutputDirectoryItems -->
+  <!-- GetCopyToPublishDirectoryItems -->
   <Target Name="SmartDataAccessorGetCopyToPublishDirectoryItems" BeforeTargets="GetCopyToPublishDirectoryItems"
           Returns="@(AllPublishItemsFullPathWithTargetPath)">
     <ItemGroup>
@@ -111,6 +111,20 @@
         <TargetPath>$(SmartDataAccessorDebugSymbol)</TargetPath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </AllPublishItemsFullPathWithTargetPath>
+    </ItemGroup>
+  </Target>
+
+  <!-- ComputeFilesToPublish -->
+  <Target Name="SmartDataAccessorComputeFilesToPublish"
+          AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorAssembly)">
+        <RelativePath>$(SmartDataAccessorAssembly)</RelativePath>
+        <PostprocessAssembly>true</PostprocessAssembly>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)" Condition="Exists('$(ProjectDir)$(OutputPath)$(SmartDataAccessorDebugSymbol)')">
+        <RelativePath>$(SmartDataAccessorDebugSymbol)</RelativePath>
+      </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 
