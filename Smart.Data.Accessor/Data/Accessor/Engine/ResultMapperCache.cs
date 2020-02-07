@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Runtime.CompilerServices;
     using System.Threading;
 
-    [DebuggerDisplay("Count = {" + nameof(Count) + "}")]
+    [DebuggerDisplay("{" + nameof(Diagnostics) + "}")]
     internal sealed class ResultMapperCache
     {
         private static readonly Node EmptyNode = new Node(typeof(EmptyKey), Array.Empty<ColumnInfo>(), default);
@@ -17,6 +17,8 @@ namespace Smart.Data.Accessor.Engine
         private readonly object sync = new object();
 
         private Node[] nodes;
+
+        private int depth;
 
         private int count;
 
@@ -45,6 +47,36 @@ namespace Smart.Data.Accessor.Engine
                 }
                 return hash;
             }
+        }
+
+        private static int CalculateDepth(Node node)
+        {
+            var length = 0;
+
+            do
+            {
+                length++;
+                node = node.Next;
+            }
+            while (node != null);
+
+            return length;
+        }
+
+        private static int CalculateDepth(Node[] targetNodes)
+        {
+            var depth = 0;
+
+            for (var i = 0; i < targetNodes.Length; i++)
+            {
+                var node = targetNodes[i];
+                if (node != EmptyNode)
+                {
+                    depth = Math.Max(CalculateDepth(node), depth);
+                }
+            }
+
+            return depth;
         }
 
         private static int CalculateSize(int requestSize)
@@ -136,15 +168,18 @@ namespace Smart.Data.Accessor.Engine
                 Interlocked.MemoryBarrier();
 
                 nodes = newNodes;
-
+                depth = CalculateDepth(newNodes);
                 count++;
             }
             else
             {
                 Interlocked.MemoryBarrier();
 
-                UpdateLink(ref nodes[CalculateHash(node.TargetType, node.Columns) & (nodes.Length - 1)], node);
+                var hash = CalculateHash(node.TargetType, node.Columns);
 
+                UpdateLink(ref nodes[hash & (nodes.Length - 1)], node);
+
+                depth = Math.Max(CalculateDepth(nodes[hash & (nodes.Length - 1)]), depth);
                 count++;
             }
         }
@@ -153,13 +188,13 @@ namespace Smart.Data.Accessor.Engine
         // Public
         //--------------------------------------------------------------------------------
 
-        public int Count
+        public DiagnosticsInfo Diagnostics
         {
             get
             {
                 lock (sync)
                 {
-                    return count;
+                    return new DiagnosticsInfo(nodes.Length, depth, count);
                 }
             }
         }
@@ -173,6 +208,7 @@ namespace Smart.Data.Accessor.Engine
                 Interlocked.MemoryBarrier();
 
                 nodes = newNodes;
+                depth = 0;
                 count = 0;
             }
         }
@@ -276,6 +312,28 @@ namespace Smart.Data.Accessor.Engine
                 Columns = columns;
                 Value = value;
             }
+        }
+
+        //--------------------------------------------------------------------------------
+        // Diagnostics
+        //--------------------------------------------------------------------------------
+
+        public sealed class DiagnosticsInfo
+        {
+            public int Width { get; }
+
+            public int Depth { get; }
+
+            public int Count { get; }
+
+            public DiagnosticsInfo(int width, int depth, int count)
+            {
+                Width = width;
+                Depth = depth;
+                Count = count;
+            }
+
+            public override string ToString() => $"Count={Count}, Width={Width}, Depth={Depth}";
         }
     }
 }
