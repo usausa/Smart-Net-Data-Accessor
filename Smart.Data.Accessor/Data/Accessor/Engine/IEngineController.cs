@@ -2,11 +2,9 @@ namespace Smart.Data.Accessor.Engine
 {
     public interface IEngineController
     {
-        int CountResultMapperCache { get; }
+        DiagnosticsInfo Diagnostics { get; }
 
         void ClearResultMapperCache();
-
-        int CountDynamicSetupCache { get; }
 
         void ClearDynamicSetupCache();
     }

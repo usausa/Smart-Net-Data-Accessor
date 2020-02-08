@@ -393,9 +393,9 @@ namespace Smart.Data.Accessor
             accessor.Execute(con, "1");
 
             var controller = (IEngineController)generator.Engine;
-            Assert.Equal(1, controller.CountDynamicSetupCache);
+            Assert.Equal(1, controller.Diagnostics.DynamicSetupCacheCount);
             controller.ClearDynamicSetupCache();
-            Assert.Equal(0, controller.CountDynamicSetupCache);
+            Assert.Equal(0, controller.Diagnostics.DynamicSetupCacheCount);
         }
 
         [DataAccessor]
@@ -435,9 +435,9 @@ namespace Smart.Data.Accessor
             accessor.Execute(con, new List<string>(new[] { "1", "2" }));
 
             var controller = (IEngineController)generator.Engine;
-            Assert.Equal(1, controller.CountDynamicSetupCache);
+            Assert.Equal(1, controller.Diagnostics.DynamicSetupCacheCount);
             controller.ClearDynamicSetupCache();
-            Assert.Equal(0, controller.CountDynamicSetupCache);
+            Assert.Equal(0, controller.Diagnostics.DynamicSetupCacheCount);
         }
 
         //--------------------------------------------------------------------------------

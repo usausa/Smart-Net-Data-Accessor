@@ -56,12 +56,24 @@ namespace Smart.Data.Accessor.Engine
         // Controller
         //--------------------------------------------------------------------------------
 
-        int IEngineController.CountResultMapperCache => resultMapperCache.Diagnostics.Count;
+        DiagnosticsInfo IEngineController.Diagnostics
+        {
+            get
+            {
+                var resultMapperDiagnostics = resultMapperCache.Diagnostics;
+                var dynamicSetupDiagnostics = dynamicSetupCache.Diagnostics;
+
+                return new DiagnosticsInfo(
+                    resultMapperDiagnostics.Count,
+                    resultMapperDiagnostics.Width,
+                    resultMapperDiagnostics.Depth,
+                    dynamicSetupDiagnostics.Count,
+                    dynamicSetupDiagnostics.Width,
+                    dynamicSetupDiagnostics.Depth);
+            }
+        }
 
         void IEngineController.ClearResultMapperCache() => resultMapperCache.Clear();
-
-        // TODO
-        int IEngineController.CountDynamicSetupCache => dynamicSetupCache.Diagnostics.Count;
 
         void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
 

@@ -25,11 +25,11 @@ namespace Smart.Data.Accessor.Engine
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(1, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(1, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(1, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(1, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
         }
 
         [Fact]
@@ -58,15 +58,15 @@ namespace Smart.Data.Accessor.Engine
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(1, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(1, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(2, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(2, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(3, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(3, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
         }
 
         [Fact]
@@ -86,15 +86,15 @@ namespace Smart.Data.Accessor.Engine
 
             engine.QueryBuffer<CacheEntity>(cmd);
 
-            Assert.Equal(1, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(1, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
 
             engine.QueryBuffer<Cache2Entity>(cmd);
 
-            Assert.Equal(2, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(2, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
 
             ((IEngineController)engine).ClearResultMapperCache();
 
-            Assert.Equal(0, ((IEngineController)engine).CountResultMapperCache);
+            Assert.Equal(0, ((IEngineController)engine).Diagnostics.ResultMapperCacheCount);
         }
 
         public class CacheEntity
