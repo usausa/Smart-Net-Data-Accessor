@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Engine
         void IEngineController.ClearResultMapperCache() => resultMapperCache.Clear();
 
         // TODO
-        int IEngineController.CountDynamicSetupCache => dynamicSetupCache.Count;
+        int IEngineController.CountDynamicSetupCache => dynamicSetupCache.Diagnostics.Count;
 
         void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
 
