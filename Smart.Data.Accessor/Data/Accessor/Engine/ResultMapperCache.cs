@@ -243,7 +243,8 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(Type targetType, Span<ColumnInfo> columns, out object value)
         {
-            var node = nodes[CalculateHash(targetType, columns) & (nodes.Length - 1)];
+            var temp = nodes;
+            var node = temp[CalculateHash(targetType, columns) & (temp.Length - 1)];
             do
             {
                 if (node.TargetType == targetType && IsMatchColumn(node.Columns, columns))
