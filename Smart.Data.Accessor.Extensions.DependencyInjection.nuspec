@@ -14,8 +14,8 @@
     <copyright></copyright>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
-      <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="3.1.1" />
-      <dependency id="Usa.Smart.Core" version="1.8.1" />
+      <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="3.1.2" />
+      <dependency id="Usa.Smart.Core" version="1.8.2" />
       <dependency id="Usa.Smart.Data.Accessor.Core" version="1.1.6" />
     </dependencies>
     <tags>smart ado.net orm dao ioc di dependencyinjection</tags>
