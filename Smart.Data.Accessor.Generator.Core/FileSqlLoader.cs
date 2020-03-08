@@ -1,11 +1,11 @@
-using Smart.Data.Accessor.Attributes;
-
 namespace Smart.Data.Accessor.Generator
 {
     using System;
     using System.IO;
     using System.Reflection;
     using System.Text;
+
+    using Smart.Data.Accessor.Attributes;
 
     public class FileSqlLoader : ISqlLoader
     {
