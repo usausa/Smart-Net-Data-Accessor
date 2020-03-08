@@ -1,3 +1,5 @@
+using Smart.Data.Accessor.Attributes;
+
 namespace Smart.Data.Accessor.Generator
 {
     using System;
@@ -44,8 +46,9 @@ namespace Smart.Data.Accessor.Generator
 
             // File
             var index = type.FullName.LastIndexOf('.');
-            var name = index >= 0 ? type.FullName.Substring(index + 1) : type.FullName;
-            var filename = $"{name.Replace('+', '.')}.{mi.Name}.sql";
+            var interfaceName = index >= 0 ? type.FullName.Substring(index + 1) : type.FullName;
+            var methodName = mi.GetCustomAttribute<MethodNameAttribute>()?.Name ?? mi.Name;
+            var filename = $"{interfaceName.Replace('+', '.')}.{methodName}.sql";
             var path = Path.Combine(dir, filename);
             if (!File.Exists(path))
             {
