@@ -4,8 +4,6 @@ namespace Smart.Data.Accessor.Engine
     {
         DiagnosticsInfo Diagnostics { get; }
 
-        void ClearResultMapperCache();
-
         void ClearDynamicSetupCache();
     }
 }

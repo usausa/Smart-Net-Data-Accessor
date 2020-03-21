@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Engine
     using System;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Ignore")]
-    public struct ColumnInfo
+    public readonly struct ColumnInfo
     {
         public string Name { get; }
 

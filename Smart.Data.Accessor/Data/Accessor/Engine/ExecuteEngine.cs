@@ -27,8 +27,6 @@ namespace Smart.Data.Accessor.Engine
 
         private readonly IResultMapperFactory[] resultMapperFactories;
 
-        private readonly ResultMapperCache resultMapperCache = new ResultMapperCache();
-
         private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new ThreadsafeTypeHashArrayMap<DynamicParameterEntry>();
 
         private readonly string[] parameterSubNames;
@@ -60,20 +58,14 @@ namespace Smart.Data.Accessor.Engine
         {
             get
             {
-                var resultMapperDiagnostics = resultMapperCache.Diagnostics;
                 var dynamicSetupDiagnostics = dynamicSetupCache.Diagnostics;
 
                 return new DiagnosticsInfo(
-                    resultMapperDiagnostics.Count,
-                    resultMapperDiagnostics.Width,
-                    resultMapperDiagnostics.Depth,
                     dynamicSetupDiagnostics.Count,
                     dynamicSetupDiagnostics.Width,
                     dynamicSetupDiagnostics.Depth);
             }
         }
-
-        void IEngineController.ClearResultMapperCache() => resultMapperCache.Clear();
 
         void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
 
