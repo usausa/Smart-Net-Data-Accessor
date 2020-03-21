@@ -16,6 +16,8 @@ namespace Smart.Data.Accessor.Generator.Metadata
     {
         public int No { get; }
 
+        public bool Optimize { get; }
+
         public MethodInfo MethodInfo { get; }
 
         public CommandType CommandType { get; }
@@ -76,6 +78,11 @@ namespace Smart.Data.Accessor.Generator.Metadata
             Nodes = nodes;
             Parameters = parameters;
             DynamicParameters = dynamicParameters;
+
+            Optimize = mi.GetCustomAttribute<OptimizeAttribute>()?.Value ??
+                       mi.DeclaringType.GetCustomAttribute<OptimizeAttribute>()?.Value ??
+                       mi.DeclaringType.Assembly.GetCustomAttribute<OptimizeAttribute>()?.Value ??
+                       false;
 
             var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
             IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;

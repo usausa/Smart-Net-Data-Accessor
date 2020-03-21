@@ -66,7 +66,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var list = engine.QueryBuffer<MapEntity>(cmd);
+            var mapper = new ResultMapperCache<MapEntity>(engine, false);
+
+            var list = engine.QueryBuffer(cmd, mapper);
 
             Assert.Equal(2, list.Count);
             Assert.Equal(1, list[0].Column1);
@@ -125,7 +127,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var entity = engine.QueryFirstOrDefault<ParserEntity>(cmd);
+            var mapper = new ResultMapperCache<ParserEntity>(engine, false);
+
+            var entity = engine.QueryFirstOrDefault(cmd, mapper);
 
             Assert.NotNull(entity);
             Assert.Equal(1, entity.Id);
@@ -164,7 +168,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            Assert.Throws<ArgumentException>(() => engine.QueryBuffer<NoConstructor>(cmd));
+            var mapper = new ResultMapperCache<NoConstructor>(engine, false);
+
+            Assert.Throws<ArgumentException>(() => engine.QueryBuffer(cmd, mapper));
         }
 
         //--------------------------------------------------------------------------------
@@ -187,7 +193,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer<DataEntity>(cmd));
+            var mapper = new ResultMapperCache<DataEntity>(engine, false);
+
+            Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer(cmd, mapper));
         }
     }
 }

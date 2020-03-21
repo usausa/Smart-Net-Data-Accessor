@@ -5,44 +5,127 @@ namespace Smart.Data.Accessor.Engine
     using System.Runtime.CompilerServices;
     using System.Threading;
 
-    public sealed class MethodResultMapperCache<T>
+    public sealed class ResultMapperCache<T>
     {
         private static readonly Node EmptyNode = new Node(Array.Empty<ColumnInfo>(), null);
 
+        private readonly object sync = new object();
+
         private readonly ExecuteEngine engine;
 
-        private readonly object sync = new object();
+        private readonly bool optimize;
+
+        private Func<IDataRecord, T> optimizedMapper;
 
         private Node firstNode = EmptyNode;
 
-        public MethodResultMapperCache(ExecuteEngine engine)
+        public int Depth
+        {
+            get
+            {
+                if (optimize)
+                {
+                    return optimizedMapper != null ? 1 : 0;
+                }
+
+                var node = firstNode;
+                if (node == EmptyNode)
+                {
+                    return 0;
+                }
+
+                var count = 1;
+                while (node.Next != null)
+                {
+                    node = node.Next;
+                    count++;
+                }
+
+                return count;
+            }
+        }
+
+        public ResultMapperCache(ExecuteEngine engine, bool optimize)
         {
             this.engine = engine;
+            this.optimize = optimize;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> ResolveMapper(IDataReader reader)
         {
-            var fieldCount = reader.FieldCount;
-            if ((ThreadLocalCache.ColumnInfoPool is null) || (ThreadLocalCache.ColumnInfoPool.Length < fieldCount))
+            if (optimize)
             {
-                ThreadLocalCache.ColumnInfoPool = new ColumnInfo[fieldCount];
-            }
+                if (optimizedMapper != null)
+                {
+                    return optimizedMapper;
+                }
 
-            for (var i = 0; i < reader.FieldCount; i++)
+                lock (sync)
+                {
+                    var columns = new ColumnInfo[reader.FieldCount];
+                    for (var i = 0; i < columns.Length; i++)
+                    {
+                        columns[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
+                    }
+
+                    // Double checked locking
+                    if (optimizedMapper != null)
+                    {
+                        return optimizedMapper;
+                    }
+
+                    Interlocked.MemoryBarrier();
+
+                    optimizedMapper = engine.CreateResultMapper<T>(columns);
+
+                    return optimizedMapper;
+                }
+            }
+            else
             {
-                ThreadLocalCache.ColumnInfoPool[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
+                var fieldCount = reader.FieldCount;
+                if ((ThreadLocalCache.ColumnInfoPool is null) || (ThreadLocalCache.ColumnInfoPool.Length < fieldCount))
+                {
+                    ThreadLocalCache.ColumnInfoPool = new ColumnInfo[fieldCount];
+                }
+
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    ThreadLocalCache.ColumnInfoPool[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
+                }
+
+                var columns = new Span<ColumnInfo>(ThreadLocalCache.ColumnInfoPool, 0, fieldCount);
+
+                var mapper = FindMapper(columns);
+                if (mapper != null)
+                {
+                    return mapper;
+                }
+
+                lock (sync)
+                {
+                    // Double checked locking
+                    mapper = FindMapper(columns);
+                    if (mapper != null)
+                    {
+                        return mapper;
+                    }
+
+                    Interlocked.MemoryBarrier();
+
+                    var copyColumns = new ColumnInfo[columns.Length];
+                    columns.CopyTo(new Span<ColumnInfo>(copyColumns));
+
+                    mapper = engine.CreateResultMapper<T>(copyColumns);
+
+                    var newNode = new Node(copyColumns, mapper);
+
+                    UpdateLink(ref firstNode, newNode);
+
+                    return mapper;
+                }
             }
-
-            var columns = new Span<ColumnInfo>(ThreadLocalCache.ColumnInfoPool, 0, fieldCount);
-
-            var mapper = FindMapper(columns);
-            if (mapper != null)
-            {
-                return mapper;
-            }
-
-            return AddIfNotExist(columns);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,32 +144,6 @@ namespace Smart.Data.Accessor.Engine
             while (node != null);
 
             return null;
-        }
-
-        private Func<IDataRecord, T> AddIfNotExist(Span<ColumnInfo> columns)
-        {
-            lock (sync)
-            {
-                // Double checked locking
-                var mapper = FindMapper(columns);
-                if (mapper != null)
-                {
-                    return mapper;
-                }
-
-                Interlocked.MemoryBarrier();
-
-                var copyColumns = new ColumnInfo[columns.Length];
-                columns.CopyTo(new Span<ColumnInfo>(copyColumns));
-
-                mapper = engine.CreateResultMapper<T>(copyColumns);
-
-                var newNode = new Node(copyColumns, mapper);
-
-                UpdateLink(ref firstNode, newNode);
-
-                return mapper;
-            }
         }
 
         private static void UpdateLink(ref Node node, Node newNode)
