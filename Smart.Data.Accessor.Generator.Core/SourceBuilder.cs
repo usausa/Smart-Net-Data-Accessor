@@ -111,6 +111,11 @@ namespace Smart.Data.Accessor.Generator
             newLine = true;
             indent = 0;
 
+            foreach (var mm in methods)
+            {
+                ValidateMethod(mm);
+            }
+
             // Header
             BeginHeader();
 
@@ -133,8 +138,6 @@ namespace Smart.Data.Accessor.Generator
 
             foreach (var mm in methods)
             {
-                ValidateMethod(mm);
-
                 NewLine();
 
                 switch (mm.MethodType)
@@ -229,8 +232,8 @@ namespace Smart.Data.Accessor.Generator
         private static string GetResultMapperName(MethodMetadata mm)
         {
             var mapType = mm.MethodType == MethodType.Query
-                ? mm.EngineResultType
-                : GeneratorHelper.GetEnumerableElementType(mm.EngineResultType);
+                ? GeneratorHelper.GetEnumerableElementType(mm.EngineResultType)
+                : mm.EngineResultType;
             return GeneratorHelper.MakeGlobalName(typeof(ResultMapperCache<>).MakeGenericType(mapType));
         }
 
@@ -566,7 +569,8 @@ namespace Smart.Data.Accessor.Generator
 
                     if (hasResultMapper)
                     {
-                        AppendLine($"{GetResultMapperRef(mm.No)} = new {GetResultMapperName(mm)}({CtorArg}, {mm.Optimize});");
+                        var optimize = mm.Optimize ? "true" : "false";
+                        AppendLine($"{GetResultMapperRef(mm.No)} = new {GetResultMapperName(mm)}({CtorArg}, {optimize});");
                     }
 
                     if (hasConverter)
