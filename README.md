@@ -895,6 +895,8 @@ Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataA
 
 ## Benchmark (for reference purpose only)
 
+(TODO for 1.2.0)
+
 |                    Method |       Mean |      Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |-------------------------- |-----------:|-----------:|----------:|-------:|------:|------:|----------:|
 |             DapperExecute |   399.3 ns |  2.1018 ns |  3.146 ns | 0.1101 |     - |     - |     464 B |
