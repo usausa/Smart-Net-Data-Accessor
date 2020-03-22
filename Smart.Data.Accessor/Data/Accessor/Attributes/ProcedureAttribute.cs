@@ -37,14 +37,14 @@ namespace Smart.Data.Accessor.Attributes
             ReturnValueAsResult = returnValueAsResult;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var nodes = new List<INode>
             {
                 new SqlNode(procedure)
             };
 
-            nodes.AddRange(BuildHelper.GetParameters(option, mi).Select(x => new ParameterNode(x.Name, x.ParameterName)));
+            nodes.AddRange(BuildHelper.GetParameters(mi).Select(x => new ParameterNode(x.Name, x.ParameterName)));
 
             return nodes;
         }

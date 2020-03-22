@@ -42,13 +42,13 @@ namespace Smart.Data.Accessor.Builders
             this.type = type;
         }
 
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
-            var parameters = BuildHelper.GetParameters(option, mi);
+            var parameters = BuildHelper.GetParameters(mi);
             var keys = BuildHelper.GetKeyParameters(parameters);
             var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
-                            BuildHelper.GetTableName(option, mi);
+                            (type != null ? BuildHelper.GetTableNameByType(mi, type) : null) ??
+                            BuildHelper.GetTableNameByParameter(mi);
             var conditions = keys.Count > 0 ? keys : parameters;
 
             if (String.IsNullOrEmpty(tableName))

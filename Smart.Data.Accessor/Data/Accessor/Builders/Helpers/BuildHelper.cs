@@ -8,30 +8,39 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Generator;
+    using Smart.Data.Accessor.Builders.Configs;
     using Smart.Data.Accessor.Helpers;
-    using Smart.Text;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class BuildHelper
     {
         //--------------------------------------------------------------------------------
+        // Naming
+        //--------------------------------------------------------------------------------
+
+        private static Func<string, string> GetNamingOfMethod(MethodInfo mi)
+        {
+            return mi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
+                   mi.DeclaringType.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
+                   mi.DeclaringType.Assembly.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
+        }
+
+        private static Func<string, string> GetNamingOfParameter(ParameterInfo pmi)
+        {
+            return pmi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
+        }
+
+        private static Func<string, string> GetNamingOfType(Type type)
+        {
+            return type.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
+                   type.Assembly.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
+        }
+
+        //--------------------------------------------------------------------------------
         // Table
         //--------------------------------------------------------------------------------
 
-        public static string GetTableName(IGeneratorOption option, MethodInfo mi)
-        {
-            var parameter = mi.GetParameters()
-                .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
-            if (parameter == null)
-            {
-                return null;
-            }
-
-            return GetTableNameOfType(option, parameter.ParameterType);
-        }
-
-        public static string GetReturnTableName(IGeneratorOption option, MethodInfo mi)
+        public static Type GetReturnType(MethodInfo mi)
         {
             var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
             if (isAsync && !mi.ReturnType.IsGenericType)
@@ -50,10 +59,31 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 return null;
             }
 
-            return GetTableNameOfType(option, elementType);
+            return elementType;
         }
 
-        public static string GetTableNameOfType(IGeneratorOption option, Type type)
+        public static string GetTableNameByType(MethodInfo mi, Type type)
+        {
+            var naming = GetNamingOfMethod(mi) ?? GetNamingOfType(type) ?? Naming.Default;
+
+            return GetTableName(type, naming);
+        }
+
+        public static string GetTableNameByParameter(MethodInfo mi)
+        {
+            var pmi = mi.GetParameters()
+                .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
+            if (pmi == null)
+            {
+                return null;
+            }
+
+            var naming = GetNamingOfParameter(pmi) ?? GetNamingOfMethod(mi) ?? Naming.Default;
+
+            return GetTableName(pmi.ParameterType, naming);
+        }
+
+        private static string GetTableName(Type type, Func<string, string> naming)
         {
             var attr = type.GetCustomAttribute<NameAttribute>();
             if (attr != null)
@@ -61,71 +91,76 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 return attr.Name;
             }
 
-            var suffix = option.GetValueAsStringArray("EntityClassSuffix");
+            var suffix = type.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
+                         type.Assembly.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
+                         EntitySuffix.Default;
             var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x));
-            return match == null
+            var name = match == null
                 ? type.Name
                 : type.Name.Substring(0, type.Name.Length - match.Length);
+            return naming(name);
         }
 
-        public static string[] GetKeyNamesOfType(Type type)
+        //--------------------------------------------------------------------------------
+        // Order
+        //--------------------------------------------------------------------------------
+
+        public static string GetOrderByType(MethodInfo mi, Type type)
         {
-            return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Select(x => new { Parameter = x, Key = x.GetCustomAttribute<KeyAttribute>() })
+            var naming = GetNamingOfMethod(mi) ?? GetNamingOfType(type) ?? Naming.Default;
+
+            return String.Join(", ", type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
                 .Where(x => x.Key != null)
                 .OrderBy(x => x.Key.Order)
-                .Select(x => x.Parameter.Name)
-                .ToArray();
+                .Select(x =>
+                {
+                    var name = x.Property.GetCustomAttribute<NameAttribute>();
+                    return name?.Name ?? naming(x.Property.Name);
+                }));
         }
 
         //--------------------------------------------------------------------------------
         // Parameter
         //--------------------------------------------------------------------------------
 
-        public static IList<BuildParameterInfo> GetParameters(IGeneratorOption option, MethodInfo mi)
+        public static IList<BuildParameterInfo> GetParameters(MethodInfo mi)
         {
-            var naming = option.GetValue("FieldNaming");
+            var methodNaming = GetNamingOfMethod(mi);
 
             var parameters = new List<BuildParameterInfo>();
-
             foreach (var pmi in mi.GetParameters().Where(ParameterHelper.IsSqlParameter))
             {
                 if (ParameterHelper.IsNestedParameter(pmi))
                 {
                     parameters.AddRange(pmi.ParameterType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
-                        .Select(pi => new BuildParameterInfo(
-                            pmi,
-                            pi,
-                            $"{pmi.Name}.{pi.Name}",
-                            pi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pi.Name, naming))));
+                        .Select(pi =>
+                        {
+                            var name = pi.GetCustomAttribute<NameAttribute>()?.Name;
+                            if (name is null)
+                            {
+                                var naming = methodNaming ?? GetNamingOfType(pi.DeclaringType) ?? Naming.Default;
+                                name = naming(pi.Name);
+                            }
+
+                            return new BuildParameterInfo(pmi, pi, $"{pmi.Name}.{pi.Name}", name);
+                        }));
                 }
                 else
                 {
-                    parameters.Add(new BuildParameterInfo(
-                        pmi,
-                        null,
-                        pmi.Name,
-                        pmi.GetCustomAttribute<NameAttribute>()?.Name ?? NormalizeName(pmi.Name, naming)));
+                    var name = pmi.GetCustomAttribute<NameAttribute>()?.Name;
+                    if (name is null)
+                    {
+                        var naming = GetNamingOfParameter(pmi) ?? methodNaming ?? Naming.Default;
+                        name = naming(pmi.Name);
+                    }
+
+                    parameters.Add(new BuildParameterInfo(pmi, null, pmi.Name, name));
                 }
             }
 
             return parameters;
-        }
-
-        private static string NormalizeName(string name, string naming)
-        {
-            switch (naming)
-            {
-                case "Snake":
-                    return Inflector.Underscore(name);
-                case "UpperSnake":
-                    return Inflector.Underscore(name, true);
-                case "Camel":
-                    return Inflector.Camelize(name);
-                default:
-                    return Inflector.Pascalize(name);
-            }
         }
 
         public static IList<BuildParameterInfo> GetInsertParameters(IList<BuildParameterInfo> parameters)
@@ -186,25 +221,6 @@ namespace Smart.Data.Accessor.Builders.Helpers
         //--------------------------------------------------------------------------------
         // Helper
         //--------------------------------------------------------------------------------
-
-        public static string MakeKeyColumns(IGeneratorOption option, Type type)
-        {
-            var naming = option.GetValue("FieldNaming");
-
-            var elementType = ParameterHelper.IsMultipleParameter(type)
-                ? ParameterHelper.GetMultipleParameterElementType(type)
-                : type;
-
-            return String.Join(", ", elementType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
-                .Where(x => x.Key != null)
-                .OrderBy(x => x.Key.Order)
-                .Select(x =>
-                {
-                    var name = x.Property.GetCustomAttribute<NameAttribute>();
-                    return NormalizeName(name != null ? name.Name : x.Property.Name, naming);
-                }));
-        }
 
         public static BuildParameterInfo PickParameter<T>(IList<BuildParameterInfo> parameters)
             where T : Attribute

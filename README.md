@@ -887,18 +887,7 @@ public HomeController(ISampleAccessor sampleAccessor)
 
 ### Build option
 
-* SmartDataAccessorGeneratorOption
-
-```xml
-<PropertyGroup>
-  <SmartDataAccessorGeneratorOption>EntityClassSuffix=Model,Entity;FieldNaming=Pascal</SmartDataAccessorGeneratorOption>
-</PropertyGroup>
-```
-
-| Option            | Description                        |
-|-------------------|------------------------------------|
-| EntityClassSuffix | Class suffix to convert table name |
-| FieldNaming       | Naming rule to convert column name |
+(TODO for 1.2.0)
 
 ### Generated source
 

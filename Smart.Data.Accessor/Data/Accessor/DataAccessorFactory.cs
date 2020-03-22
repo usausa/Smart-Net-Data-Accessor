@@ -27,7 +27,7 @@ namespace Smart.Data.Accessor
             var directory = Path.GetDirectoryName(type.Assembly.Location);
             var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
             var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
-            var accessorName = $"{type.Namespace}.{Naming.MakeAccessorName(type)}";
+            var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
             var implType = assembly.GetType(accessorName);
             if (implType == null)
             {

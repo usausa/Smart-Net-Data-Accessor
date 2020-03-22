@@ -29,10 +29,10 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
-            var parameters = BuildHelper.GetParameters(option, mi);
-            var tableName = table ?? BuildHelper.GetTableNameOfType(option, type);
+            var parameters = BuildHelper.GetParameters(mi);
+            var tableName = table ?? BuildHelper.GetTableNameByType(mi, type);
 
             if (String.IsNullOrEmpty(tableName))
             {

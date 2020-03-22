@@ -43,13 +43,13 @@ namespace Smart.Data.Accessor.Builders
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, IGeneratorOption option, MethodInfo mi)
+        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
-            var parameters = BuildHelper.GetParameters(option, mi);
+            var parameters = BuildHelper.GetParameters(mi);
             var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
+            var tableType = type ?? BuildHelper.GetReturnType(mi);
             var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameOfType(option, type) : null) ??
-                            BuildHelper.GetReturnTableName(option, mi);
+                            (tableType != null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
 
             if (String.IsNullOrEmpty(tableName))
             {
@@ -73,7 +73,7 @@ namespace Smart.Data.Accessor.Builders
             }
             else
             {
-                var columns = BuildHelper.MakeKeyColumns(option, mi.ReturnType);
+                var columns = BuildHelper.GetOrderByType(mi, tableType);
                 if (!String.IsNullOrEmpty(columns))
                 {
                     sql.Append(" ORDER BY ");

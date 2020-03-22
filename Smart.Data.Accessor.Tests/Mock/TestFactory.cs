@@ -18,14 +18,11 @@ namespace Smart.Mock
     {
         private readonly ISqlLoader loader;
 
-        private readonly IGeneratorOption option;
-
         public ExecuteEngine Engine { get; }
 
-        public TestFactory(ISqlLoader loader, IGeneratorOption option, ExecuteEngine engine)
+        public TestFactory(ISqlLoader loader, ExecuteEngine engine)
         {
             this.loader = loader;
-            this.option = option;
             Engine = engine;
         }
 
@@ -33,7 +30,7 @@ namespace Smart.Mock
         {
             var type = typeof(T);
             var writer = new MemorySourceWriter();
-            var generator = new DataAccessorGenerator(loader, writer, option);
+            var generator = new DataAccessorGenerator(loader, writer);
             generator.Generate(new[] { type });
 
             if (writer.Source == null)
@@ -79,7 +76,7 @@ namespace Smart.Mock
                 ms.Seek(0, SeekOrigin.Begin);
                 var assembly = Assembly.Load(ms.ToArray());
 
-                var accessorName = $"{type.Namespace}.{Naming.MakeAccessorName(type)}";
+                var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
                 var implementType = assembly.GetType(accessorName);
                 try
                 {

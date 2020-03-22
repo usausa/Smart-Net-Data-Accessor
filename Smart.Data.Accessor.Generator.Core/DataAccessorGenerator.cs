@@ -15,13 +15,10 @@ namespace Smart.Data.Accessor.Generator
 
         private readonly ISourceWriter sourceWriter;
 
-        private readonly IGeneratorOption option;
-
-        public DataAccessorGenerator(ISqlLoader sqlLoader, ISourceWriter sourceWriter, IGeneratorOption option)
+        public DataAccessorGenerator(ISqlLoader sqlLoader, ISourceWriter sourceWriter)
         {
             this.sqlLoader = sqlLoader;
             this.sourceWriter = sourceWriter;
-            this.option = option;
         }
 
         public void Generate(Type[] types)
@@ -36,7 +33,7 @@ namespace Smart.Data.Accessor.Generator
 
         private string CreateSource(Type type)
         {
-            var builder = new SourceBuilder(type, Naming.MakeAccessorName(type));
+            var builder = new SourceBuilder(type, TypeNaming.MakeAccessorName(type));
 
             var no = 0;
             foreach (var method in type.GetMethods())
@@ -47,7 +44,7 @@ namespace Smart.Data.Accessor.Generator
                     throw new AccessorGeneratorException($"Method is not supported for generation. type=[{type.FullName}], method=[{method.Name}]");
                 }
 
-                var nodes = attribute.GetNodes(sqlLoader, option, method);
+                var nodes = attribute.GetNodes(sqlLoader, method);
                 var visitor = new ParameterResolveVisitor(method);
                 visitor.Visit(nodes);
                 var methodMetadata = new MethodMetadata(

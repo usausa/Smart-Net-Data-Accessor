@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Helpers
     using System;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-    public static class Naming
+    public static class TypeNaming
     {
         public static string MakeAccessorName(Type type)
         {
