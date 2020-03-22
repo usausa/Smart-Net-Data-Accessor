@@ -121,10 +121,16 @@ namespace Smart.Data.Accessor.Benchmark
         public long SmartQueryBufferd100() => smartExecuteAccessor.QueryBufferd(mockQuery).Count;
 
         [Benchmark]
+        public long SmartQueryBufferd100Optimized() => smartExecuteAccessor.QueryBufferdOptimized(mockQuery).Count;
+
+        [Benchmark]
         public DataEntity DapperQueryFirstOrDefault() => dapperExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
 
         [Benchmark]
         public DataEntity SmartQueryFirstOrDefault() => smartExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
+
+        [Benchmark]
+        public DataEntity SmartQueryFirstOrDefaultOptimized() => smartExecuteAccessor.QueryFirstOrDefaultOptimized(mockQueryFirst, 1);
     }
 
     [DataAccessor]
@@ -141,6 +147,16 @@ namespace Smart.Data.Accessor.Benchmark
 
         [QueryFirstOrDefault]
         DataEntity QueryFirstOrDefault(DbConnection con, long id);
+
+        [Query]
+        [MethodName(nameof(QueryBufferd))]
+        [Optimize(true)]
+        List<DataEntity> QueryBufferdOptimized(DbConnection con);
+
+        [QueryFirstOrDefault]
+        [MethodName(nameof(QueryFirstOrDefault))]
+        [Optimize(true)]
+        DataEntity QueryFirstOrDefaultOptimized(DbConnection con, long id);
     }
 
     public interface IBenchmarkAccessorForDapper
