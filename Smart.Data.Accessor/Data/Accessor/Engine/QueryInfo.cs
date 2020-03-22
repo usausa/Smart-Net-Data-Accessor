@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Runtime.CompilerServices;
     using System.Threading;
 
-    public sealed class ResultMapperCache<T>
+    public sealed class QueryInfo<T>
     {
         private static readonly Node EmptyNode = new Node(Array.Empty<ColumnInfo>(), null);
 
@@ -19,7 +19,7 @@ namespace Smart.Data.Accessor.Engine
 
         private Node firstNode = EmptyNode;
 
-        public int Depth
+        public int MapperCount
         {
             get
             {
@@ -45,7 +45,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        public ResultMapperCache(ExecuteEngine engine, bool optimize)
+        public QueryInfo(ExecuteEngine engine, bool optimize)
         {
             this.engine = engine;
             this.optimize = optimize;

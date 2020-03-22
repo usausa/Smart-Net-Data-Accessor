@@ -26,7 +26,7 @@ namespace Smart.Data.Accessor.Generator
         private const string EngineFieldRef = "this." + EngineField;
         private const string ProviderField = "_provider";
         private const string ProviderFieldRef = "this." + ProviderField;
-        private const string ResultMapperField = "_mapper";
+        private const string QueryInfoField = "_queryInfo";
         private const string HandlerField = "_handler";
         private const string SetupReturnField = "_setupReturn";
         private const string SetupParameterField = "_setupParameter";
@@ -185,9 +185,9 @@ namespace Smart.Data.Accessor.Generator
 
         private static string GetProviderFieldRef(int no) => "this." + GetProviderFieldName(no);
 
-        private static string GetResultMapperName(int no) => ResultMapperField + no;
+        private static string GetQueryInfoName(int no) => QueryInfoField + no;
 
-        private static string GetResultMapperRef(int no) => "this." + GetResultMapperName(no);
+        private static string GetQueryInfoRef(int no) => "this." + GetQueryInfoName(no);
 
         private static string GetHandlerFieldName(int no) => HandlerField + no;
 
@@ -229,12 +229,12 @@ namespace Smart.Data.Accessor.Generator
                    (mm.MethodType == MethodType.QueryFirstOrDefault);
         }
 
-        private static string GetResultMapperName(MethodMetadata mm)
+        private static string GetQueryInfoName(MethodMetadata mm)
         {
             var mapType = mm.MethodType == MethodType.Query
                 ? GeneratorHelper.GetEnumerableElementType(mm.EngineResultType)
                 : mm.EngineResultType;
-            return GeneratorHelper.MakeGlobalName(typeof(ResultMapperCache<>).MakeGenericType(mapType));
+            return GeneratorHelper.MakeGlobalName(typeof(QueryInfo<>).MakeGenericType(mapType));
         }
 
         private static string GetConnectionName(MethodMetadata mm)
@@ -456,7 +456,7 @@ namespace Smart.Data.Accessor.Generator
 
                 if (IsQueryMethod(mm))
                 {
-                    AppendLine($"private readonly {GetResultMapperName(mm)} {GetResultMapperName(mm.No)};");
+                    AppendLine($"private readonly {GetQueryInfoName(mm)} {GetQueryInfoName(mm.No)};");
                 }
 
                 if (IsResultConverterRequired(mm))
@@ -555,9 +555,9 @@ namespace Smart.Data.Accessor.Generator
             foreach (var mm in methods)
             {
                 var hasProvider = mm.Provider != null;
-                var hasResultMapper = IsQueryMethod(mm);
+                var hasQueryInfo = IsQueryMethod(mm);
                 var hasConverter = IsResultConverterRequired(mm);
-                if (hasProvider || hasResultMapper || hasConverter || mm.ReturnValueAsResult || (mm.Parameters.Count > 0) || (mm.DynamicParameters.Count > 0))
+                if (hasProvider || hasQueryInfo || hasConverter || mm.ReturnValueAsResult || (mm.Parameters.Count > 0) || (mm.DynamicParameters.Count > 0))
                 {
                     NewLine();
                     AppendLine($"var method{mm.No} = {RuntimeHelperType}.GetInterfaceMethodByNo(GetType(), typeof({interfaceFullName}), {mm.No});");
@@ -567,10 +567,10 @@ namespace Smart.Data.Accessor.Generator
                         AppendLine($"{GetProviderFieldRef(mm.No)} = {RuntimeHelperType}.GetDbProvider({CtorArg}, method{mm.No});");
                     }
 
-                    if (hasResultMapper)
+                    if (hasQueryInfo)
                     {
                         var optimize = mm.Optimize ? "true" : "false";
-                        AppendLine($"{GetResultMapperRef(mm.No)} = new {GetResultMapperName(mm)}({CtorArg}, {optimize});");
+                        AppendLine($"{GetQueryInfoRef(mm.No)} = new {GetQueryInfoName(mm)}({CtorArg}, {optimize});");
                     }
 
                     if (hasConverter)
@@ -848,7 +848,7 @@ namespace Smart.Data.Accessor.Generator
             // PostProcess
             DefinePostProcess(mm, false);
 
-            AppendLine($"var {MapperVar} = {GetResultMapperRef(mm.No)}.ResolveMapper({ReaderVar});");
+            AppendLine($"var {MapperVar} = {GetQueryInfoRef(mm.No)}.ResolveMapper({ReaderVar});");
             AppendLine($"while (await {ReaderVar}.ReadAsync({mm.CancelParameter?.Name}).ConfigureAwait(false))");
             AppendLine("{");
             indent++;
@@ -892,7 +892,7 @@ namespace Smart.Data.Accessor.Generator
             // PostProcess
             DefinePostProcess(mm, false);
 
-            AppendLine($"var {MapperVar} = {GetResultMapperRef(mm.No)}.ResolveMapper({ReaderVar});");
+            AppendLine($"var {MapperVar} = {GetQueryInfoRef(mm.No)}.ResolveMapper({ReaderVar});");
             AppendLine($"while ({ReaderVar}.Read())");
             AppendLine("{");
             indent++;
@@ -934,12 +934,13 @@ namespace Smart.Data.Accessor.Generator
             var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(mm.EngineResultType));
             if (mm.IsAsync)
             {
+                // TODO
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({CommandVar}, {GetResultMapperRef(mm.No)}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.QueryBuffer<{resultType}>({CommandVar}, {GetResultMapperRef(mm.No)});");
+                Append($"{EngineFieldRef}.QueryBuffer<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar});");
             }
 
             NewLine();
@@ -977,11 +978,11 @@ namespace Smart.Data.Accessor.Generator
             if (mm.IsAsync)
             {
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
-                Append($"await {EngineFieldRef}.QueryFirstOrDefaultAsync<{resultType}>({CommandVar}, {GetResultMapperRef(mm.No)}{cancelOption}).ConfigureAwait(false);");
+                Append($"await {EngineFieldRef}.QueryFirstOrDefaultAsync<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
             {
-                Append($"{EngineFieldRef}.QueryFirstOrDefault<{resultType}>({CommandVar}, {GetResultMapperRef(mm.No)});");
+                Append($"{EngineFieldRef}.QueryFirstOrDefault<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar});");
             }
 
             NewLine();

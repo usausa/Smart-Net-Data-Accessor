@@ -23,15 +23,15 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var mapper = new ResultMapperCache<CacheEntity>(engine, false);
+            var info = new QueryInfo<CacheEntity>(engine, false);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(1, mapper.Depth);
+            Assert.Equal(1, info.MapperCount);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(1, mapper.Depth);
+            Assert.Equal(1, info.MapperCount);
         }
 
         [Fact]
@@ -49,15 +49,15 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var mapper = new ResultMapperCache<CacheEntity>(engine, true);
+            var info = new QueryInfo<CacheEntity>(engine, true);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(1, mapper.Depth);
+            Assert.Equal(1, info.MapperCount);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(1, mapper.Depth);
+            Assert.Equal(1, info.MapperCount);
         }
 
         [Fact]
@@ -84,19 +84,19 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns2, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns3, new List<object[]>()));
 
-            var mapper = new ResultMapperCache<CacheEntity>(engine, false);
+            var info = new QueryInfo<CacheEntity>(engine, false);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(1, mapper.Depth);
+            Assert.Equal(1, info.MapperCount);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(2, mapper.Depth);
+            Assert.Equal(2, info.MapperCount);
 
-            engine.QueryBuffer(cmd, mapper);
+            engine.QueryBuffer(info, cmd);
 
-            Assert.Equal(3, mapper.Depth);
+            Assert.Equal(3, info.MapperCount);
         }
 
         public class CacheEntity

@@ -66,9 +66,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var mapper = new ResultMapperCache<MapEntity>(engine, false);
+            var info = new QueryInfo<MapEntity>(engine, false);
 
-            var list = engine.QueryBuffer(cmd, mapper);
+            var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(2, list.Count);
             Assert.Equal(1, list[0].Column1);
@@ -127,9 +127,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var mapper = new ResultMapperCache<ParserEntity>(engine, false);
+            var info = new QueryInfo<ParserEntity>(engine, false);
 
-            var entity = engine.QueryFirstOrDefault(cmd, mapper);
+            var entity = engine.QueryFirstOrDefault(info, cmd);
 
             Assert.NotNull(entity);
             Assert.Equal(1, entity.Id);
@@ -168,9 +168,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var mapper = new ResultMapperCache<NoConstructor>(engine, false);
+            var info = new QueryInfo<NoConstructor>(engine, false);
 
-            Assert.Throws<ArgumentException>(() => engine.QueryBuffer(cmd, mapper));
+            Assert.Throws<ArgumentException>(() => engine.QueryBuffer(info, cmd));
         }
 
         //--------------------------------------------------------------------------------
@@ -193,9 +193,9 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var mapper = new ResultMapperCache<DataEntity>(engine, false);
+            var info = new QueryInfo<DataEntity>(engine, false);
 
-            Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer(cmd, mapper));
+            Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer(info, cmd));
         }
     }
 }
