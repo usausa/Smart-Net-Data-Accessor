@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.2" />
-    <PackageReference Include="Usa.Smart.Core" Version="1.8.2" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.8.3" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.1.9-beta1" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="1.1.9-beta1" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="1.1.9-beta1" />

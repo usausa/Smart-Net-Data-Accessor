@@ -10,7 +10,7 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
     <PackageReference Include="Dapper" Version="2.0.30" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="Usa.Smart.Core" Version="1.8.2" />
+    <PackageReference Include="Usa.Smart.Core" Version="1.8.3" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.1.9-beta1" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="1.7.0" />
   </ItemGroup>
