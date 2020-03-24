@@ -1,7 +1,8 @@
-﻿namespace Smart.Data.Accessor.Mappers
+namespace Smart.Data.Accessor.Mappers
 {
     using System;
     using System.Data;
+    using System.Reflection;
 
     using Smart.Data.Accessor.Engine;
 
@@ -9,6 +10,6 @@
     {
         bool IsMatch(Type type);
 
-        Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns);
+        Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns);
     }
 }

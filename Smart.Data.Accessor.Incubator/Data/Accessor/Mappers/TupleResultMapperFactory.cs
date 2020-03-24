@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Mappers
 {
     using System;
     using System.Data;
+    using System.Reflection;
 
     using Smart.Data.Accessor.Engine;
 
@@ -12,7 +13,7 @@ namespace Smart.Data.Accessor.Mappers
             throw new NotImplementedException();
         }
 
-        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
+        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
         {
             throw new NotImplementedException();
         }

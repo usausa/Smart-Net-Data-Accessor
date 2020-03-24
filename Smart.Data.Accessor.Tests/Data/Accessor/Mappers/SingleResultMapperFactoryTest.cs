@@ -32,7 +32,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<int>(engine, false);
+            var info = new QueryInfo<int>(engine, null, false);
 
             var list = engine.QueryBuffer(info, cmd);
 

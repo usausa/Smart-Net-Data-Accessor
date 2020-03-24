@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -28,14 +29,14 @@ namespace Smart.Data.Accessor.Engine
         // ResultMapper
         //--------------------------------------------------------------------------------
 
-        public Func<IDataRecord, T> CreateResultMapper<T>(ColumnInfo[] columns)
+        public Func<IDataRecord, T> CreateResultMapper<T>(MethodInfo mi, ColumnInfo[] columns)
         {
             var type = typeof(T);
             foreach (var factory in resultMapperFactories)
             {
                 if (factory.IsMatch(type))
                 {
-                    return factory.CreateMapper<T>(this, type, columns);
+                    return factory.CreateMapper<T>(this, mi, columns);
                 }
             }
 

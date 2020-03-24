@@ -66,7 +66,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<MapEntity>(engine, false);
+            var info = new QueryInfo<MapEntity>(engine, null, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
@@ -127,7 +127,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ParserEntity>(engine, false);
+            var info = new QueryInfo<ParserEntity>(engine, null, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -168,7 +168,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<NoConstructor>(engine, false);
+            var info = new QueryInfo<NoConstructor>(engine, null, false);
 
             Assert.Throws<ArgumentException>(() => engine.QueryBuffer(info, cmd));
         }
@@ -193,7 +193,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<DataEntity>(engine, false);
+            var info = new QueryInfo<DataEntity>(engine, null, false);
 
             Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer(info, cmd));
         }

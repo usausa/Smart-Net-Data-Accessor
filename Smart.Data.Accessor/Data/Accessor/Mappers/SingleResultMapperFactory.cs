@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Mappers
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.Reflection;
 
     using Smart.Data.Accessor.Engine;
 
@@ -50,8 +51,9 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
+        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
         {
+            var type = typeof(T);
             var defaultValue = default(T);
             var parser = context.GetConverter(columns[0].Type, type, type);
             return parser == null

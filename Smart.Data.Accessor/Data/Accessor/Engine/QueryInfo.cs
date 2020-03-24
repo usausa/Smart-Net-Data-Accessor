@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Engine
 {
     using System;
     using System.Data;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Threading;
 
@@ -12,6 +13,8 @@ namespace Smart.Data.Accessor.Engine
         private readonly object sync = new object();
 
         private readonly ExecuteEngine engine;
+
+        private readonly MethodInfo mi;
 
         private readonly bool optimize;
 
@@ -45,9 +48,10 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
-        public QueryInfo(ExecuteEngine engine, bool optimize)
+        public QueryInfo(ExecuteEngine engine, MethodInfo mi, bool optimize)
         {
             this.engine = engine;
+            this.mi = mi;
             this.optimize = optimize;
         }
 
@@ -77,7 +81,7 @@ namespace Smart.Data.Accessor.Engine
 
                     Interlocked.MemoryBarrier();
 
-                    optimizedMapper = engine.CreateResultMapper<T>(columns);
+                    optimizedMapper = engine.CreateResultMapper<T>(mi, columns);
 
                     return optimizedMapper;
                 }
@@ -117,7 +121,7 @@ namespace Smart.Data.Accessor.Engine
                     var copyColumns = new ColumnInfo[columns.Length];
                     columns.CopyTo(new Span<ColumnInfo>(copyColumns));
 
-                    mapper = engine.CreateResultMapper<T>(copyColumns);
+                    mapper = engine.CreateResultMapper<T>(mi, copyColumns);
 
                     var newNode = new Node(copyColumns, mapper);
 

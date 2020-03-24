@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, false);
+            var info = new QueryInfo<CacheEntity>(engine, null, false);
 
             engine.QueryBuffer(info, cmd);
 
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, true);
+            var info = new QueryInfo<CacheEntity>(engine, null, true);
 
             engine.QueryBuffer(info, cmd);
 
@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns2, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns3, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, false);
+            var info = new QueryInfo<CacheEntity>(engine, null, false);
 
             engine.QueryBuffer(info, cmd);
 

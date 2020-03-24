@@ -53,8 +53,9 @@ namespace Smart.Data.Accessor.Mappers
         public bool IsMatch(Type type) => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns)
+        public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
         {
+            var type = typeof(T);
             var entries = CreateMapEntries(context, type, columns);
             var holder = CreateHolder(entries);
             var holderType = holder.GetType();

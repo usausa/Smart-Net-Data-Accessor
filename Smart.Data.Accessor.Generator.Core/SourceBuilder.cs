@@ -570,7 +570,7 @@ namespace Smart.Data.Accessor.Generator
                     if (hasQueryInfo)
                     {
                         var optimize = mm.Optimize ? "true" : "false";
-                        AppendLine($"{GetQueryInfoRef(mm.No)} = new {GetQueryInfoName(mm)}({CtorArg}, {optimize});");
+                        AppendLine($"{GetQueryInfoRef(mm.No)} = new {GetQueryInfoName(mm)}({CtorArg}, method{mm.No}, {optimize});");
                     }
 
                     if (hasConverter)
