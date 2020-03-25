@@ -50,7 +50,7 @@ namespace Smart.Data.Accessor.Mappers
             getValueWithConvertMethod = GetType().GetMethod(nameof(GetValueWithConvert), BindingFlags.Static | BindingFlags.NonPublic);
         }
 
-        public bool IsMatch(Type type) => true;
+        public bool IsMatch(Type type, MethodInfo mi) => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)

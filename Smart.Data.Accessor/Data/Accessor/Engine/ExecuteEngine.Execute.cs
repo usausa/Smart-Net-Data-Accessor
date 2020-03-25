@@ -34,7 +34,7 @@ namespace Smart.Data.Accessor.Engine
             var type = typeof(T);
             foreach (var factory in resultMapperFactories)
             {
-                if (factory.IsMatch(type))
+                if (factory.IsMatch(type, mi))
                 {
                     return factory.CreateMapper<T>(this, mi, columns);
                 }

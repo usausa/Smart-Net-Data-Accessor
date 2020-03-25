@@ -44,7 +44,7 @@ namespace Smart.Data.Accessor.Mappers
             supportedTypes = new HashSet<Type>(types);
         }
 
-        public bool IsMatch(Type type)
+        public bool IsMatch(Type type, MethodInfo mi)
         {
             var targetType = type.IsNullableType() ? Nullable.GetUnderlyingType(type) : type;
             return supportedTypes.Contains(targetType);

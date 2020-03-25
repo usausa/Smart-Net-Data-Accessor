@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Mappers
 {
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Reflection;
 
@@ -8,9 +9,27 @@ namespace Smart.Data.Accessor.Mappers
 
     public sealed class TupleResultMapperFactory : IResultMapperFactory
     {
-        public bool IsMatch(Type type)
+        private static readonly HashSet<Type> TupleTypes = new HashSet<Type>()
         {
-            throw new NotImplementedException();
+            typeof(Tuple<,>),
+            typeof(Tuple<,,>),
+            typeof(Tuple<,,,>),
+            typeof(Tuple<,,,,>),
+            typeof(Tuple<,,,,,>),
+            typeof(Tuple<,,,,,,>),
+            typeof(Tuple<,,,,,,,>),
+            typeof(ValueTuple<,>),
+            typeof(ValueTuple<,,>),
+            typeof(ValueTuple<,,,>),
+            typeof(ValueTuple<,,,,>),
+            typeof(ValueTuple<,,,,,>),
+            typeof(ValueTuple<,,,,,,>),
+            typeof(ValueTuple<,,,,,,,>),
+        };
+
+        public bool IsMatch(Type type, MethodInfo mi)
+        {
+            return type.IsGenericType && TupleTypes.Contains(type.GetGenericTypeDefinition());
         }
 
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
