@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Mappers
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
-    using System.Runtime.CompilerServices;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Engine;
@@ -17,9 +16,23 @@ namespace Smart.Data.Accessor.Mappers
     {
         public static ObjectResultMapperFactory Instance { get; } = new ObjectResultMapperFactory();
 
-        private readonly MethodInfo getValueMethod;
-
-        private readonly MethodInfo getValueWithConvertMethod;
+        private static readonly Dictionary<Type, Action<ILGenerator>> LdcDictionary = new Dictionary<Type, Action<ILGenerator>>
+        {
+            { typeof(bool), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(byte), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(char), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(short), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(int), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(sbyte), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(ushort), il => il.Emit(OpCodes.Ldc_I4_0) },
+            { typeof(uint), il => il.Emit(OpCodes.Ldc_I4_0) },      // Simplicity
+            { typeof(long), il => il.Emit(OpCodes.Ldc_I8, 0L) },
+            { typeof(ulong), il => il.Emit(OpCodes.Ldc_I8, 0L) },   // Simplicity
+            { typeof(float), il => il.Emit(OpCodes.Ldc_R4, 0f) },
+            { typeof(double), il => il.Emit(OpCodes.Ldc_R8, 0d) },
+            { typeof(IntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },    // Simplicity
+            { typeof(UIntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },   // Simplicity
+        };
 
         private int typeNo;
 
@@ -44,12 +57,6 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
-        private ObjectResultMapperFactory()
-        {
-            getValueMethod = GetType().GetMethod(nameof(GetValue), BindingFlags.Static | BindingFlags.NonPublic);
-            getValueWithConvertMethod = GetType().GetMethod(nameof(GetValueWithConvert), BindingFlags.Static | BindingFlags.NonPublic);
-        }
-
         public bool IsMatch(Type type, MethodInfo mi) => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
@@ -66,30 +73,123 @@ namespace Smart.Data.Accessor.Mappers
                 throw new ArgumentException($"Default constructor not found. type=[{type.FullName}]", nameof(type));
             }
 
+            var getValue = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue));
+
             var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
             var ilGenerator = dynamicMethod.GetILGenerator();
 
+            // local variables
+            var objectLocal = entries.Any(x => x.Converter != null) ? ilGenerator.DeclareLocal(typeof(object)) : null;
+            var valueTypeLocal = entries
+                .Select(x => x.Property.PropertyType)
+                .Where(x => x.IsValueType && (x.IsNullableType() || !LdcDictionary.ContainsKey(x)))
+                .Distinct()
+                .ToDictionary(x => x, x => ilGenerator.DeclareLocal(x));
+            var isShort = valueTypeLocal.Count + (objectLocal != null ? 1 : 0) <= 256;
+
+            // New
             ilGenerator.Emit(OpCodes.Newobj, ci);
 
             foreach (var entry in entries)
             {
-                ilGenerator.Emit(OpCodes.Dup);
-                ilGenerator.Emit(OpCodes.Ldarg_1);
-                ilGenerator.EmitLdcI4(entry.Index);
-                if (entry.Converter == null)
+                var propertyType = entry.Property.PropertyType;
+
+                var hasValueLabel = ilGenerator.DefineLabel();
+                var next = ilGenerator.DefineLabel();
+
+                ilGenerator.Emit(OpCodes.Dup);  // [T][T]
+
+                ilGenerator.Emit(OpCodes.Ldarg_1); // [T][T][IDataRecord]
+                ilGenerator.EmitLdcI4(entry.Index); // [T][T][IDataRecord][index]
+
+                ilGenerator.Emit(OpCodes.Callvirt, getValue);   // [T][T][Value]
+
+                // Check DBNull
+                ilGenerator.Emit(OpCodes.Dup);  // [T][T][Value][Value]
+                ilGenerator.Emit(OpCodes.Isinst, typeof(DBNull));   // [T][T][Value]
+                ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
+
+                // ----------------------------------------
+                // Null
+                // ----------------------------------------
+
+                // [T][T][Value]
+
+                ilGenerator.Emit(OpCodes.Pop);  // [T][T]
+                if (propertyType.IsValueType)
                 {
-                    var method = getValueMethod.MakeGenericMethod(entry.Property.PropertyType);
-                    ilGenerator.Emit(OpCodes.Call, method);
+                    if (LdcDictionary.TryGetValue(propertyType.IsEnum ? propertyType.GetEnumUnderlyingType() : propertyType, out var action))
+                    {
+                        action(ilGenerator);
+                    }
+                    else
+                    {
+                        var local = valueTypeLocal[entry.Property.PropertyType];
+
+                        ilGenerator.Emit(isShort ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
+                        ilGenerator.Emit(OpCodes.Initobj, entry.Property.PropertyType);
+                        ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
+                    }
                 }
                 else
                 {
-                    var field = holderType.GetField($"parser{entry.Index}");
-                    ilGenerator.Emit(OpCodes.Ldarg_0);
-                    ilGenerator.Emit(OpCodes.Ldfld, field);
-                    var method = getValueWithConvertMethod.MakeGenericMethod(entry.Property.PropertyType);
-                    ilGenerator.Emit(OpCodes.Call, method);
+                    ilGenerator.Emit(OpCodes.Ldnull);
                 }
-                ilGenerator.Emit(OpCodes.Callvirt, entry.Property.SetMethod);
+
+                ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, entry.Property.SetMethod);
+
+                ilGenerator.Emit(OpCodes.Br_S, next);
+
+                // ----------------------------------------
+                // Value
+                // ----------------------------------------
+
+                // [T][T][Value]
+
+                ilGenerator.MarkLabel(hasValueLabel);
+
+                if (entry.Converter != null)
+                {
+                    ilGenerator.Emit(isShort ? OpCodes.Stloc_S : OpCodes.Stloc, objectLocal);  // [Value] : [T][T]
+
+                    var field = holderType.GetField($"parser{entry.Index}");
+                    ilGenerator.Emit(OpCodes.Ldarg_0);                                          // [Value] : [T][T][Holder]
+                    ilGenerator.Emit(OpCodes.Ldfld, field);                                     // [Value] : [T][T][Converter]
+
+                    ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, objectLocal);  // [T][T][Converter][Value]
+
+                    var method = typeof(Func<object, object>).GetMethod("Invoke");
+                    ilGenerator.Emit(OpCodes.Callvirt, method); // [T][T][Value(Converted)]
+                }
+
+                // [MEMO] 最適化Converterがある場合は以下の共通ではなくなる
+                if (entry.Property.PropertyType.IsValueType)
+                {
+                    if (entry.Property.PropertyType.IsNullableType())
+                    {
+                        var underlyingType = Nullable.GetUnderlyingType(entry.Property.PropertyType);
+                        var nullableCtor = entry.Property.PropertyType.GetConstructor(new[] { underlyingType });
+
+                        ilGenerator.Emit(OpCodes.Unbox_Any, underlyingType);
+                        ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
+                    }
+                    else
+                    {
+                        ilGenerator.Emit(OpCodes.Unbox_Any, entry.Property.PropertyType);
+                    }
+                }
+                else
+                {
+                    ilGenerator.Emit(OpCodes.Castclass, entry.Property.PropertyType);
+                }
+
+                ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, entry.Property.SetMethod);
+
+                // ----------------------------------------
+                // Next
+                // ----------------------------------------
+
+                ilGenerator.MarkLabel(next);
             }
 
             ilGenerator.Emit(OpCodes.Ret);
@@ -159,20 +259,6 @@ namespace Smart.Data.Accessor.Mappers
             }
 
             return holder;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T GetValue<T>(IDataRecord reader, int index)
-        {
-            var value = reader.GetValue(index);
-            return value is DBNull ? default : (T)value;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T GetValueWithConvert<T>(IDataRecord reader, int index, Func<object, object> parser)
-        {
-            var value = reader.GetValue(index);
-            return value is DBNull ? default : (T)parser(value);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
