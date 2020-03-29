@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Configs
+namespace Smart.Data.Accessor.Configs
 {
     using System;
 

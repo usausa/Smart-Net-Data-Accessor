@@ -8,34 +8,12 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Builders.Configs;
+    using Smart.Data.Accessor.Configs;
     using Smart.Data.Accessor.Helpers;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class BuildHelper
     {
-        //--------------------------------------------------------------------------------
-        // Naming
-        //--------------------------------------------------------------------------------
-
-        private static Func<string, string> GetNamingOfMethod(MethodInfo mi)
-        {
-            return mi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
-                   mi.DeclaringType.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
-                   mi.DeclaringType.Assembly.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
-        }
-
-        private static Func<string, string> GetNamingOfParameter(ParameterInfo pmi)
-        {
-            return pmi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
-        }
-
-        private static Func<string, string> GetNamingOfType(Type type)
-        {
-            return type.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
-                   type.Assembly.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
-        }
-
         //--------------------------------------------------------------------------------
         // Table
         //--------------------------------------------------------------------------------
@@ -64,9 +42,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static string GetTableNameByType(MethodInfo mi, Type type)
         {
-            var naming = GetNamingOfMethod(mi) ?? GetNamingOfType(type) ?? Naming.Default;
-
-            return GetTableName(type, naming);
+            return ConfigHelper.GetMethodTableName(mi, type);
         }
 
         public static string GetTableNameByParameter(MethodInfo mi)
@@ -78,27 +54,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 return null;
             }
 
-            var naming = GetNamingOfParameter(pmi) ?? GetNamingOfMethod(mi) ?? Naming.Default;
-
-            return GetTableName(pmi.ParameterType, naming);
-        }
-
-        private static string GetTableName(Type type, Func<string, string> naming)
-        {
-            var attr = type.GetCustomAttribute<NameAttribute>();
-            if (attr != null)
-            {
-                return attr.Name;
-            }
-
-            var suffix = type.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
-                         type.Assembly.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
-                         EntitySuffix.Default;
-            var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x));
-            var name = match == null
-                ? type.Name
-                : type.Name.Substring(0, type.Name.Length - match.Length);
-            return naming(name);
+            return ConfigHelper.GetMethodParameterTableName(mi, pmi);
         }
 
         //--------------------------------------------------------------------------------
@@ -107,17 +63,11 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static string GetOrderByType(MethodInfo mi, Type type)
         {
-            var naming = GetNamingOfMethod(mi) ?? GetNamingOfType(type) ?? Naming.Default;
-
             return String.Join(", ", type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
                 .Where(x => x.Key != null)
                 .OrderBy(x => x.Key.Order)
-                .Select(x =>
-                {
-                    var name = x.Property.GetCustomAttribute<NameAttribute>();
-                    return name?.Name ?? naming(x.Property.Name);
-                }));
+                .Select(x => ConfigHelper.GetMethodPropertyColumnName(mi, x.Property)));
         }
 
         //--------------------------------------------------------------------------------
@@ -126,8 +76,6 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static IList<BuildParameterInfo> GetParameters(MethodInfo mi)
         {
-            var methodNaming = GetNamingOfMethod(mi);
-
             var parameters = new List<BuildParameterInfo>();
             foreach (var pmi in mi.GetParameters().Where(ParameterHelper.IsSqlParameter))
             {
@@ -137,25 +85,13 @@ namespace Smart.Data.Accessor.Builders.Helpers
                         .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
                         .Select(pi =>
                         {
-                            var name = pi.GetCustomAttribute<NameAttribute>()?.Name;
-                            if (name is null)
-                            {
-                                var naming = methodNaming ?? GetNamingOfType(pi.DeclaringType) ?? Naming.Default;
-                                name = naming(pi.Name);
-                            }
-
+                            var name = ConfigHelper.GetMethodParameterPropertyColumnName(mi, pmi, pi);
                             return new BuildParameterInfo(pmi, pi, $"{pmi.Name}.{pi.Name}", name);
                         }));
                 }
                 else
                 {
-                    var name = pmi.GetCustomAttribute<NameAttribute>()?.Name;
-                    if (name is null)
-                    {
-                        var naming = GetNamingOfParameter(pmi) ?? methodNaming ?? Naming.Default;
-                        name = naming(pmi.Name);
-                    }
-
+                    var name = ConfigHelper.GetMethodParameterColumnName(mi, pmi);
                     parameters.Add(new BuildParameterInfo(pmi, null, pmi.Name, name));
                 }
             }
