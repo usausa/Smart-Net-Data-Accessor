@@ -124,10 +124,10 @@ namespace Smart.Data.Accessor.Mappers
                     }
                     else
                     {
-                        var local = valueTypeLocal[entry.Property.PropertyType];
+                        var local = valueTypeLocal[propertyType];
 
                         ilGenerator.Emit(isShort ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
-                        ilGenerator.Emit(OpCodes.Initobj, entry.Property.PropertyType);
+                        ilGenerator.Emit(OpCodes.Initobj, propertyType);
                         ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
                     }
                 }
@@ -163,24 +163,24 @@ namespace Smart.Data.Accessor.Mappers
                 }
 
                 // [MEMO] 最適化Converterがある場合は以下の共通ではなくなる
-                if (entry.Property.PropertyType.IsValueType)
+                if (propertyType.IsValueType)
                 {
-                    if (entry.Property.PropertyType.IsNullableType())
+                    if (propertyType.IsNullableType())
                     {
-                        var underlyingType = Nullable.GetUnderlyingType(entry.Property.PropertyType);
-                        var nullableCtor = entry.Property.PropertyType.GetConstructor(new[] { underlyingType });
+                        var underlyingType = Nullable.GetUnderlyingType(propertyType);
+                        var nullableCtor = propertyType.GetConstructor(new[] { underlyingType });
 
                         ilGenerator.Emit(OpCodes.Unbox_Any, underlyingType);
                         ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
                     }
                     else
                     {
-                        ilGenerator.Emit(OpCodes.Unbox_Any, entry.Property.PropertyType);
+                        ilGenerator.Emit(OpCodes.Unbox_Any, propertyType);
                     }
                 }
                 else
                 {
-                    ilGenerator.Emit(OpCodes.Castclass, entry.Property.PropertyType);
+                    ilGenerator.Emit(OpCodes.Castclass, propertyType);
                 }
 
                 ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, entry.Property.SetMethod);
