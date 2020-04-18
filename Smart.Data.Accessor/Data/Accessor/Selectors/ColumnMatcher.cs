@@ -79,7 +79,7 @@ namespace Smart.Data.Accessor.Selectors
             return pi.CanWrite && (pi.GetCustomAttribute<IgnoreAttribute>() == null);
         }
 
-        private  class ColumnAndIndex
+        private class ColumnAndIndex
         {
             public ColumnInfo Column { get; set; }
 
