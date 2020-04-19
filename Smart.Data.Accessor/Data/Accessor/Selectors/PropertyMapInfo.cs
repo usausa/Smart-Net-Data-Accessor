@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Selectors
 {
-    using System;
     using System.Reflection;
 
     public class PropertyMapInfo
@@ -9,13 +8,10 @@ namespace Smart.Data.Accessor.Selectors
 
         public int Index { get; }
 
-        public Func<object, object> Converter { get; }
-
-        public PropertyMapInfo(PropertyInfo pi, int index, Func<object, object> converter)
+        public PropertyMapInfo(PropertyInfo pi, int index)
         {
             Info = pi;
             Index = index;
-            Converter = converter;
         }
     }
 }

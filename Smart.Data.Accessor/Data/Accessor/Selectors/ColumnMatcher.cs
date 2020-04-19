@@ -12,15 +12,12 @@ namespace Smart.Data.Accessor.Selectors
 
     public class ColumnMatcher
     {
-        private readonly IObjectConverter objectConverter;
-
         private readonly MethodInfo mi;
 
         private readonly List<ColumnAndIndex> columns;
 
-        public ColumnMatcher(IObjectConverter objectConverter, MethodInfo mi, IEnumerable<ColumnInfo> columns, int offset)
+        public ColumnMatcher(MethodInfo mi, IEnumerable<ColumnInfo> columns, int offset)
         {
-            this.objectConverter = objectConverter;
             this.mi = mi;
             this.columns = columns.Select((x, i) => new ColumnAndIndex { Column = x, Index = i + offset }).ToList();
         }
@@ -49,15 +46,8 @@ namespace Smart.Data.Accessor.Selectors
                     return null;
                 }
 
-                if (column.Column.Type == pi.ParameterType)
-                {
-                    typeMatch += 1;
-                    parameters.Add(new ParameterMapInfo(pi, column.Index, null));
-                }
-                else
-                {
-                    parameters.Add(new ParameterMapInfo(pi, column.Index, objectConverter.CreateConverter(column.Column.Type, pi.ParameterType)));
-                }
+                parameters.Add(new ParameterMapInfo(pi, column.Index));
+                typeMatch += (column.Column.Type == pi.ParameterType) ? 1 : 0;
             }
 
             return new ConstructorMatch
@@ -74,15 +64,7 @@ namespace Smart.Data.Accessor.Selectors
                 {
                     var name = ConfigHelper.GetMethodPropertyColumnName(mi, x);
                     var column = FindMatchColumn(name);
-                    if (column is null)
-                    {
-                        return null;
-                    }
-
-                    var converter = x.PropertyType != column.Column.Type
-                        ? objectConverter.CreateConverter(column.Column.Type, x.PropertyType)
-                        : null;
-                    return new PropertyMapInfo(x, column.Index, converter);
+                    return column is null ? null : new PropertyMapInfo(x, column.Index);
                 })
                 .Where(x => x != null)
                 .ToArray();

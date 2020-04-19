@@ -66,16 +66,22 @@ namespace Smart.Data.Accessor.Mappers
             var type = typeof(T);
             var selector = (IMappingSelector)context.ServiceProvider.GetService(typeof(IMappingSelector));
             var typeMap = selector.Select(mi, type, columns);
-            var holder = CreateHolder(typeMap);
+
+            var converters = typeMap.Constructor.Parameters
+                .Select(x => new { x.Index, Converter = context.GetConverter(columns[x.Index].Type, x.Info.ParameterType, x.Info) })
+                .Concat(typeMap.Properties
+                    .Select(x => new { x.Index, Converter = context.GetConverter(columns[x.Index].Type, x.Info.PropertyType, x.Info) }))
+                .Where(x => x.Converter != null)
+                .ToDictionary(x => x.Index, x => x.Converter);
+
+            var holder = CreateHolder(typeMap, converters);
             var holderType = holder.GetType();
 
             var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
             var ilGenerator = dynamicMethod.GetILGenerator();
 
             // Variables
-            var objectLocal = typeMap.Constructor.Parameters.Any(x => x.Converter != null) || typeMap.Properties.Any(x => x.Converter != null)
-                ? ilGenerator.DeclareLocal(typeof(object))
-                : null;
+            var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
             var valueTypeLocals = typeMap.Constructor.Parameters
                 .Select(x => x.Info.ParameterType)
                 .Concat(typeMap.Properties.Select(x => x.Info.PropertyType))
@@ -108,7 +114,7 @@ namespace Smart.Data.Accessor.Mappers
                 // Value
                 ilGenerator.MarkLabel(hasValueLabel);
 
-                if (parameterMap.Converter != null)
+                if (converters.ContainsKey(parameterMap.Index))
                 {
                     EmitConvertByField(ilGenerator, holderType.GetField($"parser{parameterMap.Index}"), objectLocal, isShort);
                 }
@@ -129,137 +135,38 @@ namespace Smart.Data.Accessor.Mappers
 
             foreach (var propertyMap in typeMap.Properties)
             {
-                var propertyType = propertyMap.Info.PropertyType;
-
                 var hasValueLabel = ilGenerator.DefineLabel();
                 var next = ilGenerator.DefineLabel();
 
-                ilGenerator.Emit(OpCodes.Dup);  // [T][T]
+                ilGenerator.Emit(OpCodes.Dup);
 
-                ilGenerator.Emit(OpCodes.Ldarg_1); // [T][T][IDataRecord]
-                ilGenerator.EmitLdcI4(propertyMap.Index); // [T][T][IDataRecord][index]
+                EmitStackColumnValue(ilGenerator, propertyMap.Index);
 
-                ilGenerator.Emit(OpCodes.Callvirt, GetValue);   // [T][T][Value]
-
-                // Check DBNull
-                ilGenerator.Emit(OpCodes.Dup);  // [T][T][Value][Value]
-                ilGenerator.Emit(OpCodes.Isinst, typeof(DBNull));   // [T][T][Value]
+                EmitCheckDbNull(ilGenerator);
                 ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
 
-                // ----------------------------------------
                 // Null
-                // ----------------------------------------
+                ilGenerator.Emit(OpCodes.Pop);
 
-                // [T][T][Value]
-
-                ilGenerator.Emit(OpCodes.Pop);  // [T][T]
-                if (propertyType.IsValueType)
-                {
-                    if (LdcDictionary.TryGetValue(propertyType.IsEnum ? propertyType.GetEnumUnderlyingType() : propertyType, out var action))
-                    {
-                        action(ilGenerator);
-                    }
-                    else
-                    {
-                        var local = valueTypeLocals[propertyType];
-
-                        ilGenerator.Emit(isShort ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
-                        ilGenerator.Emit(OpCodes.Initobj, propertyType);
-                        ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
-                    }
-                }
-                else
-                {
-                    ilGenerator.Emit(OpCodes.Ldnull);
-                }
-
-                ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, propertyMap.Info.SetMethod);
+                EmitStackDefault(ilGenerator, propertyMap.Info.PropertyType, valueTypeLocals, isShort);
 
                 ilGenerator.Emit(OpCodes.Br_S, next);
 
-                // ----------------------------------------
                 // Value
-                // ----------------------------------------
-
-                // [T][T][Value]
-
                 ilGenerator.MarkLabel(hasValueLabel);
 
-                if (propertyMap.Converter != null)
+                if (converters.ContainsKey(propertyMap.Index))
                 {
-                    ilGenerator.Emit(isShort ? OpCodes.Stloc_S : OpCodes.Stloc, objectLocal);  // [Value] : [T][T]
-
-                    var field = holderType.GetField($"parser{propertyMap.Index}");
-                    ilGenerator.Emit(OpCodes.Ldarg_0);                                          // [Value] : [T][T][Holder]
-                    ilGenerator.Emit(OpCodes.Ldfld, field);                                     // [Value] : [T][T][Converter]
-
-                    ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, objectLocal);  // [T][T][Converter][Value]
-
-                    var method = typeof(Func<object, object>).GetMethod("Invoke");
-                    ilGenerator.Emit(OpCodes.Callvirt, method); // [T][T][Value(Converted)]
+                    EmitConvertByField(ilGenerator, holderType.GetField($"parser{propertyMap.Index}"), objectLocal, isShort);
                 }
 
-                // [MEMO] 最適化Converterがある場合は以下の共通ではなくなる
-                if (propertyType.IsValueType)
-                {
-                    if (propertyType.IsNullableType())
-                    {
-                        var underlyingType = Nullable.GetUnderlyingType(propertyType);
-                        var nullableCtor = propertyType.GetConstructor(new[] { underlyingType });
+                EmitTypeConversion(ilGenerator, propertyMap.Info.PropertyType);
 
-                        ilGenerator.Emit(OpCodes.Unbox_Any, underlyingType);
-                        ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
-                    }
-                    else
-                    {
-                        ilGenerator.Emit(OpCodes.Unbox_Any, propertyType);
-                    }
-                }
-                else
-                {
-                    ilGenerator.Emit(OpCodes.Castclass, propertyType);
-                }
-
-                ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, propertyMap.Info.SetMethod);
-
-                // ----------------------------------------
                 // Next
-                // ----------------------------------------
-
                 ilGenerator.MarkLabel(next);
 
-                //var hasValueLabel = ilGenerator.DefineLabel();
-                //var next = ilGenerator.DefineLabel();
-
-                //ilGenerator.Emit(OpCodes.Dup);
-
-                //EmitStackColumnValue(ilGenerator, propertyMap.Index);
-
-                //EmitCheckDbNull(ilGenerator);
-                //ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
-
-                //// Null
-                //ilGenerator.Emit(OpCodes.Pop);
-
-                //EmitStackDefault(ilGenerator, propertyMap.Info.PropertyType, valueTypeLocals, isShort);
-
-                //ilGenerator.Emit(OpCodes.Br_S, next);
-
-                //// Value
-                //ilGenerator.MarkLabel(hasValueLabel);
-
-                //if (propertyMap.Converter != null)
-                //{
-                //    EmitConvertByField(ilGenerator, holderType.GetField($"parser{propertyMap.Index}"), objectLocal, isShort);
-                //}
-
-                //EmitTypeConversion(ilGenerator, propertyMap.Info.PropertyType);
-
-                //// Next
-                //ilGenerator.MarkLabel(next);
-
-                //// Set
-                //ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, propertyMap.Info.SetMethod);
+                // Set
+                ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, propertyMap.Info.SetMethod);
             }
 
             ilGenerator.Emit(OpCodes.Ret);
@@ -268,43 +175,55 @@ namespace Smart.Data.Accessor.Mappers
             return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(funcType, holder);
         }
 
-        private object CreateHolder(TypeMapInfo typeMap)
+        private object CreateHolder(TypeMapInfo typeMap, Dictionary<int, Func<object, object>> converters)
         {
             var typeBuilder = ModuleBuilder.DefineType(
                 $"Holder_{typeNo}",
                 TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
             typeNo++;
 
-            foreach (var parameterMap in typeMap.Constructor.Parameters.Where(x => x.Converter != null))
+            foreach (var parameterMap in typeMap.Constructor.Parameters)
             {
-                typeBuilder.DefineField(
-                    $"parser{parameterMap.Index}",
-                    typeof(Func<object, object>),
-                    FieldAttributes.Public);
+                if (converters.ContainsKey(parameterMap.Index))
+                {
+                    typeBuilder.DefineField(
+                        $"parser{parameterMap.Index}",
+                        typeof(Func<object, object>),
+                        FieldAttributes.Public);
+                }
             }
 
-            foreach (var propertyMap in typeMap.Properties.Where(x => x.Converter != null))
+            foreach (var propertyMap in typeMap.Properties)
             {
-                typeBuilder.DefineField(
-                    $"parser{propertyMap.Index}",
-                    typeof(Func<object, object>),
-                    FieldAttributes.Public);
+                if (converters.ContainsKey(propertyMap.Index))
+                {
+                    typeBuilder.DefineField(
+                        $"parser{propertyMap.Index}",
+                        typeof(Func<object, object>),
+                        FieldAttributes.Public);
+                }
             }
 
             var typeInfo = typeBuilder.CreateTypeInfo();
             var holderType = typeInfo.AsType();
             var holder = Activator.CreateInstance(holderType);
 
-            foreach (var parameterMap in typeMap.Constructor.Parameters.Where(x => x.Converter != null))
+            foreach (var parameterMap in typeMap.Constructor.Parameters)
             {
-                var field = holderType.GetField($"parser{parameterMap.Index}");
-                field.SetValue(holder, parameterMap.Converter);
+                if (converters.TryGetValue(parameterMap.Index, out var converter))
+                {
+                    var field = holderType.GetField($"parser{parameterMap.Index}");
+                    field.SetValue(holder, converter);
+                }
             }
 
-            foreach (var propertyMap in typeMap.Properties.Where(x => x.Converter != null))
+            foreach (var propertyMap in typeMap.Properties)
             {
-                var field = holderType.GetField($"parser{propertyMap.Index}");
-                field.SetValue(holder, propertyMap.Converter);
+                if (converters.TryGetValue(propertyMap.Index, out var converter))
+                {
+                    var field = holderType.GetField($"parser{propertyMap.Index}");
+                    field.SetValue(holder, converter);
+                }
             }
 
             return holder;
