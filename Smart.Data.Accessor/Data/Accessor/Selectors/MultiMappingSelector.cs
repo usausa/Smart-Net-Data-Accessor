@@ -5,17 +5,25 @@ namespace Smart.Data.Accessor.Selectors
     using System.Linq;
     using System.Reflection;
 
+    using Smart.Converter;
     using Smart.Data.Accessor.Engine;
 
     public class MultiMappingSelector : IMultiMappingSelector
     {
+        private readonly IObjectConverter objectConverter;
+
+        public MultiMappingSelector(IObjectConverter objectConverter)
+        {
+            this.objectConverter = objectConverter;
+        }
+
         public TypeMapInfo[] Select(MethodInfo mi, Type[] types, ColumnInfo[] columns)
         {
             var list = new List<TypeMapInfo>();
             var offset = 0;
             foreach (var type in types)
             {
-                var matcher = new ColumnMatcher(mi, columns.Skip(offset), offset);
+                var matcher = new ColumnMatcher(objectConverter, mi, columns.Skip(offset), offset);
                 var ctor = matcher.ResolveConstructor(type);
                 if (ctor is null)
                 {
@@ -25,7 +33,7 @@ namespace Smart.Data.Accessor.Selectors
                 var properties = matcher.ResolveProperties(type);
                 list.Add(new TypeMapInfo(ctor, properties));
 
-                offset = Math.Max(ctor.Indexes.Max(), properties.Select(x => x.Index).Max()) + 1;
+                offset = Math.Max(ctor.Parameters.Max(x => x.Index), properties.Select(x => x.Index).Max()) + 1;
             }
 
             return list.ToArray();

@@ -1,17 +1,18 @@
 namespace Smart.Data.Accessor.Selectors
 {
+    using System;
     using System.Reflection;
 
     public class ConstructorMapInfo
     {
         public ConstructorInfo Info { get; }
 
-        public int[] Indexes { get; }
+        public ParameterMapInfo[] Parameters { get; }
 
-        public ConstructorMapInfo(ConstructorInfo ci, int[] indexes)
+        public ConstructorMapInfo(ConstructorInfo ci, ParameterMapInfo[] parameters)
         {
             Info = ci;
-            Indexes = indexes;
+            Parameters = parameters;
         }
     }
 }

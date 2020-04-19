@@ -5,18 +5,22 @@ namespace Smart.Data.Accessor.Selectors
     using System.Linq;
     using System.Reflection;
 
+    using Smart.Converter;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Configs;
     using Smart.Data.Accessor.Engine;
 
     public class ColumnMatcher
     {
+        private readonly IObjectConverter objectConverter;
+
         private readonly MethodInfo mi;
 
         private readonly List<ColumnAndIndex> columns;
 
-        public ColumnMatcher(MethodInfo mi, IEnumerable<ColumnInfo> columns, int offset)
+        public ColumnMatcher(IObjectConverter objectConverter, MethodInfo mi, IEnumerable<ColumnInfo> columns, int offset)
         {
+            this.objectConverter = objectConverter;
             this.mi = mi;
             this.columns = columns.Select((x, i) => new ColumnAndIndex { Column = x, Index = i + offset }).ToList();
         }
@@ -26,7 +30,7 @@ namespace Smart.Data.Accessor.Selectors
             var ctor = type.GetConstructors()
                 .Select(MatchConstructor)
                 .Where(x => x != null)
-                .OrderByDescending(x => x.Map.Indexes.Length)
+                .OrderByDescending(x => x.Map.Parameters.Length)
                 .ThenByDescending(x => x.TypeMatch)
                 .FirstOrDefault();
             return ctor?.Map;
@@ -34,7 +38,7 @@ namespace Smart.Data.Accessor.Selectors
 
         private ConstructorMatch MatchConstructor(ConstructorInfo ci)
         {
-            var indexes = new List<int>();
+            var parameters = new List<ParameterMapInfo>();
             var typeMatch = 0;
             foreach (var pi in ci.GetParameters())
             {
@@ -45,13 +49,20 @@ namespace Smart.Data.Accessor.Selectors
                     return null;
                 }
 
-                indexes.Add(column.Index);
-                typeMatch += column.Column.Type == pi.ParameterType ? 1 : 0;
+                if (column.Column.Type == pi.ParameterType)
+                {
+                    typeMatch += 1;
+                    parameters.Add(new ParameterMapInfo(pi, column.Index, null));
+                }
+                else
+                {
+                    parameters.Add(new ParameterMapInfo(pi, column.Index, objectConverter.CreateConverter(column.Column.Type, pi.ParameterType)));
+                }
             }
 
             return new ConstructorMatch
             {
-                Map = new ConstructorMapInfo(ci, indexes.OrderBy(x => x).ToArray()),
+                Map = new ConstructorMapInfo(ci, parameters.ToArray()),
                 TypeMatch = typeMatch
             };
         }
@@ -63,7 +74,15 @@ namespace Smart.Data.Accessor.Selectors
                 {
                     var name = ConfigHelper.GetMethodPropertyColumnName(mi, x);
                     var column = FindMatchColumn(name);
-                    return column is null ? null : new PropertyMapInfo(x, column.Index);
+                    if (column is null)
+                    {
+                        return null;
+                    }
+
+                    var converter = x.PropertyType != column.Column.Type
+                        ? objectConverter.CreateConverter(column.Column.Type, x.PropertyType)
+                        : null;
+                    return new PropertyMapInfo(x, column.Index, converter);
                 })
                 .Where(x => x != null)
                 .ToArray();
