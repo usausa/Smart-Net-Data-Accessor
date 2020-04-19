@@ -53,7 +53,8 @@ namespace Smart.Data.Accessor.Resolver
             config.Bind<DataAccessorFactory>().ToSelf().InSingletonScope();
 
             config.Bind<IObjectConverter>().ToConstant(ObjectConverter.Default).InSingletonScope();
-            config.Bind<IPropertySelector>().ToConstant(DefaultPropertySelector.Instance).InSingletonScope();
+            config.Bind<IMappingSelector>().To<MappingSelector>().InSingletonScope();
+            config.Bind<IMultiMappingSelector>().To<MultiMappingSelector>().InSingletonScope();
             config.Bind<IEmptyDialect>().To<EmptyDialect>().InSingletonScope();
 
             config.Bind<IDbProviderSelector>().To<ResolverDbProviderSelector>().InSingletonScope();

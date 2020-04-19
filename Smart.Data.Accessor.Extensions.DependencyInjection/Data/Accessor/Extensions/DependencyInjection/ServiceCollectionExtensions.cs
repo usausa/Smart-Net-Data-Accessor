@@ -30,7 +30,8 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
             service.AddSingleton<DataAccessorFactory>();
 
             service.TryAddSingleton<IObjectConverter>(ObjectConverter.Default);
-            service.TryAddSingleton<IPropertySelector>(DefaultPropertySelector.Instance);
+            service.TryAddSingleton<IMappingSelector, MappingSelector>();
+            service.TryAddSingleton<IMultiMappingSelector, MultiMappingSelector>();
             service.TryAddSingleton<IEmptyDialect, EmptyDialect>();
 
             service.AddSingleton(typeof(IAccessorResolver<>), typeof(AccessorResolver<>));

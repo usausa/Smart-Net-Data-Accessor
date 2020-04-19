@@ -137,8 +137,6 @@ namespace Smart.Data.Accessor.Engine
             components.Add<IObjectConverter>(ObjectConverter.Default);
             components.Add<IMappingSelector, MappingSelector>();
             components.Add<IMultiMappingSelector, MultiMappingSelector>();
-            // TODO Delete
-            components.Add<IPropertySelector>(DefaultPropertySelector.Instance);
             components.Add<IEmptyDialect, EmptyDialect>();
             return components;
         }
