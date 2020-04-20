@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor.Mappers
                 .Where(x => x.Converter != null)
                 .ToDictionary(x => x.Index, x => x.Converter);
 
-            var holder = CreateHolder(typeMap, converters);
+            var holder = CreateHolder(converters);
             var holderType = holder.GetType();
 
             var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
@@ -152,14 +152,16 @@ namespace Smart.Data.Accessor.Mappers
             return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
         }
 
-        private object CreateHolder(TypeMapInfo typeMap, Dictionary<int, Func<object, object>> converters)
+        private object CreateHolder(Dictionary<int, Func<object, object>> converters)
         {
             var typeBuilder = ModuleBuilder.DefineType(
                 $"Holder_{typeNo}",
                 TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
             typeNo++;
 
-            foreach (var index in typeMap.Constructor.Parameters.Select(x => x.Index).Concat(typeMap.Properties.Select(x => x.Index)))
+            var indexes = converters.Select(x => x.Key).OrderBy(x => x).ToList();
+
+            foreach (var index in indexes)
             {
                 if (converters.ContainsKey(index))
                 {
@@ -174,7 +176,7 @@ namespace Smart.Data.Accessor.Mappers
             var holderType = typeInfo.AsType();
             var holder = Activator.CreateInstance(holderType);
 
-            foreach (var index in typeMap.Constructor.Parameters.Select(x => x.Index).Concat(typeMap.Properties.Select(x => x.Index)))
+            foreach (var index in indexes)
             {
                 if (converters.TryGetValue(index, out var converter))
                 {
