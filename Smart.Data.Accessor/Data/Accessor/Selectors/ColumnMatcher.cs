@@ -5,7 +5,6 @@ namespace Smart.Data.Accessor.Selectors
     using System.Linq;
     using System.Reflection;
 
-    using Smart.Converter;
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Configs;
     using Smart.Data.Accessor.Engine;
@@ -22,12 +21,13 @@ namespace Smart.Data.Accessor.Selectors
             this.columns = columns.Select((x, i) => new ColumnAndIndex { Column = x, Index = i + offset }).ToList();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public ConstructorMapInfo ResolveConstructor(Type type)
         {
             var ctor = type.GetConstructors()
                 .Select(MatchConstructor)
                 .Where(x => x != null)
-                .OrderByDescending(x => x.Map.Parameters.Length)
+                .OrderByDescending(x => x.Map.Parameters.Count)
                 .ThenByDescending(x => x.TypeMatch)
                 .FirstOrDefault();
             return ctor?.Map;
@@ -52,12 +52,13 @@ namespace Smart.Data.Accessor.Selectors
 
             return new ConstructorMatch
             {
-                Map = new ConstructorMapInfo(ci, parameters.ToArray()),
+                Map = new ConstructorMapInfo(ci, parameters),
                 TypeMatch = typeMatch
             };
         }
 
-        public PropertyMapInfo[] ResolveProperties(Type type)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
+        public IReadOnlyList<PropertyMapInfo> ResolveProperties(Type type)
         {
             return type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(IsTargetProperty)
                 .Select(x =>
@@ -67,7 +68,7 @@ namespace Smart.Data.Accessor.Selectors
                     return column is null ? null : new PropertyMapInfo(x, column.Index);
                 })
                 .Where(x => x != null)
-                .ToArray();
+                .ToList();
         }
 
         private ColumnAndIndex FindMatchColumn(string name)

@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Mappers
 
     public sealed class TupleResultMapperFactory : IResultMapperFactory
     {
-        private static readonly HashSet<Type> TupleTypes = new HashSet<Type>()
+        private static readonly HashSet<Type> TupleTypes = new HashSet<Type>
         {
             typeof(Tuple<,>),
             typeof(Tuple<,,>),
@@ -27,6 +27,7 @@ namespace Smart.Data.Accessor.Mappers
             typeof(ValueTuple<,,,,,,,>),
         };
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public bool IsMatch(Type type, MethodInfo mi)
         {
             return type.IsGenericType && TupleTypes.Contains(type.GetGenericTypeDefinition());

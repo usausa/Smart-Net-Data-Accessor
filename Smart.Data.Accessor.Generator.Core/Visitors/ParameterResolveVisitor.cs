@@ -105,42 +105,47 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private bool ResolvePropertyParameter(Type targetType, PathElement[] elements, int position, ParameterNode node, string source)
         {
-            var pi = targetType.GetProperty(elements[position].Name, BindingFlags.Instance | BindingFlags.Public);
-            if (pi == null)
+            while (true)
             {
-                return false;
-            }
+                var pi = targetType.GetProperty(elements[position].Name, BindingFlags.Instance | BindingFlags.Public);
+                if (pi == null)
+                {
+                    return false;
+                }
 
-            var type = pi.PropertyType;
-            for (var i = 0; i < elements[position].Indexed; i++)
-            {
-                type = GetNestedValueType(type);
-            }
+                var type = pi.PropertyType;
+                for (var i = 0; i < elements[position].Indexed; i++)
+                {
+                    type = GetNestedValueType(type);
+                }
 
-            if (position < elements.Length - 1)
-            {
-                return ResolvePropertyParameter(type, elements, position + 1, node, source);
-            }
+                if (position < elements.Length - 1)
+                {
+                    targetType = type;
+                    position += 1;
+                    continue;
+                }
 
-            var direction = GetParameterDirection(pi);
-            var isMultiple = ParameterHelper.IsMultipleParameter(type);
-            if (isMultiple && (direction != ParameterDirection.Input))
-            {
-                throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
-            }
+                var direction = GetParameterDirection(pi);
+                var isMultiple = ParameterHelper.IsMultipleParameter(type);
+                if (isMultiple && (direction != ParameterDirection.Input))
+                {
+                    throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
+                }
 
-            parameters.Add(new ParameterEntry(
-                node.Name,
-                index++,
-                source,
-                -1,
-                pi.DeclaringType,
-                pi.Name,
-                type,
-                direction,
-                node.ParameterName,
-                isMultiple));
-            return true;
+                parameters.Add(new ParameterEntry(
+                    node.Name,
+                    index++,
+                    source,
+                    -1,
+                    pi.DeclaringType,
+                    pi.Name,
+                    type,
+                    direction,
+                    node.ParameterName,
+                    isMultiple));
+                return true;
+            }
         }
 
         private static Type GetNestedValueType(Type type)

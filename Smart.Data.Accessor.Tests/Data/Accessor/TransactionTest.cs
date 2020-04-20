@@ -72,25 +72,25 @@ namespace Smart.Data.Accessor
                     .Build();
                 var accessor = generator.Create<ITransactionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
-                await using (var tx = con.BeginTransaction())
+                await using (var tx = await con.BeginTransactionAsync())
                 {
                     var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
-                    tx.Rollback();
+                    await tx.RollbackAsync();
                 }
 
                 var entity = con.QueryData(1L);
                 Assert.Null(entity);
 
-                await using (var tx = con.BeginTransaction())
+                await using (var tx = await con.BeginTransactionAsync())
                 {
                     var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
                     Assert.Equal(1, effect);
 
-                    tx.Commit();
+                    await tx.CommitAsync();
                 }
 
                 entity = con.QueryData(1L);

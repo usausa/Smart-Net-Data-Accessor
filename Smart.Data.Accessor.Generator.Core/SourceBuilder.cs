@@ -1566,17 +1566,13 @@ namespace Smart.Data.Accessor.Generator
 
         private static string MakeParameterSetup(MethodMetadata mm, ParameterEntry parameter, string name)
         {
-            switch (parameter.Direction)
+            return parameter.Direction switch
             {
-                case ParameterDirection.ReturnValue:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar});";
-                case ParameterDirection.Output:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\");";
-                case ParameterDirection.InputOutput:
-                    return $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});";
-                default:
-                    return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});";
-            }
+                ParameterDirection.ReturnValue => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar});",
+                ParameterDirection.Output => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\");",
+                ParameterDirection.InputOutput => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});",
+                _ => $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});",
+            };
         }
 
         private static string MakeDynamicParameterSetup(MethodMetadata mm, DynamicParameterEntry parameter, string name)

@@ -67,12 +67,14 @@ namespace Smart.Data.Accessor.Configs
             return naming(name);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetMethodTableName(MethodInfo mi, Type type)
         {
             var naming = GetMethodTypeNamingOrDefault(mi, type);
             return GetTableName(type, naming);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetMethodParameterTableName(MethodInfo mi, ParameterInfo pmi)
         {
             var naming = GetMethodParameterNamingOrDefault(mi, pmi);
@@ -83,6 +85,7 @@ namespace Smart.Data.Accessor.Configs
         // Column
         //--------------------------------------------------------------------------------
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetMethodPropertyColumnName(MethodInfo mi, PropertyInfo pi)
         {
             var name = pi.GetCustomAttribute<NameAttribute>();
@@ -95,6 +98,7 @@ namespace Smart.Data.Accessor.Configs
             return naming(pi.Name);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetMethodParameterPropertyColumnName(MethodInfo mi, ParameterInfo pmi, PropertyInfo pi)
         {
             var name = pi.GetCustomAttribute<NameAttribute>();
@@ -107,6 +111,7 @@ namespace Smart.Data.Accessor.Configs
             return naming(pi.Name);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static string GetMethodParameterColumnName(MethodInfo mi, ParameterInfo pmi)
         {
             var name = pmi.GetCustomAttribute<NameAttribute>();

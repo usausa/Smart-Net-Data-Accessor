@@ -224,7 +224,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var list = await accessor.QueryBufferdAsync(con);
 
@@ -250,7 +250,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var list = await accessor.QueryNonBufferdAsync(con).ToListAsync();
 

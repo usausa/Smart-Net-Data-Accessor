@@ -140,6 +140,8 @@ namespace Smart.Data.Accessor.Mappers
         // Spec
         //--------------------------------------------------------------------------------
 
+        // ReSharper disable MemberCanBePrivate.Global
+        // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
         public class ByConstructor
         {
             public int Id { get; set; }
@@ -152,6 +154,8 @@ namespace Smart.Data.Accessor.Mappers
                 Name = name;
             }
         }
+        // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
+        // ReSharper restore MemberCanBePrivate.Global
 
         [Fact]
         public void TestByConstructor()

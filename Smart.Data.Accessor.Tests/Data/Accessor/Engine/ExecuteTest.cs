@@ -187,7 +187,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IExecuteWithConnectionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var effect = await accessor.ExecuteAsync(con, 2, "xxx");
 

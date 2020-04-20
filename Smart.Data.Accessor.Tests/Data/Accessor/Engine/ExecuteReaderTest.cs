@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor.Engine
                     .SetSql("SELECT * FROM Data ORDER BY Id")
                     .Build();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
 

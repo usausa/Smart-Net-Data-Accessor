@@ -77,10 +77,7 @@ namespace Smart.Data.Accessor.Engine
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (components == null)
-            {
-                components = CreateDefaultComponents();
-            }
+            components ??= CreateDefaultComponents();
 
             action(components);
             serviceProvider = null;

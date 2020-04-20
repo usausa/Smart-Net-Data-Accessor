@@ -278,7 +278,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IExecuteScalarWithConnectionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var count = await accessor.ExecuteScalarAsync(con);
 

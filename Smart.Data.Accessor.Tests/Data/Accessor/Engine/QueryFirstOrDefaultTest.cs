@@ -135,7 +135,7 @@ namespace Smart.Data.Accessor.Engine
                     .Build();
                 var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAsyncAccessor>();
 
-                con.Open();
+                await con.OpenAsync();
 
                 var entity = await accessor.QueryFirstOrDefaultAsync(con, 1L);
 
