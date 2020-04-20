@@ -149,8 +149,7 @@ namespace Smart.Data.Accessor.Mappers
 
             ilGenerator.Emit(OpCodes.Ret);
 
-            var funcType = typeof(Func<,>).MakeGenericType(typeof(IDataRecord), type);
-            return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(funcType, holder);
+            return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
         }
 
         private object CreateHolder(TypeMapInfo typeMap, Dictionary<int, Func<object, object>> converters)
@@ -160,23 +159,12 @@ namespace Smart.Data.Accessor.Mappers
                 TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
             typeNo++;
 
-            foreach (var parameterMap in typeMap.Constructor.Parameters)
+            foreach (var index in typeMap.Constructor.Parameters.Select(x => x.Index).Concat(typeMap.Properties.Select(x => x.Index)))
             {
-                if (converters.ContainsKey(parameterMap.Index))
+                if (converters.ContainsKey(index))
                 {
                     typeBuilder.DefineField(
-                        $"parser{parameterMap.Index}",
-                        typeof(Func<object, object>),
-                        FieldAttributes.Public);
-                }
-            }
-
-            foreach (var propertyMap in typeMap.Properties)
-            {
-                if (converters.ContainsKey(propertyMap.Index))
-                {
-                    typeBuilder.DefineField(
-                        $"parser{propertyMap.Index}",
+                        $"parser{index}",
                         typeof(Func<object, object>),
                         FieldAttributes.Public);
                 }
@@ -186,20 +174,11 @@ namespace Smart.Data.Accessor.Mappers
             var holderType = typeInfo.AsType();
             var holder = Activator.CreateInstance(holderType);
 
-            foreach (var parameterMap in typeMap.Constructor.Parameters)
+            foreach (var index in typeMap.Constructor.Parameters.Select(x => x.Index).Concat(typeMap.Properties.Select(x => x.Index)))
             {
-                if (converters.TryGetValue(parameterMap.Index, out var converter))
+                if (converters.TryGetValue(index, out var converter))
                 {
-                    var field = holderType.GetField($"parser{parameterMap.Index}");
-                    field.SetValue(holder, converter);
-                }
-            }
-
-            foreach (var propertyMap in typeMap.Properties)
-            {
-                if (converters.TryGetValue(propertyMap.Index, out var converter))
-                {
-                    var field = holderType.GetField($"parser{propertyMap.Index}");
+                    var field = holderType.GetField($"parser{index}");
                     field.SetValue(holder, converter);
                 }
             }
