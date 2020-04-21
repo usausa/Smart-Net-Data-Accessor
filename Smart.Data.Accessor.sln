@@ -58,10 +58,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.WebApplication2", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Smart.Data.Accessor.Resolver", "Smart.Data.Accessor.Resolver\Smart.Data.Accessor.Resolver.csproj", "{C05B1937-4F0B-41A0-9C43-8A2508D2734E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Incubator", "Incubator", "{B4217592-F5B3-4BBB-9CAB-D48260AD29F2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Smart.Data.Accessor.Incubator", "Smart.Data.Accessor.Incubator\Smart.Data.Accessor.Incubator.csproj", "{BA2B7437-BF2E-4693-9B73-B881D520CB9C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -124,10 +120,6 @@ Global
 		{C05B1937-4F0B-41A0-9C43-8A2508D2734E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C05B1937-4F0B-41A0-9C43-8A2508D2734E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C05B1937-4F0B-41A0-9C43-8A2508D2734E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BA2B7437-BF2E-4693-9B73-B881D520CB9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BA2B7437-BF2E-4693-9B73-B881D520CB9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BA2B7437-BF2E-4693-9B73-B881D520CB9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BA2B7437-BF2E-4693-9B73-B881D520CB9C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -147,7 +139,6 @@ Global
 		{9F69E616-C560-4BE0-8943-8DCD1132F0E4} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
 		{7C5B0B1A-2AFC-4DA9-8831-AE6852C247F6} = {DB21DE7C-EB00-4FC3-B141-6C2116979309}
 		{C05B1937-4F0B-41A0-9C43-8A2508D2734E} = {D8385B80-A8AD-420B-8EE6-D2DFC9CDAB6F}
-		{BA2B7437-BF2E-4693-9B73-B881D520CB9C} = {B4217592-F5B3-4BBB-9CAB-D48260AD29F2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1CAE6C1-48F0-4837-AD3C-0EF1261C2BDA}

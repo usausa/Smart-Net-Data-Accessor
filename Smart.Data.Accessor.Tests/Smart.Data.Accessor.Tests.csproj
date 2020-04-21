@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" />
-    <ProjectReference Include="..\Smart.Data.Accessor.Incubator\Smart.Data.Accessor.Incubator.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Options.MySql\Smart.Data.Accessor.Options.MySql.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Options.Postgres\Smart.Data.Accessor.Options.Postgres.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Options.SqlServer\Smart.Data.Accessor.Options.SqlServer.csproj" />

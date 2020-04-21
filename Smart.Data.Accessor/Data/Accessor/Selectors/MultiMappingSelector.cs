@@ -26,7 +26,15 @@ namespace Smart.Data.Accessor.Selectors
                 var properties = matcher.ResolveProperties(type);
                 list.Add(new TypeMapInfo(ctor, properties));
 
-                offset = Math.Max(ctor.Parameters.Max(x => x.Index), properties.Select(x => x.Index).Max()) + 1;
+                var maxIndex = ctor.Parameters
+                    .Select(x => x.Index)
+                    .Concat(properties.Select(x => x.Index))
+                    .DefaultIfEmpty(-1)
+                    .Max();
+                if (maxIndex >= 0)
+                {
+                    offset = maxIndex + 1;
+                }
             }
 
             return list.ToArray();
