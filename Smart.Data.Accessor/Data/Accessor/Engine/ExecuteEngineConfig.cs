@@ -40,6 +40,7 @@ namespace Smart.Data.Accessor.Engine
         private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new List<IResultMapperFactory>
         {
             new SingleResultMapperFactory(),
+            TupleResultMapperFactory.Instance,
             ObjectResultMapperFactory.Instance
         };
 
