@@ -12,24 +12,6 @@ namespace Smart.Data.Accessor.Mappers
 
     public sealed class TupleResultMapperFactory : IResultMapperFactory
     {
-        private static readonly HashSet<Type> TupleTypes = new HashSet<Type>
-        {
-            typeof(Tuple<,>),
-            typeof(Tuple<,,>),
-            typeof(Tuple<,,,>),
-            typeof(Tuple<,,,,>),
-            typeof(Tuple<,,,,,>),
-            typeof(Tuple<,,,,,,>),
-            typeof(Tuple<,,,,,,,>),
-            typeof(ValueTuple<,>),
-            typeof(ValueTuple<,,>),
-            typeof(ValueTuple<,,,>),
-            typeof(ValueTuple<,,,,>),
-            typeof(ValueTuple<,,,,,>),
-            typeof(ValueTuple<,,,,,,>),
-            typeof(ValueTuple<,,,,,,,>),
-        };
-
         public static TupleResultMapperFactory Instance { get; } = new TupleResultMapperFactory();
 
         private int typeNo;
@@ -58,7 +40,7 @@ namespace Smart.Data.Accessor.Mappers
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public bool IsMatch(Type type, MethodInfo mi)
         {
-            return type.IsGenericType && TupleTypes.Contains(type.GetGenericTypeDefinition());
+            return type.IsGenericType && (type.GetConstructor(type.GetGenericArguments()) != null);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
