@@ -394,8 +394,12 @@ namespace Smart.Data.Accessor
 
             var controller = (IEngineController)generator.Engine;
             Assert.Equal(1, controller.Diagnostics.DynamicSetupCacheCount);
+            Assert.Equal(1, controller.Diagnostics.DynamicSetupCacheDepth);
+            Assert.NotEqual(0, controller.Diagnostics.DynamicSetupCacheWidth);
             controller.ClearDynamicSetupCache();
             Assert.Equal(0, controller.Diagnostics.DynamicSetupCacheCount);
+            Assert.Equal(0, controller.Diagnostics.DynamicSetupCacheDepth);
+            Assert.NotEqual(0, controller.Diagnostics.DynamicSetupCacheWidth);
         }
 
         [DataAccessor]
