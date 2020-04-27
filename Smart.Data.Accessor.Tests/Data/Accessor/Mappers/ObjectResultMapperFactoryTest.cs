@@ -137,7 +137,44 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         //--------------------------------------------------------------------------------
-        // Spec
+        // Struct
+        //--------------------------------------------------------------------------------
+
+        public struct StructEntity
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        //[Fact]
+        //public void TestStruct()
+        //{
+        //    var engine = new ExecuteEngineConfig().ToEngine();
+
+        //    var columns = new[]
+        //    {
+        //        new MockColumn(typeof(long), "Id"),
+        //        new MockColumn(typeof(string), "Name")
+        //    };
+        //    var values = new List<object[]>
+        //    {
+        //        new object[] { 1, "2" }
+        //    };
+
+        //    var cmd = new MockDbCommand();
+        //    cmd.SetupResult(new MockDataReader(columns, values));
+
+        //    var info = new QueryInfo<StructEntity>(engine, GetType().GetMethod(nameof(TestStruct)), false);
+
+        //    var entity = engine.QueryFirstOrDefault(info, cmd);
+
+        //    Assert.Equal(1, entity.Id);
+        //    Assert.Equal("2", entity.Name);
+        //}
+
+        //--------------------------------------------------------------------------------
+        // Constructor
         //--------------------------------------------------------------------------------
 
         // ReSharper disable MemberCanBePrivate.Global
