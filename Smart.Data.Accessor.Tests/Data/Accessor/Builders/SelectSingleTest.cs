@@ -77,10 +77,17 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ISelectInvalidAccessor
+        public interface ISelectInvalid1Accessor
         {
             [SelectSingle("")]
             MultiKeyEntity SelectSingle();
+        }
+
+        [DataAccessor]
+        public interface ISelectInvalid2Accessor
+        {
+            [SelectSingle]
+            void SelectSingle();
         }
 
         [Fact]
@@ -90,7 +97,8 @@ namespace Smart.Data.Accessor.Builders
                 .UseFileDatabase()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid1Accessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid2Accessor>());
         }
     }
 }

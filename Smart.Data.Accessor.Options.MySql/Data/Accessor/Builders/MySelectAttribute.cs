@@ -51,7 +51,7 @@ namespace Smart.Data.Accessor.Builders
             var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
             var limit = BuildHelper.PickParameter<LimitAttribute>(parameters);
             var offset = BuildHelper.PickParameter<OffsetAttribute>(parameters);
-            var tableType = type ?? BuildHelper.GetReturnType(mi);
+            var tableType = type ?? BuildHelper.GetTableTypeByReturn(mi);
             var tableName = table ??
                             (tableType != null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
 

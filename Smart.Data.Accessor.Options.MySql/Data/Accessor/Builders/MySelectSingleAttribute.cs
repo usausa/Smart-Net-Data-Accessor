@@ -47,7 +47,7 @@ namespace Smart.Data.Accessor.Builders
         {
             var parameters = BuildHelper.GetParameters(mi);
             var keys = BuildHelper.GetKeyParameters(parameters);
-            var tableType = type ?? BuildHelper.GetReturnType(mi);
+            var tableType = type ?? BuildHelper.GetTableTypeByReturn(mi);
             var tableName = table ??
                             (tableType != null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
 

@@ -115,6 +115,33 @@ namespace Smart.Data.Accessor.Builders
             }
         }
 
+        [DataAccessor]
+        public interface IDeleteByArrayArgumentAccessor
+        {
+            [Count(typeof(MultiKeyEntity))]
+            int Delete(long key1, long[] key2);
+        }
+
+        [Fact]
+        public void TestDeleteByArrayArgument()
+        {
+            using (TestDatabase.Initialize()
+                .SetupMultiKeyTable()
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
+            {
+                var generator = new TestFactoryBuilder()
+                    .UseFileDatabase()
+                    .Build();
+                var accessor = generator.Create<IDeleteByArrayArgumentAccessor>();
+
+                var effect = accessor.Delete(1L, new[] { 1L, 2L });
+
+                Assert.Equal(2, effect);
+            }
+        }
+
         //--------------------------------------------------------------------------------
         // Parameter
         //--------------------------------------------------------------------------------

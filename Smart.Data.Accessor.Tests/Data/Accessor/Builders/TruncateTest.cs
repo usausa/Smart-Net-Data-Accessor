@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Builders
 {
+    using System;
     using System.Data.Common;
 
     using Smart.Data.Accessor.Attributes;
@@ -54,9 +55,16 @@ namespace Smart.Data.Accessor.Builders
         //--------------------------------------------------------------------------------
 
         [DataAccessor]
-        public interface ITruncateInvalidAccessor
+        public interface ITruncateInvalid1Accessor
         {
             [Truncate("")]
+            void Truncate(DbConnection con);
+        }
+
+        [DataAccessor]
+        public interface ITruncateInvalid2Accessor
+        {
+            [Truncate((Type)null)]
             void Truncate(DbConnection con);
         }
 
@@ -66,7 +74,8 @@ namespace Smart.Data.Accessor.Builders
             var generator = new TestFactoryBuilder()
                 .Build();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalidAccessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid1Accessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid2Accessor>());
         }
     }
 }

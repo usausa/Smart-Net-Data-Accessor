@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Table
         //--------------------------------------------------------------------------------
 
-        public static Type GetReturnType(MethodInfo mi)
+        public static Type GetTableTypeByReturn(MethodInfo mi)
         {
             var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
             if (isAsync && !mi.ReturnType.IsGenericType)

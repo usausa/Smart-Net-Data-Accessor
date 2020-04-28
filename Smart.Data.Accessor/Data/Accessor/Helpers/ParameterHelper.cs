@@ -63,6 +63,7 @@ namespace Smart.Data.Accessor.Helpers
             }
 
             if (type.IsPrimitive ||
+                type == typeof(void) ||
                 type == typeof(string) ||
                 type == typeof(decimal) ||
                 type == typeof(Guid) ||
