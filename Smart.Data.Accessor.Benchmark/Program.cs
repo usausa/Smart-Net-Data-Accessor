@@ -29,10 +29,10 @@ namespace Smart.Data.Accessor.Benchmark
     {
         public BenchmarkConfig()
         {
-            Add(MarkdownExporter.Default, MarkdownExporter.GitHub);
-            Add(MemoryDiagnoser.Default);
-            //Add(Job.LongRun);
-            Add(Job.MediumRun);
+            AddExporter(MarkdownExporter.Default, MarkdownExporter.GitHub);
+            AddDiagnoser(MemoryDiagnoser.Default);
+            //AddJob(Job.LongRun);
+            AddJob(Job.MediumRun);
         }
     }
 
