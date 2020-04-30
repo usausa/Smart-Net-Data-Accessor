@@ -142,24 +142,6 @@ namespace Smart.Data.Accessor.Engine
         }
 
         //--------------------------------------------------------------------------------
-        // QueryAsyncEnumerable
-        //--------------------------------------------------------------------------------
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async IAsyncEnumerable<T> QueryAsyncEnumerable<T>(QueryInfo<T> info, DbCommand cmd, [EnumeratorCancellation] CancellationToken cancel = default)
-        {
-            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
-            {
-                var mapper = info.ResolveMapper(reader);
-
-                while (await reader.ReadAsync(cancel).ConfigureAwait(false))
-                {
-                    yield return mapper(reader);
-                }
-            }
-        }
-
-        //--------------------------------------------------------------------------------
         // QueryFirstOrDefault
         //--------------------------------------------------------------------------------
 

@@ -934,7 +934,6 @@ namespace Smart.Data.Accessor.Generator
             var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(mm.EngineResultType));
             if (mm.IsAsync)
             {
-                // TODO
                 var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar}{cancelOption}).ConfigureAwait(false);");
             }

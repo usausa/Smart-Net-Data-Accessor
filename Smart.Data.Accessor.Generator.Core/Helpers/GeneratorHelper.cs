@@ -80,12 +80,12 @@ namespace Smart.Data.Accessor.Generator.Helpers
 
         public static Type GetEnumerableElementType(Type type)
         {
-            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IEnumerable<>))).GetGenericArguments()[0];
-        }
-
-        public static Type GetAsyncEnumerableElementType(Type type)
-        {
-            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))).GetGenericArguments()[0];
+            return type.GetInterfaces()
+                .Prepend(type)
+                .First(t => t.IsGenericType &&
+                            ((t.GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
+                             (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))))
+                .GetGenericArguments()[0];
         }
 
         public static Type GetListElementType(Type type)
