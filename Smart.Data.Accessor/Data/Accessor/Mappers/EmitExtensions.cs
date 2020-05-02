@@ -110,5 +110,10 @@ namespace Smart.Data.Accessor.Mappers
                 ilGenerator.Emit(OpCodes.Castclass, type);
             }
         }
+
+        public static void EmitSetter(this ILGenerator ilGenerator, PropertyInfo pi)
+        {
+            ilGenerator.Emit(pi.DeclaringType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, pi.SetMethod);
+        }
     }
 }

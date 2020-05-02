@@ -24,7 +24,7 @@ namespace Smart.Data.Accessor.Selectors
                 }
 
                 var properties = matcher.ResolveProperties(type);
-                list.Add(new TypeMapInfo(ctor, properties));
+                list.Add(new TypeMapInfo(type, ctor, properties));
 
                 var maxIndex = ctor.Parameters
                     .Select(x => x.Index)

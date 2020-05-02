@@ -50,6 +50,10 @@ namespace Smart.Data.Accessor.Mappers
             var types = type.GetGenericArguments();
             var selector = (IMultiMappingSelector)context.ServiceProvider.GetService(typeof(IMultiMappingSelector));
             var typeMaps = selector.Select(mi, types, columns);
+            if (typeMaps is null)
+            {
+                throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
+            }
 
             var converters = typeMaps.SelectMany(typeMap => typeMap.Constructor.Parameters
                 .Select(x => new { x.Index, Converter = context.GetConverter(columns[x.Index].Type, x.Info.ParameterType, x.Info) })
