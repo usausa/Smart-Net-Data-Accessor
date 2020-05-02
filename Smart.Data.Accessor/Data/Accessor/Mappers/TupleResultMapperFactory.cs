@@ -55,12 +55,11 @@ namespace Smart.Data.Accessor.Mappers
                 throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
             }
 
-            var converters = typeMaps.SelectMany(typeMap => typeMap.Constructor.Parameters
-                .Select(x => new { x.Index, Converter = context.GetConverter(columns[x.Index].Type, x.Info.ParameterType, x.Info) })
-                .Concat(typeMap.Properties
-                    .Select(x => new { x.Index, Converter = context.GetConverter(columns[x.Index].Type, x.Info.PropertyType, x.Info) })))
-                .Where(x => x.Converter != null)
-                .ToDictionary(x => x.Index, x => x.Converter);
+            var converters = new Dictionary<int, Func<object, object>>();
+            foreach (var typeMap in typeMaps)
+            {
+                TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
+            }
 
             var holder = CreateHolder(converters);
             var holderType = holder.GetType();
@@ -70,11 +69,8 @@ namespace Smart.Data.Accessor.Mappers
 
             // Variables
             var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
-            var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(
-                typeMaps.SelectMany(typeMap =>
-                    typeMap.Constructor.Parameters.Select(x => x.Info.ParameterType)
-                        .Concat(typeMap.Properties.Select(x => x.Info.PropertyType))));
-            var isShort = valueTypeLocals.Count + (objectLocal != null ? 1 : 0) <= 256;
+            var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(typeMaps.SelectMany(TypeMapInfoHelper.EnumerateTypes));
+            var isShort = valueTypeLocals.Count + (objectLocal is null ? 0 : 1) + 1 <= 256;
 
             foreach (var typeMap in typeMaps)
             {
@@ -155,7 +151,7 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.MarkLabel(next);
 
                     // Set
-                    ilGenerator.Emit(type.IsValueType ? OpCodes.Call : OpCodes.Callvirt, propertyMap.Info.SetMethod);
+                    ilGenerator.EmitSetter(propertyMap.Info);
                 }
             }
 
