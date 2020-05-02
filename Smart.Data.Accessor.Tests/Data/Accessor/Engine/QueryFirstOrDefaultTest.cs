@@ -17,6 +17,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryFirstOrDefaultSimpleAccessor
         {
@@ -48,6 +49,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryFirstOrDefaultSimpleAsyncAccessor
         {
@@ -83,6 +85,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryFirstOrDefaultWithConnectionAccessor
         {
@@ -116,6 +119,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryFirstOrDefaultWithConnectionAsyncAccessor
         {
@@ -181,10 +185,6 @@ namespace Smart.Data.Accessor.Engine
                 await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryFirstOrDefaultAsync(1L, cancel));
             }
         }
-
-        //--------------------------------------------------------------------------------
-        // Invalid
-        //--------------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------------
         // Execute

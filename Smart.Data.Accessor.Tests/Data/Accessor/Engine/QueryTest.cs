@@ -19,6 +19,7 @@ namespace Smart.Data.Accessor.Engine
         // Execute
         //--------------------------------------------------------------------------------
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQuerySimpleAccessor
         {
@@ -77,6 +78,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQuerySimpleAsyncAccessor
         {
@@ -139,6 +141,7 @@ namespace Smart.Data.Accessor.Engine
         // With Connection
         //--------------------------------------------------------------------------------
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryWithConnectionAccessor
         {
@@ -201,6 +204,7 @@ namespace Smart.Data.Accessor.Engine
             }
         }
 
+        [Optimize(true)]
         [DataAccessor]
         public interface IQueryWithConnectionAsyncAccessor
         {

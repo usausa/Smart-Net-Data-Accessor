@@ -25,6 +25,8 @@ namespace Smart.Data.Accessor.Engine
 
             var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCache)), false);
 
+            Assert.Equal(0, info.MapperCount);
+
             engine.QueryBuffer(info, cmd);
 
             Assert.Equal(1, info.MapperCount);
@@ -50,6 +52,8 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
             var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheOptimized)), true);
+
+            Assert.Equal(0, info.MapperCount);
 
             engine.QueryBuffer(info, cmd);
 
@@ -78,13 +82,21 @@ namespace Smart.Data.Accessor.Engine
                 new MockColumn(typeof(long), "Id"),
                 new MockColumn(typeof(string), "Name")
             };
+            var columns4 = new[]
+            {
+                new MockColumn(typeof(long), "Id2"),
+                new MockColumn(typeof(string), "Name")
+            };
 
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns1, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns2, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns3, new List<object[]>()));
+            cmd.SetupResult(new MockDataReader(columns4, new List<object[]>()));
 
             var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheForSameTypeDifferentResult)), false);
+
+            Assert.Equal(0, info.MapperCount);
 
             engine.QueryBuffer(info, cmd);
 
@@ -97,6 +109,10 @@ namespace Smart.Data.Accessor.Engine
             engine.QueryBuffer(info, cmd);
 
             Assert.Equal(3, info.MapperCount);
+
+            engine.QueryBuffer(info, cmd);
+
+            Assert.Equal(4, info.MapperCount);
         }
 
         public class CacheEntity
