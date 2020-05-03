@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Selectors
             {
                 var matcher = new ColumnMatcher(mi, columns.Skip(offset), offset);
                 var ctor = matcher.ResolveConstructor(type);
-                if (ctor is null)
+                if ((ctor is null) && !type.IsValueType)
                 {
                     return null;
                 }

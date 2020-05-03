@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor.Selectors
         {
             var matcher = new ColumnMatcher(mi, columns, 0);
             var ctor = matcher.ResolveConstructor(type);
-            return ctor is null
+            return (ctor is null) && !type.IsValueType
                 ? null
                 : new TypeMapInfo(type, ctor, matcher.ResolveProperties(type));
         }

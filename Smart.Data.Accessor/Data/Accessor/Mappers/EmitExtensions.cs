@@ -41,9 +41,9 @@ namespace Smart.Data.Accessor.Mappers
 
         public static void EmitStackColumnValue(this ILGenerator ilGenerator, int index)
         {
-            ilGenerator.Emit(OpCodes.Ldarg_1);                 // [IDataRecord]
+            ilGenerator.Emit(OpCodes.Ldarg_1);                  // [IDataRecord]
             ilGenerator.EmitLdcI4(index);                       // [IDataRecord][index]
-            ilGenerator.Emit(OpCodes.Callvirt, GetValue);     // [Value]
+            ilGenerator.Emit(OpCodes.Callvirt, GetValue);       // [Value]
         }
 
         public static void EmitCheckDbNull(this ILGenerator ilGenerator)
@@ -52,7 +52,7 @@ namespace Smart.Data.Accessor.Mappers
             ilGenerator.Emit(OpCodes.Isinst, typeof(DBNull));
         }
 
-        public static void EmitStackDefault(this ILGenerator ilGenerator, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals, bool isShort)
+        public static void EmitStackDefault(this ILGenerator ilGenerator, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals)
         {
             if (type.IsValueType)
             {
@@ -64,9 +64,9 @@ namespace Smart.Data.Accessor.Mappers
                 {
                     var local = valueTypeLocals[type];
 
-                    ilGenerator.Emit(isShort ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
+                    ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
                     ilGenerator.Emit(OpCodes.Initobj, type);
-                    ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
+                    ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
                 }
             }
             else
@@ -75,17 +75,17 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
-        public static void EmitConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder objectLocal, bool isShort)
+        public static void EmitConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
         {
-            ilGenerator.Emit(isShort ? OpCodes.Stloc_S : OpCodes.Stloc, objectLocal);  // [Value] :
+            ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Stloc_S : OpCodes.Stloc, local);      // [Value] :
 
-            ilGenerator.Emit(OpCodes.Ldarg_0);                                          // [Value] : [Holder]
-            ilGenerator.Emit(OpCodes.Ldfld, field);                                     // [Value] : [Converter]
+            ilGenerator.Emit(OpCodes.Ldarg_0);                                                      // [Value] : [Holder]
+            ilGenerator.Emit(OpCodes.Ldfld, field);                                                 // [Value] : [Converter]
 
-            ilGenerator.Emit(isShort ? OpCodes.Ldloc_S : OpCodes.Ldloc, objectLocal);  // [Converter][Value]
+            ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);      // [Converter][Value]
 
             var method = typeof(Func<object, object>).GetMethod("Invoke");
-            ilGenerator.Emit(OpCodes.Callvirt, method);                                 // [Value(Converted)]
+            ilGenerator.Emit(OpCodes.Callvirt, method);                                             // [Value(Converted)]
         }
 
         public static void EmitTypeConversion(this ILGenerator ilGenerator, Type type)
@@ -109,6 +109,14 @@ namespace Smart.Data.Accessor.Mappers
             {
                 ilGenerator.Emit(OpCodes.Castclass, type);
             }
+        }
+
+        public static void EmitChangeToNullable(this ILGenerator ilGenerator, Type type)
+        {
+            var underlyingType = Nullable.GetUnderlyingType(type);
+            var nullableCtor = type.GetConstructor(new[] { underlyingType });
+
+            ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
         }
 
         public static void EmitSetter(this ILGenerator ilGenerator, PropertyInfo pi)
