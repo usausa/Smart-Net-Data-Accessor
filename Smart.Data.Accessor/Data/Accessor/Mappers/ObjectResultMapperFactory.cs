@@ -63,8 +63,8 @@ namespace Smart.Data.Accessor.Mappers
             var ilGenerator = dynamicMethod.GetILGenerator();
 
             // Variables
-            var ctorLocal = typeMap.Constructor is null ? ilGenerator.DeclareLocal(targetType) : null;
             var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
+            var ctorLocal = typeMap.Constructor is null ? ilGenerator.DeclareLocal(targetType) : null;
             var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(TypeMapInfoHelper.EnumerateTypes(typeMap));
 
             // --------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace Smart.Data.Accessor.Mappers
 
                     ilGenerator.Emit(OpCodes.Br_S, next);
 
-                    // Value
+                    // Value:
                     ilGenerator.MarkLabel(hasValueLabel);
 
                     if (converters.ContainsKey(parameterMap.Index))
@@ -106,7 +106,7 @@ namespace Smart.Data.Accessor.Mappers
 
                     ilGenerator.EmitTypeConversion(parameterMap.Info.ParameterType);
 
-                    // Next
+                    // Next:
                     ilGenerator.MarkLabel(next);
                 }
 
@@ -156,7 +156,7 @@ namespace Smart.Data.Accessor.Mappers
 
                 ilGenerator.Emit(OpCodes.Br_S, next);
 
-                // Value
+                // Value:
                 ilGenerator.MarkLabel(hasValueLabel);
 
                 if (converters.ContainsKey(propertyMap.Index))
@@ -166,7 +166,7 @@ namespace Smart.Data.Accessor.Mappers
 
                 ilGenerator.EmitTypeConversion(propertyMap.Info.PropertyType);
 
-                // Next
+                // Next:
                 ilGenerator.MarkLabel(next);
 
                 // Set

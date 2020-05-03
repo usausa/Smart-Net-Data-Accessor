@@ -52,7 +52,7 @@ namespace Smart.Data.Accessor.Selectors
 
             return new ConstructorMatch
             {
-                Map = new ConstructorMapInfo(ci, parameters),
+                Map = new ConstructorMapInfo(ci, parameters.OrderBy(x => x.Index).ToList()),
                 TypeMatch = typeMatch
             };
         }
@@ -68,6 +68,7 @@ namespace Smart.Data.Accessor.Selectors
                     return column is null ? null : new PropertyMapInfo(x, column.Index);
                 })
                 .Where(x => x != null)
+                .OrderBy(x => x.Index)
                 .ToList();
         }
 

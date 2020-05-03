@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor.Mappers
 
         public static void EmitStackDefault(this ILGenerator ilGenerator, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals)
         {
-            if (type.IsValueType)
+            if (type.IsValueType && !type.IsNullableType())
             {
                 if (LdcDictionary.TryGetValue(type.IsEnum ? type.GetEnumUnderlyingType() : type, out var action))
                 {
