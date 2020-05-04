@@ -40,7 +40,7 @@ namespace Smart.Data.Accessor.Mappers
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public bool IsMatch(Type type, MethodInfo mi)
         {
-            return type.IsGenericType && (type.GetConstructor(type.GetGenericArguments()) != null);
+            return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) != null);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
