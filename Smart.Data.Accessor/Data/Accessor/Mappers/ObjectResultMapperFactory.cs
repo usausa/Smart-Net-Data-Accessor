@@ -84,7 +84,7 @@ namespace Smart.Data.Accessor.Mappers
                     var next = ilGenerator.DefineLabel();
 
                     // Stack
-                    ilGenerator.EmitStackColumnValue(parameterMap.Index);
+                    ilGenerator.EmitGetColumnValue(parameterMap.Index);
 
                     ilGenerator.EmitCheckDbNull();
                     ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
@@ -92,7 +92,7 @@ namespace Smart.Data.Accessor.Mappers
                     // Null
                     ilGenerator.Emit(OpCodes.Pop);
 
-                    ilGenerator.EmitStackDefault(parameterMap.Info.ParameterType, valueTypeLocals);
+                    ilGenerator.EmitStackDefaultValue(parameterMap.Info.ParameterType, valueTypeLocals);
 
                     ilGenerator.Emit(OpCodes.Br_S, next);
 
@@ -101,10 +101,10 @@ namespace Smart.Data.Accessor.Mappers
 
                     if (converters.ContainsKey(parameterMap.Index))
                     {
-                        ilGenerator.EmitConvertByField(holderType.GetField($"parser{parameterMap.Index}"), objectLocal);
+                        ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{parameterMap.Index}"), objectLocal);
                     }
 
-                    ilGenerator.EmitTypeConversion(parameterMap.Info.ParameterType);
+                    ilGenerator.EmitTypeConversionForProperty(parameterMap.Info.ParameterType);
 
                     // Next:
                     ilGenerator.MarkLabel(next);
@@ -144,7 +144,7 @@ namespace Smart.Data.Accessor.Mappers
                 ilGenerator.Emit(OpCodes.Dup);
 
                 // Stack
-                ilGenerator.EmitStackColumnValue(propertyMap.Index);
+                ilGenerator.EmitGetColumnValue(propertyMap.Index);
 
                 ilGenerator.EmitCheckDbNull();
                 ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
@@ -152,7 +152,7 @@ namespace Smart.Data.Accessor.Mappers
                 // Null
                 ilGenerator.Emit(OpCodes.Pop);
 
-                ilGenerator.EmitStackDefault(propertyMap.Info.PropertyType, valueTypeLocals);
+                ilGenerator.EmitStackDefaultValue(propertyMap.Info.PropertyType, valueTypeLocals);
 
                 ilGenerator.Emit(OpCodes.Br_S, next);
 
@@ -161,16 +161,16 @@ namespace Smart.Data.Accessor.Mappers
 
                 if (converters.ContainsKey(propertyMap.Index))
                 {
-                    ilGenerator.EmitConvertByField(holderType.GetField($"parser{propertyMap.Index}"), objectLocal);
+                    ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{propertyMap.Index}"), objectLocal);
                 }
 
-                ilGenerator.EmitTypeConversion(propertyMap.Info.PropertyType);
+                ilGenerator.EmitTypeConversionForProperty(propertyMap.Info.PropertyType);
 
                 // Next:
                 ilGenerator.MarkLabel(next);
 
                 // Set
-                ilGenerator.EmitSetter(propertyMap.Info);
+                ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
             }
 
             if (ctorLocal != null)
@@ -180,7 +180,7 @@ namespace Smart.Data.Accessor.Mappers
 
             if (isNullableType)
             {
-                ilGenerator.EmitChangeToNullable(type);
+                ilGenerator.EmitValueToNullableType(type);
             }
 
             ilGenerator.Emit(OpCodes.Ret);

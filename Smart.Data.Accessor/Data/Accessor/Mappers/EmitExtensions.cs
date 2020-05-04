@@ -39,7 +39,7 @@ namespace Smart.Data.Accessor.Mappers
                 .ToDictionary(x => x, ilGenerator.DeclareLocal);
         }
 
-        public static void EmitStackColumnValue(this ILGenerator ilGenerator, int index)
+        public static void EmitGetColumnValue(this ILGenerator ilGenerator, int index)
         {
             ilGenerator.Emit(OpCodes.Ldarg_1);                  // [IDataRecord]
             ilGenerator.EmitLdcI4(index);                       // [IDataRecord][index]
@@ -52,7 +52,7 @@ namespace Smart.Data.Accessor.Mappers
             ilGenerator.Emit(OpCodes.Isinst, typeof(DBNull));
         }
 
-        public static void EmitStackDefault(this ILGenerator ilGenerator, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals)
+        public static void EmitStackDefaultValue(this ILGenerator ilGenerator, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals)
         {
             if (type.IsValueType)
             {
@@ -75,7 +75,7 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
-        public static void EmitConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
+        public static void EmitValueConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
         {
             ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Stloc_S : OpCodes.Stloc, local);      // [Value] :
 
@@ -88,7 +88,7 @@ namespace Smart.Data.Accessor.Mappers
             ilGenerator.Emit(OpCodes.Callvirt, method);                                             // [Value(Converted)]
         }
 
-        public static void EmitTypeConversion(this ILGenerator ilGenerator, Type type)
+        public static void EmitTypeConversionForProperty(this ILGenerator ilGenerator, Type type)
         {
             if (type.IsValueType)
             {
@@ -105,23 +105,24 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.Emit(OpCodes.Unbox_Any, type);
                 }
             }
-            else
+            else if (type != typeof(object))
             {
                 ilGenerator.Emit(OpCodes.Castclass, type);
             }
         }
 
-        public static void EmitChangeToNullable(this ILGenerator ilGenerator, Type type)
+        public static void EmitValueToNullableType(this ILGenerator ilGenerator, Type type)
         {
             var underlyingType = Nullable.GetUnderlyingType(type);
             var nullableCtor = type.GetConstructor(new[] { underlyingType });
-
             ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
         }
 
-        public static void EmitSetter(this ILGenerator ilGenerator, PropertyInfo pi)
+        // TODO delete
+        public static void EmitCallMethod(this ILGenerator il, MethodInfo method)
         {
-            ilGenerator.Emit(pi.DeclaringType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, pi.SetMethod);
+            var opCode = (method.IsStatic || method.DeclaringType.IsValueType) ? OpCodes.Call : OpCodes.Callvirt;
+            il.Emit(opCode, method);
         }
     }
 }
