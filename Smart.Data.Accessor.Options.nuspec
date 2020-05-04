@@ -14,7 +14,7 @@
     <copyright></copyright>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
-      <dependency id="Usa.Smart.Core" version="1.8.3" />
+      <dependency id="Usa.Smart.Core" version="1.8.4" />
       <dependency id="Usa.Smart.Data.Accessor.Core" version="1.2.0-beta1" />
     </dependencies>
     <tags>smart ado.net orm dao</tags>

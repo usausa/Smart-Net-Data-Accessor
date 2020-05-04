@@ -9,6 +9,7 @@ namespace Smart.Data.Accessor.Mappers
 
     using Smart.Data.Accessor.Engine;
     using Smart.Data.Accessor.Selectors;
+    using Smart.Reflection.Emit;
 
     public sealed class TupleResultMapperFactory : IResultMapperFactory
     {

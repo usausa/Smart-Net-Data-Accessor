@@ -117,12 +117,5 @@ namespace Smart.Data.Accessor.Mappers
             var nullableCtor = type.GetConstructor(new[] { underlyingType });
             ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
         }
-
-        // TODO delete
-        public static void EmitCallMethod(this ILGenerator il, MethodInfo method)
-        {
-            var opCode = (method.IsStatic || method.DeclaringType.IsValueType) ? OpCodes.Call : OpCodes.Callvirt;
-            il.Emit(opCode, method);
-        }
     }
 }
