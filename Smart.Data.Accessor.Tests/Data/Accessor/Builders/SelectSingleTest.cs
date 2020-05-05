@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Builders
 {
+    using System.Threading.Tasks;
+
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;
 
@@ -90,6 +92,13 @@ namespace Smart.Data.Accessor.Builders
             void SelectSingle();
         }
 
+        [DataAccessor]
+        public interface ISelectInvalid3Accessor
+        {
+            [SelectSingle]
+            ValueTask SelectSingle();
+        }
+
         [Fact]
         public void TestSelectInvalid()
         {
@@ -99,6 +108,7 @@ namespace Smart.Data.Accessor.Builders
 
             Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid1Accessor>());
             Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid2Accessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid3Accessor>());
         }
     }
 }

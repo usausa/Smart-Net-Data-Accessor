@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Data.Common;
+    using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;
@@ -68,6 +69,13 @@ namespace Smart.Data.Accessor.Builders
             void Truncate(DbConnection con);
         }
 
+        [DataAccessor]
+        public interface ITruncateInvalid3Accessor
+        {
+            [Truncate((Type)null)]
+            ValueTask Truncate(DbConnection con);
+        }
+
         [Fact]
         public void TestTruncateInvalid()
         {
@@ -76,6 +84,7 @@ namespace Smart.Data.Accessor.Builders
 
             Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid1Accessor>());
             Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid2Accessor>());
+            Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid3Accessor>());
         }
     }
 }

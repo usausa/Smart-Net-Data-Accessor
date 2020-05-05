@@ -405,7 +405,7 @@ namespace Smart.Data.Accessor.Mappers
             cmd.SetupResult(new MockDataReader(columns, values));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<StructEntity?>(engine, GetType().GetMethod(nameof(TestStruct)), false);
+            var info = new QueryInfo<StructEntity?>(engine, GetType().GetMethod(nameof(TestStructNullable)), false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -422,13 +422,11 @@ namespace Smart.Data.Accessor.Mappers
         // Constructor
         //--------------------------------------------------------------------------------
 
-        // ReSharper disable MemberCanBePrivate.Global
-        // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
         public class ByConstructor
         {
-            public int Id { get; set; }
+            public int Id { get; }
 
-            public string Name { get; set; }
+            public string Name { get; }
 
             public ByConstructor(int id, string name)
             {
@@ -436,8 +434,6 @@ namespace Smart.Data.Accessor.Mappers
                 Name = name;
             }
         }
-        // ReSharper restore AutoPropertyCanBeMadeGetOnly.Global
-        // ReSharper restore MemberCanBePrivate.Global
 
         [Fact]
         public void TestByConstructor()
@@ -457,13 +453,115 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ByConstructor>(engine, GetType().GetMethod(nameof(TestMapProperty)), false);
+            var info = new QueryInfo<ByConstructor>(engine, GetType().GetMethod(nameof(TestByConstructor)), false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
             Assert.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
+        }
+
+        [Fact]
+        public void TestByConstructorWithConvert()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1", 2 }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<ByConstructor>(engine, GetType().GetMethod(nameof(TestByConstructorWithConvert)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("2", entity.Name);
+        }
+
+        public readonly struct StructByConstructor
+        {
+            public int Id { get; }
+
+            public string Name { get; }
+
+            public StructByConstructor(int id, string name)
+            {
+                Id = id;
+                Name = name;
+            }
+        }
+
+        [Fact]
+        public void TestStructByConstructor()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(int), "Id"),
+                new MockColumn(typeof(string), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { 1, "2" }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<StructByConstructor>(engine, GetType().GetMethod(nameof(TestStructByConstructor)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("2", entity.Name);
+        }
+
+        //--------------------------------------------------------------------------------
+        // Invalid
+        //--------------------------------------------------------------------------------
+
+        public class NoMapEntity
+        {
+            public int Id { get; }
+
+            public NoMapEntity(int id)
+            {
+                Id = id;
+            }
+        }
+
+        [Fact]
+        public void TestNoMap()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1" }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<NoMapEntity>(engine, GetType().GetMethod(nameof(TestCustomParser)), false);
+
+            Assert.Throws<InvalidOperationException>(() => engine.QueryBuffer(info, cmd));
         }
 
         //--------------------------------------------------------------------------------
