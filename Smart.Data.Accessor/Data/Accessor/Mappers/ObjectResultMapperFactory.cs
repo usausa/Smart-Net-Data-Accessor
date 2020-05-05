@@ -110,16 +110,8 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.MarkLabel(next);
                 }
 
-                if (ctorLocal != null)
-                {
-                    // Struct call constructor
-                    ilGenerator.Emit(OpCodes.Call, typeMap.Constructor.Info);
-                }
-                else
-                {
-                    // Class new
-                    ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
-                }
+                // Class new
+                ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
             }
             else
             {
