@@ -71,10 +71,11 @@ namespace Smart.Data.Accessor.Mappers
             var ilGenerator = dynamicMethod.GetILGenerator();
 
             // Variables
-            var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
+            var objectLocal = ilGenerator.DeclareLocal(typeof(object));
             var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(
-                typeMaps.Where(x => x.Constructor is null).Select(x => x.Type).Concat(
-                    typeMaps.SelectMany(TypeMapInfoHelper.EnumerateTypes)));
+                types.Concat(
+                    typeMaps.Where(x => x.Constructor is null).Select(x => x.Type).Concat(
+                        typeMaps.SelectMany(TypeMapInfoHelper.EnumerateTypes))));
 
             for (var i = 0; i < typeMaps.Length; i++)
             {
@@ -83,38 +84,51 @@ namespace Smart.Data.Accessor.Mappers
                 var typeMap = typeMaps[i];
                 var ctorLocal = valueTypeLocals.GetValueOrDefault(typeMap.Type);
 
-                var nullLabel = i > 0 ? ilGenerator.DefineLabel() : default;
-                var nextTypeLabel = i > 0 ? ilGenerator.DefineLabel() : default;
+                var nullCheck = i > 0;
+                var nextTypeLabel = nullCheck ? ilGenerator.DefineLabel() : default;
+                var constructorCalled = false;
 
                 // --------------------------------------------------------------------------------
                 // Constructor
                 // --------------------------------------------------------------------------------
 
-                if (ctorLocal != null)
+                if ((typeMap.Constructor != null) && ((i == 0) || (typeMap.Constructor.Parameters.Count > 0)))
                 {
-                    ilGenerator.Emit(OpCodes.Ldloca, ctorLocal);
-                }
-
-                if (typeMap.Constructor != null)
-                {
-                    foreach (var parameterMap in typeMap.Constructor.Parameters)
+                    for (var j = 0; j < typeMap.Constructor.Parameters.Count; j++)
                     {
+                        var parameterMap = typeMap.Constructor.Parameters[j];
+
                         var hasValueLabel = ilGenerator.DefineLabel();
                         var next = ilGenerator.DefineLabel();
 
-                        // Stack
+                        // Stack column value
                         ilGenerator.EmitGetColumnValue(parameterMap.Index);
 
+                        // Check value is NULL
                         ilGenerator.EmitCheckDbNull();
                         ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
 
                         // Null
-                        // TODO
-                        ilGenerator.Emit(OpCodes.Pop);
+                        if ((j == 0) && nullCheck)
+                        {
+                            // Set entity to default
 
-                        ilGenerator.EmitStackDefaultValue(parameterMap.Info.ParameterType, valueTypeLocals);
+                            // Pop column value
+                            ilGenerator.Emit(OpCodes.Pop);
 
-                        ilGenerator.Emit(OpCodes.Br_S, next);
+                            ilGenerator.EmitStackDefaultValue(originalType, valueTypeLocals);
+
+                            ilGenerator.Emit(OpCodes.Br, nextTypeLabel);
+                        }
+                        else
+                        {
+                            // Set default to entity property
+                            ilGenerator.Emit(OpCodes.Pop);
+
+                            ilGenerator.EmitStackDefaultValue(parameterMap.Info.ParameterType, valueTypeLocals);
+
+                            ilGenerator.Emit(OpCodes.Br_S, next);
+                        }
 
                         // Value:
                         ilGenerator.MarkLabel(hasValueLabel);
@@ -130,55 +144,84 @@ namespace Smart.Data.Accessor.Mappers
                         ilGenerator.MarkLabel(next);
                     }
 
-                    if (ctorLocal != null)
-                    {
-                        // Struct call constructor
-                        ilGenerator.Emit(OpCodes.Call, typeMap.Constructor.Info);
-                    }
-                    else
-                    {
-                        // Class new
-                        ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
-                    }
-                }
-                else
-                {
-                    // Struct init
-                    ilGenerator.Emit(OpCodes.Initobj, typeMap.Type);
-                }
+                    // Class new
+                    ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
 
-                if (ctorLocal != null)
-                {
-                    ilGenerator.Emit(OpCodes.Ldloca, ctorLocal);
+                    constructorCalled = true;
                 }
 
                 // --------------------------------------------------------------------------------
                 // Property
                 // --------------------------------------------------------------------------------
 
-                foreach (var propertyMap in typeMap.Properties)
+                for (var j = 0; j < typeMap.Properties.Count; j++)
                 {
+                    var propertyMap = typeMap.Properties[j];
+
                     var hasValueLabel = ilGenerator.DefineLabel();
                     var next = ilGenerator.DefineLabel();
 
-                    ilGenerator.Emit(OpCodes.Dup);
+                    // Stack entity
+                    if (constructorCalled)
+                    {
+                        ilGenerator.Emit(OpCodes.Dup);
+                    }
 
-                    // Stack
+                    // Stack column value
                     ilGenerator.EmitGetColumnValue(propertyMap.Index);
 
+                    // Check value is NULL
                     ilGenerator.EmitCheckDbNull();
                     ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
 
                     // Null
-                    // TODO
-                    ilGenerator.Emit(OpCodes.Pop);
+                    if ((j == 0) && nullCheck)
+                    {
+                        // Set entity to default
 
-                    ilGenerator.EmitStackDefaultValue(propertyMap.Info.PropertyType, valueTypeLocals);
+                        // Pop column value
+                        ilGenerator.Emit(OpCodes.Pop);
 
-                    ilGenerator.Emit(OpCodes.Br_S, next);
+                        ilGenerator.EmitStackDefaultValue(originalType, valueTypeLocals);
+
+                        ilGenerator.Emit(OpCodes.Br, nextTypeLabel);
+                    }
+                    else
+                    {
+                        // Set default to entity property
+                        ilGenerator.Emit(OpCodes.Pop);
+
+                        ilGenerator.EmitStackDefaultValue(propertyMap.Info.PropertyType, valueTypeLocals);
+
+                        ilGenerator.Emit(OpCodes.Br_S, next);
+                    }
 
                     // Value:
                     ilGenerator.MarkLabel(hasValueLabel);
+
+                    if (!constructorCalled)
+                    {
+                        // Store column value
+                        ilGenerator.EmitStloc(objectLocal);
+
+                        if (ctorLocal is null)
+                        {
+                            // Class new
+                            ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
+                        }
+                        else
+                        {
+                            // Struct init
+                            ilGenerator.EmitStackStruct(typeMap.Type, ctorLocal);
+                        }
+
+                        constructorCalled = true;
+
+                        ilGenerator.Emit(OpCodes.Dup);
+
+                        // Load column value
+                        ilGenerator.EmitLdloc(objectLocal);
+                    }
 
                     if (converters.ContainsKey(propertyMap.Index))
                     {
@@ -208,16 +251,8 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.EmitValueToNullableType(type);
                 }
 
-                if (i > 0)
+                if (nullCheck)
                 {
-                    // Next
-                    ilGenerator.Emit(OpCodes.Br_S, nextTypeLabel);
-
-                    // Null:
-                    ilGenerator.MarkLabel(nullLabel);
-
-                    ilGenerator.EmitStackDefaultValue(originalType, valueTypeLocals);
-
                     // Next:
                     ilGenerator.MarkLabel(nextTypeLabel);
                 }

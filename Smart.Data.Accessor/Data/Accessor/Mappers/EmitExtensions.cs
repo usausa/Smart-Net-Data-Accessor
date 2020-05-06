@@ -64,9 +64,9 @@ namespace Smart.Data.Accessor.Mappers
                 {
                     var local = valueTypeLocals[type];
 
-                    ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
+                    ilGenerator.EmitLdloca(local);
                     ilGenerator.Emit(OpCodes.Initobj, type);
-                    ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);
+                    ilGenerator.EmitLdloc(local);
                 }
             }
             else
@@ -75,17 +75,24 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
+        public static void EmitStackStruct(this ILGenerator ilGenerator, Type type, LocalBuilder local)
+        {
+            ilGenerator.EmitLdloca(local);
+            ilGenerator.Emit(OpCodes.Initobj, type);
+            ilGenerator.EmitLdloca(local);
+        }
+
         public static void EmitValueConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
         {
-            ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Stloc_S : OpCodes.Stloc, local);      // [Value] :
+            ilGenerator.EmitStloc(local);                                       // [Value] :
 
-            ilGenerator.Emit(OpCodes.Ldarg_0);                                                      // [Value] : [Holder]
-            ilGenerator.Emit(OpCodes.Ldfld, field);                                                 // [Value] : [Converter]
+            ilGenerator.Emit(OpCodes.Ldarg_0);                                  // [Value] : [Holder]
+            ilGenerator.Emit(OpCodes.Ldfld, field);                             // [Value] : [Converter]
 
-            ilGenerator.Emit(local.LocalIndex < 256 ? OpCodes.Ldloc_S : OpCodes.Ldloc, local);      // [Converter][Value]
+            ilGenerator.EmitLdloc(local);                                       // [Converter][Value]
 
             var method = typeof(Func<object, object>).GetMethod("Invoke");
-            ilGenerator.Emit(OpCodes.Callvirt, method);                                             // [Value(Converted)]
+            ilGenerator.Emit(OpCodes.Callvirt, method);                         // [Value(Converted)]
         }
 
         public static void EmitTypeConversionForProperty(this ILGenerator ilGenerator, Type type)
@@ -116,6 +123,68 @@ namespace Smart.Data.Accessor.Mappers
             var underlyingType = Nullable.GetUnderlyingType(type);
             var nullableCtor = type.GetConstructor(new[] { underlyingType });
             ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
+        }
+
+        // TODO Delete
+        public static void EmitStloc(this ILGenerator il, LocalBuilder local)
+        {
+            if (local.LocalIndex == 0)
+            {
+                il.Emit(OpCodes.Stloc_0, local);
+            }
+            else if (local.LocalIndex == 1)
+            {
+                il.Emit(OpCodes.Stloc_1, local);
+            }
+            else if (local.LocalIndex == 2)
+            {
+                il.Emit(OpCodes.Stloc_2, local);
+            }
+            else if (local.LocalIndex == 3)
+            {
+                il.Emit(OpCodes.Stloc_3, local);
+            }
+            else if (local.LocalIndex < 256)
+            {
+                il.Emit(OpCodes.Stloc_S, local);
+            }
+            else
+            {
+                il.Emit(OpCodes.Stloc, local);
+            }
+        }
+
+        public static void EmitLdloc(this ILGenerator il, LocalBuilder local)
+        {
+            if (local.LocalIndex == 0)
+            {
+                il.Emit(OpCodes.Ldloc_0, local);
+            }
+            else if (local.LocalIndex == 1)
+            {
+                il.Emit(OpCodes.Ldloc_1, local);
+            }
+            else if (local.LocalIndex == 2)
+            {
+                il.Emit(OpCodes.Ldloc_2, local);
+            }
+            else if (local.LocalIndex == 3)
+            {
+                il.Emit(OpCodes.Ldloc_3, local);
+            }
+            else if (local.LocalIndex < 256)
+            {
+                il.Emit(OpCodes.Ldloc_S, local);
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldloc, local);
+            }
+        }
+
+        public static void EmitLdloca(this ILGenerator il, LocalBuilder local)
+        {
+            il.Emit(local.LocalIndex < 256 ? OpCodes.Ldloca_S : OpCodes.Ldloca, local);
         }
     }
 }

@@ -71,43 +71,12 @@ namespace Smart.Data.Accessor.Mappers
             // Constructor
             // --------------------------------------------------------------------------------
 
-            if (ctorLocal != null)
-            {
-                ilGenerator.Emit(OpCodes.Ldloca, ctorLocal);
-            }
-
             if (typeMap.Constructor != null)
             {
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {
-                    var hasValueLabel = ilGenerator.DefineLabel();
-                    var next = ilGenerator.DefineLabel();
-
-                    // Stack
-                    ilGenerator.EmitGetColumnValue(parameterMap.Index);
-
-                    ilGenerator.EmitCheckDbNull();
-                    ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
-
-                    // Null
-                    ilGenerator.Emit(OpCodes.Pop);
-
-                    ilGenerator.EmitStackDefaultValue(parameterMap.Info.ParameterType, valueTypeLocals);
-
-                    ilGenerator.Emit(OpCodes.Br_S, next);
-
-                    // Value:
-                    ilGenerator.MarkLabel(hasValueLabel);
-
-                    if (converters.ContainsKey(parameterMap.Index))
-                    {
-                        ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{parameterMap.Index}"), objectLocal);
-                    }
-
-                    ilGenerator.EmitTypeConversionForProperty(parameterMap.Info.ParameterType);
-
-                    // Next:
-                    ilGenerator.MarkLabel(next);
+                    // Stack value
+                    StackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal, valueTypeLocals, converters);
                 }
 
                 // Class new
@@ -116,12 +85,7 @@ namespace Smart.Data.Accessor.Mappers
             else
             {
                 // Struct init
-                ilGenerator.Emit(OpCodes.Initobj, targetType);
-            }
-
-            if (ctorLocal != null)
-            {
-                ilGenerator.Emit(OpCodes.Ldloca, ctorLocal);
+                ilGenerator.EmitStackStruct(targetType, ctorLocal);
             }
 
             // --------------------------------------------------------------------------------
@@ -135,31 +99,8 @@ namespace Smart.Data.Accessor.Mappers
 
                 ilGenerator.Emit(OpCodes.Dup);
 
-                // Stack
-                ilGenerator.EmitGetColumnValue(propertyMap.Index);
-
-                ilGenerator.EmitCheckDbNull();
-                ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
-
-                // Null
-                ilGenerator.Emit(OpCodes.Pop);
-
-                ilGenerator.EmitStackDefaultValue(propertyMap.Info.PropertyType, valueTypeLocals);
-
-                ilGenerator.Emit(OpCodes.Br_S, next);
-
-                // Value:
-                ilGenerator.MarkLabel(hasValueLabel);
-
-                if (converters.ContainsKey(propertyMap.Index))
-                {
-                    ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{propertyMap.Index}"), objectLocal);
-                }
-
-                ilGenerator.EmitTypeConversionForProperty(propertyMap.Info.PropertyType);
-
-                // Next:
-                ilGenerator.MarkLabel(next);
+                // Stack value
+                StackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal, valueTypeLocals, converters);
 
                 // Set
                 ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
@@ -178,6 +119,45 @@ namespace Smart.Data.Accessor.Mappers
             ilGenerator.Emit(OpCodes.Ret);
 
             return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
+        }
+
+        private static void StackColumnValue(
+            ILGenerator ilGenerator,
+            int index,
+            Type targetType,
+            Type holderType,
+            LocalBuilder objectLocal,
+            Dictionary<Type, LocalBuilder> valueTypeLocals,
+            Dictionary<int, Func<object, object>> converters)
+        {
+            var hasValueLabel = ilGenerator.DefineLabel();
+            var next = ilGenerator.DefineLabel();
+
+            // Stack
+            ilGenerator.EmitGetColumnValue(index);
+
+            ilGenerator.EmitCheckDbNull();
+            ilGenerator.Emit(OpCodes.Brfalse_S, hasValueLabel);
+
+            // Null
+            ilGenerator.Emit(OpCodes.Pop);
+
+            ilGenerator.EmitStackDefaultValue(targetType, valueTypeLocals);
+
+            ilGenerator.Emit(OpCodes.Br_S, next);
+
+            // Value:
+            ilGenerator.MarkLabel(hasValueLabel);
+
+            if (converters.ContainsKey(index))
+            {
+                ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{index}"), objectLocal);
+            }
+
+            ilGenerator.EmitTypeConversionForProperty(targetType);
+
+            // Next:
+            ilGenerator.MarkLabel(next);
         }
 
         private object CreateHolder(Dictionary<int, Func<object, object>> converters)
