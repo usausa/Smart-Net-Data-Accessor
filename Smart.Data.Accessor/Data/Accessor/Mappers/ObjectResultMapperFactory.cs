@@ -94,9 +94,6 @@ namespace Smart.Data.Accessor.Mappers
 
             foreach (var propertyMap in typeMap.Properties)
             {
-                var hasValueLabel = ilGenerator.DefineLabel();
-                var next = ilGenerator.DefineLabel();
-
                 ilGenerator.Emit(OpCodes.Dup);
 
                 // Stack value
