@@ -76,7 +76,7 @@ namespace Smart.Data.Accessor.Mappers
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {
                     // Stack value
-                    StackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal, valueTypeLocals, converters);
+                    EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal, valueTypeLocals, converters);
                 }
 
                 // Class new
@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor.Mappers
             else
             {
                 // Struct init
-                ilGenerator.EmitStackStruct(targetType, ctorLocal);
+                ilGenerator.EmitInitStruct(targetType, ctorLocal);
             }
 
             // --------------------------------------------------------------------------------
@@ -94,10 +94,17 @@ namespace Smart.Data.Accessor.Mappers
 
             foreach (var propertyMap in typeMap.Properties)
             {
-                ilGenerator.Emit(OpCodes.Dup);
+                if (ctorLocal != null)
+                {
+                    ilGenerator.EmitLdloca(ctorLocal);
+                }
+                else
+                {
+                    ilGenerator.Emit(OpCodes.Dup);
+                }
 
                 // Stack value
-                StackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal, valueTypeLocals, converters);
+                EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal, valueTypeLocals, converters);
 
                 // Set
                 ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
@@ -105,7 +112,7 @@ namespace Smart.Data.Accessor.Mappers
 
             if (ctorLocal != null)
             {
-                ilGenerator.Emit(OpCodes.Ldobj, targetType);
+                ilGenerator.EmitLdloc(ctorLocal);
             }
 
             if (isNullableType)
@@ -118,10 +125,10 @@ namespace Smart.Data.Accessor.Mappers
             return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
         }
 
-        private static void StackColumnValue(
+        private static void EmitStackColumnValue(
             ILGenerator ilGenerator,
             int index,
-            Type targetType,
+            Type type,
             Type holderType,
             LocalBuilder objectLocal,
             Dictionary<Type, LocalBuilder> valueTypeLocals,
@@ -139,7 +146,7 @@ namespace Smart.Data.Accessor.Mappers
             // Null
             ilGenerator.Emit(OpCodes.Pop);
 
-            ilGenerator.EmitStackDefaultValue(targetType, valueTypeLocals);
+            ilGenerator.EmitStackDefaultValue(type, valueTypeLocals);
 
             ilGenerator.Emit(OpCodes.Br_S, next);
 
@@ -151,7 +158,7 @@ namespace Smart.Data.Accessor.Mappers
                 ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{index}"), objectLocal);
             }
 
-            ilGenerator.EmitTypeConversionForProperty(targetType);
+            ilGenerator.EmitTypeConversionForType(type);
 
             // Next:
             ilGenerator.MarkLabel(next);

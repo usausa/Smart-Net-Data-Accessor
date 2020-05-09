@@ -75,11 +75,24 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
-        public static void EmitStackStruct(this ILGenerator ilGenerator, Type type, LocalBuilder local)
+        public static void EmitStackDefaultValue(this ILGenerator ilGenerator, Type type, LocalBuilder local)
+        {
+            if (type.IsValueType)
+            {
+                ilGenerator.EmitLdloca(local);
+                ilGenerator.Emit(OpCodes.Initobj, type);
+                ilGenerator.EmitLdloc(local);
+            }
+            else
+            {
+                ilGenerator.Emit(OpCodes.Ldnull);
+            }
+        }
+
+        public static void EmitInitStruct(this ILGenerator ilGenerator, Type type, LocalBuilder local)
         {
             ilGenerator.EmitLdloca(local);
             ilGenerator.Emit(OpCodes.Initobj, type);
-            ilGenerator.EmitLdloca(local);
         }
 
         public static void EmitValueConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
@@ -95,7 +108,7 @@ namespace Smart.Data.Accessor.Mappers
             ilGenerator.Emit(OpCodes.Callvirt, method);                         // [Value(Converted)]
         }
 
-        public static void EmitTypeConversionForProperty(this ILGenerator ilGenerator, Type type)
+        public static void EmitTypeConversionForType(this ILGenerator ilGenerator, Type type)
         {
             if (type.IsValueType)
             {
