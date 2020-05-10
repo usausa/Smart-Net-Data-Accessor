@@ -422,13 +422,13 @@ namespace Smart.Data.Accessor.Mappers
         // Constructor
         //--------------------------------------------------------------------------------
 
-        public class ByConstructor
+        public class ClassConstructorEntity
         {
             public int Id { get; }
 
             public string Name { get; }
 
-            public ByConstructor(int id, string name)
+            public ClassConstructorEntity(int id, string name)
             {
                 Id = id;
                 Name = name;
@@ -436,7 +436,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void TestByConstructor()
+        public void TestClassConstructor()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -453,7 +453,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ByConstructor>(engine, GetType().GetMethod(nameof(TestByConstructor)), false);
+            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructor)), false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -463,7 +463,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void TestByConstructorWithConvert()
+        public void TestClassConstructorWithConvert()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -480,7 +480,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ByConstructor>(engine, GetType().GetMethod(nameof(TestByConstructorWithConvert)), false);
+            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert)), false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -489,13 +489,13 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Equal("2", entity.Name);
         }
 
-        public readonly struct StructByConstructor
+        public readonly struct StructConstructorEntity
         {
             public int Id { get; }
 
             public string Name { get; }
 
-            public StructByConstructor(int id, string name)
+            public StructConstructorEntity(int id, string name)
             {
                 Id = id;
                 Name = name;
@@ -503,7 +503,7 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         [Fact]
-        public void TestStructByConstructor()
+        public void TestStructConstructor()
         {
             var engine = new ExecuteEngineConfig().ToEngine();
 
@@ -520,7 +520,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<StructByConstructor>(engine, GetType().GetMethod(nameof(TestStructByConstructor)), false);
+            var info = new QueryInfo<StructConstructorEntity>(engine, GetType().GetMethod(nameof(TestStructConstructor)), false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 

@@ -100,6 +100,36 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Null(list[6].Item2);
         }
 
+        [Fact]
+        public void TestClassPropertyWithConvert()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name"),
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1", 10, "2", 20 }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<Tuple<ClassPropertyMasterEntity, ClassPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassPropertyWithConvert)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.Equal(1, entity.Item1.Id);
+            Assert.Equal("10", entity.Item1.Name);
+            Assert.Equal(2, entity.Item2.Id);
+            Assert.Equal("20", entity.Item2.Name);
+        }
+
         //--------------------------------------------------------------------------------
         // Class/Constructor
         //--------------------------------------------------------------------------------
@@ -202,6 +232,36 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Null(list[6].Item2);
         }
 
+        [Fact]
+        public void TestClassConstructorWithConvert()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name"),
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1", 10, "2", 20 }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<Tuple<ClassConstructorMasterEntity, ClassConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.Equal(1, entity.Item1.Id);
+            Assert.Equal("10", entity.Item1.Name);
+            Assert.Equal(2, entity.Item2.Id);
+            Assert.Equal("20", entity.Item2.Name);
+        }
+
         //--------------------------------------------------------------------------------
         // Struct/Property
         //--------------------------------------------------------------------------------
@@ -290,6 +350,36 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Equal(0, list[6].Item1.Id);
             Assert.Null(list[6].Item1.Name);
             Assert.Equal(default, list[6].Item2);
+        }
+
+        [Fact]
+        public void TestStructPropertyWithConvert()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name"),
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1", 10, "2", 20 }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<Tuple<StructPropertyMasterEntity, StructPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructPropertyWithConvert)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.Equal(1, entity.Item1.Id);
+            Assert.Equal("10", entity.Item1.Name);
+            Assert.Equal(2, entity.Item2.Id);
+            Assert.Equal("20", entity.Item2.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -392,6 +482,36 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Equal(0, list[6].Item1.Id);
             Assert.Null(list[6].Item1.Name);
             Assert.Equal(default, list[6].Item2);
+        }
+
+        [Fact]
+        public void TestStructConstructorWithConvert()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name"),
+                new MockColumn(typeof(string), "Id"),
+                new MockColumn(typeof(int), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1", 10, "2", 20 }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<Tuple<StructConstructorMasterEntity, StructConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructConstructorWithConvert)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.Equal(1, entity.Item1.Id);
+            Assert.Equal("10", entity.Item1.Name);
+            Assert.Equal(2, entity.Item2.Id);
+            Assert.Equal("20", entity.Item2.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -591,7 +711,7 @@ namespace Smart.Data.Accessor.Mappers
             var columns = new[]
             {
                 new MockColumn(typeof(int), "Id"),
-                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(string), "Name")
             };
             var values = new List<object[]>
             {
@@ -642,7 +762,7 @@ namespace Smart.Data.Accessor.Mappers
             var columns = new[]
             {
                 new MockColumn(typeof(int), "Id"),
-                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(string), "Name")
             };
             var values = new List<object[]>
             {
@@ -695,7 +815,7 @@ namespace Smart.Data.Accessor.Mappers
             var columns = new[]
             {
                 new MockColumn(typeof(int), "Id"),
-                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(string), "Name")
             };
             var values = new List<object[]>
             {
@@ -735,7 +855,7 @@ namespace Smart.Data.Accessor.Mappers
             var columns = new[]
             {
                 new MockColumn(typeof(int), "Id"),
-                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(string), "Name")
             };
             var values = new List<object[]>
             {
@@ -763,6 +883,46 @@ namespace Smart.Data.Accessor.Mappers
             Assert.Equal(0, list[1].Item1.Value.Id);
             Assert.Null(list[1].Item1.Value.Name);
             Assert.Null(list[1].Item2);
+        }
+
+        //--------------------------------------------------------------------------------
+        // NoMap
+        //--------------------------------------------------------------------------------
+
+        public class NoMapMasterEntity
+        {
+            public int Id { get; }
+
+            public NoMapMasterEntity(int id)
+            {
+                Id = id;
+            }
+        }
+
+        public class NoMapSlaveEntity
+        {
+        }
+
+        [Fact]
+        public void TestNoMap()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(string), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { "1" }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<Tuple<NoMapMasterEntity, NoMapSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMap)), false);
+
+            Assert.Throws<InvalidOperationException>(() => engine.QueryBuffer(info, cmd));
         }
     }
 }
