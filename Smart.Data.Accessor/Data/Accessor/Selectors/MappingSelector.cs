@@ -7,6 +7,7 @@ namespace Smart.Data.Accessor.Selectors
 
     public class MappingSelector : IMappingSelector
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public TypeMapInfo Select(MethodInfo mi, Type type, ColumnInfo[] columns)
         {
             var matcher = new ColumnMatcher(mi, columns, 0);
