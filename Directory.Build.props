@@ -1,7 +1,6 @@
 <Project>
 
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</RepoRoot>
     <PathMap>$(RepoRoot)=.</PathMap>
