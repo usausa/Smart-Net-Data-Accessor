@@ -185,6 +185,61 @@ public static class ScriptHelper
 }
 ```
 
+## Supported result type
+
+Supported result type and result mapper factory implmentation.
+
+| Result mapper factory                                 | Target type            |
+|-------------------------------------------------------|------------------------|
+| Smart.Data.Accessor.Mappers.SingleResultMapperFactory | string, int, ...       |
+| Smart.Data.Accessor.Mappers.TupleResultMapperFactory  | Tuple, ValueTuple, ... |
+| Smart.Data.Accessor.Mappers.ObjectResultMapperFactory | Any class              |
+
+### SingleResultMapperFactory
+
+Map single column to type.
+
+```csharp
+[DataAccessor]
+public interface ISingleAccessor
+{
+    // SELECT Name FROM Data
+    [Query]
+    IList<string> QueryStringList();
+}
+```
+
+### TupleResultMapperFactory
+
+Map columns to tuple members.
+Tuple member constructor arguments and properties are supported as destinations.
+If the map destination cannot be found, the target moves to the next member of the tuple.
+
+```csharp
+[DataAccessor]
+public interface ITupleAccessor
+{
+    // SELECT T0.Date, T0.Amount, T1.Name, T1.Price FROM Transaction T0 INNER JOIN Master T1 ON T0.MasterId = T1.Id
+    [Query]
+    IList<ValueTuple<TransactionEntity, MasterEntity>> QueryTupleList();
+}
+```
+
+### ObjectResultMapperFactory
+
+Map columns to class.
+Constructor arguments and properties are supported as destinations.
+
+```csharp
+[DataAccessor]
+public interface ITupleAccessor
+{
+    // SELECT * FROM ...
+    [Query]
+    IList<DataEntity>> QueryDataList();
+}
+```
+
 ## Attributes
 
 ### Data accessor attribute
@@ -885,9 +940,23 @@ public HomeController(ISampleAccessor sampleAccessor)
 
 ## Code generation
 
-### Build option
+### Config attributes
 
-(TODO for 1.2.0)
+* EntitySuffixAttribute
+
+Class suffix to convert table name.
+Default suffis is `Entity` and `Model`.
+
+* NamingAttribute
+
+Naming rule to convert column name.
+
+| Attribute                                             |
+|-------------------------------------------------------|
+| Smart.Data.Accessor.Configs.DefaultNamingAttribute    |
+| Smart.Data.Accessor.Configs.SnakeNamingAttribute      |
+| Smart.Data.Accessor.Configs.UpperSnakeNamingAttribute |
+| Smart.Data.Accessor.Configs.CamelNamingAttribute      |
 
 ### Generated source
 
@@ -895,18 +964,18 @@ Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataA
 
 ## Benchmark (for reference purpose only)
 
-(TODO for 1.2.0)
-
-|                    Method |       Mean |      Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
-|-------------------------- |-----------:|-----------:|----------:|-------:|------:|------:|----------:|
-|             DapperExecute |   399.3 ns |  2.1018 ns |  3.146 ns | 0.1101 |     - |     - |     464 B |
-|              SmartExecute |   177.5 ns |  1.3176 ns |  1.890 ns | 0.0894 |     - |     - |     376 B |
-|       DapperExecuteScalar |   154.9 ns |  1.3411 ns |  2.007 ns | 0.0362 |     - |     - |     152 B |
-|        SmartExecuteScalar |   108.6 ns |  0.9663 ns |  1.446 ns | 0.0362 |     - |     - |     152 B |
-|     DapperQueryBufferd100 | 4,742.0 ns | 36.4373 ns | 53.409 ns | 1.3885 |     - |     - |    5856 B |
-|      SmartQueryBufferd100 | 3,434.9 ns | 21.0124 ns | 29.457 ns | 1.3199 |     - |     - |    5552 B |
-| DapperQueryFirstOrDefault |   434.9 ns |  6.0099 ns |  8.619 ns | 0.1030 |     - |     - |     432 B |
-|  SmartQueryFirstOrDefault |   302.6 ns |  1.7062 ns |  2.447 ns | 0.0758 |     - |     - |     320 B |
+|                            Method |       Mean |    Error |   StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
+|---------------------------------- |-----------:|---------:|---------:|-------:|------:|------:|----------:|
+|                     DapperExecute |   382.6 ns |  8.56 ns | 12.27 ns | 0.1087 |     - |     - |     456 B |
+|                      SmartExecute |   169.8 ns |  2.09 ns |  2.94 ns | 0.0880 |     - |     - |     368 B |
+|               DapperExecuteScalar |   144.1 ns |  1.62 ns |  2.27 ns | 0.0343 |     - |     - |     144 B |
+|                SmartExecuteScalar |   103.1 ns |  1.01 ns |  1.46 ns | 0.0343 |     - |     - |     144 B |
+|             DapperQueryBufferd100 | 4,406.1 ns | 38.97 ns | 54.63 ns | 1.3962 |     - |     - |    5840 B |
+|              SmartQueryBufferd100 | 2,948.3 ns |  9.17 ns | 13.72 ns | 1.3199 |     - |     - |    5536 B |
+|     SmartQueryBufferd100Optimized | 2,862.3 ns | 19.73 ns | 27.66 ns | 1.3199 |     - |     - |    5536 B |
+|         DapperQueryFirstOrDefault |   404.8 ns |  6.24 ns |  8.95 ns | 0.1011 |     - |     - |     424 B |
+|          SmartQueryFirstOrDefault |   235.4 ns |  1.26 ns |  1.89 ns | 0.0744 |     - |     - |     312 B |
+| SmartQueryFirstOrDefaultOptimized |   183.4 ns |  1.64 ns |  2.41 ns | 0.0744 |     - |     - |     312 B |
 
 ## Example Project
 
@@ -916,5 +985,4 @@ Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataA
 
 ## TODO
 
-* Enhanced Result mapper(constructor argument, tuple). (ver 1.0+)
-* Enhanced handling of dynamic parameters by roslyn. (ver 1.0+)
+* Code generator version (1.3+).
