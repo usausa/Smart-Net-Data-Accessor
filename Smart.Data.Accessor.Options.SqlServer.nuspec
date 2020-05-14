@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Usa.Smart.Data.Accessor.Options.SqlServer</id>
-    <version>1.2.0-beta2</version>
+    <version>1.2.0</version>
     <title>Smart.Data.Accessor.Options.SqlServer .NET</title>
     <authors>machi_pon</authors>
     <owners>machi_pon</owners>
@@ -15,8 +15,8 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <dependencies>
       <dependency id="Usa.Smart.Core" version="1.8.6" />
-      <dependency id="Usa.Smart.Data.Accessor.Core" version="1.2.0-beta2" />
-      <dependency id="Usa.Smart.Data.Accessor.Options" version="1.2.0-beta2" />
+      <dependency id="Usa.Smart.Data.Accessor.Core" version="1.2.0" />
+      <dependency id="Usa.Smart.Data.Accessor.Options" version="1.2.0" />
     </dependencies>
     <tags>smart ado.net orm dao</tags>
   </metadata>
