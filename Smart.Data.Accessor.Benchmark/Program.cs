@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Benchmark
     using System.Collections.Generic;
     using System.Data.Common;
     using System.Linq;
+    using System.Text;
 
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Configs;
@@ -131,6 +132,12 @@ namespace Smart.Data.Accessor.Benchmark
 
         [Benchmark]
         public DataEntity SmartQueryFirstOrDefaultOptimized() => smartExecuteAccessor.QueryFirstOrDefaultOptimized(mockQueryFirst, 1);
+
+        [Benchmark]
+        public long DapperWithCondition() => dapperExecuteAccessor.ExecuteScalarWithCondition(mockExecuteScalar, "1");
+
+        [Benchmark]
+        public long SmartWithCondition() => smartExecuteAccessor.ExecuteScalarWithCondition(mockExecuteScalar, "1");
     }
 
     [DataAccessor]
@@ -141,6 +148,9 @@ namespace Smart.Data.Accessor.Benchmark
 
         [ExecuteScalar]
         long ExecuteScalar(DbConnection con);
+
+        [ExecuteScalar]
+        long ExecuteScalarWithCondition(DbConnection con, string flag);
 
         [Query]
         List<DataEntity> QueryBufferd(DbConnection con);
@@ -165,6 +175,8 @@ namespace Smart.Data.Accessor.Benchmark
 
         long ExecuteScalar(DbConnection con);
 
+        long ExecuteScalarWithCondition(DbConnection con, string flag);
+
         IEnumerable<DataEntity> QueryBufferd(DbConnection con);
 
         DataEntity QueryFirstOrDefault(DbConnection con, long id);
@@ -180,6 +192,18 @@ namespace Smart.Data.Accessor.Benchmark
         public long ExecuteScalar(DbConnection con)
         {
             return con.ExecuteScalar<long>("SELECT COUNT(*) FROM Data");
+        }
+
+        public long ExecuteScalarWithCondition(DbConnection con, string flag)
+        {
+            var sql = new StringBuilder();
+            sql.Append("SELECT COUNT(*) FROM Data");
+            if (flag != null)
+            {
+                sql.Append(" WHERE Flag = @flag");
+            }
+
+            return con.ExecuteScalar<long>(sql.ToString(), new { flag });
         }
 
         public IEnumerable<DataEntity> QueryBufferd(DbConnection con)
