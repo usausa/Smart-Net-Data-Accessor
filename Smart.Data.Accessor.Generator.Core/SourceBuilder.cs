@@ -53,7 +53,7 @@ namespace Smart.Data.Accessor.Generator
         private static readonly string DbParameterType = GeneratorHelper.MakeGlobalName(typeof(DbParameter));
         private static readonly string CommandTypeType = GeneratorHelper.MakeGlobalName(typeof(CommandType));
         private static readonly string WrappedReaderType = GeneratorHelper.MakeGlobalName(typeof(WrappedReader));
-        private static readonly string StringBuilderType = GeneratorHelper.MakeGlobalName(typeof(StringBuilder));
+        private static readonly string StringBufferType = GeneratorHelper.MakeGlobalName(typeof(StringBuffer));
         private static readonly string ExceptionType = GeneratorHelper.MakeGlobalName(typeof(Exception));
         private static readonly string EnumeratorCancellationAttributeType = GeneratorHelper.MakeGlobalName(typeof(EnumeratorCancellationAttribute));
         private static readonly string HandlerType = GeneratorHelper.MakeGlobalName(typeof(Func<object, object>));
@@ -1268,7 +1268,7 @@ namespace Smart.Data.Accessor.Generator
         {
             if (mm.SqlSize != null)
             {
-                return mm.SqlSize.Size;
+                return Math.Max(mm.SqlSize.Size, 32);
             }
 
             var calc = new CalcSizeVisitor(mm);
@@ -1369,7 +1369,7 @@ namespace Smart.Data.Accessor.Generator
                 this.builder = builder;
                 this.mm = mm;
 
-                builder.AppendLine($"var {SqlVar} = new {StringBuilderType}({size});");
+                builder.AppendLine($"var {SqlVar} = new {StringBufferType}({size});");
                 builder.NewLine();
             }
 
@@ -1456,7 +1456,7 @@ namespace Smart.Data.Accessor.Generator
                     builder.NewLine();
                 }
 
-                builder.AppendLine($"var {SqlVar} = new {StringBuilderType}({size});");
+                builder.AppendLine($"var {SqlVar} = new {StringBufferType}({size});");
                 builder.NewLine();
 
                 if (mm.DynamicParameters.Count > 0)
@@ -1560,7 +1560,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static string MakeSqlSetup(MethodMetadata mm, ParameterEntry parameter, string name)
         {
-            return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.AppendSql({BuilderVar}, \"{name}\", {parameter.Source});";
+            return $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.AppendSql(ref {BuilderVar}, \"{name}\", {parameter.Source});";
         }
 
         private static string MakeParameterSetup(MethodMetadata mm, ParameterEntry parameter, string name)
@@ -1576,7 +1576,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static string MakeDynamicParameterSetup(MethodMetadata mm, DynamicParameterEntry parameter, string name)
         {
-            return $"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, {BuilderVar}, $\"{name}{{{DynamicIndexVar}++}}\", {parameter.Name});";
+            return $"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, ref {BuilderVar}, $\"{name}{{{DynamicIndexVar}++}}\", {parameter.Name});";
         }
     }
 }

@@ -6,10 +6,10 @@ namespace Smart.Data.Accessor.Engine
     using System.Data.Common;
     using System.Linq;
     using System.Reflection;
-    using System.Text;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Helpers;
+    using Smart.Data.Accessor.Runtime;
 
     public sealed partial class ExecuteEngine
     {
@@ -247,7 +247,7 @@ namespace Smart.Data.Accessor.Engine
                 this.size = size;
             }
 
-            public void AppendSql(StringBuilder sql, string name, IList values)
+            public void AppendSql(ref StringBuffer sql, string name, IList values)
             {
                 sql.Append("(");
 
@@ -333,6 +333,8 @@ namespace Smart.Data.Accessor.Engine
         // Dynamic
         //--------------------------------------------------------------------------------
 
+        private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string name, object value);
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
         private sealed class DynamicParameterEntry
         {
@@ -340,9 +342,9 @@ namespace Smart.Data.Accessor.Engine
 
             public readonly Type Type;
 
-            public readonly Action<DbCommand, StringBuilder, string, object> Handler;
+            public readonly DynamicAction Handler;
 
-            public DynamicParameterEntry(Type type, Action<DbCommand, StringBuilder, string, object> handler)
+            public DynamicParameterEntry(Type type, DynamicAction handler)
             {
                 Type = type;
                 Handler = handler;
@@ -363,7 +365,7 @@ namespace Smart.Data.Accessor.Engine
                 this.isMultiple = isMultiple;
             }
 
-            public void Setup(DbCommand cmd, StringBuilder sql, string name, object value)
+            public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object value)
             {
                 if (value is null)
                 {
@@ -391,7 +393,7 @@ namespace Smart.Data.Accessor.Engine
                     }
 
                     // [MEMO] Boxed if value type
-                    entry.Handler(cmd, sql, name, value);
+                    entry.Handler(cmd, ref sql, name, value);
                 }
             }
         }
@@ -438,9 +440,9 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private Action<DbCommand, StringBuilder, string, object> CreateDynamicListParameterHandler(Action<DbParameter, object> handler, DbType dbType)
+        private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object> handler, DbType dbType)
         {
-            return (cmd, sql, name, value) =>
+            void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
             {
                 var values = (IList)value;
 
@@ -479,7 +481,9 @@ namespace Smart.Data.Accessor.Engine
                     }
                     parameter.ParameterName = name + GetParameterSubName(i);
                 }
-            };
+            }
+
+            return Build;
         }
 
         private DynamicParameterEntry CreateDynamicSimpleParameterSetup(Type type)
@@ -499,9 +503,9 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static Action<DbCommand, StringBuilder, string, object> CreateDynamicSimpleParameterHandler(Action<DbParameter, object> handler, DbType dbType)
+        private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object> handler, DbType dbType)
         {
-            return (cmd, sql, name, value) =>
+            void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
             {
                 sql.Append(name);
 
@@ -517,7 +521,9 @@ namespace Smart.Data.Accessor.Engine
                     parameter.DbType = dbType;
                 }
                 parameter.ParameterName = name;
-            };
+            }
+
+            return Build;
         }
 
         public DynamicParameterSetup CreateDynamicParameterSetup(bool isMultiple)

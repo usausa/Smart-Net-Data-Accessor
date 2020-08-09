@@ -10,6 +10,12 @@ namespace Smart.Data.Accessor.Runtime
 
         private int index;
 
+        public int Length
+        {
+            get => index;
+            set => index = value;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StringBuffer(int length)
         {
@@ -18,6 +24,12 @@ namespace Smart.Data.Accessor.Runtime
                 buffer = new char[length];
             }
             index = 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Append<T>(T value)
+        {
+            Append(value.ToString());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
