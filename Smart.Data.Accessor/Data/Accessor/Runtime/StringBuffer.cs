@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Runtime
     using System;
     using System.Runtime.CompilerServices;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1815:OverrideEqualsAndOperatorEqualsOnValue", Justification = "Ignore")]
     public struct StringBuffer
     {
         [ThreadStatic]
@@ -32,6 +33,7 @@ namespace Smart.Data.Accessor.Runtime
             Append(value.ToString());
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(string value)
         {
