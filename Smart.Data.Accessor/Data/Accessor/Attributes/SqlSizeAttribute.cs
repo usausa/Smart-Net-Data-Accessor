@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Attributes
 
         public SqlSizeAttribute(int size)
         {
-            Size = size;
+            Size = Math.Max(size, 32);
         }
     }
 }

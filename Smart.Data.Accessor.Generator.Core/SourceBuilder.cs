@@ -1268,7 +1268,7 @@ namespace Smart.Data.Accessor.Generator
         {
             if (mm.SqlSize != null)
             {
-                return Math.Max(mm.SqlSize.Size, 32);
+                return mm.SqlSize.Size;
             }
 
             var calc = new CalcSizeVisitor(mm);
