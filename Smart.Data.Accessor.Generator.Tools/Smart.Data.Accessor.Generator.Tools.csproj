@@ -7,21 +7,42 @@
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Usa.Smart.Data.Accessor</PackageId>
+    <Title>Smart.Data.Accessor .NET</Title>
+    <Description>Smart data accessor generator library for .NET</Description>
+    <Summary>Smart data accessor generator library for .NET</Summary>
+    <PackageTags>smart ado.net orm dao</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" PrivateAssets="All" />
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\PublishProfiles\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Usa.Smart.Core" Version="1.8.6" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\**" Pack="True" PackagePath="build\netstandard2.1\" />
+  </ItemGroup>
+
+  <Target Name="PackToolsDependencies" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_PackageFiles Include="$(OutDir)\*.dll" Exclude="$(OutDir)$(TargetFileName)">
+        <PackagePath>tools\$(TargetFramework)\%(RecursiveDir)</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
+  </Target>
 
 </Project>

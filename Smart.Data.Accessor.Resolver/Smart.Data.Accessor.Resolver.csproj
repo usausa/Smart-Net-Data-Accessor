@@ -5,6 +5,14 @@
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageId>Usa.Smart.Data.Accessor.Resolver</PackageId>
+    <Title>Smart.Data.Accessor.Resolver .NET</Title>
+    <Description>Smart data accessor generator library for .NET</Description>
+    <Summary>Smart data accessor generator library for .NET</Summary>
+    <PackageTags>smart ado.net orm dao ioc di dependencyinjection</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Usa.Smart.Core" Version="1.8.6" />
     <PackageReference Include="Usa.Smart.Data" Version="1.4.1" />

@@ -6,6 +6,14 @@
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageId>Usa.Smart.Data.Accessor.Options.SqlServer</PackageId>
+    <Title>Smart.Data.Accessor.Options.SqlServer .NET</Title>
+    <Description>Smart data accessor generator library for .NET</Description>
+    <Summary>Smart data accessor generator library for .NET</Summary>
+    <PackageTags>smart ado.net orm dao</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Usa.Smart.Core" Version="1.8.6" />
   </ItemGroup>
