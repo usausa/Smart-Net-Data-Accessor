@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.7" />
     <PackageReference Include="Usa.Smart.Core" Version="1.8.8" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.2.1" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="1.2.1" />

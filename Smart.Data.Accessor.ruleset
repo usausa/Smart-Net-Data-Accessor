@@ -33,6 +33,7 @@
   <Rules AnalyzerId="Microsoft.NetCore.Analyzers" RuleNamespace="Microsoft.NetCore.Analyzers">
     <Rule Id="CA1307" Action="Hidden" />
     <Rule Id="CA1303" Action="Hidden" />
+    <Rule Id="CA1834" Action="None" />
   </Rules>
   <Rules AnalyzerId="Microsoft.NetCore.CSharp.Analyzers" RuleNamespace="Microsoft.NetCore.CSharp.Analyzers">
     <Rule Id="CA1810" Action="Hidden" />

@@ -15,7 +15,7 @@ namespace Smart.Data.Accessor.Resolver.Providers
             TargetType = type;
         }
 
-        public Func<IResolver, object> CreateFactory(IKernel kernel, IBinding binding)
+        public Func<IResolver, object> CreateFactory(IKernel kernel, Binding binding)
         {
             return r =>
             {

@@ -33,7 +33,7 @@ namespace Smart.Data.Accessor.Nodes
             {
                 if (appendBlank)
                 {
-                    sql.Append(" ");
+                    sql.Append(' ');
                 }
 
                 bodyNodes.Add(new SqlNode(sql.ToString()));
@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Nodes
         {
             if (!lastParenthesis && appendBlank && ((sql.Length > 0) || (bodyNodes.Count > 0)))
             {
-                sql.Append(" ");
+                sql.Append(' ');
             }
 
             sql.Append(value);

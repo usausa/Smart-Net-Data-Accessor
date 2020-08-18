@@ -1329,7 +1329,7 @@ namespace Smart.Data.Accessor.Generator
             {
                 var parameter = mm.FindParameterByName(node.Name);
                 var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
-                sql.Append("@");
+                sql.Append('@');
                 sql.Append(parameterName);
             }
 
