@@ -796,11 +796,11 @@ public interface ICodeValueAccessor
 
 Support database specific UPSERT, SELECT FOR UPDATE, etc.
 
-| Package                                   | Database   |
-|-------------------------------------------|------------|
-| Usa.Smart.Data.Accessor.Options.SqlServer | SQL Server |
-| Usa.Smart.Data.Accessor.Options.MySql     | MySQL      |
-| Usa.Smart.Data.Accessor.Options.Postgres  | PostgreSQL |
+| Package | Database   |
+|-|-|
+| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.SqlServer)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.SqlServer/) | SQL Server |
+| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.MySql)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.MySql/) | MySQL |
+| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.Postgres)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.Postgres/) | PostgreSQL |
 
 ## Special arguments
 
