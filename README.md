@@ -1,5 +1,7 @@
 # Smart.Data.Accessor .NET - data accessor generator library for .NET
 
+[![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor/)
+
 ## What is this?
 
 * Build-time data accessor generator library.
