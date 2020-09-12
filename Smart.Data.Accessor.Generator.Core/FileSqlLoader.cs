@@ -4,8 +4,10 @@ namespace Smart.Data.Accessor.Generator
     using System.IO;
     using System.Reflection;
     using System.Text;
+    using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
+    using Smart.Data.Accessor.Generator.Helpers;
 
     public class FileSqlLoader : ISqlLoader
     {
@@ -52,7 +54,19 @@ namespace Smart.Data.Accessor.Generator
             var path = Path.Combine(dir, filename);
             if (!File.Exists(path))
             {
-                throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
+                var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
+                var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;
+                if (!isAsync && !methodName.EndsWith("Async"))
+                {
+                    throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
+                }
+
+                filename = $"{interfaceName.Replace('+', '.')}.{methodName.Substring(0, methodName.Length - 5)}.sql";
+                path = Path.Combine(dir, filename);
+                if (!File.Exists(path))
+                {
+                    throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
+                }
             }
 
             return File.ReadAllText(path, Encoding.UTF8);
