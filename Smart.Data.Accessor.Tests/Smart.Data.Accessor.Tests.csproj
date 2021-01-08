@@ -13,8 +13,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Linq.Async" Version="5.0.0" />
-    <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
-    <PackageReference Include="System.Threading.AccessControl" Version="5.0.0" />
     <PackageReference Include="Usa.Smart.Core" Version="2.0.0-beta1" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.0.0-beta1" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="2.0.0-beta1" />
