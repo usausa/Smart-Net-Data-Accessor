@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor.Mappers
 
     public sealed class ObjectResultMapperFactory : IResultMapperFactory
     {
-        public static ObjectResultMapperFactory Instance { get; } = new ObjectResultMapperFactory();
+        public static ObjectResultMapperFactory Instance { get; } = new();
 
         private int typeNo;
 

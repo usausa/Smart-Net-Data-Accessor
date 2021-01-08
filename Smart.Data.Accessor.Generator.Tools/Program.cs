@@ -24,7 +24,7 @@ namespace Smart.Data.Accessor.Generator
 
             var targetAssembly = Assembly.LoadFile(target);
             var context = AssemblyLoadContext.GetLoadContext(targetAssembly);
-            context.Resolving += (loadContext, name) =>
+            context.Resolving += (_, name) =>
             {
                 if (references.TryGetValue(name.Name, out var reference))
                 {

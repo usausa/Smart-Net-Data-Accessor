@@ -14,9 +14,9 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
     internal sealed class ParameterResolveVisitor : NodeVisitorBase
     {
-        private readonly List<ParameterEntry> parameters = new List<ParameterEntry>();
+        private readonly List<ParameterEntry> parameters = new();
 
-        private readonly List<DynamicParameterEntry> dynamicParameters = new List<DynamicParameterEntry>();
+        private readonly List<DynamicParameterEntry> dynamicParameters = new();
 
         public IReadOnlyList<ParameterEntry> Parameters => parameters;
 
@@ -24,7 +24,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private readonly MethodInfo method;
 
-        private readonly HashSet<string> processed = new HashSet<string>();
+        private readonly HashSet<string> processed = new();
 
         private int index;
 

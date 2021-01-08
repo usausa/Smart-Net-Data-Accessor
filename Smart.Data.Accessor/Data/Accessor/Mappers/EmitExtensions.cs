@@ -11,7 +11,7 @@ namespace Smart.Data.Accessor.Mappers
 
     internal static class EmitExtensions
     {
-        private static readonly Dictionary<Type, Action<ILGenerator>> LdcDictionary = new Dictionary<Type, Action<ILGenerator>>
+        private static readonly Dictionary<Type, Action<ILGenerator>> LdcDictionary = new()
         {
             { typeof(bool), il => il.Emit(OpCodes.Ldc_I4_0) },
             { typeof(byte), il => il.Emit(OpCodes.Ldc_I4_0) },

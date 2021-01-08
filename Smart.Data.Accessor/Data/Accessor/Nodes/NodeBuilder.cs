@@ -11,11 +11,11 @@ namespace Smart.Data.Accessor.Nodes
     {
         private readonly IReadOnlyList<Token> tokens;
 
-        private readonly List<INode> pragmaNodes = new List<INode>();
+        private readonly List<INode> pragmaNodes = new();
 
-        private readonly List<INode> bodyNodes = new List<INode>();
+        private readonly List<INode> bodyNodes = new();
 
-        private readonly StringBuilder sql = new StringBuilder();
+        private readonly StringBuilder sql = new();
 
         private int current;
 

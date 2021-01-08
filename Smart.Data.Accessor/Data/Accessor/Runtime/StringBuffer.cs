@@ -53,7 +53,7 @@ namespace Smart.Data.Accessor.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return new string(buffer, 0, index);
+            return new(buffer, 0, index);
         }
     }
 }

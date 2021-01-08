@@ -10,7 +10,7 @@ namespace Smart.Mock
 
     public class TestFactoryBuilder
     {
-        private readonly ExecuteEngineConfig config = new ExecuteEngineConfig();
+        private readonly ExecuteEngineConfig config = new();
 
         private ISqlLoader loader;
 
@@ -72,7 +72,7 @@ namespace Smart.Mock
 
         public TestFactory Build()
         {
-            return new TestFactory(loader, config.ToEngine());
+            return new(loader, config.ToEngine());
         }
     }
 }

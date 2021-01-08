@@ -7,9 +7,9 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
     internal sealed class UsingResolveVisitor : NodeVisitorBase
     {
-        private readonly HashSet<string> usings = new HashSet<string>();
+        private readonly HashSet<string> usings = new();
 
-        private readonly HashSet<string> helpers = new HashSet<string>();
+        private readonly HashSet<string> helpers = new();
 
         public IEnumerable<string> Usings
         {

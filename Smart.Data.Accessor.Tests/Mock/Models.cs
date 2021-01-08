@@ -24,10 +24,10 @@ namespace Smart.Mock
 
         public static MockColumn[] Columns { get; } =
         {
-            new MockColumn(typeof(long), nameof(Key1)),
-            new MockColumn(typeof(long), nameof(Key2)),
-            new MockColumn(typeof(string), nameof(Type)),
-            new MockColumn(typeof(string), nameof(Name))
+            new(typeof(long), nameof(Key1)),
+            new(typeof(long), nameof(Key2)),
+            new(typeof(string), nameof(Type)),
+            new(typeof(string), nameof(Name))
         };
     }
 }

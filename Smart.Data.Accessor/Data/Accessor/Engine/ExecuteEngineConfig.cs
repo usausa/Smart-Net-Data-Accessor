@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor.Engine
 
     public sealed class ExecuteEngineConfig : IExecuteEngineConfig
     {
-        private static readonly Dictionary<Type, DbType> DefaultTypeMap = new Dictionary<Type, DbType>
+        private static readonly Dictionary<Type, DbType> DefaultTypeMap = new()
         {
             { typeof(byte), DbType.Byte },
             { typeof(sbyte), DbType.SByte },
@@ -37,7 +37,7 @@ namespace Smart.Data.Accessor.Engine
             { typeof(object), DbType.Object }
         };
 
-        private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new List<IResultMapperFactory>
+        private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new()
         {
             new SingleResultMapperFactory(),
             TupleResultMapperFactory.Instance,
@@ -48,11 +48,11 @@ namespace Smart.Data.Accessor.Engine
 
         private ComponentConfig components;
 
-        private Dictionary<Type, DbType> typeMap = new Dictionary<Type, DbType>(DefaultTypeMap);
+        private Dictionary<Type, DbType> typeMap = new(DefaultTypeMap);
 
-        private Dictionary<Type, ITypeHandler> typeHandlers = new Dictionary<Type, ITypeHandler>();
+        private Dictionary<Type, ITypeHandler> typeHandlers = new();
 
-        private List<IResultMapperFactory> resultMapperFactories = new List<IResultMapperFactory>(DefaultResultMapperFactories);
+        private List<IResultMapperFactory> resultMapperFactories = new(DefaultResultMapperFactories);
 
         //--------------------------------------------------------------------------------
         // Config

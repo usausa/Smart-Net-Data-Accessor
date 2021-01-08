@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Engine
             config.SetServiceProvider(provider);
             Assert.Equal(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
 
-            config.ConfigureComponents(components => { });
+            config.ConfigureComponents(_ => { });
             Assert.NotEqual(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
         }
     }

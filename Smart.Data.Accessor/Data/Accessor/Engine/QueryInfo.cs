@@ -9,9 +9,9 @@ namespace Smart.Data.Accessor.Engine
 
     public sealed class QueryInfo<T>
     {
-        private static readonly Node EmptyNode = new Node(Array.Empty<ColumnInfo>(), null);
+        private static readonly Node EmptyNode = new(Array.Empty<ColumnInfo>(), null);
 
-        private readonly object sync = new object();
+        private readonly object sync = new();
 
         private readonly ExecuteEngine engine;
 

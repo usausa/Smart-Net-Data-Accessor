@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Tokenizer
 
     public sealed class SqlTokenizer
     {
-        private readonly List<Token> tokens = new List<Token>();
+        private readonly List<Token> tokens = new();
 
         private readonly string source;
 

@@ -208,7 +208,7 @@ namespace Smart.Data.Accessor.Engine
 
         public sealed class ReturnParameterSetup
         {
-            public static ReturnParameterSetup Instance { get; } = new ReturnParameterSetup();
+            public static ReturnParameterSetup Instance { get; } = new();
 
             private ReturnParameterSetup()
             {
@@ -338,7 +338,7 @@ namespace Smart.Data.Accessor.Engine
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
         private sealed class DynamicParameterEntry
         {
-            public static DynamicParameterEntry Empty { get; } = new DynamicParameterEntry(null, null);
+            public static DynamicParameterEntry Empty { get; } = new(null, null);
 
             public readonly Type Type;
 
@@ -528,7 +528,7 @@ namespace Smart.Data.Accessor.Engine
 
         public DynamicParameterSetup CreateDynamicParameterSetup(bool isMultiple)
         {
-            return new DynamicParameterSetup(this, isMultiple);
+            return new(this, isMultiple);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor.Mappers
 
     public sealed class TupleResultMapperFactory : IResultMapperFactory
     {
-        public static TupleResultMapperFactory Instance { get; } = new TupleResultMapperFactory();
+        public static TupleResultMapperFactory Instance { get; } = new();
 
         private int typeNo;
 

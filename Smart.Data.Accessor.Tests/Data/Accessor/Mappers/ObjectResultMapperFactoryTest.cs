@@ -199,7 +199,7 @@ namespace Smart.Data.Accessor.Mappers
                     1,
                     1
                 },
-                Enumerable.Range(1, columns.Length).Select(x => (object)DBNull.Value).ToArray()
+                Enumerable.Range(1, columns.Length).Select(_ => (object)DBNull.Value).ToArray()
             };
 
             // Execute

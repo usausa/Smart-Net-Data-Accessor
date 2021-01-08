@@ -66,9 +66,9 @@ namespace Smart.Data.Accessor.Generator
 
         private readonly Type targetType;
 
-        private readonly List<MethodMetadata> methods = new List<MethodMetadata>();
+        private readonly List<MethodMetadata> methods = new();
 
-        private readonly StringBuilder source = new StringBuilder();
+        private readonly StringBuilder source = new();
 
         private readonly string interfaceFullName;
 
@@ -1315,7 +1315,7 @@ namespace Smart.Data.Accessor.Generator
 
             private readonly MethodMetadata mm;
 
-            private readonly StringBuilder sql = new StringBuilder();
+            private readonly StringBuilder sql = new();
 
             public SimpleBuildVisitor(SourceBuilder builder, MethodMetadata mm)
             {
@@ -1362,7 +1362,7 @@ namespace Smart.Data.Accessor.Generator
 
             private readonly MethodMetadata mm;
 
-            private readonly StringBuilder sql = new StringBuilder();
+            private readonly StringBuilder sql = new();
 
             public HasMultipleBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
             {
@@ -1437,7 +1437,7 @@ namespace Smart.Data.Accessor.Generator
 
             private readonly MethodMetadata mm;
 
-            private readonly StringBuilder sql = new StringBuilder();
+            private readonly StringBuilder sql = new();
 
             public DynamicBuildVisitor(SourceBuilder builder, MethodMetadata mm, int size)
             {

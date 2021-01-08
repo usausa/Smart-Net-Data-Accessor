@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Selectors
         public ColumnMatcher(MethodInfo mi, IEnumerable<ColumnInfo> columns, int offset)
         {
             this.mi = mi;
-            this.columns = columns.Select((x, i) => new ColumnAndIndex { Column = x, Index = i + offset }).ToList();
+            this.columns = columns.Select((x, i) => new ColumnAndIndex(x, i + offset)).ToList();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
@@ -50,11 +50,7 @@ namespace Smart.Data.Accessor.Selectors
                 typeMatch += (column.Column.Type == pi.ParameterType) ? 1 : 0;
             }
 
-            return new ConstructorMatch
-            {
-                Map = new ConstructorMapInfo(ci, parameters.OrderBy(x => x.Index).ToList()),
-                TypeMatch = typeMatch
-            };
+            return new ConstructorMatch(new ConstructorMapInfo(ci, parameters.OrderBy(x => x.Index).ToList()), typeMatch);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
@@ -84,16 +80,28 @@ namespace Smart.Data.Accessor.Selectors
 
         private class ColumnAndIndex
         {
-            public ColumnInfo Column { get; set; }
+            public ColumnInfo Column { get; }
 
-            public int Index { get; set; }
+            public int Index { get; }
+
+            public ColumnAndIndex(ColumnInfo column, int index)
+            {
+                Column = column;
+                Index = index;
+            }
         }
 
         private class ConstructorMatch
         {
-            public ConstructorMapInfo Map { get; set; }
+            public ConstructorMapInfo Map { get; }
 
-            public int TypeMatch { get; set; }
+            public int TypeMatch { get; }
+
+            public ConstructorMatch(ConstructorMapInfo map, int typeMatch)
+            {
+                Map = map;
+                TypeMatch = typeMatch;
+            }
         }
     }
 }

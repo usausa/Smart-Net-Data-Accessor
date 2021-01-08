@@ -27,7 +27,7 @@ namespace Smart.Data.Accessor.Engine
 
         private readonly IResultMapperFactory[] resultMapperFactories;
 
-        private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new ThreadsafeTypeHashArrayMap<DynamicParameterEntry>();
+        private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new();
 
         private readonly string[] parameterSubNames;
 

@@ -8,7 +8,7 @@ namespace Smart.Data.Accessor.Generator
     {
         private readonly string outputDirectory;
 
-        private readonly List<string> newFiles = new List<string>();
+        private readonly List<string> newFiles = new();
 
         public IEnumerable<string> NewFiles => newFiles;
 
