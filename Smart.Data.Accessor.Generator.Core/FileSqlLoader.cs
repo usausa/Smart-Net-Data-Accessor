@@ -32,7 +32,7 @@ namespace Smart.Data.Accessor.Generator
 
             // Dir
             var dir = rootDirectory;
-            if (ns.StartsWith(rootNamespace + "."))
+            if (ns.StartsWith(rootNamespace + ".", StringComparison.Ordinal))
             {
                 dir = Path.Combine(rootDirectory, ns.Substring(rootNamespace.Length + 1).Replace('.', Path.DirectorySeparatorChar));
             }
@@ -56,7 +56,7 @@ namespace Smart.Data.Accessor.Generator
             {
                 var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
                 var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;
-                if (!isAsync && !methodName.EndsWith("Async"))
+                if (!isAsync && !methodName.EndsWith("Async", StringComparison.Ordinal))
                 {
                     throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
                 }

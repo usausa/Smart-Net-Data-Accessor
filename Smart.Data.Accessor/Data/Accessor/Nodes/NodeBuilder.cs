@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Nodes
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -101,31 +102,31 @@ namespace Smart.Data.Accessor.Nodes
         private void ParseComment(string value)
         {
             // Pragma
-            if (value.StartsWith("!helper"))
+            if (value.StartsWith("!helper", StringComparison.Ordinal))
             {
                 AddPragmaNode(new UsingNode(true, value.Substring(7).Trim()));
             }
 
-            if (value.StartsWith("!using"))
+            if (value.StartsWith("!using", StringComparison.Ordinal))
             {
                 AddPragmaNode(new UsingNode(false, value.Substring(6).Trim()));
             }
 
             // Code
-            if (value.StartsWith("%"))
+            if (value.StartsWith("%", StringComparison.Ordinal))
             {
                 AddBody(new CodeNode(value.Substring(1).Trim()), false);
             }
 
             // Raw
-            if (value.StartsWith("#"))
+            if (value.StartsWith("#", StringComparison.Ordinal))
             {
                 SkipToken();
                 AddBody(new RawSqlNode(value.Substring(1).Trim()), true);
             }
 
             // Parameter
-            if (value.StartsWith("@"))
+            if (value.StartsWith("@", StringComparison.Ordinal))
             {
                 bool hasParenthesis = SkipToken();
                 AddBody(new ParameterNode(value.Substring(1).Trim(), hasParenthesis), !lastParenthesis);

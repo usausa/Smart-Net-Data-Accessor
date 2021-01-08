@@ -26,16 +26,14 @@
     <Rule Id="SA1649" Action="Hidden" />
     <Rule Id="SA1652" Action="Hidden" />
   </Rules>
-  <Rules AnalyzerId="Microsoft.CodeQuality.Analyzers" RuleNamespace="Microsoft.CodeQuality.Analyzers">
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.NetAnalyzers" RuleNamespace="Microsoft.CodeAnalysis.NetAnalyzers">
+    <Rule Id="CA1002" Action="Hidden" />
+    <Rule Id="CA1019" Action="Hidden" />
     <Rule Id="CA1034" Action="Hidden" />
-    <Rule Id="CA1716" Action="Hidden" />
-  </Rules>
-  <Rules AnalyzerId="Microsoft.NetCore.Analyzers" RuleNamespace="Microsoft.NetCore.Analyzers">
-    <Rule Id="CA1307" Action="Hidden" />
     <Rule Id="CA1303" Action="Hidden" />
-    <Rule Id="CA1834" Action="None" />
-  </Rules>
-  <Rules AnalyzerId="Microsoft.NetCore.CSharp.Analyzers" RuleNamespace="Microsoft.NetCore.CSharp.Analyzers">
+    <Rule Id="CA1307" Action="Hidden" />
+    <Rule Id="CA1716" Action="Hidden" />
     <Rule Id="CA1810" Action="Hidden" />
+    <Rule Id="CA1834" Action="Hidden" />
   </Rules>
 </RuleSet>

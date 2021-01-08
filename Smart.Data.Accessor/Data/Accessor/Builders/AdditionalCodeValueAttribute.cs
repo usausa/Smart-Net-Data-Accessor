@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Builders
     using System;
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class AdditionalCodeValueAttribute : Attribute
+    public sealed class AdditionalCodeValueAttribute : Attribute
     {
         public string Column { get; }
 

@@ -60,7 +60,7 @@ namespace Smart.Data.Accessor.Configs
             var suffix = type.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
                          type.Assembly.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
                          EntitySuffix.Default;
-            var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x));
+            var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x, StringComparison.Ordinal));
             var name = match == null
                 ? type.Name
                 : type.Name.Substring(0, type.Name.Length - match.Length);

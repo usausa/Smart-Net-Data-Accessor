@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Smart.Data.Accessor.Generator.Tools": {
+      "commandName": "Project",
+      "commandLineArgs": "\"S:\\GitHub\\Smart-Net-Data-Accessor\\Example.ConsoleApplication\\bin\\Debug\\netcoreapp2.2\\Example.ConsoleApplication.dll\" \"S:\\GitHub\\Smart-Net-Data-Accessor\\Example.ConsoleApplication\\obj\\Debug\\netcoreapp2.2\\SmartDataAccessor\" S:\\GitHub\\Smart-Net-Data-Accessor\\Example.ConsoleApplication\\obj\\Debug\\netcoreapp2.2\\SmartDataAccessorReference.txt \"S:\\GitHub\\Smart-Net-Data-Accessor\\Example.ConsoleApplication\" Example.ConsoleApplication Sql"
+    }
+  }
+}

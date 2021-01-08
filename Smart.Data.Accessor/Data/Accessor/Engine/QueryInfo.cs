@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor.Engine
     using System.Data;
     using System.Reflection;
     using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using System.Threading;
 
     public sealed class QueryInfo<T>
@@ -138,7 +139,7 @@ namespace Smart.Data.Accessor.Engine
             var node = firstNode;
             do
             {
-                if (IsMatchColumn(node.Columns, columns))
+                if (IsMatchColumn(node.Columns.AsSpan(), columns))
                 {
                     return node.Value;
                 }
@@ -169,27 +170,29 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsMatchColumn(ColumnInfo[] columns1, Span<ColumnInfo> columns2)
+        private static bool IsMatchColumn(Span<ColumnInfo> columns1, Span<ColumnInfo> columns2)
         {
             if (columns1.Length != columns2.Length)
             {
                 return false;
             }
 
+            ref var column1 = ref MemoryMarshal.GetReference(columns1);
+            ref var column2 = ref MemoryMarshal.GetReference(columns2);
             for (var i = 0; i < columns1.Length; i++)
             {
-                var column1 = columns1[i];
-                var column2 = columns2[i];
-
                 if (column1.Type != column2.Type)
                 {
                     return false;
                 }
 
-                if (String.Compare(column1.Name, column2.Name, StringComparison.OrdinalIgnoreCase) != 0)
+                if (String.Compare(column1.Name, column2.Name, StringComparison.Ordinal) != 0)
                 {
                     return false;
                 }
+
+                column1 = ref Unsafe.Add(ref column1, 1);
+                column2 = ref Unsafe.Add(ref column2, 1);
             }
 
             return true;

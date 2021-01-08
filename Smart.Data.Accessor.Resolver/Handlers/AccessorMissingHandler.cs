@@ -16,7 +16,7 @@ namespace Smart.Data.Accessor.Resolver.Handlers
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Factory")]
-        public IEnumerable<Binding> Handle(IComponentContainer components, BindingTable table, Type type)
+        public IEnumerable<Binding> Handle(ComponentContainer components, BindingTable table, Type type)
         {
             if (!type.IsInterface || (type.GetCustomAttribute<DataAccessorAttribute>() == null))
             {

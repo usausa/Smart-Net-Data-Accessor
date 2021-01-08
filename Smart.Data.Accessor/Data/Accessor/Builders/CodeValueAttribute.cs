@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Builders
     using System;
 
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class CodeValueAttribute : Attribute
+    public sealed class CodeValueAttribute : Attribute
     {
         public string Value { get; }
 

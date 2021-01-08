@@ -31,6 +31,7 @@ namespace Smart.Data.Accessor.Generator
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1508", Justification = "Analyzers bug ?")]
         private string CreateSource(Type type)
         {
             var builder = new SourceBuilder(type, TypeNaming.MakeAccessorName(type));
