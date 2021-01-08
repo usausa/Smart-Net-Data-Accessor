@@ -198,7 +198,7 @@ namespace Smart.Data.Accessor.Benchmark
         {
             var sql = new StringBuilder();
             sql.Append("SELECT COUNT(*) FROM Data");
-            if (flag != null)
+            if (flag is not null)
             {
                 sql.Append(" WHERE Flag = @flag");
             }

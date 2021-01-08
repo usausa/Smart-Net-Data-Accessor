@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor.Engine
             {
                 if (optimize)
                 {
-                    return optimizedMapper != null ? 1 : 0;
+                    return optimizedMapper is not null ? 1 : 0;
                 }
 
                 var node = firstNode;
@@ -39,7 +39,7 @@ namespace Smart.Data.Accessor.Engine
                 }
 
                 var count = 1;
-                while (node.Next != null)
+                while (node.Next is not null)
                 {
                     node = node.Next;
                     count++;
@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Engine
         {
             if (optimize)
             {
-                if (optimizedMapper != null)
+                if (optimizedMapper is not null)
                 {
                     return optimizedMapper;
                 }
@@ -75,7 +75,7 @@ namespace Smart.Data.Accessor.Engine
                     }
 
                     // Double checked locking
-                    if (optimizedMapper != null)
+                    if (optimizedMapper is not null)
                     {
                         return optimizedMapper;
                     }
@@ -103,7 +103,7 @@ namespace Smart.Data.Accessor.Engine
                 var columns = new Span<ColumnInfo>(ThreadLocalCache.ColumnInfoPool, 0, fieldCount);
 
                 var mapper = FindMapper(columns);
-                if (mapper != null)
+                if (mapper is not null)
                 {
                     return mapper;
                 }
@@ -112,7 +112,7 @@ namespace Smart.Data.Accessor.Engine
                 {
                     // Double checked locking
                     mapper = FindMapper(columns);
-                    if (mapper != null)
+                    if (mapper is not null)
                     {
                         return mapper;
                     }
@@ -146,7 +146,7 @@ namespace Smart.Data.Accessor.Engine
 
                 node = node.Next;
             }
-            while (node != null);
+            while (node is not null);
 
             return null;
         }
@@ -160,7 +160,7 @@ namespace Smart.Data.Accessor.Engine
             else
             {
                 var lastNode = node;
-                while (lastNode.Next != null)
+                while (lastNode.Next is not null)
                 {
                     lastNode = lastNode.Next;
                 }

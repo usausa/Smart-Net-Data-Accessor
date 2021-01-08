@@ -52,7 +52,7 @@ namespace Smart.Data.Accessor.Configs
         private static string GetTableName(Type type, Func<string, string> naming)
         {
             var attr = type.GetCustomAttribute<NameAttribute>();
-            if (attr != null)
+            if (attr is not null)
             {
                 return attr.Name;
             }
@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Configs
                          type.Assembly.GetCustomAttribute<EntitySuffixAttribute>()?.Values ??
                          EntitySuffix.Default;
             var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x, StringComparison.Ordinal));
-            var name = match == null
+            var name = match is null
                 ? type.Name
                 : type.Name.Substring(0, type.Name.Length - match.Length);
             return naming(name);
@@ -89,7 +89,7 @@ namespace Smart.Data.Accessor.Configs
         public static string GetMethodPropertyColumnName(MethodInfo mi, PropertyInfo pi)
         {
             var name = pi.GetCustomAttribute<NameAttribute>();
-            if (name != null)
+            if (name is not null)
             {
                 return name.Name;
             }
@@ -102,7 +102,7 @@ namespace Smart.Data.Accessor.Configs
         public static string GetMethodParameterPropertyColumnName(MethodInfo mi, ParameterInfo pmi, PropertyInfo pi)
         {
             var name = pi.GetCustomAttribute<NameAttribute>();
-            if (name != null)
+            if (name is not null)
             {
                 return name.Name;
             }
@@ -115,7 +115,7 @@ namespace Smart.Data.Accessor.Configs
         public static string GetMethodParameterColumnName(MethodInfo mi, ParameterInfo pmi)
         {
             var name = pmi.GetCustomAttribute<NameAttribute>();
-            if (name != null)
+            if (name is not null)
             {
                 return name.Name;
             }

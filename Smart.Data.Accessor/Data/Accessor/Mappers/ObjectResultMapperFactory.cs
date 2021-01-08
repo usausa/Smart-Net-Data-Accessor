@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             get
             {
-                if (moduleBuilder == null)
+                if (moduleBuilder is null)
                 {
                     assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
                         new AssemblyName("ObjectResultMapperFactoryAssembly"),
@@ -72,7 +72,7 @@ namespace Smart.Data.Accessor.Mappers
             // Constructor
             // --------------------------------------------------------------------------------
 
-            if (typeMap.Constructor != null)
+            if (typeMap.Constructor is not null)
             {
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {
@@ -95,7 +95,7 @@ namespace Smart.Data.Accessor.Mappers
 
             foreach (var propertyMap in typeMap.Properties)
             {
-                if (ctorLocal != null)
+                if (ctorLocal is not null)
                 {
                     ilGenerator.EmitLdloca(ctorLocal);
                 }
@@ -111,7 +111,7 @@ namespace Smart.Data.Accessor.Mappers
                 ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
             }
 
-            if (ctorLocal != null)
+            if (ctorLocal is not null)
             {
                 ilGenerator.EmitLdloc(ctorLocal);
             }

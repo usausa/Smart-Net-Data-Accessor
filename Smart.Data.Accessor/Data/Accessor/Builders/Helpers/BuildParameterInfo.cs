@@ -14,7 +14,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public string ParameterName { get; }
 
-        public Type ParameterType => parameter != null ? parameter.ParameterType : property.PropertyType;
+        public Type ParameterType => parameter is not null ? parameter.ParameterType : property.PropertyType;
 
         public BuildParameterInfo(ParameterInfo parameter, PropertyInfo property, string name, string parameterName)
         {
@@ -33,13 +33,13 @@ namespace Smart.Data.Accessor.Builders.Helpers
         public T GetAttribute<T>()
             where T : Attribute
         {
-            return property != null ? property.GetCustomAttribute<T>() : parameter.GetCustomAttribute<T>();
+            return property is not null ? property.GetCustomAttribute<T>() : parameter.GetCustomAttribute<T>();
         }
 
         public IEnumerable<T> GetAttributes<T>()
             where T : Attribute
         {
-            return property != null ? property.GetCustomAttributes<T>() : parameter.GetCustomAttributes<T>();
+            return property is not null ? property.GetCustomAttributes<T>() : parameter.GetCustomAttributes<T>();
         }
     }
 }

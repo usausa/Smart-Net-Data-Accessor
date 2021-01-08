@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Builders
             var order = BuildHelper.PickParameter<OrderAttribute>(parameters);
             var tableType = type ?? BuildHelper.GetTableTypeByReturn(mi);
             var tableName = table ??
-                            (tableType != null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
+                            (tableType is not null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
 
             if (String.IsNullOrEmpty(tableName))
             {
@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Builders
             sql.Append(tableName);
             BuildHelper.AddCondition(sql, parameters);
 
-            if (order != null)
+            if (order is not null)
             {
                 sql.Append(" ORDER BY ");
                 sql.Append($"/*# {order.Name} */dummy");

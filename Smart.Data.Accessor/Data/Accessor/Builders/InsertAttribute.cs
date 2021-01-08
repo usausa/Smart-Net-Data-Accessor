@@ -46,7 +46,7 @@ namespace Smart.Data.Accessor.Builders
             var parameters = BuildHelper.GetParameters(mi);
             var values = BuildHelper.GetInsertParameters(parameters);
             var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameByType(mi, type) : null) ??
+                            (type is not null ? BuildHelper.GetTableNameByType(mi, type) : null) ??
                             BuildHelper.GetTableNameByParameter(mi);
 
             if (String.IsNullOrEmpty(tableName))

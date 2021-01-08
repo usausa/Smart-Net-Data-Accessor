@@ -18,17 +18,17 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
             config = new ExecuteEngineConfig();
             config.SetServiceProvider(serviceProvider);
 
-            if (options.TypeMapConfig != null)
+            if (options.TypeMapConfig is not null)
             {
                 config.ConfigureTypeMap(options.TypeMapConfig);
             }
 
-            if (options.TypeHandlersConfig != null)
+            if (options.TypeHandlersConfig is not null)
             {
                 config.ConfigureTypeHandlers(options.TypeHandlersConfig);
             }
 
-            if (options.ResultMapperFactoriesConfig != null)
+            if (options.ResultMapperFactoriesConfig is not null)
             {
                 config.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
             }

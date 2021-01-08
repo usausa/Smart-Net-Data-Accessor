@@ -26,7 +26,7 @@ namespace Smart.Data.Accessor.Selectors
         {
             var ctor = type.GetConstructors()
                 .Select(MatchConstructor)
-                .Where(x => x != null)
+                .Where(x => x is not null)
                 .OrderByDescending(x => x.Map.Parameters.Count)
                 .ThenByDescending(x => x.TypeMatch)
                 .FirstOrDefault();
@@ -63,7 +63,7 @@ namespace Smart.Data.Accessor.Selectors
                     var column = FindMatchColumn(name);
                     return column is null ? null : new PropertyMapInfo(x, column.Index);
                 })
-                .Where(x => x != null)
+                .Where(x => x is not null)
                 .OrderBy(x => x.Index)
                 .ToList();
         }
@@ -75,7 +75,7 @@ namespace Smart.Data.Accessor.Selectors
 
         private static bool IsTargetProperty(PropertyInfo pi)
         {
-            return pi.CanWrite && (pi.GetCustomAttribute<IgnoreAttribute>() == null);
+            return pi.CanWrite && (pi.GetCustomAttribute<IgnoreAttribute>() is null);
         }
 
         private class ColumnAndIndex

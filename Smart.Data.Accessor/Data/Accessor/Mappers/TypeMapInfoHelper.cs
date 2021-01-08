@@ -14,12 +14,12 @@ namespace Smart.Data.Accessor.Mappers
             ColumnInfo[] columns,
             Dictionary<int, Func<object, object>> map)
         {
-            if (typeMap.Constructor != null)
+            if (typeMap.Constructor is not null)
             {
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {
                     var converter = context.GetConverter(columns[parameterMap.Index].Type, parameterMap.Info.ParameterType, parameterMap.Info);
-                    if (converter != null)
+                    if (converter is not null)
                     {
                         map[parameterMap.Index] = converter;
                     }
@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor.Mappers
             foreach (var propertyMap in typeMap.Properties)
             {
                 var converter = context.GetConverter(columns[propertyMap.Index].Type, propertyMap.Info.PropertyType, propertyMap.Info);
-                if (converter != null)
+                if (converter is not null)
                 {
                     map[propertyMap.Index] = converter;
                 }
@@ -38,7 +38,7 @@ namespace Smart.Data.Accessor.Mappers
 
         public static IEnumerable<Type> EnumerateTypes(TypeMapInfo typeMap)
         {
-            if (typeMap.Constructor != null)
+            if (typeMap.Constructor is not null)
             {
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {

@@ -33,7 +33,7 @@ namespace Smart.Mock
             var generator = new DataAccessorGenerator(loader, writer);
             generator.Generate(new[] { type });
 
-            if (writer.Source == null)
+            if (writer.Source is null)
             {
                 throw new AccessorGeneratorException("Create accessor instance failed.");
             }

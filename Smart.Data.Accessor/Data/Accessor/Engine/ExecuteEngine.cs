@@ -114,7 +114,7 @@ namespace Smart.Data.Accessor.Engine
         Func<object, object> IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
         {
             var converter = CreateHandler(destinationType, provider);
-            if (converter != null)
+            if (converter is not null)
             {
                 return converter;
             }
@@ -132,7 +132,7 @@ namespace Smart.Data.Accessor.Engine
         {
             // ResultAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return attribute.CreateParser(ServiceProvider, type);
             }
@@ -148,7 +148,7 @@ namespace Smart.Data.Accessor.Engine
 
         public T Convert<T>(object source, Func<object, object> handler)
         {
-            if (handler != null)
+            if (handler is not null)
             {
                 if ((source is null) || (source is DBNull))
                 {

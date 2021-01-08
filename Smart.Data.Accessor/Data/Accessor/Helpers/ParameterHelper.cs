@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Helpers
         //--------------------------------------------------------------------------------
 
         public static bool IsTimeoutParameter(ParameterInfo pi) =>
-            pi.GetCustomAttribute<TimeoutAttribute>() != null;
+            pi.GetCustomAttribute<TimeoutAttribute>() is not null;
 
         public static bool IsCancellationTokenParameter(ParameterInfo pi) =>
             pi.ParameterType == typeof(CancellationToken);
@@ -41,7 +41,7 @@ namespace Smart.Data.Accessor.Helpers
 
         public static bool IsNestedParameter(ParameterInfo pi)
         {
-            if (pi.GetCustomAttribute<ParameterBuilderAttribute>() != null)
+            if (pi.GetCustomAttribute<ParameterBuilderAttribute>() is not null)
             {
                 return false;
             }

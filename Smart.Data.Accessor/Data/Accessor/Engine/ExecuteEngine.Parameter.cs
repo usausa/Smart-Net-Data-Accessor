@@ -36,12 +36,12 @@ namespace Smart.Data.Accessor.Engine
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                if (value == null)
+                if (value is null)
                 {
                     parameter.Value = DBNull.Value;
                     parameter.DbType = dbType;
                 }
-                else if (handler != null)
+                else if (handler is not null)
                 {
                     handler(parameter, value);
                 }
@@ -62,7 +62,7 @@ namespace Smart.Data.Accessor.Engine
         {
             // ParameterBuilderAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return new InParameterSetup(null, attribute.DbType, attribute.Size);
             }
@@ -105,12 +105,12 @@ namespace Smart.Data.Accessor.Engine
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                if (value == null)
+                if (value is null)
                 {
                     parameter.Value = DBNull.Value;
                     parameter.DbType = dbType;
                 }
-                else if (handler != null)
+                else if (handler is not null)
                 {
                     handler(parameter, value);
                 }
@@ -133,7 +133,7 @@ namespace Smart.Data.Accessor.Engine
         {
             // ParameterBuilderAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return new InOutParameterSetup(null, attribute.DbType, attribute.Size);
             }
@@ -188,7 +188,7 @@ namespace Smart.Data.Accessor.Engine
         {
             // ParameterBuilderAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return new OutParameterSetup(attribute.DbType, attribute.Size);
             }
@@ -282,12 +282,12 @@ namespace Smart.Data.Accessor.Engine
                     var value = values[i];
                     var parameter = cmd.CreateParameter();
                     cmd.Parameters.Add(parameter);
-                    if (value == null)
+                    if (value is null)
                     {
                         parameter.Value = DBNull.Value;
                         parameter.DbType = dbType;
                     }
-                    else if (handler != null)
+                    else if (handler is not null)
                     {
                         handler(parameter, value);
                     }
@@ -309,7 +309,7 @@ namespace Smart.Data.Accessor.Engine
         {
             // ParameterBuilderAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return new ListParameterSetup(this, null, attribute.DbType, attribute.Size);
             }
@@ -470,7 +470,7 @@ namespace Smart.Data.Accessor.Engine
                 {
                     var parameter = cmd.CreateParameter();
                     cmd.Parameters.Add(parameter);
-                    if (handler != null)
+                    if (handler is not null)
                     {
                         handler(parameter, values[i]);
                     }
@@ -511,7 +511,7 @@ namespace Smart.Data.Accessor.Engine
 
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                if (handler != null)
+                if (handler is not null)
                 {
                     handler(parameter, value);
                 }

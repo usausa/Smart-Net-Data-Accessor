@@ -37,7 +37,7 @@ namespace Smart.Data.Accessor.Builders
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var tableName = table ??
-                            (type != null ? BuildHelper.GetTableNameByType(mi, type) : null);
+                            (type is not null ? BuildHelper.GetTableNameByType(mi, type) : null);
 
             if (String.IsNullOrEmpty(tableName))
             {

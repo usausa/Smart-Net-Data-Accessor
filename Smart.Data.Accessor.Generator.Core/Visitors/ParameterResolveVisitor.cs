@@ -108,7 +108,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             while (true)
             {
                 var pi = targetType.GetProperty(elements[position].Name, BindingFlags.Instance | BindingFlags.Public);
-                if (pi == null)
+                if (pi is null)
                 {
                     return false;
                 }
@@ -161,7 +161,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             }
 
             var dictionaryType = type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>));
-            if (dictionaryType != null)
+            if (dictionaryType is not null)
             {
                 return dictionaryType.GenericTypeArguments[1];
             }
@@ -172,7 +172,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             }
 
             var enumerableType = type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            if (enumerableType != null)
+            if (enumerableType is not null)
             {
                 return enumerableType.GenericTypeArguments[0];
             }

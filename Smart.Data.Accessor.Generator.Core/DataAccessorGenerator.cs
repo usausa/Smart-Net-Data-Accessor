@@ -23,7 +23,7 @@ namespace Smart.Data.Accessor.Generator
 
         public void Generate(Type[] types)
         {
-            foreach (var targetType in types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() != null))
+            foreach (var targetType in types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() is not null))
             {
                 var source = CreateSource(targetType);
 
@@ -40,7 +40,7 @@ namespace Smart.Data.Accessor.Generator
             foreach (var method in type.GetMethods())
             {
                 var attribute = method.GetCustomAttribute<MethodAttribute>(true);
-                if (attribute == null)
+                if (attribute is null)
                 {
                     throw new AccessorGeneratorException($"Method is not supported for generation. type=[{type.FullName}], method=[{method.Name}]");
                 }

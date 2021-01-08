@@ -38,7 +38,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
 
             foreach (var type in option.AccessorAssemblies.SelectMany(x => x.ExportedTypes))
             {
-                if (type.GetCustomAttribute<DataAccessorAttribute>() != null)
+                if (type.GetCustomAttribute<DataAccessorAttribute>() is not null)
                 {
                     service.AddSingleton(type, c => c.GetService<DataAccessorFactory>().Create(type));
                 }

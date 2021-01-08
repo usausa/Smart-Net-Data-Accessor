@@ -138,14 +138,14 @@ namespace Smart.Data.Accessor.Nodes
         {
             var hasParenthesis = false;
             var token = NextToken();
-            if (token != null)
+            if (token is not null)
             {
                 if (token.TokenType == TokenType.OpenParenthesis)
                 {
                     hasParenthesis = true;
 
                     var count = 1;
-                    while ((count > 0) && ((token = NextToken()) != null))
+                    while ((count > 0) && ((token = NextToken()) is not null))
                     {
                         if (token.TokenType == TokenType.OpenParenthesis)
                         {

@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             get
             {
-                if (moduleBuilder == null)
+                if (moduleBuilder is null)
                 {
                     assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
                         new AssemblyName("TupleResultMapperFactoryAssembly"),
@@ -41,7 +41,7 @@ namespace Smart.Data.Accessor.Mappers
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public bool IsMatch(Type type, MethodInfo mi)
         {
-            return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) != null);
+            return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) is not null);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
@@ -91,7 +91,7 @@ namespace Smart.Data.Accessor.Mappers
 
                 if ((i == 0) || (typeMap.Constructor?.Parameters.Count > 0))
                 {
-                    if (typeMap.Constructor != null)
+                    if (typeMap.Constructor is not null)
                     {
                         for (var j = 0; j < typeMap.Constructor.Parameters.Count; j++)
                         {
@@ -162,7 +162,7 @@ namespace Smart.Data.Accessor.Mappers
                     // Stack entity
                     if (constructorCalled)
                     {
-                        if (typeMap.Constructor != null)
+                        if (typeMap.Constructor is not null)
                         {
                             ilGenerator.Emit(OpCodes.Dup);
                         }
@@ -209,7 +209,7 @@ namespace Smart.Data.Accessor.Mappers
                         // Store column value
                         ilGenerator.EmitStloc(objectLocal);
 
-                        if (typeMap.Constructor != null)
+                        if (typeMap.Constructor is not null)
                         {
                             // Class new
                             ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
@@ -253,13 +253,13 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.EmitStackDefaultValue(originalType, valueTypeLocals);
 
                     // Optimize
-                    if ((typeMap.Constructor == null) || isNullableType)
+                    if ((typeMap.Constructor is null) || isNullableType)
                     {
                         ilGenerator.Emit(OpCodes.Br, nextTypeLabel);
                     }
                 }
 
-                if (typeMap.Constructor == null)
+                if (typeMap.Constructor is null)
                 {
                     ilGenerator.EmitLdloc(ctorLocal);
                 }

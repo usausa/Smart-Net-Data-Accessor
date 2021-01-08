@@ -56,7 +56,7 @@ namespace Smart.Data.Accessor.Mappers
             var type = typeof(T);
             var defaultValue = default(T);
             var parser = context.GetConverter(columns[0].Type, type, type);
-            return parser == null
+            return parser is null
                 ? CreateConvertMapper(defaultValue)
                 : CreateConvertMapper(defaultValue, parser);
         }

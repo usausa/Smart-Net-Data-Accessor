@@ -64,12 +64,12 @@ namespace Smart.Data.Accessor.Generator
             sb.AppendLine();
             sb.AppendLine($"[assembly: AssemblyVersion(\"{assembly.GetName().Version}\")]");
             var fileVersion = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
-            if (fileVersion != null)
+            if (fileVersion is not null)
             {
                 sb.AppendLine($"[assembly: AssemblyFileVersion(\"{fileVersion.Version}\")]");
             }
             var informationVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-            if (informationVersion != null)
+            if (informationVersion is not null)
             {
                 sb.AppendLine($"[assembly: AssemblyInformationalVersion(\"{informationVersion.InformationalVersion}\")]");
             }

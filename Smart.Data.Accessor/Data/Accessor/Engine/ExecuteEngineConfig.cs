@@ -145,7 +145,7 @@ namespace Smart.Data.Accessor.Engine
 
         IServiceProvider IExecuteEngineConfig.GetServiceProvider()
         {
-            if (serviceProvider != null)
+            if (serviceProvider is not null)
             {
                 return serviceProvider;
             }

@@ -58,7 +58,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
 
         // Helper
 
-        public bool HasConnectionParameter => ConnectionParameter != null || TransactionParameter != null;
+        public bool HasConnectionParameter => ConnectionParameter is not null || TransactionParameter is not null;
 
         public MethodMetadata(
             int no,
@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor.Generator.Metadata
                        false;
 
             var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
-            IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;
+            IsAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null || isAsyncEnumerable;
             EngineResultType = !IsAsync || isAsyncEnumerable
                 ? mi.ReturnType
                 : (mi.ReturnType.IsGenericType ? mi.ReturnType.GetGenericArguments()[0] : typeof(void));

@@ -239,12 +239,12 @@ namespace Smart.Data.Accessor.Generator
 
         private static string GetConnectionName(MethodMetadata mm)
         {
-            if (mm.ConnectionParameter != null)
+            if (mm.ConnectionParameter is not null)
             {
                 return mm.ConnectionParameter.Name;
             }
 
-            if (mm.TransactionParameter != null)
+            if (mm.TransactionParameter is not null)
             {
                 return $"{mm.TransactionParameter.Name}.Connection";
             }
@@ -298,7 +298,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void ValidateMethod(MethodMetadata mm)
         {
-            if (mm.TimeoutParameter != null)
+            if (mm.TimeoutParameter is not null)
             {
                 if (mm.TimeoutParameter.ParameterType != typeof(int))
                 {
@@ -428,7 +428,7 @@ namespace Smart.Data.Accessor.Generator
             NewLine();
 
             // Provider
-            var useDefaultProvider = methods.Any(x => (x.ConnectionParameter == null) && (x.TransactionParameter == null));
+            var useDefaultProvider = methods.Any(x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
             if (useDefaultProvider)
             {
                 AppendLine($"private readonly {ProviderType} {ProviderField};");
@@ -449,7 +449,7 @@ namespace Smart.Data.Accessor.Generator
             {
                 var previous = source.Length;
 
-                if (mm.Provider != null)
+                if (mm.Provider is not null)
                 {
                     AppendLine($"private readonly {ProviderType} {GetProviderFieldName(mm.No)};");
                 }
@@ -527,11 +527,11 @@ namespace Smart.Data.Accessor.Generator
         {
             AppendLine($"{EngineFieldRef} = {CtorArg};");
 
-            var useDefaultProvider = methods.Any(x => (x.ConnectionParameter == null) && (x.TransactionParameter == null));
+            var useDefaultProvider = methods.Any(x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
             if (useDefaultProvider)
             {
                 NewLine();
-                if (provider == null)
+                if (provider is null)
                 {
                     AppendLine($"{ProviderFieldRef} = ({ProviderType}){CtorArg}.ServiceProvider.GetService(typeof({ProviderType}));");
                 }
@@ -554,7 +554,7 @@ namespace Smart.Data.Accessor.Generator
             // Per method
             foreach (var mm in methods)
             {
-                var hasProvider = mm.Provider != null;
+                var hasProvider = mm.Provider is not null;
                 var hasQueryInfo = IsQueryMethod(mm);
                 var hasConverter = IsResultConverterRequired(mm);
                 if (hasProvider || hasQueryInfo || hasConverter || mm.ReturnValueAsResult || (mm.Parameters.Count > 0) || (mm.DynamicParameters.Count > 0))
@@ -588,7 +588,7 @@ namespace Smart.Data.Accessor.Generator
                         Indent();
                         Append($"{GetSetupParameterFieldRef(mm.No, parameter.Index)} = ");
 
-                        var declaringType = parameter.DeclaringType == null
+                        var declaringType = parameter.DeclaringType is null
                             ? "null"
                             : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
 
@@ -627,7 +627,7 @@ namespace Smart.Data.Accessor.Generator
 
                     foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
                     {
-                        var declaringType = parameter.DeclaringType == null
+                        var declaringType = parameter.DeclaringType is null
                             ? "null"
                             : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
 
@@ -670,7 +670,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (mm.IsAsync)
             {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+                var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.ExecuteAsync({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
@@ -744,7 +744,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (mm.IsAsync)
             {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+                var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.ExecuteScalarAsync({CommandVar}{cancelOption}).ConfigureAwait(false)");
             }
             else
@@ -799,7 +799,7 @@ namespace Smart.Data.Accessor.Generator
             var closeOption = mm.HasConnectionParameter ? string.Empty : "WithClose";
             if (mm.IsAsync)
             {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+                var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.ExecuteReader{closeOption}Async({CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
@@ -840,7 +840,7 @@ namespace Smart.Data.Accessor.Generator
             // Execute
             Indent();
             Append($"await using (var {ReaderVar} = ");
-            var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+            var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
             AppendLine($"await {EngineFieldRef}.ExecuteReaderAsync({CommandVar}{cancelOption}).ConfigureAwait(false))");
             AppendLine("{");
             indent++;
@@ -934,7 +934,7 @@ namespace Smart.Data.Accessor.Generator
             var resultType = GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(mm.EngineResultType));
             if (mm.IsAsync)
             {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+                var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.QueryBufferAsync<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
@@ -976,7 +976,7 @@ namespace Smart.Data.Accessor.Generator
             var resultType = GeneratorHelper.MakeGlobalName(mm.EngineResultType);
             if (mm.IsAsync)
             {
-                var cancelOption = mm.CancelParameter != null ? $", {mm.CancelParameter.Name}" : string.Empty;
+                var cancelOption = mm.CancelParameter is not null ? $", {mm.CancelParameter.Name}" : string.Empty;
                 Append($"await {EngineFieldRef}.QueryFirstOrDefaultAsync<{resultType}>({GetQueryInfoRef(mm.No)}, {CommandVar}{cancelOption}).ConfigureAwait(false);");
             }
             else
@@ -1053,7 +1053,7 @@ namespace Smart.Data.Accessor.Generator
 
             if (!mm.HasConnectionParameter)
             {
-                var providerName = mm.Provider != null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
+                var providerName = mm.Provider is not null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
                 AppendLine($"{awaitOption}using (var {ConnectionVar} = {providerName}.CreateConnection())");
             }
 
@@ -1073,7 +1073,7 @@ namespace Smart.Data.Accessor.Generator
 
         private void EndConnectionSimple(MethodMetadata mm)
         {
-            if ((mm != null) && (mm.EngineResultType != typeof(void)))
+            if ((mm is not null) && (mm.EngineResultType != typeof(void)))
             {
                 NewLine();
                 AppendLine($"return {ResultVar};");
@@ -1089,7 +1089,7 @@ namespace Smart.Data.Accessor.Generator
             AppendLine($"var {ReaderVar} = default({DbDataReaderType});");
             if (!mm.HasConnectionParameter)
             {
-                var providerName = mm.Provider != null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
+                var providerName = mm.Provider is not null ? GetProviderFieldRef(mm.No) : ProviderFieldRef;
                 AppendLine($"var {ConnectionVar} = {providerName}.CreateConnection();");
             }
 
@@ -1131,16 +1131,16 @@ namespace Smart.Data.Accessor.Generator
                 AppendLine($"{CommandVar}.CommandType = {CommandTypeType}.{mm.CommandType};");
             }
 
-            if (mm.Timeout != null)
+            if (mm.Timeout is not null)
             {
                 AppendLine($"{CommandVar}.CommandTimeout = {mm.Timeout.Timeout};");
             }
-            else if (mm.TimeoutParameter != null)
+            else if (mm.TimeoutParameter is not null)
             {
                 AppendLine($"{CommandVar}.CommandTimeout = {mm.TimeoutParameter.Name};");
             }
 
-            if (mm.TransactionParameter != null)
+            if (mm.TransactionParameter is not null)
             {
                 AppendLine($"{CommandVar}.Transaction = {mm.TransactionParameter.Name};");
             }
@@ -1266,7 +1266,7 @@ namespace Smart.Data.Accessor.Generator
 
         private static int CalculateSqlSize(MethodMetadata mm)
         {
-            if (mm.SqlSize != null)
+            if (mm.SqlSize is not null)
             {
                 return mm.SqlSize.Size;
             }
@@ -1486,7 +1486,7 @@ namespace Smart.Data.Accessor.Generator
             public override void Visit(ParameterNode node)
             {
                 var parameter = mm.FindParameterByName(node.Name);
-                if (parameter != null)
+                if (parameter is not null)
                 {
                     var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
 
@@ -1504,7 +1504,7 @@ namespace Smart.Data.Accessor.Generator
                 else
                 {
                     var dynamicParameter = mm.FindDynamicParameterByName(node.Name);
-                    if (dynamicParameter == null)
+                    if (dynamicParameter is null)
                     {
                         throw new AccessorGeneratorException($"Dynamic parameter not found. type=[{builder.targetType.FullName}], method=[{mm.MethodInfo.Name}], parameter=[{node.Name}]");
                     }

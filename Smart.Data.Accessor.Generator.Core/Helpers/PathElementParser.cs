@@ -18,7 +18,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
         {
             var list = new List<PathElement>();
             PathElement element;
-            while ((element = Next()) != null)
+            while ((element = Next()) is not null)
             {
                 list.Add(element);
             }

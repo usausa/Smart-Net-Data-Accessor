@@ -20,7 +20,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static Type GetTableTypeByReturn(MethodInfo mi)
         {
-            var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null;
+            var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null;
             if (isAsync && !mi.ReturnType.IsGenericType)
             {
                 return null;
@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             var pmi = mi.GetParameters()
                 .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
-            if (pmi == null)
+            if (pmi is null)
             {
                 return null;
             }
@@ -65,7 +65,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             return String.Join(", ", type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
-                .Where(x => x.Key != null)
+                .Where(x => x.Key is not null)
                 .OrderBy(x => x.Key.Order)
                 .Select(x => ConfigHelper.GetMethodPropertyColumnName(mi, x.Property)));
         }
@@ -82,7 +82,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 if (ParameterHelper.IsNestedParameter(pmi))
                 {
                     parameters.AddRange(pmi.ParameterType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                        .Where(x => x.GetCustomAttribute<IgnoreAttribute>() == null)
+                        .Where(x => x.GetCustomAttribute<IgnoreAttribute>() is null)
                         .Select(pi =>
                         {
                             var name = ConfigHelper.GetMethodParameterPropertyColumnName(mi, pmi, pi);
@@ -102,7 +102,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         public static IList<BuildParameterInfo> GetInsertParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
                 .ToList();
         }
 
@@ -110,7 +110,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         {
             return parameters
                 .Select(x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
-                .Where(x => x.Key != null)
+                .Where(x => x.Key is not null)
                 .OrderBy(x => x.Key.Order)
                 .Select(x => x.Parameter)
                 .ToList();
@@ -119,38 +119,38 @@ namespace Smart.Data.Accessor.Builders.Helpers
         public static IList<BuildParameterInfo> GetNonKeyParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetAttribute<KeyAttribute>() == null)
-                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
+                .Where(x => x.GetAttribute<KeyAttribute>() is null)
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
                 .ToList();
         }
 
         public static IList<BuildParameterInfo> GetValueParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetParameterAttribute<ValuesAttribute>() != null)
-                .Where(x => x.GetParameterAttribute<AutoGenerateAttribute>() == null)
+                .Where(x => x.GetParameterAttribute<ValuesAttribute>() is not null)
+                .Where(x => x.GetParameterAttribute<AutoGenerateAttribute>() is null)
                 .ToList();
         }
 
         public static IList<BuildParameterInfo> GetNonValueParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetParameterAttribute<ValuesAttribute>() == null)
+                .Where(x => x.GetParameterAttribute<ValuesAttribute>() is null)
                 .ToList();
         }
 
         public static IList<BuildParameterInfo> GetConditionParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetAttribute<ConditionAttribute>() != null)
+                .Where(x => x.GetAttribute<ConditionAttribute>() is not null)
                 .ToList();
         }
 
         public static IList<BuildParameterInfo> GetNonConditionParameters(IList<BuildParameterInfo> parameters)
         {
             return parameters
-                .Where(x => x.GetAttribute<ConditionAttribute>() == null)
-                .Where(x => x.GetAttribute<AutoGenerateAttribute>() == null)
+                .Where(x => x.GetAttribute<ConditionAttribute>() is null)
+                .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
                 .ToList();
         }
 
@@ -164,7 +164,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             for (var i = 0; i < parameters.Count; i++)
             {
                 var parameter = parameters[i];
-                if (parameter.GetAttribute<T>() != null)
+                if (parameter.GetAttribute<T>() is not null)
                 {
                     parameters.RemoveAt(i);
                     return parameter;
@@ -236,7 +236,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     sql.Append(parameter.ParameterName);
 
-                    if (condition != null)
+                    if (condition is not null)
                     {
                         sql.Append($" {condition.Operand} ");
                     }
@@ -260,16 +260,16 @@ namespace Smart.Data.Accessor.Builders.Helpers
         public static void AddParameter(StringBuilder sql, BuildParameterInfo parameter, string operation)
         {
             var dbValue = parameter.GetAttributes<DbValueAttribute>()
-                .FirstOrDefault(x => x.When == null || x.When == operation);
-            if (dbValue != null)
+                .FirstOrDefault(x => x.When is null || x.When == operation);
+            if (dbValue is not null)
             {
                 sql.Append(dbValue.Value);
                 return;
             }
 
             var codeValue = parameter.GetAttributes<CodeValueAttribute>()
-                .FirstOrDefault(x => x.When == null || x.When == operation);
-            if (codeValue != null)
+                .FirstOrDefault(x => x.When is null || x.When == operation);
+            if (codeValue is not null)
             {
                 sql.Append($"/*# {codeValue.Value} */dummy");
                 return;

@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor.Generator
             if (!File.Exists(path))
             {
                 var isAsyncEnumerable = GeneratorHelper.IsAsyncEnumerable(mi.ReturnType);
-                var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) != null || isAsyncEnumerable;
+                var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null || isAsyncEnumerable;
                 if (!isAsync && !methodName.EndsWith("Async", StringComparison.Ordinal))
                 {
                     throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");

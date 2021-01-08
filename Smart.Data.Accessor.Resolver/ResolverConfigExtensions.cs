@@ -32,17 +32,17 @@ namespace Smart.Data.Accessor.Resolver
                 var engineConfig = new ExecuteEngineConfig();
                 engineConfig.SetServiceProvider(new ServiceProviderAdapter(r));
 
-                if (options.TypeMapConfig != null)
+                if (options.TypeMapConfig is not null)
                 {
                     engineConfig.ConfigureTypeMap(options.TypeMapConfig);
                 }
 
-                if (options.TypeHandlersConfig != null)
+                if (options.TypeHandlersConfig is not null)
                 {
                     engineConfig.ConfigureTypeHandlers(options.TypeHandlersConfig);
                 }
 
-                if (options.ResultMapperFactoriesConfig != null)
+                if (options.ResultMapperFactoriesConfig is not null)
                 {
                     engineConfig.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
                 }

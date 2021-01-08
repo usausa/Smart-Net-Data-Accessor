@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
             var parameterSize = (int)Math.Log10(++args) + 4;
 
             var parameter = mm.FindParameterByName(node.Name);
-            if (parameter != null)
+            if (parameter is not null)
             {
                 if (parameter.IsMultiple)
                 {

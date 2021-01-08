@@ -138,7 +138,7 @@ namespace Smart.Data.Accessor
                     .UseFileDatabase()
                     .SetSql(
                         "SELECT * FROM Data" +
-                        "/*% if (ids != null) { */" +
+                        "/*% if (ids is not null) { */" +
                         "WHERE Id IN /*@ ids */(2, 4)" +
                         "/*% } */")
                     .Build();

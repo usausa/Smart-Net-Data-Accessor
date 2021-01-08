@@ -55,7 +55,7 @@ namespace Smart.Data.Accessor.Builders
             var offset = BuildHelper.PickParameter<OffsetAttribute>(parameters);
             var tableType = type ?? BuildHelper.GetTableTypeByReturn(mi);
             var tableName = table ??
-                            (tableType != null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
+                            (tableType is not null ? BuildHelper.GetTableNameByType(mi, tableType) : null);
 
             if (String.IsNullOrEmpty(tableName))
             {
@@ -76,7 +76,7 @@ namespace Smart.Data.Accessor.Builders
             }
             BuildHelper.AddCondition(sql, parameters);
 
-            if (order != null)
+            if (order is not null)
             {
                 sql.Append(" ORDER BY ");
                 sql.Append($"/*# {order.Name} */dummy");
@@ -96,13 +96,13 @@ namespace Smart.Data.Accessor.Builders
                 }
             }
 
-            if (limit != null)
+            if (limit is not null)
             {
                 sql.Append(" LIMIT ");
                 sql.Append($"/*@ {limit.Name} */dummy");
             }
 
-            if (offset != null)
+            if (offset is not null)
             {
                 sql.Append(" OFFSET ");
                 sql.Append($"/*@ {offset.Name} */dummy");

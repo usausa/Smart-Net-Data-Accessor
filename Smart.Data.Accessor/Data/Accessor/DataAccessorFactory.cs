@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor
             var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
             var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
             var implType = assembly.GetType(accessorName);
-            if (implType == null)
+            if (implType is null)
             {
                 throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
             }

@@ -37,7 +37,7 @@ namespace Smart.Data.Accessor.Runtime
 
         private static ICustomAttributeProvider GetCustomAttributeProvider(MethodInfo method, int parameterIndex, Type declaringType, string propertyName)
         {
-            if (declaringType != null)
+            if (declaringType is not null)
             {
                 return declaringType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
             }
