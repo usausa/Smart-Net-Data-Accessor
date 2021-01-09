@@ -8,8 +8,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.1" />
     <PackageReference Include="Usa.Smart.Core" Version="2.0.0-beta1" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="1.2.3" />
-    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="1.2.3" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.0.0-beta1" />
+    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="2.0.0-beta1" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.0.0-beta1" />
   </ItemGroup>
 
