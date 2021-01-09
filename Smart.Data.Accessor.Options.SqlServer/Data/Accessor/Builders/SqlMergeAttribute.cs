@@ -99,6 +99,7 @@ namespace Smart.Data.Accessor.Builders
 
             sql.Append("WHEN MATCHED THEN UPDATE SET ");
             BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
+            sql.Append(';');
 
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());
