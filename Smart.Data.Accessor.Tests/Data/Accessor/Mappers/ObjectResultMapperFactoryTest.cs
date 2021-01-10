@@ -419,6 +419,82 @@ namespace Smart.Data.Accessor.Mappers
         }
 
         //--------------------------------------------------------------------------------
+        // Record
+        //--------------------------------------------------------------------------------
+
+        public record RecordEntity
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        [Fact]
+        public void TestRecord()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(string), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { 1, "2" }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<RecordEntity>(engine, GetType().GetMethod(nameof(TestRecord)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("2", entity.Name);
+        }
+
+        //--------------------------------------------------------------------------------
+        // InitOnly
+        //--------------------------------------------------------------------------------
+
+        public class InitOnlyEntity
+        {
+            public int Id { get; init; }
+
+            public string Name { get; init; }
+        }
+
+        [Fact]
+        public void TestInitOnly()
+        {
+            var engine = new ExecuteEngineConfig().ToEngine();
+
+            var columns = new[]
+            {
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(string), "Name")
+            };
+            var values = new List<object[]>
+            {
+                new object[] { 1, "2" }
+            };
+
+            var cmd = new MockDbCommand();
+            cmd.SetupResult(new MockDataReader(columns, values));
+
+            var info = new QueryInfo<InitOnlyEntity>(engine, GetType().GetMethod(nameof(TestInitOnly)), false);
+
+            var entity = engine.QueryFirstOrDefault(info, cmd);
+
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("2", entity.Name);
+        }
+
+        //--------------------------------------------------------------------------------
         // Constructor
         //--------------------------------------------------------------------------------
 
