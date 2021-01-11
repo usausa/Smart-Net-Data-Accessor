@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Tokenizer
+﻿namespace Smart.Data.Accessor.Tokenizer
 {
     using System;
     using System.Collections.Generic;
@@ -73,7 +73,7 @@ namespace Smart.Data.Accessor.Tokenizer
                 {
                     if ((source[current] == '*') && (source[current + 1] == '/'))
                     {
-                        tokens.Add(new Token(TokenType.Comment, source.Substring(start, current - start).Trim()));
+                        tokens.Add(new Token(TokenType.Comment, source[start..current].Trim()));
 
                         current += 2;
 
@@ -136,7 +136,7 @@ namespace Smart.Data.Accessor.Tokenizer
                     throw new SqlTokenizerException("Invalid sql. Quote is not closed.");
                 }
 
-                tokens.Add(new Token(TokenType.Block, source.Substring(start, current - start)));
+                tokens.Add(new Token(TokenType.Block, source[start..current]));
             }
             else if (source[current] == ',')
             {
@@ -167,7 +167,7 @@ namespace Smart.Data.Accessor.Tokenizer
                     current++;
                 }
 
-                tokens.Add(new Token(TokenType.Block, source.Substring(start, current - start)));
+                tokens.Add(new Token(TokenType.Block, source[start..current]));
             }
         }
 

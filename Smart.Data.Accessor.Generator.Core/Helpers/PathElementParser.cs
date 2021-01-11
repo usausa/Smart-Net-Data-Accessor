@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator.Helpers
+﻿namespace Smart.Data.Accessor.Generator.Helpers
 {
     using System;
     using System.Collections.Generic;
@@ -42,7 +42,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
                 return null;
             }
 
-            var subPath = path.Substring(start, index - start);
+            var subPath = path[start..index];
 
             var indexed = 0;
             while (index < path.Length)

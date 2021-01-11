@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator
+﻿namespace Smart.Data.Accessor.Generator
 {
     using System;
     using System.IO;
@@ -34,7 +34,7 @@ namespace Smart.Data.Accessor.Generator
             var dir = rootDirectory;
             if (ns.StartsWith(rootNamespace + ".", StringComparison.Ordinal))
             {
-                dir = Path.Combine(rootDirectory, ns.Substring(rootNamespace.Length + 1).Replace('.', Path.DirectorySeparatorChar));
+                dir = Path.Combine(rootDirectory, ns[(rootNamespace.Length + 1)..].Replace('.', Path.DirectorySeparatorChar));
             }
             else if (ns != rootNamespace)
             {
@@ -48,7 +48,7 @@ namespace Smart.Data.Accessor.Generator
 
             // File
             var index = type.FullName.LastIndexOf('.');
-            var interfaceName = index >= 0 ? type.FullName.Substring(index + 1) : type.FullName;
+            var interfaceName = index >= 0 ? type.FullName[(index + 1)..] : type.FullName;
             var methodName = mi.GetCustomAttribute<MethodNameAttribute>()?.Name ?? mi.Name;
             var filename = $"{interfaceName.Replace('+', '.')}.{methodName}.sql";
             var path = Path.Combine(dir, filename);
@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Generator
                     throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
                 }
 
-                filename = $"{interfaceName.Replace('+', '.')}.{methodName.Substring(0, methodName.Length - 5)}.sql";
+                filename = $"{interfaceName.Replace('+', '.')}.{methodName[0..^5]}.sql";
                 path = Path.Combine(dir, filename);
                 if (!File.Exists(path))
                 {

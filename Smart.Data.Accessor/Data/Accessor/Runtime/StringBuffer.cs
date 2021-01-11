@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Runtime
+﻿namespace Smart.Data.Accessor.Runtime
 {
     using System;
     using System.Runtime.CompilerServices;
@@ -9,13 +9,7 @@ namespace Smart.Data.Accessor.Runtime
         [ThreadStatic]
         private static char[] buffer;
 
-        private int index;
-
-        public int Length
-        {
-            get => index;
-            set => index = value;
-        }
+        public int Length { get; set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StringBuffer(int length)
@@ -24,7 +18,7 @@ namespace Smart.Data.Accessor.Runtime
             {
                 buffer = new char[length];
             }
-            index = 0;
+            Length = 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,22 +32,22 @@ namespace Smart.Data.Accessor.Runtime
         public void Append(string value)
         {
             var length = value.Length;
-            if (buffer.Length - index < length)
+            if (buffer.Length - Length < length)
             {
-                var newSize = Math.Max(buffer.Length * 2, buffer.Length - index + length);
+                var newSize = Math.Max(buffer.Length * 2, buffer.Length - Length + length);
                 var newBuffer = new char[newSize];
-                buffer.AsSpan(0, index).CopyTo(newBuffer.AsSpan());
+                buffer.AsSpan(0, Length).CopyTo(newBuffer.AsSpan());
                 buffer = newBuffer;
             }
 
-            value.AsSpan().CopyTo(buffer.AsSpan(index));
-            index += length;
+            value.AsSpan().CopyTo(buffer.AsSpan(Length));
+            Length += length;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return new(buffer, 0, index);
+            return new(buffer, 0, Length);
         }
     }
 }

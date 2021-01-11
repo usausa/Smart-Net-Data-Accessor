@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Nodes
+﻿namespace Smart.Data.Accessor.Nodes
 {
     using System;
     using System.Collections.Generic;
@@ -104,32 +104,32 @@ namespace Smart.Data.Accessor.Nodes
             // Pragma
             if (value.StartsWith("!helper", StringComparison.Ordinal))
             {
-                AddPragmaNode(new UsingNode(true, value.Substring(7).Trim()));
+                AddPragmaNode(new UsingNode(true, value[7..].Trim()));
             }
 
             if (value.StartsWith("!using", StringComparison.Ordinal))
             {
-                AddPragmaNode(new UsingNode(false, value.Substring(6).Trim()));
+                AddPragmaNode(new UsingNode(false, value[6..].Trim()));
             }
 
             // Code
             if (value.StartsWith("%", StringComparison.Ordinal))
             {
-                AddBody(new CodeNode(value.Substring(1).Trim()), false);
+                AddBody(new CodeNode(value[1..].Trim()), false);
             }
 
             // Raw
             if (value.StartsWith("#", StringComparison.Ordinal))
             {
                 SkipToken();
-                AddBody(new RawSqlNode(value.Substring(1).Trim()), true);
+                AddBody(new RawSqlNode(value[1..].Trim()), true);
             }
 
             // Parameter
             if (value.StartsWith("@", StringComparison.Ordinal))
             {
-                bool hasParenthesis = SkipToken();
-                AddBody(new ParameterNode(value.Substring(1).Trim(), hasParenthesis), !lastParenthesis);
+                var hasParenthesis = SkipToken();
+                AddBody(new ParameterNode(value[1..].Trim(), hasParenthesis), !lastParenthesis);
                 lastParenthesis = false;
             }
         }

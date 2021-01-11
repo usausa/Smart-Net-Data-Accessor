@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator.Visitors
+﻿namespace Smart.Data.Accessor.Generator.Visitors
 {
     using System.Collections.Generic;
     using System.Linq;
@@ -11,15 +11,9 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         private readonly HashSet<string> helpers = new();
 
-        public IEnumerable<string> Usings
-        {
-            get { return usings.OrderBy(x => x); }
-        }
+        public IEnumerable<string> Usings => usings.OrderBy(x => x);
 
-        public IEnumerable<string> Helpers
-        {
-            get { return helpers.OrderBy(x => x); }
-        }
+        public IEnumerable<string> Helpers => helpers.OrderBy(x => x);
 
         public override void Visit(UsingNode node)
         {
