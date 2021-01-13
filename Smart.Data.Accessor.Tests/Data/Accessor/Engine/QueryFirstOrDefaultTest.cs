@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System.Data;
     using System.Data.Common;
@@ -96,27 +96,25 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestQueryFirstOrDefaultWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
-                    .Build();
-                var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAccessor>();
+                .InsertData(new DataEntity { Id = 1, Name = "Data-1" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
+                .Build();
+            var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAccessor>();
 
-                con.Open();
+            con.Open();
 
-                var entity = accessor.QueryFirstOrDefault(con, 1L);
+            var entity = accessor.QueryFirstOrDefault(con, 1L);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.NotNull(entity);
-                Assert.Equal(1, entity.Id);
-                Assert.Equal("Data-1", entity.Name);
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("Data-1", entity.Name);
 
-                entity = accessor.QueryFirstOrDefault(con, 2L);
-                Assert.Null(entity);
-            }
+            entity = accessor.QueryFirstOrDefault(con, 2L);
+            Assert.Null(entity);
         }
 
         [Optimize(true)]
@@ -130,27 +128,25 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestQueryFirstOrDefaultWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
+            await using var con = TestDatabase.Initialize()
                 .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
-                    .Build();
-                var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAsyncAccessor>();
+                .InsertData(new DataEntity { Id = 1, Name = "Data-1" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data WHERE Id = /*@ id */1")
+                .Build();
+            var accessor = generator.Create<IQueryFirstOrDefaultWithConnectionAsyncAccessor>();
 
-                await con.OpenAsync();
+            await con.OpenAsync();
 
-                var entity = await accessor.QueryFirstOrDefaultAsync(con, 1L);
+            var entity = await accessor.QueryFirstOrDefaultAsync(con, 1L);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.NotNull(entity);
-                Assert.Equal(1, entity.Id);
-                Assert.Equal("Data-1", entity.Name);
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("Data-1", entity.Name);
 
-                entity = await accessor.QueryFirstOrDefaultAsync(con, 2L);
-                Assert.Null(entity);
-            }
+            entity = await accessor.QueryFirstOrDefaultAsync(con, 2L);
+            Assert.Null(entity);
         }
 
         //--------------------------------------------------------------------------------

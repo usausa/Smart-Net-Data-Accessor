@@ -17,23 +17,15 @@
     <Rule Id="SA1600" Action="Hidden" />
     <Rule Id="SA1601" Action="Hidden" />
     <Rule Id="SA1602" Action="Hidden" />
-    <Rule Id="SA1606" Action="Hidden" />
-    <Rule Id="SA1614" Action="Hidden" />
-    <Rule Id="SA1616" Action="Hidden" />
-    <Rule Id="SA1622" Action="Hidden" />
     <Rule Id="SA1633" Action="Hidden" />
-    <Rule Id="SA1642" Action="Hidden" />
     <Rule Id="SA1649" Action="Hidden" />
-    <Rule Id="SA1652" Action="Hidden" />
   </Rules>
   <Rules AnalyzerId="Microsoft.CodeAnalysis.NetAnalyzers" RuleNamespace="Microsoft.CodeAnalysis.NetAnalyzers">
     <Rule Id="CA1002" Action="Hidden" />
     <Rule Id="CA1019" Action="Hidden" />
     <Rule Id="CA1034" Action="Hidden" />
     <Rule Id="CA1303" Action="Hidden" />
-    <Rule Id="CA1307" Action="Hidden" />
     <Rule Id="CA1716" Action="Hidden" />
     <Rule Id="CA1810" Action="Hidden" />
-    <Rule Id="CA1834" Action="Hidden" />
   </Rules>
 </RuleSet>

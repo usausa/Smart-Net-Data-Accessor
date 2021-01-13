@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Generator.Helpers
+﻿namespace Smart.Data.Accessor.Generator.Helpers
 {
     using System;
     using System.Collections.Generic;
@@ -28,9 +28,9 @@ namespace Smart.Data.Accessor.Generator.Helpers
 
             if (type.IsGenericType)
             {
-                var index = type.FullName.IndexOf('`');
+                var index = type.FullName.IndexOf('`', StringComparison.Ordinal);
                 sb.Append("global::").Append(type.FullName.Substring(0, index).Replace('+', '.'));
-                sb.Append("<");
+                sb.Append('<');
 
                 var first = true;
                 foreach (var argumentType in type.GetGenericArguments())
@@ -47,7 +47,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
                     MakeGlobalName(sb, argumentType);
                 }
 
-                sb.Append(">");
+                sb.Append('>');
             }
             else
             {

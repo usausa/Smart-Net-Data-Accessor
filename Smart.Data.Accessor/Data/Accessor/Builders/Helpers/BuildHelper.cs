@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Helpers
+﻿namespace Smart.Data.Accessor.Builders.Helpers
 {
     using System;
     using System.Collections.Generic;
@@ -196,7 +196,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             }
             else
             {
-                sql.Append(" ");
+                sql.Append(' ');
             }
 
             foreach (var parameter in parameters)

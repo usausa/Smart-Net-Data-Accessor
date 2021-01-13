@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System.Data;
     using System.Data.Common;
@@ -27,24 +27,22 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestExecuteSimple()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteSimpleAccessor>();
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteSimpleAccessor>();
 
-                var effect = accessor.Execute(2, "xxx");
+            var effect = accessor.Execute(2, "xxx");
 
-                Assert.Equal(1, effect);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-                Assert.Equal(2, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
+            Assert.Equal(2, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         [DataAccessor]
@@ -57,24 +55,22 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteSimpleAsync()
         {
-            await using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteSimpleAsyncAccessor>();
+            await using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteSimpleAsyncAccessor>();
 
-                var effect = await accessor.ExecuteAsync(2, "xxx");
+            var effect = await accessor.ExecuteAsync(2, "xxx");
 
-                Assert.Equal(1, effect);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-                Assert.Equal(2, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
+            Assert.Equal(2, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -91,20 +87,18 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestExecuteVoid()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteVoidAccessor>();
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteVoidAccessor>();
 
-                accessor.Execute(2, "xxx");
+            accessor.Execute(2, "xxx");
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
         }
 
         [DataAccessor]
@@ -117,20 +111,18 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteVoidAsync()
         {
-            await using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteVoidAsyncAccessor>();
+            await using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteVoidAsyncAccessor>();
 
-                await accessor.ExecuteAsync(2, "xxx");
+            await accessor.ExecuteAsync(2, "xxx");
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
         }
 
         //--------------------------------------------------------------------------------
@@ -147,26 +139,24 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestExecuteWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteWithConnectionAccessor>();
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteWithConnectionAccessor>();
 
-                con.Open();
+            con.Open();
 
-                var effect = accessor.Execute(con, 2, "xxx");
+            var effect = accessor.Execute(con, 2, "xxx");
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(1, effect);
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-                Assert.Equal(2, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
+            Assert.Equal(2, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         [DataAccessor]
@@ -179,26 +169,24 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<IExecuteWithConnectionAsyncAccessor>();
+            await using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<IExecuteWithConnectionAsyncAccessor>();
 
-                await con.OpenAsync();
+            await con.OpenAsync();
 
-                var effect = await accessor.ExecuteAsync(con, 2, "xxx");
+            var effect = await accessor.ExecuteAsync(con, 2, "xxx");
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(1, effect);
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(2);
-                Assert.NotNull(entity);
-                Assert.Equal(2, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(2);
+            Assert.NotNull(entity);
+            Assert.Equal(2, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         //--------------------------------------------------------------------------------

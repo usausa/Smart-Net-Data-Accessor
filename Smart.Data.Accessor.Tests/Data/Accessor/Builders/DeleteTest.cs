@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders
+﻿namespace Smart.Data.Accessor.Builders
 {
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;
@@ -67,21 +67,19 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestDeleteByKey()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "A", Name = "Data-1" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IDeleteByKeyAccessor>();
+                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "A", Name = "Data-1" });
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IDeleteByKeyAccessor>();
 
-                var effect = accessor.Delete(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
+            var effect = accessor.Delete(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
 
-                Assert.Equal(1, effect);
+            Assert.Equal(1, effect);
 
-                Assert.Null(con.QueryMultiKey(1L, 2L));
-            }
+            Assert.Null(con.QueryMultiKey(1L, 2L));
         }
 
         //--------------------------------------------------------------------------------

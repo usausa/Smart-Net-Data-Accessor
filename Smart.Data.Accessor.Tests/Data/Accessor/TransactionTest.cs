@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor
+﻿namespace Smart.Data.Accessor
 {
     using System.Data.Common;
     using System.Threading.Tasks;
@@ -20,38 +20,36 @@ namespace Smart.Data.Accessor
         [Fact]
         public void TestTransaction()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<ITransactionAccessor>();
+
+            con.Open();
+
+            using (var tx = con.BeginTransaction())
             {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<ITransactionAccessor>();
+                var effect = accessor.Execute(tx, 1L, "xxx");
+                Assert.Equal(1, effect);
 
-                con.Open();
-
-                using (var tx = con.BeginTransaction())
-                {
-                    var effect = accessor.Execute(tx, 1L, "xxx");
-                    Assert.Equal(1, effect);
-
-                    tx.Rollback();
-                }
-
-                var entity = con.QueryData(1L);
-                Assert.Null(entity);
-
-                using (var tx = con.BeginTransaction())
-                {
-                    var effect = accessor.Execute(tx, 1L, "xxx");
-                    Assert.Equal(1, effect);
-
-                    tx.Commit();
-                }
-
-                entity = con.QueryData(1L);
-                Assert.NotNull(entity);
+                tx.Rollback();
             }
+
+            var entity = con.QueryData(1L);
+            Assert.Null(entity);
+
+            using (var tx = con.BeginTransaction())
+            {
+                var effect = accessor.Execute(tx, 1L, "xxx");
+                Assert.Equal(1, effect);
+
+                tx.Commit();
+            }
+
+            entity = con.QueryData(1L);
+            Assert.NotNull(entity);
         }
 
         [DataAccessor]
@@ -64,38 +62,36 @@ namespace Smart.Data.Accessor
         [Fact]
         public async ValueTask TestTransactionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
+            await using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
+                .Build();
+            var accessor = generator.Create<ITransactionAsyncAccessor>();
+
+            await con.OpenAsync();
+
+            await using (var tx = await con.BeginTransactionAsync())
             {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'test')")
-                    .Build();
-                var accessor = generator.Create<ITransactionAsyncAccessor>();
+                var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
+                Assert.Equal(1, effect);
 
-                await con.OpenAsync();
-
-                await using (var tx = await con.BeginTransactionAsync())
-                {
-                    var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
-                    Assert.Equal(1, effect);
-
-                    await tx.RollbackAsync();
-                }
-
-                var entity = con.QueryData(1L);
-                Assert.Null(entity);
-
-                await using (var tx = await con.BeginTransactionAsync())
-                {
-                    var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
-                    Assert.Equal(1, effect);
-
-                    await tx.CommitAsync();
-                }
-
-                entity = con.QueryData(1L);
-                Assert.NotNull(entity);
+                await tx.RollbackAsync();
             }
+
+            var entity = con.QueryData(1L);
+            Assert.Null(entity);
+
+            await using (var tx = await con.BeginTransactionAsync())
+            {
+                var effect = await accessor.ExecuteAsync(tx, 1L, "xxx");
+                Assert.Equal(1, effect);
+
+                await tx.CommitAsync();
+            }
+
+            entity = con.QueryData(1L);
+            Assert.NotNull(entity);
         }
     }
 }

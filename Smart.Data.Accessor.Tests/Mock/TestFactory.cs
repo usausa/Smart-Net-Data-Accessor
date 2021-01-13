@@ -1,4 +1,4 @@
-namespace Smart.Mock
+﻿namespace Smart.Mock
 {
     using System;
     using System.Collections.Generic;
@@ -64,28 +64,26 @@ namespace Smart.Mock
                 metadataReferences,
                 options);
 
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            var result = compilation.Emit(ms);
+
+            if (!result.Success)
             {
-                var result = compilation.Emit(ms);
+                throw new AccessorGeneratorException("Create accessor instance failed.");
+            }
 
-                if (!result.Success)
-                {
-                    throw new AccessorGeneratorException("Create accessor instance failed.");
-                }
+            ms.Seek(0, SeekOrigin.Begin);
+            var assembly = Assembly.Load(ms.ToArray());
 
-                ms.Seek(0, SeekOrigin.Begin);
-                var assembly = Assembly.Load(ms.ToArray());
-
-                var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
-                var implementType = assembly.GetType(accessorName);
-                try
-                {
-                    return (T)Activator.CreateInstance(implementType, Engine);
-                }
-                catch (Exception e)
-                {
-                    throw new AccessorGeneratorException("Create accessor instance failed.", e);
-                }
+            var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
+            var implementType = assembly.GetType(accessorName);
+            try
+            {
+                return (T)Activator.CreateInstance(implementType, Engine);
+            }
+            catch (Exception e)
+            {
+                throw new AccessorGeneratorException("Create accessor instance failed.", e);
             }
         }
 

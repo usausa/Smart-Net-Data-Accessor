@@ -61,7 +61,7 @@
                     throw new AccessorGeneratorException($"SQL load failed. type=[{type.FullName}], method=[{mi.Name}], path=[{path}]");
                 }
 
-                filename = $"{interfaceName.Replace('+', '.')}.{methodName[0..^5]}.sql";
+                filename = $"{interfaceName.Replace('+', '.')}.{methodName[..^5]}.sql";
                 path = Path.Combine(dir, filename);
                 if (!File.Exists(path))
                 {

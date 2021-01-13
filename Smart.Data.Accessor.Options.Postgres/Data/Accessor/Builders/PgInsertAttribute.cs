@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders
+﻿namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -64,7 +64,7 @@ namespace Smart.Data.Accessor.Builders
             BuildHelper.AddInsertColumns(sql, mi, values);
             sql.Append(") VALUES (");
             BuildHelper.AddInsertValues(sql, mi, values);
-            sql.Append(")");
+            sql.Append(')');
 
             if (OnDuplicate != DuplicateBehavior.Default)
             {
@@ -76,7 +76,7 @@ namespace Smart.Data.Accessor.Builders
 
                 sql.Append(" ON CONFLICT (");
                 BuildHelper.AddColumns(sql, keys);
-                sql.Append(")");
+                sql.Append(')');
 
                 if (OnDuplicate == DuplicateBehavior.Ignore)
                 {

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders
+﻿namespace Smart.Data.Accessor.Builders
 {
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Mapper;
@@ -22,23 +22,21 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertEntity()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IInsertEntityAccessor>();
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IInsertEntityAccessor>();
 
-                var effect = accessor.Insert(new DataEntity { Id = 1, Name = "xxx" });
+            var effect = accessor.Insert(new DataEntity { Id = 1, Name = "xxx" });
 
-                Assert.Equal(1, effect);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(1);
-                Assert.NotNull(entity);
-                Assert.Equal(1, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(1);
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -55,23 +53,21 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertParameter()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IInsertParameterAccessor>();
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IInsertParameterAccessor>();
 
-                var effect = accessor.Insert(1, "xxx");
+            var effect = accessor.Insert(1, "xxx");
 
-                Assert.Equal(1, effect);
+            Assert.Equal(1, effect);
 
-                var entity = con.QueryData(1);
-                Assert.NotNull(entity);
-                Assert.Equal(1, entity.Id);
-                Assert.Equal("xxx", entity.Name);
-            }
+            var entity = con.QueryData(1);
+            Assert.NotNull(entity);
+            Assert.Equal(1, entity.Id);
+            Assert.Equal("xxx", entity.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -121,23 +117,21 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertAutoGenerateValue()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                con.Execute("CREATE TABLE IF NOT EXISTS AutoGenerate (Id int, Name text)");
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            con.Execute("CREATE TABLE IF NOT EXISTS AutoGenerate (Id int, Name text)");
 
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IInsertAutoGenerateAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IInsertAutoGenerateAccessor>();
 
-                accessor.Insert(new AutoGenerateEntity { Id = 1, Name = "test" });
+            accessor.Insert(new AutoGenerateEntity { Id = 1, Name = "test" });
 
-                var entity = accessor.QueryEntity(1);
+            var entity = accessor.QueryEntity(1);
 
-                Assert.NotNull(entity);
-                Assert.Null(entity.Name);
-            }
+            Assert.NotNull(entity);
+            Assert.Null(entity.Name);
         }
 
         //--------------------------------------------------------------------------------
@@ -166,23 +160,21 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertDbValue()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                con.Execute("CREATE TABLE IF NOT EXISTS DbValue (Id int PRIMARY KEY, DateTime text)");
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            con.Execute("CREATE TABLE IF NOT EXISTS DbValue (Id int PRIMARY KEY, DateTime text)");
 
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IInsertDbValueAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IInsertDbValueAccessor>();
 
-                accessor.Insert(new DbValueEntity { Id = 1 });
+            accessor.Insert(new DbValueEntity { Id = 1 });
 
-                var entity = accessor.QueryEntity(1);
+            var entity = accessor.QueryEntity(1);
 
-                Assert.NotNull(entity);
-                Assert.NotEmpty(entity.DateTime);
-            }
+            Assert.NotNull(entity);
+            Assert.NotEmpty(entity.DateTime);
         }
 
         [DataAccessor]
@@ -199,23 +191,21 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertAdditionalDbValue()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                con.Execute("CREATE TABLE IF NOT EXISTS DbValue (Id int PRIMARY KEY, DateTime text)");
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            con.Execute("CREATE TABLE IF NOT EXISTS DbValue (Id int PRIMARY KEY, DateTime text)");
 
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<IInsertAdditionalDbValueAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<IInsertAdditionalDbValueAccessor>();
 
-                accessor.Insert(1);
+            accessor.Insert(1);
 
-                var entity = accessor.QueryEntity(1);
+            var entity = accessor.QueryEntity(1);
 
-                Assert.NotNull(entity);
-                Assert.NotEmpty(entity.DateTime);
-            }
+            Assert.NotNull(entity);
+            Assert.NotEmpty(entity.DateTime);
         }
 
         //--------------------------------------------------------------------------------
@@ -252,29 +242,27 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertCodeValue()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                con.Execute("CREATE TABLE IF NOT EXISTS CodeValue (Key text PRIMARY KEY, Value int)");
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            con.Execute("CREATE TABLE IF NOT EXISTS CodeValue (Key text PRIMARY KEY, Value int)");
 
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .ConfigureComponents(c => c.Add(new Counter()))
-                    .Build();
-                var accessor = generator.Create<IInsertCodeValueAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .ConfigureComponents(c => c.Add(new Counter()))
+                .Build();
+            var accessor = generator.Create<IInsertCodeValueAccessor>();
 
-                accessor.Insert(new CodeValueEntity { Key = "A" });
-                accessor.Insert(new CodeValueEntity { Key = "B" });
+            accessor.Insert(new CodeValueEntity { Key = "A" });
+            accessor.Insert(new CodeValueEntity { Key = "B" });
 
-                var entityA = accessor.QueryEntity("A");
-                var entityB = accessor.QueryEntity("B");
+            var entityA = accessor.QueryEntity("A");
+            var entityB = accessor.QueryEntity("B");
 
-                Assert.NotNull(entityA);
-                Assert.Equal(1, entityA.Value);
+            Assert.NotNull(entityA);
+            Assert.Equal(1, entityA.Value);
 
-                Assert.NotNull(entityB);
-                Assert.Equal(2, entityB.Value);
-            }
+            Assert.NotNull(entityB);
+            Assert.Equal(2, entityB.Value);
         }
 
         [DataAccessor]
@@ -292,29 +280,27 @@ namespace Smart.Data.Accessor.Builders
         [Fact]
         public void TestInsertAdditionalCodeValue()
         {
-            using (var con = TestDatabase.Initialize()
-                .SetupDataTable())
-            {
-                con.Execute("CREATE TABLE IF NOT EXISTS CodeValue (Key text PRIMARY KEY, Value int)");
+            using var con = TestDatabase.Initialize()
+                .SetupDataTable();
+            con.Execute("CREATE TABLE IF NOT EXISTS CodeValue (Key text PRIMARY KEY, Value int)");
 
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .ConfigureComponents(c => c.Add(new Counter()))
-                    .Build();
-                var accessor = generator.Create<IInsertAdditionalCodeValueAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .ConfigureComponents(c => c.Add(new Counter()))
+                .Build();
+            var accessor = generator.Create<IInsertAdditionalCodeValueAccessor>();
 
-                accessor.Insert("A");
-                accessor.Insert("B");
+            accessor.Insert("A");
+            accessor.Insert("B");
 
-                var entityA = accessor.QueryEntity("A");
-                var entityB = accessor.QueryEntity("B");
+            var entityA = accessor.QueryEntity("A");
+            var entityB = accessor.QueryEntity("B");
 
-                Assert.NotNull(entityA);
-                Assert.Equal(1, entityA.Value);
+            Assert.NotNull(entityA);
+            Assert.Equal(1, entityA.Value);
 
-                Assert.NotNull(entityB);
-                Assert.Equal(2, entityB.Value);
-            }
+            Assert.NotNull(entityB);
+            Assert.Equal(2, entityB.Value);
         }
     }
 }

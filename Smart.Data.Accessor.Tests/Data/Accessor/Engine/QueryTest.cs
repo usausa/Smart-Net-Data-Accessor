@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System.Collections.Generic;
     using System.Data;
@@ -155,53 +155,49 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestQueryBufferdWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-                var accessor = generator.Create<IQueryWithConnectionAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+            var accessor = generator.Create<IQueryWithConnectionAccessor>();
 
-                con.Open();
+            con.Open();
 
-                var list = accessor.QueryBufferd(con);
+            var list = accessor.QueryBufferd(con);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, list.Count);
-                Assert.Equal(1, list[0].Id);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal(2, list[1].Id);
-                Assert.Equal("Data-2", list[1].Name);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0].Id);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal(2, list[1].Id);
+            Assert.Equal("Data-2", list[1].Name);
         }
 
         [Fact]
         public void TestQueryNonBufferdWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-                var accessor = generator.Create<IQueryWithConnectionAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+            var accessor = generator.Create<IQueryWithConnectionAccessor>();
 
-                con.Open();
+            con.Open();
 
-                var list = accessor.QueryNonBufferd(con).ToList();
+            var list = accessor.QueryNonBufferd(con).ToList();
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, list.Count);
-                Assert.Equal(1, list[0].Id);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal(2, list[1].Id);
-                Assert.Equal("Data-2", list[1].Name);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0].Id);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal(2, list[1].Id);
+            Assert.Equal("Data-2", list[1].Name);
         }
 
         [Optimize(true)]
@@ -218,53 +214,49 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestQueryBufferdWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
+            await using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-                var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+            var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
-                await con.OpenAsync();
+            await con.OpenAsync();
 
-                var list = await accessor.QueryBufferdAsync(con);
+            var list = await accessor.QueryBufferdAsync(con);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, list.Count);
-                Assert.Equal(1, list[0].Id);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal(2, list[1].Id);
-                Assert.Equal("Data-2", list[1].Name);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0].Id);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal(2, list[1].Id);
+            Assert.Equal("Data-2", list[1].Name);
         }
 
         [Fact]
         public async ValueTask TestQueryNonBufferdWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
+            await using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-                var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+            var accessor = generator.Create<IQueryWithConnectionAsyncAccessor>();
 
-                await con.OpenAsync();
+            await con.OpenAsync();
 
-                var list = await accessor.QueryNonBufferdAsync(con).ToListAsync();
+            var list = await accessor.QueryNonBufferdAsync(con).ToListAsync();
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, list.Count);
-                Assert.Equal(1, list[0].Id);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal(2, list[1].Id);
-                Assert.Equal("Data-2", list[1].Name);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0].Id);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal(2, list[1].Id);
+            Assert.Equal("Data-2", list[1].Name);
         }
 
         //--------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System;
     using System.Collections.Generic;
@@ -110,35 +110,31 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<T> QueryBuffer<T>(QueryInfo<T> info, DbCommand cmd)
         {
-            using (var reader = cmd.ExecuteReader(CommandBehaviorForList))
+            using var reader = cmd.ExecuteReader(CommandBehaviorForList);
+            var mapper = info.ResolveMapper(reader);
+
+            var list = new List<T>();
+            while (reader.Read())
             {
-                var mapper = info.ResolveMapper(reader);
-
-                var list = new List<T>();
-                while (reader.Read())
-                {
-                    list.Add(mapper(reader));
-                }
-
-                return list;
+                list.Add(mapper(reader));
             }
+
+            return list;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<List<T>> QueryBufferAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
         {
-            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false))
+            await using var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false);
+            var mapper = info.ResolveMapper(reader);
+
+            var list = new List<T>();
+            while (await reader.ReadAsync(cancel).ConfigureAwait(false))
             {
-                var mapper = info.ResolveMapper(reader);
-
-                var list = new List<T>();
-                while (await reader.ReadAsync(cancel).ConfigureAwait(false))
-                {
-                    list.Add(mapper(reader));
-                }
-
-                return list;
+                list.Add(mapper(reader));
             }
+
+            return list;
         }
 
         //--------------------------------------------------------------------------------
@@ -148,33 +144,29 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T QueryFirstOrDefault<T>(QueryInfo<T> info, DbCommand cmd)
         {
-            using (var reader = cmd.ExecuteReader(CommandBehaviorForSingle))
+            using var reader = cmd.ExecuteReader(CommandBehaviorForSingle);
+            var mapper = info.ResolveMapper(reader);
+
+            if (reader.Read())
             {
-                var mapper = info.ResolveMapper(reader);
-
-                if (reader.Read())
-                {
-                    return mapper(reader);
-                }
-
-                return default;
+                return mapper(reader);
             }
+
+            return default;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<T> QueryFirstOrDefaultAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
         {
-            await using (var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false))
+            await using var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false);
+            var mapper = info.ResolveMapper(reader);
+
+            if (await reader.ReadAsync(cancel).ConfigureAwait(false))
             {
-                var mapper = info.ResolveMapper(reader);
-
-                if (await reader.ReadAsync(cancel).ConfigureAwait(false))
-                {
-                    return mapper(reader);
-                }
-
-                return default;
+                return mapper(reader);
             }
+
+            return default;
         }
     }
 }

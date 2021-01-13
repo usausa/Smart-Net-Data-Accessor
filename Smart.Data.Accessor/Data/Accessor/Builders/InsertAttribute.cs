@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders
+﻿namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;
@@ -61,7 +61,7 @@ namespace Smart.Data.Accessor.Builders
             BuildHelper.AddInsertColumns(sql, mi, values);
             sql.Append(") VALUES (");
             BuildHelper.AddInsertValues(sql, mi, values);
-            sql.Append(")");
+            sql.Append(')');
 
             var tokenizer = new SqlTokenizer(sql.ToString());
             var builder = new NodeBuilder(tokenizer.Tokenize());

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System.Data;
     using System.Data.Common;
@@ -239,23 +239,21 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestExecuteScalarWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT COUNT(*) FROM Data")
-                    .Build();
-                var accessor = generator.Create<IExecuteScalarWithConnectionAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT COUNT(*) FROM Data")
+                .Build();
+            var accessor = generator.Create<IExecuteScalarWithConnectionAccessor>();
 
-                con.Open();
+            con.Open();
 
-                var count = accessor.ExecuteScalar(con);
+            var count = accessor.ExecuteScalar(con);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, count);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, count);
         }
 
         [DataAccessor]
@@ -268,23 +266,21 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteScalarWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
+            await using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT COUNT(*) FROM Data")
-                    .Build();
-                var accessor = generator.Create<IExecuteScalarWithConnectionAsyncAccessor>();
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT COUNT(*) FROM Data")
+                .Build();
+            var accessor = generator.Create<IExecuteScalarWithConnectionAsyncAccessor>();
 
-                await con.OpenAsync();
+            await con.OpenAsync();
 
-                var count = await accessor.ExecuteScalarAsync(con);
+            var count = await accessor.ExecuteScalarAsync(con);
 
-                Assert.Equal(ConnectionState.Open, con.State);
-                Assert.Equal(2, count);
-            }
+            Assert.Equal(ConnectionState.Open, con.State);
+            Assert.Equal(2, count);
         }
 
         //--------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Engine
+﻿namespace Smart.Data.Accessor.Engine
 {
     using System.Data;
     using System.Data.Common;
@@ -93,30 +93,28 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public void TestExecuteReaderWithConnection()
         {
-            using (var con = TestDatabase.Initialize()
+            using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+
+            con.Open();
+
+            var accessor = generator.Create<IExecuteReaderWithConnectionAccessor>();
+
+            Assert.Equal(ConnectionState.Open, con.State);
+
+            using (var reader = accessor.ExecuteReader(con))
             {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-
-                con.Open();
-
-                var accessor = generator.Create<IExecuteReaderWithConnectionAccessor>();
-
-                Assert.Equal(ConnectionState.Open, con.State);
-
-                using (var reader = accessor.ExecuteReader(con))
-                {
-                    Assert.True(reader.Read());
-                    Assert.True(reader.Read());
-                    Assert.False(reader.Read());
-                }
-
-                Assert.Equal(ConnectionState.Open, con.State);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.False(reader.Read());
             }
+
+            Assert.Equal(ConnectionState.Open, con.State);
         }
 
         [DataAccessor]
@@ -129,30 +127,28 @@ namespace Smart.Data.Accessor.Engine
         [Fact]
         public async ValueTask TestExecuteReaderWithConnectionAsync()
         {
-            await using (var con = TestDatabase.Initialize()
+            await using var con = TestDatabase.Initialize()
                 .SetupDataTable()
                 .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
+                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+            var generator = new TestFactoryBuilder()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+
+            await con.OpenAsync();
+
+            var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
+
+            Assert.Equal(ConnectionState.Open, con.State);
+
+            using (var reader = await accessor.ExecuteReaderAsync(con))
             {
-                var generator = new TestFactoryBuilder()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-
-                await con.OpenAsync();
-
-                var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
-
-                Assert.Equal(ConnectionState.Open, con.State);
-
-                using (var reader = await accessor.ExecuteReaderAsync(con))
-                {
-                    Assert.True(reader.Read());
-                    Assert.True(reader.Read());
-                    Assert.False(reader.Read());
-                }
-
-                Assert.Equal(ConnectionState.Open, con.State);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.False(reader.Read());
             }
+
+            Assert.Equal(ConnectionState.Open, con.State);
         }
 
         //--------------------------------------------------------------------------------
