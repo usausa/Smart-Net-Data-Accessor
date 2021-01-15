@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Dialect
+namespace Smart.Data.Accessor.Dialect
 {
     public sealed class EmptyDialect : IEmptyDialect
     {

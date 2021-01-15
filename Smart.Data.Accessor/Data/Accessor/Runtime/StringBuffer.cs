@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Runtime
+namespace Smart.Data.Accessor.Runtime
 {
     using System;
     using System.Runtime.CompilerServices;

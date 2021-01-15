@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Tokenizer
+namespace Smart.Data.Accessor.Tokenizer
 {
     using System;
     using System.Collections.Generic;

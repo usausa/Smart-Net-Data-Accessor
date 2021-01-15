@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Tokenizer
+namespace Smart.Data.Accessor.Tokenizer
 {
     public sealed class Token
     {

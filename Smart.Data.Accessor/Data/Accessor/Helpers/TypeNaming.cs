@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Helpers
+namespace Smart.Data.Accessor.Helpers
 {
     using System;
 

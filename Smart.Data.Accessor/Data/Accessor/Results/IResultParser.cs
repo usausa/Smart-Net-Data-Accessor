@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Results
+namespace Smart.Data.Accessor.Results
 {
     using System;
 

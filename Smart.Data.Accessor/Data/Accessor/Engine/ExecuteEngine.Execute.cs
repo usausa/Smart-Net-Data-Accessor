@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine
 {
     using System;
     using System.Collections.Generic;

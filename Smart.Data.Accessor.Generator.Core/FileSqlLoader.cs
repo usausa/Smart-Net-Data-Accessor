@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Generator
 {
     using System;
     using System.IO;

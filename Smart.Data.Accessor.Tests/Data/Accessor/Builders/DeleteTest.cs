@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders
 {
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;

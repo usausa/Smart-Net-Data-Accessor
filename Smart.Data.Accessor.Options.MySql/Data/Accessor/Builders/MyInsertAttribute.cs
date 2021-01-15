@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders
 {
     using System;
     using System.Collections.Generic;

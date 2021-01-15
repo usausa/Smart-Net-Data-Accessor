@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor
 {
     public enum MethodType
     {

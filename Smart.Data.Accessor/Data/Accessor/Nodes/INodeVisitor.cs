@@ -1,4 +1,4 @@
-﻿namespace Smart.Data.Accessor.Nodes
+namespace Smart.Data.Accessor.Nodes
 {
     public interface INodeVisitor
     {
