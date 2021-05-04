@@ -14,11 +14,14 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Usa.Smart.Converter" Version="1.0.0-beta2" />
     <PackageReference Include="Usa.Smart.Core" Version="2.0.0-beta6" />
     <PackageReference Include="Usa.Smart.Data" Version="2.0.0-beta2" />
