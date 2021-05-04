@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\..\tools\net5.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net5.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
 
   <ItemGroup>
