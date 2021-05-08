@@ -7,7 +7,7 @@ namespace Smart.Data.Accessor.Runtime
     public struct StringBuffer
     {
         [ThreadStatic]
-        private static char[] buffer;
+        private static char[]? buffer;
 
         public int Length { get; set; }
 
@@ -24,15 +24,14 @@ namespace Smart.Data.Accessor.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append<T>(T value)
         {
-            Append(value.ToString());
+            Append(value!.ToString()!);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(string value)
         {
             var length = value.Length;
-            if (buffer.Length - Length < length)
+            if (buffer!.Length - Length < length)
             {
                 var newSize = Math.Max(buffer.Length * 2, buffer.Length - Length + length);
                 var newBuffer = new char[newSize];
@@ -47,7 +46,7 @@ namespace Smart.Data.Accessor.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
-            return new(buffer, 0, Length);
+            return new(buffer!, 0, Length);
         }
     }
 }

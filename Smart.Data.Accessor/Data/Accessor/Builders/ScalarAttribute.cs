@@ -14,13 +14,13 @@ namespace Smart.Data.Accessor.Builders
 
     public abstract class ScalarAttribute : MethodAttribute
     {
-        private readonly string table;
+        private readonly string? table;
 
-        private readonly Type type;
+        private readonly Type? type;
 
         private readonly string field;
 
-        protected ScalarAttribute(string table, Type type, string field)
+        protected ScalarAttribute(string? table, Type? type, string field)
             : base(CommandType.Text, MethodType.ExecuteScalar)
         {
             this.table = table;
@@ -28,15 +28,14 @@ namespace Smart.Data.Accessor.Builders
             this.field = field;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(mi);
-            var tableName = table ?? BuildHelper.GetTableNameByType(mi, type);
+            var tableName = table ?? BuildHelper.GetTableNameByType(mi, type!);
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();

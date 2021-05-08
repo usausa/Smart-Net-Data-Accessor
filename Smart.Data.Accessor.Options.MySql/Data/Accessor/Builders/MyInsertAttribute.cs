@@ -14,9 +14,9 @@ namespace Smart.Data.Accessor.Builders
 
     public sealed class MyInsertAttribute : MethodAttribute
     {
-        private readonly string table;
+        private readonly string? table;
 
-        private readonly Type type;
+        private readonly Type? type;
 
         public DuplicateBehavior OnDuplicate { get; set; }
 
@@ -35,14 +35,13 @@ namespace Smart.Data.Accessor.Builders
         {
         }
 
-        private MyInsertAttribute(string table, Type type)
+        private MyInsertAttribute(string? table, Type? type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;
             this.type = type;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(mi);
@@ -53,8 +52,7 @@ namespace Smart.Data.Accessor.Builders
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException(
-                    $"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();
@@ -76,7 +74,7 @@ namespace Smart.Data.Accessor.Builders
                 var keys = BuildHelper.GetKeyParameters(parameters);
                 if (keys.Count == 0)
                 {
-                    throw new BuilderException($"Insert or Update requires key columns. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                    throw new BuilderException($"Insert or Update requires key columns. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
                 }
 
                 sql.Append(" ON DUPLICATE KEY UPDATE ");

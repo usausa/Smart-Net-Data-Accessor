@@ -19,9 +19,9 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(2, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as ParameterNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("id", node1.Name);
         }
 
@@ -38,9 +38,9 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(2, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as ParameterNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("ids", node1.Name);
         }
 
@@ -53,9 +53,9 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(2, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as ParameterNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("ids", node1.Name);
         }
 
@@ -72,9 +72,9 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(2, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as RawSqlNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("sort", node1.Source);
         }
 
@@ -96,21 +96,21 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(6, nodes.Count);
             var node0 = nodes[0] as UsingNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             Assert.True(node0.IsStatic);
             Assert.Equal("Smart.Mock.CustomScriptHelper", node0.Name);
             var node1 = nodes[1] as SqlNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             var node2 = nodes[2] as CodeNode;
-            Assert.NotNull(node2);
+            AssertEx.NotNull(node2);
             Assert.Equal("if (HasValue(id)) {", node2.Code);
             var node3 = nodes[3] as SqlNode;
-            Assert.NotNull(node3);
+            AssertEx.NotNull(node3);
             var node4 = nodes[4] as ParameterNode;
-            Assert.NotNull(node4);
+            AssertEx.NotNull(node4);
             Assert.Equal("id", node4.Name);
             var node5 = nodes[5] as CodeNode;
-            Assert.NotNull(node5);
+            AssertEx.NotNull(node5);
             Assert.Equal("}", node5.Code);
         }
 
@@ -128,21 +128,21 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(6, nodes.Count);
             var node0 = nodes[0] as UsingNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             Assert.False(node0.IsStatic);
             Assert.Equal("Smart.Mock", node0.Name);
             var node1 = nodes[1] as SqlNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             var node2 = nodes[2] as CodeNode;
-            Assert.NotNull(node2);
+            AssertEx.NotNull(node2);
             Assert.Equal("if (CustomScriptHelper.HasValue(id)) {", node2.Code);
             var node3 = nodes[3] as SqlNode;
-            Assert.NotNull(node3);
+            AssertEx.NotNull(node3);
             var node4 = nodes[4] as ParameterNode;
-            Assert.NotNull(node4);
+            AssertEx.NotNull(node4);
             Assert.Equal("id", node4.Name);
             var node5 = nodes[5] as CodeNode;
-            Assert.NotNull(node5);
+            AssertEx.NotNull(node5);
             Assert.Equal("}", node5.Code);
         }
 
@@ -159,17 +159,17 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(5, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as ParameterNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("id", node1.Name);
             var node2 = nodes[2] as SqlNode;
-            Assert.NotNull(node2);
+            AssertEx.NotNull(node2);
             var node3 = nodes[3] as ParameterNode;
-            Assert.NotNull(node3);
+            AssertEx.NotNull(node3);
             Assert.Equal("name", node3.Name);
             var node4 = nodes[4] as SqlNode;
-            Assert.NotNull(node4);
+            AssertEx.NotNull(node4);
         }
 
         //--------------------------------------------------------------------------------
@@ -188,24 +188,24 @@ namespace Smart.Data.Accessor.Nodes
 
             Assert.Equal(8, nodes.Count);
             var node0 = nodes[0] as SqlNode;
-            Assert.NotNull(node0);
+            AssertEx.NotNull(node0);
             var node1 = nodes[1] as ParameterNode;
-            Assert.NotNull(node1);
+            AssertEx.NotNull(node1);
             Assert.Equal("value1", node1.Name);
             var node2 = nodes[2] as SqlNode;
-            Assert.NotNull(node2);
+            AssertEx.NotNull(node2);
             var node3 = nodes[3] as ParameterNode;
-            Assert.NotNull(node3);
+            AssertEx.NotNull(node3);
             Assert.Equal("value2", node3.Name);
             var node4 = nodes[4] as SqlNode;
-            Assert.NotNull(node4);
+            AssertEx.NotNull(node4);
             var node5 = nodes[5] as ParameterNode;
-            Assert.NotNull(node5);
+            AssertEx.NotNull(node5);
             Assert.Equal("key1", node5.Name);
             var node6 = nodes[6] as SqlNode;
-            Assert.NotNull(node6);
+            AssertEx.NotNull(node6);
             var node7 = nodes[7] as ParameterNode;
-            Assert.NotNull(node7);
+            AssertEx.NotNull(node7);
             Assert.Equal("key2", node7.Name);
         }
     }

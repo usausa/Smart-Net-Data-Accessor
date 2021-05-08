@@ -40,7 +40,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(2, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }
@@ -68,7 +68,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(2, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }
@@ -98,7 +98,7 @@ namespace Smart.Data.Accessor.Engine
             accessor.Execute(2, "xxx");
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
         }
 
         [DataAccessor]
@@ -122,7 +122,7 @@ namespace Smart.Data.Accessor.Engine
             await accessor.ExecuteAsync(2, "xxx");
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
         }
 
         //--------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(2, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }
@@ -184,7 +184,7 @@ namespace Smart.Data.Accessor.Engine
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(2);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(2, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }

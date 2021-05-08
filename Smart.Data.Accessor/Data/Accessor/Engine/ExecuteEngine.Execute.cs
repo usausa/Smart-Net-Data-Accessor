@@ -9,7 +9,6 @@ namespace Smart.Data.Accessor.Engine
     using System.Threading;
     using System.Threading.Tasks;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
     public sealed partial class ExecuteEngine
     {
@@ -64,13 +63,13 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public object ExecuteScalar(DbCommand cmd)
+        public object? ExecuteScalar(DbCommand cmd)
         {
             return cmd.ExecuteScalar();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Task<object> ExecuteScalarAsync(DbCommand cmd, CancellationToken cancel = default)
+        public Task<object?> ExecuteScalarAsync(DbCommand cmd, CancellationToken cancel = default)
         {
             return cmd.ExecuteScalarAsync(cancel);
         }
@@ -142,7 +141,7 @@ namespace Smart.Data.Accessor.Engine
         //--------------------------------------------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T QueryFirstOrDefault<T>(QueryInfo<T> info, DbCommand cmd)
+        public T? QueryFirstOrDefault<T>(QueryInfo<T> info, DbCommand cmd)
         {
             using var reader = cmd.ExecuteReader(CommandBehaviorForSingle);
             var mapper = info.ResolveMapper(reader);
@@ -156,7 +155,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<T> QueryFirstOrDefaultAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
+        public async Task<T?> QueryFirstOrDefaultAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
         {
             await using var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false);
             var mapper = info.ResolveMapper(reader);

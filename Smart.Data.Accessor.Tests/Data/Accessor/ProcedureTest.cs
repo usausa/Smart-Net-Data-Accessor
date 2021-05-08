@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor
     using System;
     using System.Data;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     using Smart.Data.Accessor.Attributes;
@@ -60,6 +61,7 @@ namespace Smart.Data.Accessor
             public Value? Output6 { get; set; }
 
             [Output]
+            [AllowNull]
             public string Output7 { get; set; }
         }
 
@@ -129,6 +131,7 @@ namespace Smart.Data.Accessor
         public class DirectionParameter
         {
             [Input]
+            [AllowNull]
             public string InParam { get; set; }
 
             [InputOutput]

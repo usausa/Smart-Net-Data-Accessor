@@ -28,7 +28,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
 
             if (type.IsGenericType)
             {
-                var index = type.FullName.IndexOf('`', StringComparison.Ordinal);
+                var index = type.FullName!.IndexOf('`', StringComparison.Ordinal);
                 sb.Append("global::").Append(type.FullName.Substring(0, index).Replace('+', '.'));
                 sb.Append('<');
 
@@ -51,7 +51,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
             }
             else
             {
-                sb.Append("global::").Append(type.FullName.Replace('+', '.'));
+                sb.Append("global::").Append(type.FullName!.Replace('+', '.'));
             }
         }
 

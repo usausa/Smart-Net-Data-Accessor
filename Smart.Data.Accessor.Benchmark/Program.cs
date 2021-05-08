@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Benchmark
 {
     using System.Collections.Generic;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
 
@@ -42,12 +43,18 @@ namespace Smart.Data.Accessor.Benchmark
     [Config(typeof(BenchmarkConfig))]
     public class AccessorBenchmark
     {
+        [AllowNull]
         private MockRepeatDbConnection mockExecute;
+        [AllowNull]
         private MockRepeatDbConnection mockExecuteScalar;
+        [AllowNull]
         private MockRepeatDbConnection mockQuery;
+        [AllowNull]
         private MockRepeatDbConnection mockQueryFirst;
 
+        [AllowNull]
         private IBenchmarkAccessorForDapper dapperExecuteAccessor;
+        [AllowNull]
         private IBenchmarkAccessor smartExecuteAccessor;
 
         [GlobalSetup]
@@ -150,7 +157,7 @@ namespace Smart.Data.Accessor.Benchmark
         long ExecuteScalar(DbConnection con);
 
         [ExecuteScalar]
-        long ExecuteScalarWithCondition(DbConnection con, string flag);
+        long ExecuteScalarWithCondition(DbConnection con, string? flag);
 
         [Query]
         List<DataEntity> QueryBufferd(DbConnection con);
@@ -175,7 +182,7 @@ namespace Smart.Data.Accessor.Benchmark
 
         long ExecuteScalar(DbConnection con);
 
-        long ExecuteScalarWithCondition(DbConnection con, string flag);
+        long ExecuteScalarWithCondition(DbConnection con, string? flag);
 
         IEnumerable<DataEntity> QueryBufferd(DbConnection con);
 
@@ -194,7 +201,7 @@ namespace Smart.Data.Accessor.Benchmark
             return con.ExecuteScalar<long>("SELECT COUNT(*) FROM Data");
         }
 
-        public long ExecuteScalarWithCondition(DbConnection con, string flag)
+        public long ExecuteScalarWithCondition(DbConnection con, string? flag)
         {
             var sql = new StringBuilder();
             sql.Append("SELECT COUNT(*) FROM Data");
@@ -221,6 +228,7 @@ namespace Smart.Data.Accessor.Benchmark
     {
         public long Id { get; set; }
 
+        [AllowNull]
         public string Name { get; set; }
     }
 }

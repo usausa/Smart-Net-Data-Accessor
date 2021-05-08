@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Engine
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     using Smart.Mock.Data;
 
@@ -23,7 +24,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCache)), false);
+            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCache))!, false);
 
             Assert.Equal(0, info.MapperCount);
 
@@ -51,7 +52,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheOptimized)), true);
+            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheOptimized))!, true);
 
             Assert.Equal(0, info.MapperCount);
 
@@ -94,7 +95,7 @@ namespace Smart.Data.Accessor.Engine
             cmd.SetupResult(new MockDataReader(columns3, new List<object[]>()));
             cmd.SetupResult(new MockDataReader(columns4, new List<object[]>()));
 
-            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheForSameTypeDifferentResult)), false);
+            var info = new QueryInfo<CacheEntity>(engine, GetType().GetMethod(nameof(TestResultMapperCacheForSameTypeDifferentResult))!, false);
 
             Assert.Equal(0, info.MapperCount);
 
@@ -119,6 +120,7 @@ namespace Smart.Data.Accessor.Engine
         {
             public long Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
     }

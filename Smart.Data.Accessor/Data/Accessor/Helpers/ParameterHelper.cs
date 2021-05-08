@@ -10,7 +10,6 @@ namespace Smart.Data.Accessor.Helpers
     using Smart;
     using Smart.Data.Accessor.Attributes;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class ParameterHelper
     {
         //--------------------------------------------------------------------------------
@@ -46,7 +45,7 @@ namespace Smart.Data.Accessor.Helpers
                 return false;
             }
 
-            var type = pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType() : pi.ParameterType;
+            var type = pi.ParameterType.IsByRef ? pi.ParameterType.GetElementType()! : pi.ParameterType;
             return IsNestedType(type);
         }
 
@@ -54,7 +53,7 @@ namespace Smart.Data.Accessor.Helpers
         {
             if (type.IsNullableType())
             {
-                type = Nullable.GetUnderlyingType(type);
+                type = Nullable.GetUnderlyingType(type)!;
             }
 
             if (type.IsEnum)
@@ -99,7 +98,7 @@ namespace Smart.Data.Accessor.Helpers
         {
             if (type.IsArray)
             {
-                return type.GetElementType();
+                return type.GetElementType()!;
             }
 
             return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];

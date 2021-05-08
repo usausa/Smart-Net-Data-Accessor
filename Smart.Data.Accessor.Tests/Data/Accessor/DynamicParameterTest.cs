@@ -4,6 +4,7 @@ namespace Smart.Data.Accessor
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
 
     using Smart.Data.Accessor.Attributes;
@@ -68,7 +69,7 @@ namespace Smart.Data.Accessor
         public interface INullableAccessor
         {
             [Execute]
-            void Execute(DbConnection con, string value);
+            void Execute(DbConnection con, string? value);
         }
 
         [Fact]
@@ -121,7 +122,7 @@ namespace Smart.Data.Accessor
         public interface IArrayAccessor
         {
             [Execute]
-            void Execute(DbConnection con, int[] values);
+            void Execute(DbConnection con, int[]? values);
         }
 
         [Fact]
@@ -176,7 +177,7 @@ namespace Smart.Data.Accessor
         public interface IListAccessor
         {
             [Execute]
-            void Execute(DbConnection con, List<int> values);
+            void Execute(DbConnection con, List<int>? values);
         }
 
         [Fact]
@@ -285,6 +286,7 @@ namespace Smart.Data.Accessor
         {
             public int Key1 { get; set; }
 
+            [AllowNull]
             public string Key2 { get; set; }
         }
 

@@ -19,7 +19,7 @@ namespace Smart.Data.Accessor
         public interface IInArrayAccessor
         {
             [Query]
-            IList<DataEntity> QueryData(int[] ids);
+            IList<DataEntity> QueryData(int[]? ids);
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace Smart.Data.Accessor
         public interface IInListAccessor
         {
             [Query]
-            IList<DataEntity> QueryData(List<int> ids);
+            IList<DataEntity> QueryData(List<int>? ids);
         }
 
         [Fact]

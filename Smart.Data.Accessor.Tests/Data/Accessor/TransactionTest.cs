@@ -49,7 +49,7 @@ namespace Smart.Data.Accessor
             }
 
             entity = con.QueryData(1L);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
         }
 
         [DataAccessor]
@@ -91,7 +91,7 @@ namespace Smart.Data.Accessor
             }
 
             entity = con.QueryData(1L);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
         }
     }
 }

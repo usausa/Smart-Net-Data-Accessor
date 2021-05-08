@@ -26,7 +26,7 @@ namespace Smart.Data.Accessor.Nodes
             this.tokens = tokens;
         }
 
-        private Token NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;
+        private Token? NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;
 
         private void Flush(bool appendBlank)
         {

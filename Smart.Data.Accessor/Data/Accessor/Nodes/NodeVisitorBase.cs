@@ -4,7 +4,6 @@ namespace Smart.Data.Accessor.Nodes
 
     public abstract class NodeVisitorBase : INodeVisitor
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void Visit(IEnumerable<INode> nodes)
         {
             foreach (var node in nodes)

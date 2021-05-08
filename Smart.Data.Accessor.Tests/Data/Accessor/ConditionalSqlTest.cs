@@ -121,7 +121,7 @@ namespace Smart.Data.Accessor
         public interface IDynamicArrayAccessor
         {
             [Query]
-            IList<DataEntity> QueryData(int[] ids);
+            IList<DataEntity> QueryData(int[]? ids);
         }
 
         [Fact]

@@ -6,7 +6,6 @@ namespace Smart.Data.Accessor.Handlers
 
     public sealed class DateTimeTickTypeHandler : ITypeHandler
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void SetValue(DbParameter parameter, object value)
         {
             parameter.DbType = DbType.Int64;

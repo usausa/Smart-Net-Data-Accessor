@@ -1,5 +1,7 @@
 namespace Example.WebApplication2.Models
 {
+    using System.Diagnostics.CodeAnalysis;
+
     using Smart.Data.Accessor.Attributes;
 
     [Name("Data")]
@@ -7,8 +9,10 @@ namespace Example.WebApplication2.Models
     {
         public long Id { get; set; }
 
+        [AllowNull]
         public string Name { get; set; }
 
+        [AllowNull]
         public string Type { get; set; }
     }
 }

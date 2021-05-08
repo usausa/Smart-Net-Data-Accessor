@@ -9,8 +9,7 @@ namespace Smart.Data.Accessor.Selectors
 
     public class MultiMappingSelector : IMultiMappingSelector
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public TypeMapInfo[] Select(MethodInfo mi, Type[] types, ColumnInfo[] columns)
+        public TypeMapInfo[]? Select(MethodInfo mi, Type[] types, ColumnInfo[] columns)
         {
             var list = new List<TypeMapInfo>();
             var offset = 0;

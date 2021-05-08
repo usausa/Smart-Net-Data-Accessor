@@ -288,16 +288,16 @@ namespace Smart.Data.Accessor
         public interface ITypeHandlerAccessor
         {
             [Execute]
-            void ExecuteIn(DbConnection con, string value);
+            void ExecuteIn(DbConnection con, string? value);
 
             [Execute]
-            void ExecuteInOut(DbConnection con, ref string value);
+            void ExecuteInOut(DbConnection con, ref string? value);
 
             [Execute]
-            void ExecuteArray(DbConnection con, string[] value);
+            void ExecuteArray(DbConnection con, string?[]? value);
 
             [Execute]
-            void ExecuteList(DbConnection con, List<string> value);
+            void ExecuteList(DbConnection con, List<string?>? value);
         }
 
         [Fact]
@@ -389,7 +389,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            accessor.ExecuteList(con, new List<string> { string.Empty, null });
+            accessor.ExecuteList(con, new List<string?> { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {
@@ -411,19 +411,19 @@ namespace Smart.Data.Accessor
         public interface IDbTypeAccessor
         {
             [Execute]
-            void ExecuteIn(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] string value);
+            void ExecuteIn(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] string? value);
 
             [Execute]
-            void ExecuteInOut(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] ref string value);
+            void ExecuteInOut(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] ref string? value);
 
             [Execute]
-            void ExecuteOut(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] out string value);
+            void ExecuteOut(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] out string? value);
 
             [Execute]
-            void ExecuteArray(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] string[] value);
+            void ExecuteArray(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] string?[]? value);
 
             [Execute]
-            void ExecuteList(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] List<string> value);
+            void ExecuteList(DbConnection con, [DbType(DbType.AnsiStringFixedLength, 5)] List<string?>? value);
         }
 
         [Fact]
@@ -524,7 +524,7 @@ namespace Smart.Data.Accessor
                 cmd.SetupResult(0);
             });
 
-            accessor.ExecuteList(con, new List<string> { string.Empty, null });
+            accessor.ExecuteList(con, new List<string?> { string.Empty, null });
 
             con.SetupCommand(cmd =>
             {

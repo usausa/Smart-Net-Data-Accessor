@@ -21,7 +21,6 @@ namespace Smart.Data.Accessor.Handlers
             this.kind = kind;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void SetValue(DbParameter parameter, object value)
         {
             parameter.DbType = dbType;

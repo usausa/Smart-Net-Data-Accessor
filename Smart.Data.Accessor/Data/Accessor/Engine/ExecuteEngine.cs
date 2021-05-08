@@ -40,8 +40,8 @@ namespace Smart.Data.Accessor.Engine
         public ExecuteEngine(IExecuteEngineConfig config)
         {
             ServiceProvider = config.GetServiceProvider();
-            objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter));
-            emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect));
+            objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter))!;
+            emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect))!;
 
             typeMap = new Dictionary<Type, DbType>(config.GetTypeMap());
             typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
@@ -76,12 +76,12 @@ namespace Smart.Data.Accessor.Engine
         private bool LookupTypeHandler(Type type, out ITypeHandler handler)
         {
             type = Nullable.GetUnderlyingType(type) ?? type;
-            if (typeHandlers.TryGetValue(type, out handler))
+            if (typeHandlers.TryGetValue(type, out handler!))
             {
                 return true;
             }
 
-            if (type.IsEnum && typeHandlers.TryGetValue(Enum.GetUnderlyingType(type), out handler))
+            if (type.IsEnum && typeHandlers.TryGetValue(Enum.GetUnderlyingType(type), out handler!))
             {
                 return true;
             }
@@ -110,7 +110,7 @@ namespace Smart.Data.Accessor.Engine
         // Converter
         //--------------------------------------------------------------------------------
 
-        Func<object, object> IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
+        Func<object, object>? IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
         {
             var converter = CreateHandler(destinationType, provider);
             if (converter is not null)
@@ -127,7 +127,7 @@ namespace Smart.Data.Accessor.Engine
             return objectConverter.CreateConverter(sourceType, destinationType);
         }
 
-        public Func<object, object> CreateHandler(Type type, ICustomAttributeProvider provider)
+        public Func<object, object>? CreateHandler(Type type, ICustomAttributeProvider provider)
         {
             // ResultAttribute
             var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
@@ -145,13 +145,13 @@ namespace Smart.Data.Accessor.Engine
             return null;
         }
 
-        public T Convert<T>(object source, Func<object, object> handler)
+        public T Convert<T>(object? source, Func<object, object>? handler)
         {
             if (handler is not null)
             {
                 if ((source is null) || (source is DBNull))
                 {
-                    return default;
+                    return default!;
                 }
 
                 return (T)handler(source);
@@ -164,7 +164,7 @@ namespace Smart.Data.Accessor.Engine
 
             if ((source is null) || (source is DBNull))
             {
-                return default;
+                return default!;
             }
 
             return objectConverter.Convert<T>(source);

@@ -10,7 +10,6 @@ namespace Smart.Data.Accessor.Generator
     {
         private const string AssemblySource = "Assembly.g.cs";
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public static void Main(string[] args)
         {
             var target = Path.GetFullPath(args[0]);
@@ -24,9 +23,9 @@ namespace Smart.Data.Accessor.Generator
 
             var targetAssembly = Assembly.LoadFile(target);
             var context = AssemblyLoadContext.GetLoadContext(targetAssembly);
-            context.Resolving += (_, name) =>
+            context!.Resolving += (_, name) =>
             {
-                if (references.TryGetValue(name.Name, out var reference))
+                if (references.TryGetValue(name.Name!, out var reference))
                 {
                     return context.LoadFromAssemblyPath(reference.FilePath);
                 }
@@ -47,9 +46,9 @@ namespace Smart.Data.Accessor.Generator
             var newFiles = writer.NewFiles.Append(AssemblySource).ToHashSet();
             foreach (var file in Directory.GetFiles(outputDirectory).Select(Path.GetFileName))
             {
-                if (!newFiles.Contains(file))
+                if (!newFiles.Contains(file!))
                 {
-                    File.Delete(Path.Combine(outputDirectory, file));
+                    File.Delete(Path.Combine(outputDirectory, file!));
                 }
             }
         }

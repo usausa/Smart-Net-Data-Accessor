@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Mappers
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
 
@@ -206,7 +207,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<MapEntity>(engine, GetType().GetMethod(nameof(TestMapProperty)), false);
+            var info = new QueryInfo<MapEntity>(engine, GetType().GetMethod(nameof(TestMapProperty))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
@@ -319,6 +320,7 @@ namespace Smart.Data.Accessor.Mappers
             public long Id { get; set; }
 
             [CustomParser]
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -340,11 +342,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ParserEntity>(engine, GetType().GetMethod(nameof(TestCustomParser)), false);
+            var info = new QueryInfo<ParserEntity>(engine, GetType().GetMethod(nameof(TestCustomParser))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
         }
@@ -378,7 +380,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<StructEntity>(engine, GetType().GetMethod(nameof(TestStruct)), false);
+            var info = new QueryInfo<StructEntity>(engine, GetType().GetMethod(nameof(TestStruct))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -405,11 +407,11 @@ namespace Smart.Data.Accessor.Mappers
             cmd.SetupResult(new MockDataReader(columns, values));
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<StructEntity?>(engine, GetType().GetMethod(nameof(TestStructNullable)), false);
+            var info = new QueryInfo<StructEntity?>(engine, GetType().GetMethod(nameof(TestStructNullable))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.True(entity.HasValue);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Value.Id);
             Assert.Equal("2", entity.Value.Name);
 
@@ -426,6 +428,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -447,11 +450,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<RecordEntity>(engine, GetType().GetMethod(nameof(TestRecord)), false);
+            var info = new QueryInfo<RecordEntity>(engine, GetType().GetMethod(nameof(TestRecord))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
         }
@@ -464,6 +467,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; init; }
 
+            [AllowNull]
             public string Name { get; init; }
         }
 
@@ -485,11 +489,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<InitOnlyEntity>(engine, GetType().GetMethod(nameof(TestInitOnly)), false);
+            var info = new QueryInfo<InitOnlyEntity>(engine, GetType().GetMethod(nameof(TestInitOnly))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
         }
@@ -529,11 +533,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructor)), false);
+            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructor))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
         }
@@ -556,11 +560,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert)), false);
+            var info = new QueryInfo<ClassConstructorEntity>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("2", entity.Name);
         }
@@ -596,7 +600,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<StructConstructorEntity>(engine, GetType().GetMethod(nameof(TestStructConstructor)), false);
+            var info = new QueryInfo<StructConstructorEntity>(engine, GetType().GetMethod(nameof(TestStructConstructor))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
@@ -635,7 +639,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<NoMapEntity>(engine, GetType().GetMethod(nameof(TestCustomParser)), false);
+            var info = new QueryInfo<NoMapEntity>(engine, GetType().GetMethod(nameof(TestCustomParser))!, false);
 
             Assert.Throws<InvalidOperationException>(() => engine.QueryBuffer(info, cmd));
         }
@@ -660,7 +664,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, new List<object[]>()));
 
-            var info = new QueryInfo<DataEntity>(engine, null, false);
+            var info = new QueryInfo<DataEntity>(engine, null!, false);
 
             Assert.Throws<AccessorRuntimeException>(() => engine.QueryBuffer(info, cmd));
         }

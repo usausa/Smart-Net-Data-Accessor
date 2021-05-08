@@ -9,11 +9,11 @@ namespace Smart.Data.Accessor.Resolver
 
     public sealed class ExecuteEngineFactoryOptions
     {
-        internal Action<IDictionary<Type, DbType>> TypeMapConfig { get; private set; }
+        internal Action<IDictionary<Type, DbType>>? TypeMapConfig { get; private set; }
 
-        internal Action<IDictionary<Type, ITypeHandler>> TypeHandlersConfig { get; private set; }
+        internal Action<IDictionary<Type, ITypeHandler>>? TypeHandlersConfig { get; private set; }
 
-        internal Action<IList<IResultMapperFactory>> ResultMapperFactoriesConfig { get; private set; }
+        internal Action<IList<IResultMapperFactory>>? ResultMapperFactoriesConfig { get; private set; }
 
         public void ConfigureTypeMap(Action<IDictionary<Type, DbType>> action)
         {

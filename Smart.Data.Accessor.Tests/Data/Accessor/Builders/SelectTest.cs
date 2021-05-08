@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Builders
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
 
     using Smart.Data.Accessor.Attributes;
@@ -76,6 +77,7 @@ namespace Smart.Data.Accessor.Builders
             [Key(2)]
             public long Key2 { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -234,7 +236,7 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectExcludeNullAccessor
         {
             [Select]
-            List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string type = null);
+            List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string? type = null);
         }
 
         [Fact]
@@ -269,7 +271,7 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectExcludeEmptyAccessor
         {
             [Select]
-            List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string type = null);
+            List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string? type = null);
         }
 
         [Fact]

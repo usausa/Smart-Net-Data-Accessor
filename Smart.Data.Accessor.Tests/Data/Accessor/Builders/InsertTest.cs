@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Builders
 {
+    using System.Diagnostics.CodeAnalysis;
+
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Mapper;
     using Smart.Mock;
@@ -34,7 +36,7 @@ namespace Smart.Data.Accessor.Builders
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(1);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }
@@ -65,7 +67,7 @@ namespace Smart.Data.Accessor.Builders
             Assert.Equal(1, effect);
 
             var entity = con.QueryData(1);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("xxx", entity.Name);
         }
@@ -101,6 +103,7 @@ namespace Smart.Data.Accessor.Builders
             public long Id { get; set; }
 
             [AutoGenerate]
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -130,7 +133,7 @@ namespace Smart.Data.Accessor.Builders
 
             var entity = accessor.QueryEntity(1);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Null(entity.Name);
         }
 
@@ -144,6 +147,7 @@ namespace Smart.Data.Accessor.Builders
             public long Id { get; set; }
 
             [DbValue("CURRENT_TIMESTAMP")]
+            [AllowNull]
             public string DateTime { get; set; }
         }
 
@@ -173,7 +177,7 @@ namespace Smart.Data.Accessor.Builders
 
             var entity = accessor.QueryEntity(1);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.NotEmpty(entity.DateTime);
         }
 
@@ -204,7 +208,7 @@ namespace Smart.Data.Accessor.Builders
 
             var entity = accessor.QueryEntity(1);
 
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.NotEmpty(entity.DateTime);
         }
 
@@ -222,6 +226,7 @@ namespace Smart.Data.Accessor.Builders
         public class CodeValueEntity
         {
             [Key]
+            [AllowNull]
             public string Key { get; set; }
 
             [CodeValue("counter.Next()")]
@@ -258,10 +263,10 @@ namespace Smart.Data.Accessor.Builders
             var entityA = accessor.QueryEntity("A");
             var entityB = accessor.QueryEntity("B");
 
-            Assert.NotNull(entityA);
+            AssertEx.NotNull(entityA);
             Assert.Equal(1, entityA.Value);
 
-            Assert.NotNull(entityB);
+            AssertEx.NotNull(entityB);
             Assert.Equal(2, entityB.Value);
         }
 
@@ -296,10 +301,10 @@ namespace Smart.Data.Accessor.Builders
             var entityA = accessor.QueryEntity("A");
             var entityB = accessor.QueryEntity("B");
 
-            Assert.NotNull(entityA);
+            AssertEx.NotNull(entityA);
             Assert.Equal(1, entityA.Value);
 
-            Assert.NotNull(entityB);
+            AssertEx.NotNull(entityB);
             Assert.Equal(2, entityB.Value);
         }
     }

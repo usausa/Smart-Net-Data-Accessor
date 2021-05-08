@@ -11,14 +11,13 @@ namespace Smart.Data.Accessor.Builders.Helpers
     using Smart.Data.Accessor.Configs;
     using Smart.Data.Accessor.Helpers;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
     public static class BuildHelper
     {
         //--------------------------------------------------------------------------------
         // Table
         //--------------------------------------------------------------------------------
 
-        public static Type GetTableTypeByReturn(MethodInfo mi)
+        public static Type? GetTableTypeByReturn(MethodInfo mi)
         {
             var isAsync = mi.ReturnType.GetMethod(nameof(Task.GetAwaiter)) is not null;
             if (isAsync && !mi.ReturnType.IsGenericType)
@@ -45,7 +44,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             return ConfigHelper.GetMethodTableName(mi, type);
         }
 
-        public static string GetTableNameByParameter(MethodInfo mi)
+        public static string? GetTableNameByParameter(MethodInfo mi)
         {
             var pmi = mi.GetParameters()
                 .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
@@ -66,7 +65,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             return String.Join(", ", type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
                 .Where(x => x.Key is not null)
-                .OrderBy(x => x.Key.Order)
+                .OrderBy(x => x.Key!.Order)
                 .Select(x => ConfigHelper.GetMethodPropertyColumnName(mi, x.Property)));
         }
 
@@ -92,7 +91,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 else
                 {
                     var name = ConfigHelper.GetMethodParameterColumnName(mi, pmi);
-                    parameters.Add(new BuildParameterInfo(pmi, null, pmi.Name, name));
+                    parameters.Add(new BuildParameterInfo(pmi, null, pmi.Name!, name));
                 }
             }
 
@@ -111,7 +110,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
             return parameters
                 .Select(x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
                 .Where(x => x.Key is not null)
-                .OrderBy(x => x.Key.Order)
+                .OrderBy(x => x.Key!.Order)
                 .Select(x => x.Parameter)
                 .ToList();
         }
@@ -158,7 +157,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
         // Helper
         //--------------------------------------------------------------------------------
 
-        public static BuildParameterInfo PickParameter<T>(IList<BuildParameterInfo> parameters)
+        public static BuildParameterInfo? PickParameter<T>(IList<BuildParameterInfo> parameters)
             where T : Attribute
         {
             for (var i = 0; i < parameters.Count; i++)
@@ -215,18 +214,16 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 else
                 {
                     var condition = parameter.GetAttribute<ConditionAttribute>();
-                    var excludeNull = (condition?.ExcludeNull ?? false) || (condition?.ExcludeEmpty ?? false);
+                    var excludeNull = condition?.ExcludeNull ?? false;
+                    var excludeEmpty = condition?.ExcludeEmpty ?? false;
 
                     if (excludeNull)
                     {
-                        if (condition.ExcludeEmpty)
-                        {
-                            sql.Append($"/*% if (IsNotEmpty({parameter.Name})) {{ */");
-                        }
-                        else
-                        {
-                            sql.Append($"/*% if (IsNotNull({parameter.Name})) {{ */");
-                        }
+                        sql.Append($"/*% if (IsNotNull({parameter.Name})) {{ */");
+                    }
+                    else if (excludeEmpty)
+                    {
+                        sql.Append($"/*% if (IsNotEmpty({parameter.Name})) {{ */");
                     }
 
                     if (addAnd)
@@ -247,7 +244,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     sql.Append($"/*@ {parameter.Name} */dummy");
 
-                    if (excludeNull)
+                    if (excludeNull || excludeEmpty)
                     {
                         sql.Append("/*% } */");
                     }

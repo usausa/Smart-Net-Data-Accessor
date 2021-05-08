@@ -29,7 +29,9 @@ namespace Smart.Data.Accessor.Mappers
             { typeof(UIntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },   // Simplicity
         };
 
-        private static readonly MethodInfo GetValue = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue));
+        private static readonly MethodInfo GetValue = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!;
+
+        private static readonly MethodInfo ConvertFunc = typeof(Func<object, object>).GetMethod("Invoke")!;
 
         public static Dictionary<Type, LocalBuilder> DeclareValueTypeLocals(this ILGenerator ilGenerator, IEnumerable<Type> types)
         {
@@ -104,8 +106,7 @@ namespace Smart.Data.Accessor.Mappers
 
             ilGenerator.EmitLdloc(local);                                       // [Converter][Value]
 
-            var method = typeof(Func<object, object>).GetMethod("Invoke");
-            ilGenerator.Emit(OpCodes.Callvirt, method);                         // [Value(Converted)]
+            ilGenerator.Emit(OpCodes.Callvirt, ConvertFunc!);                   // [Value(Converted)]
         }
 
         public static void EmitTypeConversionForType(this ILGenerator ilGenerator, Type type)
@@ -114,8 +115,8 @@ namespace Smart.Data.Accessor.Mappers
             {
                 if (type.IsNullableType())
                 {
-                    var underlyingType = Nullable.GetUnderlyingType(type);
-                    var nullableCtor = type.GetConstructor(new[] { underlyingType });
+                    var underlyingType = Nullable.GetUnderlyingType(type)!;
+                    var nullableCtor = type.GetConstructor(new[] { underlyingType })!;
 
                     ilGenerator.Emit(OpCodes.Unbox_Any, underlyingType);
                     ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
@@ -133,8 +134,8 @@ namespace Smart.Data.Accessor.Mappers
 
         public static void EmitValueToNullableType(this ILGenerator ilGenerator, Type type)
         {
-            var underlyingType = Nullable.GetUnderlyingType(type);
-            var nullableCtor = type.GetConstructor(new[] { underlyingType });
+            var underlyingType = Nullable.GetUnderlyingType(type)!;
+            var nullableCtor = type.GetConstructor(new[] { underlyingType })!;
             ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
         }
     }

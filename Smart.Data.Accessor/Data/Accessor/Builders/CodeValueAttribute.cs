@@ -7,9 +7,9 @@ namespace Smart.Data.Accessor.Builders
     {
         public string Value { get; }
 
-        public string When { get; }
+        public string? When { get; }
 
-        public CodeValueAttribute(string value, string when = null)
+        public CodeValueAttribute(string value, string? when = null)
         {
             Value = value;
             When = when;

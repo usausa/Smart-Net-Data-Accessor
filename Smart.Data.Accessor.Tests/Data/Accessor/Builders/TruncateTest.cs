@@ -65,14 +65,14 @@ namespace Smart.Data.Accessor.Builders
         [DataAccessor]
         public interface ITruncateInvalid2Accessor
         {
-            [Truncate((Type)null)]
+            [Truncate((Type)null!)]
             void Truncate(DbConnection con);
         }
 
         [DataAccessor]
         public interface ITruncateInvalid3Accessor
         {
-            [Truncate((Type)null)]
+            [Truncate((Type)null!)]
             ValueTask Truncate(DbConnection con);
         }
 

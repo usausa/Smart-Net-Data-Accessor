@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Builders
 {
     using System.Collections.Generic;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;
@@ -23,6 +24,7 @@ namespace Smart.Data.Accessor.Builders
             [Key(2)]
             public long Key2 { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -30,10 +32,10 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectOtherAccessor
         {
             [MySelectSingle(typeof(MultiKeyEntity))]
-            OtherEntity SelectByType(DbConnection con, OtherEntity key);
+            OtherEntity? SelectByType(DbConnection con, OtherEntity key);
 
             [MySelectSingle("MultiKey")]
-            OtherEntity SelectByName(DbConnection con, OtherEntity key);
+            OtherEntity? SelectByName(DbConnection con, OtherEntity key);
         }
 
         [Fact]
@@ -68,7 +70,7 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectInvalidAccessor
         {
             [MySelectSingle("")]
-            MultiKeyEntity Select();
+            MultiKeyEntity? Select();
         }
 
         [Fact]
@@ -89,7 +91,7 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectUpdateAccessor
         {
             [MySelectSingle(ForUpdate = true)]
-            MultiKeyEntity Select(DbConnection con, long key1, long key2);
+            MultiKeyEntity? Select(DbConnection con, long key1, long key2);
         }
 
         [Fact]

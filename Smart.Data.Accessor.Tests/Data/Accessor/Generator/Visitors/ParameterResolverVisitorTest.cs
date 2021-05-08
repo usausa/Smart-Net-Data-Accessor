@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
 
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Nodes;
@@ -17,6 +18,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
 
         public class ChildParameter
         {
+            [AllowNull]
             public string Id { get; set; }
         }
 
@@ -24,16 +26,21 @@ namespace Smart.Data.Accessor.Generator.Visitors
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public int[] Values { get; set; }
 
-            public ChildParameter Child { get; set; }
+            public ChildParameter? Child { get; set; }
 
+            [AllowNull]
             public ChildParameter[] Children { get; set; }
 
+            [AllowNull]
             public Dictionary<int, string> Map { get; set; }
 
+            [AllowNull]
             public Dictionary<int, ChildParameter> ChildMap { get; set; }
 
+            [AllowNull]
             public Dictionary<int, int[]> Nested { get; set; }
         }
 
@@ -51,7 +58,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentSimple()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -69,7 +76,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMultiple()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("values") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -87,7 +94,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMultipleElement()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("values[0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -105,7 +112,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMultipleElementExpressionNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("values[data.Get()[0]]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -123,7 +130,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentChildProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("child.Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -141,7 +148,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentNullConditionalChildProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("child?.Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -159,7 +166,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMultipleElementProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("children[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -177,7 +184,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentNullConditionalMultipleElementProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("children?[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -195,7 +202,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMultipleElementExpressionNestedProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("children[data.Get()[0]].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -213,7 +220,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentMap()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("map[0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -231,7 +238,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentChildMapProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("childMap[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -249,7 +256,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentChildMapPropertyExpressionNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("childMap[data.Get()[0]].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -267,7 +274,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentWithWhitespace()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("childMap [ 0 ] . Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -285,7 +292,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArgumentNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("nested[0][0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -307,7 +314,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterSimple()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -325,7 +332,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMultiple()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Values") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -343,7 +350,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMultipleElement()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Values[0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -361,7 +368,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMultipleElementExpressionNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Values[data.Get()[0]]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -379,7 +386,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterChildProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Child.Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -397,7 +404,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterNullConditionalChildProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Child?.Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -415,7 +422,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMultipleElementProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Children[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -433,7 +440,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterNullConditionalMultipleElementProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Children?[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -451,7 +458,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMultipleElementExpressionNestedProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Children[data.Get()[0]].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -469,7 +476,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterMap()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Map[0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -487,7 +494,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterChildMapProperty()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("ChildMap[0].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -505,7 +512,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterChildMapPropertyExpressionNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("ChildMap[data.Get()[0]].Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -523,7 +530,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterWithWhitespace()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("ChildMap [ 0 ] . Id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -541,7 +548,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestParameterNested()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("Nested[0][0]") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -570,7 +577,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestNoSqlParameterSkip()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.NoSqlParameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.NoSqlParameter))!);
             visitor.Visit(new[] { new ParameterNode("id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -579,7 +586,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestTwice()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.Twice)));
+            var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.Twice))!);
             visitor.Visit(new[] { new ParameterNode("id"), new ParameterNode("id") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -611,7 +618,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestDirectionParameter()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IDirectionTarget).GetMethod(nameof(IDirectionTarget.Parameter)));
+            var visitor = new ParameterResolveVisitor(typeof(IDirectionTarget).GetMethod(nameof(IDirectionTarget.Parameter))!);
             visitor.Visit(new[] { new ParameterNode("InParam"), new ParameterNode("InOutParam"), new ParameterNode("OutParam") });
 
             Assert.Equal(3, visitor.Parameters.Count);
@@ -623,7 +630,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestDirectionArgument()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IDirectionTarget).GetMethod(nameof(IDirectionTarget.Argument)));
+            var visitor = new ParameterResolveVisitor(typeof(IDirectionTarget).GetMethod(nameof(IDirectionTarget.Argument))!);
             visitor.Visit(new[] { new ParameterNode("param1"), new ParameterNode("param2"), new ParameterNode("param3") });
 
             Assert.Equal(3, visitor.Parameters.Count);
@@ -646,7 +653,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestArray()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.Array)));
+            var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.Array))!);
             visitor.Visit(new[] { new ParameterNode("parameters") });
 
             Assert.Equal(1, visitor.Parameters.Count);
@@ -658,7 +665,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         [Fact]
         public void TestList()
         {
-            var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.List)));
+            var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.List))!);
             visitor.Visit(new[] { new ParameterNode("parameters") });
 
             Assert.Equal(1, visitor.Parameters.Count);

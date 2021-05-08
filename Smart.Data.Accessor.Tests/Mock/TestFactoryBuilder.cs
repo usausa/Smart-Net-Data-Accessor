@@ -2,6 +2,7 @@ namespace Smart.Mock
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     using Smart.ComponentModel;
     using Smart.Data;
@@ -12,6 +13,7 @@ namespace Smart.Mock
     {
         private readonly ExecuteEngineConfig config = new();
 
+        [AllowNull]
         private ISqlLoader loader;
 
         public TestFactoryBuilder Config(Action<ExecuteEngineConfig> action)

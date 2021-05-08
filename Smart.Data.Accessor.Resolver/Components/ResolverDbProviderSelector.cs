@@ -13,7 +13,7 @@ namespace Smart.Data.Accessor.Resolver.Components
 
         public IDbProvider GetProvider(object parameter)
         {
-            return resolver.Get<IDbProvider>(parameter as string);
+            return resolver.Get<IDbProvider>((string)parameter);
         }
     }
 }

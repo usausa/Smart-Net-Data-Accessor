@@ -16,17 +16,22 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
     {
         public static IServiceCollection AddDataAccessor(this IServiceCollection service)
         {
-            return service.AddDataAccessor(null);
+            return service.AddDataAccessorInternal(null);
         }
 
         public static IServiceCollection AddDataAccessor(this IServiceCollection service, Action<DataAccessorOption> action)
+        {
+            return service.AddDataAccessorInternal(action);
+        }
+
+        private static IServiceCollection AddDataAccessorInternal(this IServiceCollection service, Action<DataAccessorOption>? action)
         {
             var option = new DataAccessorOption();
             action?.Invoke(option);
 
             service.AddSingleton(option.EngineOption);
             service.AddSingleton<ExecuteEngineFactory>();
-            service.AddSingleton(c => c.GetService<ExecuteEngineFactory>().Create());
+            service.AddSingleton(c => c.GetService<ExecuteEngineFactory>()!.Create());
             service.AddSingleton<DataAccessorFactory>();
 
             service.TryAddSingleton<IObjectConverter>(ObjectConverter.Default);
@@ -40,7 +45,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection
             {
                 if (type.GetCustomAttribute<DataAccessorAttribute>() is not null)
                 {
-                    service.AddSingleton(type, c => c.GetService<DataAccessorFactory>().Create(type));
+                    service.AddSingleton(type, c => c.GetService<DataAccessorFactory>()!.Create(type));
                 }
             }
 

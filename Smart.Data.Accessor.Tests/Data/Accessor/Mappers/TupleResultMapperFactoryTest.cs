@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Mappers
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     using Smart.Data.Accessor.Engine;
     using Smart.Mock.Data;
@@ -18,6 +19,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -25,6 +27,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -54,50 +57,57 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<ClassPropertyMasterEntity, ClassPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassProperty)), false);
+            var info = new QueryInfo<Tuple<ClassPropertyMasterEntity, ClassPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassProperty))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Equal(101, list[0].Item2.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Name);
+            var element0 = list[0];
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Equal(101, element0.Item2.Id);
+            Assert.Equal("Slave-101", element0.Item2.Name);
 
             // All2
-            Assert.Equal(1, list[1].Item1.Id);
-            Assert.Equal("Master-1", list[1].Item1.Name);
-            Assert.Equal(102, list[1].Item2.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Name);
+            var element1 = list[1];
+            Assert.Equal(1, element1.Item1.Id);
+            Assert.Equal("Master-1", element1.Item1.Name);
+            Assert.Equal(102, element1.Item2.Id);
+            Assert.Equal("Slave-102", element1.Item2.Name);
 
             // Slave is NULL
-            Assert.Equal(1, list[2].Item1.Id);
-            Assert.Equal("Master-1", list[2].Item1.Name);
-            Assert.Null(list[2].Item2);
+            var element2 = list[2];
+            Assert.Equal(1, element2.Item1.Id);
+            Assert.Equal("Master-1", element2.Item1.Name);
+            Assert.Null(element2.Item2);
 
             // Slave 1st is NULL
-            Assert.Equal(1, list[3].Item1.Id);
-            Assert.Equal("Master-1", list[3].Item1.Name);
-            Assert.Null(list[3].Item2);
+            var element3 = list[3];
+            Assert.Equal(1, element3.Item1.Id);
+            Assert.Equal("Master-1", element3.Item1.Name);
+            Assert.Null(element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.Equal(1, list[4].Item1.Id);
-            Assert.Equal("Master-1", list[4].Item1.Name);
-            Assert.Equal(-1, list[4].Item2.Id);
-            Assert.Null(list[4].Item2.Name);
+            var element4 = list[4];
+            Assert.Equal(1, element4.Item1.Id);
+            Assert.Equal("Master-1", element4.Item1.Name);
+            Assert.Equal(-1, element4.Item2.Id);
+            Assert.Null(element4.Item2.Name);
 
             // Master is NULL
-            Assert.Equal(0, list[5].Item1.Id);
-            Assert.Null(list[5].Item1.Name);
-            Assert.Equal(201, list[5].Item2.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Name);
+            var element5 = list[5];
+            Assert.Equal(0, element5.Item1.Id);
+            Assert.Null(element5.Item1.Name);
+            Assert.Equal(201, element5.Item2.Id);
+            Assert.Equal("Slave-201", element5.Item2.Name);
 
             // All NULL
-            Assert.Equal(0, list[6].Item1.Id);
-            Assert.Null(list[6].Item1.Name);
-            Assert.Null(list[6].Item2);
+            var element6 = list[6];
+            Assert.Equal(0, element6.Item1.Id);
+            Assert.Null(element6.Item1.Name);
+            Assert.Null(element6.Item2);
         }
 
         [Fact]
@@ -120,10 +130,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<ClassPropertyMasterEntity, ClassPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassPropertyWithConvert)), false);
+            var info = new QueryInfo<Tuple<ClassPropertyMasterEntity, ClassPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassPropertyWithConvert))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Item1.Id);
             Assert.Equal("10", entity.Item1.Name);
             Assert.Equal(2, entity.Item2.Id);
@@ -186,50 +197,57 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<ClassConstructorMasterEntity, ClassConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassConstructor)), false);
+            var info = new QueryInfo<Tuple<ClassConstructorMasterEntity, ClassConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassConstructor))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Equal(101, list[0].Item2.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Name);
+            var element0 = list[0];
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Equal(101, element0.Item2.Id);
+            Assert.Equal("Slave-101", element0.Item2.Name);
 
             // All2
-            Assert.Equal(1, list[1].Item1.Id);
-            Assert.Equal("Master-1", list[1].Item1.Name);
-            Assert.Equal(102, list[1].Item2.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Name);
+            var element1 = list[1];
+            Assert.Equal(1, element1.Item1.Id);
+            Assert.Equal("Master-1", element1.Item1.Name);
+            Assert.Equal(102, element1.Item2.Id);
+            Assert.Equal("Slave-102", element1.Item2.Name);
 
             // Slave is NULL
-            Assert.Equal(1, list[2].Item1.Id);
-            Assert.Equal("Master-1", list[2].Item1.Name);
-            Assert.Null(list[2].Item2);
+            var element2 = list[2];
+            Assert.Equal(1, element2.Item1.Id);
+            Assert.Equal("Master-1", element2.Item1.Name);
+            Assert.Null(element2.Item2);
 
             // Slave 1st is NULL
-            Assert.Equal(1, list[3].Item1.Id);
-            Assert.Equal("Master-1", list[3].Item1.Name);
-            Assert.Null(list[3].Item2);
+            var element3 = list[3];
+            Assert.Equal(1, element3.Item1.Id);
+            Assert.Equal("Master-1", element3.Item1.Name);
+            Assert.Null(element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.Equal(1, list[4].Item1.Id);
-            Assert.Equal("Master-1", list[4].Item1.Name);
-            Assert.Equal(-1, list[4].Item2.Id);
-            Assert.Null(list[4].Item2.Name);
+            var element4 = list[4];
+            Assert.Equal(1, element4.Item1.Id);
+            Assert.Equal("Master-1", element4.Item1.Name);
+            Assert.Equal(-1, element4.Item2.Id);
+            Assert.Null(element4.Item2.Name);
 
             // Master is NULL
-            Assert.Equal(0, list[5].Item1.Id);
-            Assert.Null(list[5].Item1.Name);
-            Assert.Equal(201, list[5].Item2.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Name);
+            var element5 = list[5];
+            Assert.Equal(0, element5.Item1.Id);
+            Assert.Null(element5.Item1.Name);
+            Assert.Equal(201, element5.Item2.Id);
+            Assert.Equal("Slave-201", element5.Item2.Name);
 
             // All NULL
-            Assert.Equal(0, list[6].Item1.Id);
-            Assert.Null(list[6].Item1.Name);
-            Assert.Null(list[6].Item2);
+            var element6 = list[6];
+            Assert.Equal(0, element6.Item1.Id);
+            Assert.Null(element6.Item1.Name);
+            Assert.Null(element6.Item2);
         }
 
         [Fact]
@@ -252,10 +270,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<ClassConstructorMasterEntity, ClassConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert)), false);
+            var info = new QueryInfo<Tuple<ClassConstructorMasterEntity, ClassConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestClassConstructorWithConvert))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Item1.Id);
             Assert.Equal("10", entity.Item1.Name);
             Assert.Equal(2, entity.Item2.Id);
@@ -306,50 +325,57 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructPropertyMasterEntity, StructPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructProperty)), false);
+            var info = new QueryInfo<Tuple<StructPropertyMasterEntity, StructPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructProperty))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Equal(101, list[0].Item2.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Name);
+            var element0 = list[0];
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Equal(101, element0.Item2.Id);
+            Assert.Equal("Slave-101", element0.Item2.Name);
 
             // All2
-            Assert.Equal(1, list[1].Item1.Id);
-            Assert.Equal("Master-1", list[1].Item1.Name);
-            Assert.Equal(102, list[1].Item2.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Name);
+            var element1 = list[1];
+            Assert.Equal(1, element1.Item1.Id);
+            Assert.Equal("Master-1", element1.Item1.Name);
+            Assert.Equal(102, element1.Item2.Id);
+            Assert.Equal("Slave-102", element1.Item2.Name);
 
             // Slave is NULL
-            Assert.Equal(1, list[2].Item1.Id);
-            Assert.Equal("Master-1", list[2].Item1.Name);
-            Assert.Equal(default, list[2].Item2);
+            var element2 = list[2];
+            Assert.Equal(1, element2.Item1.Id);
+            Assert.Equal("Master-1", element2.Item1.Name);
+            Assert.Equal(default, element2.Item2);
 
             // Slave 1st is NULL
-            Assert.Equal(1, list[3].Item1.Id);
-            Assert.Equal("Master-1", list[3].Item1.Name);
-            Assert.Equal(default, list[3].Item2);
+            var element3 = list[3];
+            Assert.Equal(1, element3.Item1.Id);
+            Assert.Equal("Master-1", element3.Item1.Name);
+            Assert.Equal(default, element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.Equal(1, list[4].Item1.Id);
-            Assert.Equal("Master-1", list[4].Item1.Name);
-            Assert.Equal(-1, list[4].Item2.Id);
-            Assert.Null(list[4].Item2.Name);
+            var element4 = list[4];
+            Assert.Equal(1, element4.Item1.Id);
+            Assert.Equal("Master-1", element4.Item1.Name);
+            Assert.Equal(-1, element4.Item2.Id);
+            Assert.Null(element4.Item2.Name);
 
             // Master is NULL
-            Assert.Equal(0, list[5].Item1.Id);
-            Assert.Null(list[5].Item1.Name);
-            Assert.Equal(201, list[5].Item2.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Name);
+            var element5 = list[5];
+            Assert.Equal(0, element5.Item1.Id);
+            Assert.Null(element5.Item1.Name);
+            Assert.Equal(201, element5.Item2.Id);
+            Assert.Equal("Slave-201", element5.Item2.Name);
 
             // All NULL
-            Assert.Equal(0, list[6].Item1.Id);
-            Assert.Null(list[6].Item1.Name);
-            Assert.Equal(default, list[6].Item2);
+            var element6 = list[6];
+            Assert.Equal(0, element6.Item1.Id);
+            Assert.Null(element6.Item1.Name);
+            Assert.Equal(default, element6.Item2);
         }
 
         [Fact]
@@ -372,10 +398,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructPropertyMasterEntity, StructPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructPropertyWithConvert)), false);
+            var info = new QueryInfo<Tuple<StructPropertyMasterEntity, StructPropertySlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructPropertyWithConvert))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Item1.Id);
             Assert.Equal("10", entity.Item1.Name);
             Assert.Equal(2, entity.Item2.Id);
@@ -438,50 +465,57 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructConstructorMasterEntity, StructConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructConstructor)), false);
+            var info = new QueryInfo<Tuple<StructConstructorMasterEntity, StructConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructConstructor))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Equal(101, list[0].Item2.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Name);
+            var element0 = list[0];
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Equal(101, element0.Item2.Id);
+            Assert.Equal("Slave-101", element0.Item2.Name);
 
             // All2
-            Assert.Equal(1, list[1].Item1.Id);
-            Assert.Equal("Master-1", list[1].Item1.Name);
-            Assert.Equal(102, list[1].Item2.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Name);
+            var element1 = list[1];
+            Assert.Equal(1, element1.Item1.Id);
+            Assert.Equal("Master-1", element1.Item1.Name);
+            Assert.Equal(102, element1.Item2.Id);
+            Assert.Equal("Slave-102", element1.Item2.Name);
 
             // Slave is NULL
-            Assert.Equal(1, list[2].Item1.Id);
-            Assert.Equal("Master-1", list[2].Item1.Name);
-            Assert.Equal(default, list[2].Item2);
+            var element2 = list[2];
+            Assert.Equal(1, element2.Item1.Id);
+            Assert.Equal("Master-1", element2.Item1.Name);
+            Assert.Equal(default, element2.Item2);
 
             // Slave 1st is NULL
-            Assert.Equal(1, list[3].Item1.Id);
-            Assert.Equal("Master-1", list[3].Item1.Name);
-            Assert.Equal(default, list[3].Item2);
+            var element3 = list[3];
+            Assert.Equal(1, element3.Item1.Id);
+            Assert.Equal("Master-1", element3.Item1.Name);
+            Assert.Equal(default, element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.Equal(1, list[4].Item1.Id);
-            Assert.Equal("Master-1", list[4].Item1.Name);
-            Assert.Equal(-1, list[4].Item2.Id);
-            Assert.Null(list[4].Item2.Name);
+            var element4 = list[4];
+            Assert.Equal(1, element4.Item1.Id);
+            Assert.Equal("Master-1", element4.Item1.Name);
+            Assert.Equal(-1, element4.Item2.Id);
+            Assert.Null(element4.Item2.Name);
 
             // Master is NULL
-            Assert.Equal(0, list[5].Item1.Id);
-            Assert.Null(list[5].Item1.Name);
-            Assert.Equal(201, list[5].Item2.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Name);
+            var element5 = list[5];
+            Assert.Equal(0, element5.Item1.Id);
+            Assert.Null(element5.Item1.Name);
+            Assert.Equal(201, element5.Item2.Id);
+            Assert.Equal("Slave-201", element5.Item2.Name);
 
             // All NULL
-            Assert.Equal(0, list[6].Item1.Id);
-            Assert.Null(list[6].Item1.Name);
-            Assert.Equal(default, list[6].Item2);
+            var element6 = list[6];
+            Assert.Equal(0, element6.Item1.Id);
+            Assert.Null(element6.Item1.Name);
+            Assert.Equal(default, element6.Item2);
         }
 
         [Fact]
@@ -504,10 +538,11 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructConstructorMasterEntity, StructConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructConstructorWithConvert)), false);
+            var info = new QueryInfo<Tuple<StructConstructorMasterEntity, StructConstructorSlaveEntity>>(engine, GetType().GetMethod(nameof(TestStructConstructorWithConvert))!, false);
 
             var entity = engine.QueryFirstOrDefault(info, cmd);
 
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Item1.Id);
             Assert.Equal("10", entity.Item1.Name);
             Assert.Equal(2, entity.Item2.Id);
@@ -544,61 +579,68 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructPropertyMasterEntity?, StructPropertySlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNullableStructProperty)), false);
+            var info = new QueryInfo<Tuple<StructPropertyMasterEntity?, StructPropertySlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNullableStructProperty))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.NotNull(list[0].Item1);
-            Assert.Equal(1, list[0].Item1.Value.Id);
-            Assert.Equal("Master-1", list[0].Item1.Value.Name);
-            Assert.NotNull(list[0].Item2);
-            Assert.Equal(101, list[0].Item2.Value.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Value.Name);
+            var element0 = list[0];
+            AssertEx.NotNull(element0.Item1);
+            Assert.Equal(1, element0.Item1.Value.Id);
+            Assert.Equal("Master-1", element0.Item1.Value.Name);
+            AssertEx.NotNull(element0.Item2);
+            Assert.Equal(101, element0.Item2.Value.Id);
+            Assert.Equal("Slave-101", element0.Item2.Value.Name);
 
             // All2
-            Assert.NotNull(list[1].Item1);
-            Assert.Equal(1, list[1].Item1.Value.Id);
-            Assert.Equal("Master-1", list[1].Item1.Value.Name);
-            Assert.NotNull(list[1].Item2);
-            Assert.Equal(102, list[1].Item2.Value.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Value.Name);
+            var element1 = list[1];
+            AssertEx.NotNull(element1.Item1);
+            Assert.Equal(1, element1.Item1.Value.Id);
+            Assert.Equal("Master-1", element1.Item1.Value.Name);
+            AssertEx.NotNull(element1.Item2);
+            Assert.Equal(102, element1.Item2.Value.Id);
+            Assert.Equal("Slave-102", element1.Item2.Value.Name);
 
             // Slave is NULL
-            Assert.NotNull(list[2].Item1);
-            Assert.Equal(1, list[2].Item1.Value.Id);
-            Assert.Equal("Master-1", list[2].Item1.Value.Name);
-            Assert.Null(list[2].Item2);
+            var element2 = list[2];
+            AssertEx.NotNull(element2.Item1);
+            Assert.Equal(1, element2.Item1.Value.Id);
+            Assert.Equal("Master-1", element2.Item1.Value.Name);
+            Assert.Null(element2.Item2);
 
             // Slave 1st is NULL
-            Assert.NotNull(list[3].Item1);
-            Assert.Equal(1, list[3].Item1.Value.Id);
-            Assert.Equal("Master-1", list[3].Item1.Value.Name);
-            Assert.Null(list[3].Item2);
+            var element3 = list[3];
+            AssertEx.NotNull(element3.Item1);
+            Assert.Equal(1, element3.Item1.Value.Id);
+            Assert.Equal("Master-1", element3.Item1.Value.Name);
+            Assert.Null(element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.NotNull(list[4].Item1);
-            Assert.Equal(1, list[4].Item1.Value.Id);
-            Assert.Equal("Master-1", list[4].Item1.Value.Name);
-            Assert.NotNull(list[4].Item2);
-            Assert.Equal(-1, list[4].Item2.Value.Id);
-            Assert.Null(list[4].Item2.Value.Name);
+            var element4 = list[4];
+            AssertEx.NotNull(element4.Item1);
+            Assert.Equal(1, element4.Item1.Value.Id);
+            Assert.Equal("Master-1", element4.Item1.Value.Name);
+            AssertEx.NotNull(element4.Item2);
+            Assert.Equal(-1, element4.Item2.Value.Id);
+            Assert.Null(element4.Item2.Value.Name);
 
             // Master is NULL
-            Assert.NotNull(list[5].Item1);
-            Assert.Equal(0, list[5].Item1.Value.Id);
-            Assert.Null(list[5].Item1.Value.Name);
-            Assert.NotNull(list[5].Item2);
-            Assert.Equal(201, list[5].Item2.Value.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Value.Name);
+            var element5 = list[5];
+            AssertEx.NotNull(element5.Item1);
+            Assert.Equal(0, element5.Item1.Value.Id);
+            Assert.Null(element5.Item1.Value.Name);
+            AssertEx.NotNull(element5.Item2);
+            Assert.Equal(201, element5.Item2.Value.Id);
+            Assert.Equal("Slave-201", element5.Item2.Value.Name);
 
             // All NULL
-            Assert.NotNull(list[6].Item1);
-            Assert.Equal(0, list[6].Item1.Value.Id);
-            Assert.Null(list[6].Item1.Value.Name);
-            Assert.Null(list[6].Item2);
+            var element6 = list[6];
+            AssertEx.NotNull(element6.Item1);
+            Assert.Equal(0, element6.Item1.Value.Id);
+            Assert.Null(element6.Item1.Value.Name);
+            Assert.Null(element6.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -631,61 +673,68 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<StructConstructorMasterEntity?, StructConstructorSlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNullableStructConstructor)), false);
+            var info = new QueryInfo<Tuple<StructConstructorMasterEntity?, StructConstructorSlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNullableStructConstructor))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(7, list.Count);
 
             // All
-            Assert.NotNull(list[0].Item1);
-            Assert.Equal(1, list[0].Item1.Value.Id);
-            Assert.Equal("Master-1", list[0].Item1.Value.Name);
-            Assert.NotNull(list[0].Item2);
-            Assert.Equal(101, list[0].Item2.Value.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Value.Name);
+            var element0 = list[0];
+            AssertEx.NotNull(element0.Item1);
+            Assert.Equal(1, element0.Item1.Value.Id);
+            Assert.Equal("Master-1", element0.Item1.Value.Name);
+            AssertEx.NotNull(element0.Item2);
+            Assert.Equal(101, element0.Item2.Value.Id);
+            Assert.Equal("Slave-101", element0.Item2.Value.Name);
 
             // All2
-            Assert.NotNull(list[1].Item1);
-            Assert.Equal(1, list[1].Item1.Value.Id);
-            Assert.Equal("Master-1", list[1].Item1.Value.Name);
-            Assert.NotNull(list[1].Item2);
-            Assert.Equal(102, list[1].Item2.Value.Id);
-            Assert.Equal("Slave-102", list[1].Item2.Value.Name);
+            var element1 = list[1];
+            AssertEx.NotNull(element1.Item1);
+            Assert.Equal(1, element1.Item1.Value.Id);
+            Assert.Equal("Master-1", element1.Item1.Value.Name);
+            AssertEx.NotNull(element1.Item2);
+            Assert.Equal(102, element1.Item2.Value.Id);
+            Assert.Equal("Slave-102", element1.Item2.Value.Name);
 
             // Slave is NULL
-            Assert.NotNull(list[2].Item1);
-            Assert.Equal(1, list[2].Item1.Value.Id);
-            Assert.Equal("Master-1", list[2].Item1.Value.Name);
-            Assert.Null(list[2].Item2);
+            var element2 = list[2];
+            AssertEx.NotNull(element2.Item1);
+            Assert.Equal(1, element2.Item1.Value.Id);
+            Assert.Equal("Master-1", element2.Item1.Value.Name);
+            Assert.Null(element2.Item2);
 
             // Slave 1st is NULL
-            Assert.NotNull(list[3].Item1);
-            Assert.Equal(1, list[3].Item1.Value.Id);
-            Assert.Equal("Master-1", list[3].Item1.Value.Name);
-            Assert.Null(list[3].Item2);
+            var element3 = list[3];
+            AssertEx.NotNull(element3.Item1);
+            Assert.Equal(1, element3.Item1.Value.Id);
+            Assert.Equal("Master-1", element3.Item1.Value.Name);
+            Assert.Null(element3.Item2);
 
             // Slave 1st is not NULL
-            Assert.NotNull(list[4].Item1);
-            Assert.Equal(1, list[4].Item1.Value.Id);
-            Assert.Equal("Master-1", list[4].Item1.Value.Name);
-            Assert.NotNull(list[4].Item2);
-            Assert.Equal(-1, list[4].Item2.Value.Id);
-            Assert.Null(list[4].Item2.Value.Name);
+            var element4 = list[4];
+            AssertEx.NotNull(element4.Item1);
+            Assert.Equal(1, element4.Item1.Value.Id);
+            Assert.Equal("Master-1", element4.Item1.Value.Name);
+            AssertEx.NotNull(element4.Item2);
+            Assert.Equal(-1, element4.Item2.Value.Id);
+            Assert.Null(element4.Item2.Value.Name);
 
             // Master is NULL
-            Assert.NotNull(list[5].Item1);
-            Assert.Equal(0, list[5].Item1.Value.Id);
-            Assert.Null(list[5].Item1.Value.Name);
-            Assert.NotNull(list[5].Item2);
-            Assert.Equal(201, list[5].Item2.Value.Id);
-            Assert.Equal("Slave-201", list[5].Item2.Value.Name);
+            var element5 = list[5];
+            AssertEx.NotNull(element5.Item1);
+            Assert.Equal(0, element5.Item1.Value.Id);
+            Assert.Null(element5.Item1.Value.Name);
+            AssertEx.NotNull(element5.Item2);
+            Assert.Equal(201, element5.Item2.Value.Id);
+            Assert.Equal("Slave-201", element5.Item2.Value.Name);
 
             // All NULL
-            Assert.NotNull(list[6].Item1);
-            Assert.Equal(0, list[6].Item1.Value.Id);
-            Assert.Null(list[6].Item1.Value.Name);
-            Assert.Null(list[6].Item2);
+            var element6 = list[6];
+            AssertEx.NotNull(element6.Item1);
+            Assert.Equal(0, element6.Item1.Value.Id);
+            Assert.Null(element6.Item1.Value.Name);
+            Assert.Null(element6.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -700,6 +749,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -722,21 +772,23 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<NoMapMasterMasterEntity, NoMapMasterSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapMaster)), false);
+            var info = new QueryInfo<Tuple<NoMapMasterMasterEntity, NoMapMasterSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapMaster))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(2, list.Count);
 
             // All
-            Assert.NotNull(list[0].Item1);
-            Assert.NotNull(list[0].Item2);
-            Assert.Equal(101, list[0].Item2.Id);
-            Assert.Equal("Slave-101", list[0].Item2.Name);
+            var element0 = list[0];
+            AssertEx.NotNull(element0.Item1);
+            AssertEx.NotNull(element0.Item2);
+            Assert.Equal(101, element0.Item2.Id);
+            Assert.Equal("Slave-101", element0.Item2.Name);
 
             // All NULL
-            Assert.NotNull(list[1].Item1);
-            Assert.Null(list[1].Item2);
+            var element1 = list[1];
+            AssertEx.NotNull(element1.Item1);
+            Assert.Null(element1.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -747,6 +799,7 @@ namespace Smart.Data.Accessor.Mappers
         {
             public int Id { get; set; }
 
+            [AllowNull]
             public string Name { get; set; }
         }
 
@@ -773,23 +826,25 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<NoMapSlaveMasterEntity, NoMapSlaveSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapSlave)), false);
+            var info = new QueryInfo<Tuple<NoMapSlaveMasterEntity, NoMapSlaveSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapSlave))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(2, list.Count);
 
             // All
-            Assert.NotNull(list[0].Item1);
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Null(list[0].Item2);
+            var element0 = list[0];
+            AssertEx.NotNull(element0.Item1);
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Null(element0.Item2);
 
             // All NULL
-            Assert.NotNull(list[1].Item1);
-            Assert.Equal(0, list[1].Item1.Id);
-            Assert.Null(list[1].Item1.Name);
-            Assert.Null(list[1].Item2);
+            var element1 = list[1];
+            AssertEx.NotNull(element1.Item1);
+            Assert.Equal(0, element1.Item1.Id);
+            Assert.Null(element1.Item1.Name);
+            Assert.Null(element1.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -826,21 +881,23 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<NoMapStructSlaveMasterEntity, NoMapStructSlaveSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapStructSlave)), false);
+            var info = new QueryInfo<Tuple<NoMapStructSlaveMasterEntity, NoMapStructSlaveSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMapStructSlave))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(2, list.Count);
 
             // All
-            Assert.Equal(1, list[0].Item1.Id);
-            Assert.Equal("Master-1", list[0].Item1.Name);
-            Assert.Equal(default, list[0].Item2);
+            var element0 = list[0];
+            Assert.Equal(1, element0.Item1.Id);
+            Assert.Equal("Master-1", element0.Item1.Name);
+            Assert.Equal(default, element0.Item2);
 
             // All NULL
-            Assert.Equal(0, list[1].Item1.Id);
-            Assert.Null(list[1].Item1.Name);
-            Assert.Equal(default, list[1].Item2);
+            var element1 = list[1];
+            Assert.Equal(0, element1.Item1.Id);
+            Assert.Null(element1.Item1.Name);
+            Assert.Equal(default, element1.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -866,23 +923,25 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<NoMapStructSlaveMasterEntity?, NoMapStructSlaveSlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNoMapStructSlave)), false);
+            var info = new QueryInfo<Tuple<NoMapStructSlaveMasterEntity?, NoMapStructSlaveSlaveEntity?>>(engine, GetType().GetMethod(nameof(TestNoMapStructSlave))!, false);
 
             var list = engine.QueryBuffer(info, cmd);
 
             Assert.Equal(2, list.Count);
 
             // All
-            Assert.NotNull(list[0].Item1);
-            Assert.Equal(1, list[0].Item1.Value.Id);
-            Assert.Equal("Master-1", list[0].Item1.Value.Name);
-            Assert.Null(list[0].Item2);
+            var element0 = list[0];
+            AssertEx.NotNull(element0.Item1);
+            Assert.Equal(1, element0.Item1.Value.Id);
+            Assert.Equal("Master-1", element0.Item1.Value.Name);
+            Assert.Null(element0.Item2);
 
             // All NULL
-            Assert.NotNull(list[1].Item1);
-            Assert.Equal(0, list[1].Item1.Value.Id);
-            Assert.Null(list[1].Item1.Value.Name);
-            Assert.Null(list[1].Item2);
+            var element1 = list[1];
+            AssertEx.NotNull(element1.Item1);
+            Assert.Equal(0, element1.Item1.Value.Id);
+            Assert.Null(element1.Item1.Value.Name);
+            Assert.Null(element1.Item2);
         }
 
         //--------------------------------------------------------------------------------
@@ -920,7 +979,7 @@ namespace Smart.Data.Accessor.Mappers
             var cmd = new MockDbCommand();
             cmd.SetupResult(new MockDataReader(columns, values));
 
-            var info = new QueryInfo<Tuple<NoMapMasterEntity, NoMapSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMap)), false);
+            var info = new QueryInfo<Tuple<NoMapMasterEntity, NoMapSlaveEntity>>(engine, GetType().GetMethod(nameof(TestNoMap))!, false);
 
             Assert.Throws<InvalidOperationException>(() => engine.QueryBuffer(info, cmd));
         }

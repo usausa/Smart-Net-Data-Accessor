@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
                     continue;
                 }
 
-                var type = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType() : pmi.ParameterType;
+                var type = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType()! : pmi.ParameterType;
 
                 if (pmi.Name == elements[0].Name)
                 {
@@ -69,20 +69,20 @@ namespace Smart.Data.Accessor.Generator.Visitors
                         var isMultiple = ParameterHelper.IsMultipleParameter(type);
                         if (isMultiple && (direction != ParameterDirection.Input))
                         {
-                            throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
+                            throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType!.FullName}], method=[{method.Name}], source=[{node.Name}]");
                         }
 
                         parameters.Add(new ParameterEntry(
-                            node.Name,
                             index++,
                             node.Name,
-                            i,
-                            null,
-                            null,
+                            node.ParameterName,
+                            node.Name,
                             type,
                             direction,
-                            node.ParameterName,
-                            isMultiple));
+                            isMultiple,
+                            i,
+                            null,
+                            null));
                         return;
                     }
 
@@ -130,20 +130,20 @@ namespace Smart.Data.Accessor.Generator.Visitors
                 var isMultiple = ParameterHelper.IsMultipleParameter(type);
                 if (isMultiple && (direction != ParameterDirection.Input))
                 {
-                    throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType.FullName}], method=[{method.Name}], source=[{node.Name}]");
+                    throw new AccessorGeneratorException($"DB parameter argument is not valid. type=[{method.DeclaringType!.FullName}], method=[{method.Name}], source=[{node.Name}]");
                 }
 
                 parameters.Add(new ParameterEntry(
-                    node.Name,
                     index++,
+                    node.Name,
+                    node.ParameterName,
                     source,
-                    -1,
-                    pi.DeclaringType,
-                    pi.Name,
                     type,
                     direction,
-                    node.ParameterName,
-                    isMultiple));
+                    isMultiple,
+                    -1,
+                    pi.DeclaringType,
+                    pi.Name));
                 return true;
             }
         }
@@ -152,7 +152,7 @@ namespace Smart.Data.Accessor.Generator.Visitors
         {
             if (type.IsArray)
             {
-                return type.GetElementType();
+                return type.GetElementType()!;
             }
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))

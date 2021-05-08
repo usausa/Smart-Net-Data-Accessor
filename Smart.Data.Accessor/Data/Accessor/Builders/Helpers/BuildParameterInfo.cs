@@ -8,15 +8,15 @@ namespace Smart.Data.Accessor.Builders.Helpers
     {
         private readonly ParameterInfo parameter;
 
-        private readonly PropertyInfo property;
+        private readonly PropertyInfo? property;
 
         public string Name { get; }
 
         public string ParameterName { get; }
 
-        public Type ParameterType => parameter is not null ? parameter.ParameterType : property.PropertyType;
+        public Type ParameterType => property is not null ? property.PropertyType : parameter.ParameterType;
 
-        public BuildParameterInfo(ParameterInfo parameter, PropertyInfo property, string name, string parameterName)
+        public BuildParameterInfo(ParameterInfo parameter, PropertyInfo? property, string name, string parameterName)
         {
             this.parameter = parameter;
             this.property = property;
@@ -24,13 +24,13 @@ namespace Smart.Data.Accessor.Builders.Helpers
             ParameterName = parameterName;
         }
 
-        public T GetParameterAttribute<T>()
+        public T? GetParameterAttribute<T>()
             where T : Attribute
         {
             return parameter.GetCustomAttribute<T>();
         }
 
-        public T GetAttribute<T>()
+        public T? GetAttribute<T>()
             where T : Attribute
         {
             return property is not null ? property.GetCustomAttribute<T>() : parameter.GetCustomAttribute<T>();

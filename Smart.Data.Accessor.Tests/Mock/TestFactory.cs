@@ -76,10 +76,10 @@ namespace Smart.Mock
             var assembly = Assembly.Load(ms.ToArray());
 
             var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
-            var implementType = assembly.GetType(accessorName);
+            var implementType = assembly.GetType(accessorName)!;
             try
             {
-                return (T)Activator.CreateInstance(implementType, Engine);
+                return (T)Activator.CreateInstance(implementType, Engine)!;
             }
             catch (Exception e)
             {
@@ -104,7 +104,7 @@ namespace Smart.Mock
 
         private class MemorySourceWriter : ISourceWriter
         {
-            public string Source { get; private set; }
+            public string? Source { get; private set; }
 
             public void Write(Type type, string source)
             {

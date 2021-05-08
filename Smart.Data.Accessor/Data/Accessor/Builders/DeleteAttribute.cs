@@ -14,9 +14,9 @@ namespace Smart.Data.Accessor.Builders
 
     public sealed class DeleteAttribute : MethodAttribute
     {
-        private readonly string table;
+        private readonly string? table;
 
-        private readonly Type type;
+        private readonly Type? type;
 
         public bool Force { get; set; }
 
@@ -35,7 +35,7 @@ namespace Smart.Data.Accessor.Builders
         {
         }
 
-        private DeleteAttribute(string table, Type type)
+        private DeleteAttribute(string? table, Type? type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;
@@ -53,12 +53,12 @@ namespace Smart.Data.Accessor.Builders
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             if (!Force && (conditions.Count == 0))
             {
-                throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();

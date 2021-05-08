@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Engine
 {
-    using System;
-
     using Smart.ComponentModel;
 
     using Xunit;
@@ -12,12 +10,6 @@ namespace Smart.Data.Accessor.Engine
         public void CoverageFix()
         {
             var config = new ExecuteEngineConfig();
-
-            Assert.Throws<ArgumentNullException>(() => config.SetServiceProvider(null));
-            Assert.Throws<ArgumentNullException>(() => config.ConfigureComponents(null));
-            Assert.Throws<ArgumentNullException>(() => config.ConfigureTypeMap(null));
-            Assert.Throws<ArgumentNullException>(() => config.ConfigureTypeHandlers(null));
-            Assert.Throws<ArgumentNullException>(() => config.ConfigureResultMapperFactories(null));
 
             var provider = new ComponentConfig().ToContainer();
             config.SetServiceProvider(provider);

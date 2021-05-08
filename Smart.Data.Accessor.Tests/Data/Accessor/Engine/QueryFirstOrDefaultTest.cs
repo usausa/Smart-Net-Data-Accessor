@@ -22,7 +22,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultSimpleAccessor
         {
             [QueryFirstOrDefault]
-            DataEntity QueryFirstOrDefault(long id);
+            DataEntity? QueryFirstOrDefault(long id);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace Smart.Data.Accessor.Engine
 
                 var entity = accessor.QueryFirstOrDefault(1L);
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
@@ -54,7 +54,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultSimpleAsyncAccessor
         {
             [QueryFirstOrDefault]
-            ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id);
+            ValueTask<DataEntity?> QueryFirstOrDefaultAsync(long id);
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace Smart.Data.Accessor.Engine
 
                 var entity = await accessor.QueryFirstOrDefaultAsync(1L);
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
                 Assert.Equal(1, entity.Id);
                 Assert.Equal("Data-1", entity.Name);
 
@@ -90,7 +90,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultWithConnectionAccessor
         {
             [QueryFirstOrDefault]
-            DataEntity QueryFirstOrDefault(DbConnection con, long id);
+            DataEntity? QueryFirstOrDefault(DbConnection con, long id);
         }
 
         [Fact]
@@ -109,7 +109,7 @@ namespace Smart.Data.Accessor.Engine
             var entity = accessor.QueryFirstOrDefault(con, 1L);
 
             Assert.Equal(ConnectionState.Open, con.State);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("Data-1", entity.Name);
 
@@ -122,7 +122,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultWithConnectionAsyncAccessor
         {
             [QueryFirstOrDefault]
-            ValueTask<DataEntity> QueryFirstOrDefaultAsync(DbConnection con, long id);
+            ValueTask<DataEntity?> QueryFirstOrDefaultAsync(DbConnection con, long id);
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace Smart.Data.Accessor.Engine
             var entity = await accessor.QueryFirstOrDefaultAsync(con, 1L);
 
             Assert.Equal(ConnectionState.Open, con.State);
-            Assert.NotNull(entity);
+            AssertEx.NotNull(entity);
             Assert.Equal(1, entity.Id);
             Assert.Equal("Data-1", entity.Name);
 
@@ -157,7 +157,7 @@ namespace Smart.Data.Accessor.Engine
         public interface IQueryFirstOrDefaultCancelAsyncAccessor
         {
             [QueryFirstOrDefault]
-            ValueTask<DataEntity> QueryFirstOrDefaultAsync(long id, CancellationToken cancel);
+            ValueTask<DataEntity?> QueryFirstOrDefaultAsync(long id, CancellationToken cancel);
         }
 
         [Fact]
@@ -175,7 +175,7 @@ namespace Smart.Data.Accessor.Engine
 
                 var entity = await accessor.QueryFirstOrDefaultAsync(1L, default);
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
 
                 var cancel = new CancellationToken(true);
                 await Assert.ThrowsAsync<TaskCanceledException>(async () => await accessor.QueryFirstOrDefaultAsync(1L, cancel));

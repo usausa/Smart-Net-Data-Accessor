@@ -17,9 +17,9 @@ namespace Smart.Data.Accessor.Mappers
 
         private int typeNo;
 
-        private AssemblyBuilder assemblyBuilder;
+        private AssemblyBuilder? assemblyBuilder;
 
-        private ModuleBuilder moduleBuilder;
+        private ModuleBuilder? moduleBuilder;
 
         private ModuleBuilder ModuleBuilder
         {
@@ -38,20 +38,18 @@ namespace Smart.Data.Accessor.Mappers
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public bool IsMatch(Type type, MethodInfo mi)
         {
             return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) is not null);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
         {
             var type = typeof(T);
             var types = type.GetGenericArguments();
             var isNullableTypes = types.Select(x => x.IsValueType && x.IsNullableType()).ToArray();
-            var targetTypes = types.Select((x, i) => isNullableTypes[i] ? Nullable.GetUnderlyingType(x) : x).ToArray();
-            var selector = (IMultiMappingSelector)context.ServiceProvider.GetService(typeof(IMultiMappingSelector));
+            var targetTypes = types.Select((x, i) => isNullableTypes[i] ? Nullable.GetUnderlyingType(x)! : x).ToArray();
+            var selector = (IMultiMappingSelector)context.ServiceProvider.GetService(typeof(IMultiMappingSelector))!;
             var typeMaps = selector.Select(mi, targetTypes, columns);
             if (typeMaps is null)
             {
@@ -130,7 +128,7 @@ namespace Smart.Data.Accessor.Mappers
 
                             if (converters.ContainsKey(parameterMap.Index))
                             {
-                                ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{parameterMap.Index}"), objectLocal);
+                                ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{parameterMap.Index}")!, objectLocal);
                             }
 
                             ilGenerator.EmitTypeConversionForType(parameterMap.Info.ParameterType);
@@ -145,7 +143,7 @@ namespace Smart.Data.Accessor.Mappers
                     else
                     {
                         // Struct init
-                        ilGenerator.EmitInitStruct(typeMap.Type, ctorLocal);
+                        ilGenerator.EmitInitStruct(typeMap.Type, ctorLocal!);
                     }
 
                     constructorCalled = true;
@@ -168,7 +166,7 @@ namespace Smart.Data.Accessor.Mappers
                         }
                         else
                         {
-                            ilGenerator.EmitLdloca(ctorLocal);
+                            ilGenerator.EmitLdloca(ctorLocal!);
                         }
                     }
 
@@ -219,9 +217,9 @@ namespace Smart.Data.Accessor.Mappers
                         else
                         {
                             // Struct init
-                            ilGenerator.EmitInitStruct(typeMap.Type, ctorLocal);
+                            ilGenerator.EmitInitStruct(typeMap.Type, ctorLocal!);
 
-                            ilGenerator.EmitLdloca(ctorLocal);
+                            ilGenerator.EmitLdloca(ctorLocal!);
                         }
 
                         constructorCalled = true;
@@ -232,7 +230,7 @@ namespace Smart.Data.Accessor.Mappers
 
                     if (converters.ContainsKey(propertyMap.Index))
                     {
-                        ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{propertyMap.Index}"), objectLocal);
+                        ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{propertyMap.Index}")!, objectLocal);
                     }
 
                     ilGenerator.EmitTypeConversionForType(propertyMap.Info.PropertyType);
@@ -241,7 +239,7 @@ namespace Smart.Data.Accessor.Mappers
                     ilGenerator.MarkLabel(next);
 
                     // Set
-                    ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
+                    ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod!);
                 }
 
                 // --------------------------------------------------------------------------------
@@ -261,7 +259,7 @@ namespace Smart.Data.Accessor.Mappers
 
                 if (typeMap.Constructor is null)
                 {
-                    ilGenerator.EmitLdloc(ctorLocal);
+                    ilGenerator.EmitLdloc(ctorLocal!);
                 }
 
                 if (isNullableType)
@@ -276,7 +274,7 @@ namespace Smart.Data.Accessor.Mappers
                 }
             }
 
-            ilGenerator.Emit(OpCodes.Newobj, type.GetConstructor(types));
+            ilGenerator.Emit(OpCodes.Newobj, type.GetConstructor(types)!);
 
             ilGenerator.Emit(OpCodes.Ret);
 
@@ -303,15 +301,15 @@ namespace Smart.Data.Accessor.Mappers
                 }
             }
 
-            var typeInfo = typeBuilder.CreateTypeInfo();
+            var typeInfo = typeBuilder.CreateTypeInfo()!;
             var holderType = typeInfo.AsType();
-            var holder = Activator.CreateInstance(holderType);
+            var holder = Activator.CreateInstance(holderType)!;
 
             foreach (var index in indexes)
             {
                 if (converters.TryGetValue(index, out var converter))
                 {
-                    var field = holderType.GetField($"parser{index}");
+                    var field = holderType.GetField($"parser{index}")!;
                     field.SetValue(holder, converter);
                 }
             }

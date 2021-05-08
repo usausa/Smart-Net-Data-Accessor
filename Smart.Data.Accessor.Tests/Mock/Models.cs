@@ -1,5 +1,7 @@
 namespace Smart.Mock
 {
+    using System.Diagnostics.CodeAnalysis;
+
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock.Data;
 
@@ -7,6 +9,7 @@ namespace Smart.Mock
     {
         public long Id { get; set; }
 
+        [AllowNull]
         public string Name { get; set; }
     }
 
@@ -18,8 +21,10 @@ namespace Smart.Mock
         [Key(2)]
         public long Key2 { get; set; }
 
+        [AllowNull]
         public string Type { get; set; }
 
+        [AllowNull]
         public string Name { get; set; }
 
         public static MockColumn[] Columns { get; } =

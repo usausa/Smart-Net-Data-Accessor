@@ -4,7 +4,7 @@ namespace Smart.Data.Accessor.Nodes
     {
         public string Name { get; }
 
-        public string ParameterName { get; }
+        public string? ParameterName { get; }
 
         public bool IsMultiple { get; }
 
@@ -23,14 +23,13 @@ namespace Smart.Data.Accessor.Nodes
         {
         }
 
-        public ParameterNode(string name, string parameterName, bool isMultiple)
+        public ParameterNode(string name, string? parameterName, bool isMultiple)
         {
             Name = name;
             ParameterName = parameterName;
             IsMultiple = isMultiple;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void Visit(INodeVisitor visitor) => visitor.Visit(this);
     }
 }

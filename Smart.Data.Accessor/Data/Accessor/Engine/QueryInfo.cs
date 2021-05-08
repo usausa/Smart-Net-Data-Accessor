@@ -9,7 +9,7 @@ namespace Smart.Data.Accessor.Engine
 
     public sealed class QueryInfo<T>
     {
-        private static readonly Node EmptyNode = new(Array.Empty<ColumnInfo>(), null);
+        private static readonly Node EmptyNode = new(Array.Empty<ColumnInfo>(), null!);
 
         private readonly object sync = new();
 
@@ -19,7 +19,7 @@ namespace Smart.Data.Accessor.Engine
 
         private readonly bool optimize;
 
-        private Func<IDataRecord, T> optimizedMapper;
+        private Func<IDataRecord, T>? optimizedMapper;
 
         private Node firstNode = EmptyNode;
 
@@ -56,7 +56,6 @@ namespace Smart.Data.Accessor.Engine
             this.optimize = optimize;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> ResolveMapper(IDataReader reader)
         {
             if (optimize)
@@ -134,7 +133,7 @@ namespace Smart.Data.Accessor.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Func<IDataRecord, T> FindMapper(Span<ColumnInfo> columns)
+        private Func<IDataRecord, T>? FindMapper(Span<ColumnInfo> columns)
         {
             var node = firstNode;
             do
@@ -205,7 +204,7 @@ namespace Smart.Data.Accessor.Engine
 
             public readonly Func<IDataRecord, T> Value;
 
-            public Node Next;
+            public Node? Next;
 
             public Node(ColumnInfo[] columns, Func<IDataRecord, T> value)
             {

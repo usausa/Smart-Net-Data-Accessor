@@ -15,6 +15,6 @@ namespace Example.WebApplication2.Accessor
         ValueTask<int> CountDataAsync();
 
         [Query]
-        ValueTask<List<DataEntity>> QueryDataAsync(string type);
+        ValueTask<List<DataEntity>> QueryDataAsync(string? type);
     }
 }

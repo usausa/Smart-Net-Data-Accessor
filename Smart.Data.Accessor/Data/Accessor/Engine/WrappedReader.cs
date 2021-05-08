@@ -81,7 +81,7 @@ namespace Smart.Data.Accessor.Engine
 
         public bool IsDBNull(int i) => reader.IsDBNull(i);
 
-        public DataTable GetSchemaTable() => reader.GetSchemaTable();
+        public DataTable? GetSchemaTable() => reader.GetSchemaTable();
 
         public bool NextResult() => reader.NextResult();
 

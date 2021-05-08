@@ -74,7 +74,7 @@ namespace Smart.Data.Accessor.Generator
 
         private readonly string implementName;
 
-        private readonly ProviderAttribute provider;
+        private readonly ProviderAttribute? provider;
 
         private readonly InjectAttribute[] injects;
 
@@ -241,7 +241,7 @@ namespace Smart.Data.Accessor.Generator
         {
             if (mm.ConnectionParameter is not null)
             {
-                return mm.ConnectionParameter.Name;
+                return mm.ConnectionParameter.Name!;
             }
 
             if (mm.TransactionParameter is not null)
@@ -405,7 +405,7 @@ namespace Smart.Data.Accessor.Generator
                 AppendLine($"using static {name};");
             }
 
-            AppendLine($"using static {typeof(ScriptHelper).FullName.Replace('+', '.')};");
+            AppendLine($"using static {typeof(ScriptHelper).FullName!.Replace('+', '.')};");
 
             NewLine();
         }
@@ -591,6 +591,7 @@ namespace Smart.Data.Accessor.Generator
                         var declaringType = parameter.DeclaringType is null
                             ? "null"
                             : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
+                        var propertyName = parameter.PropertyName is null ? "null" : $"\"{parameter.PropertyName}\"";
 
                         switch (parameter.Direction)
                         {
@@ -598,19 +599,19 @@ namespace Smart.Data.Accessor.Generator
                                 Append($"{CtorArg}.CreateReturnParameterSetup();");
                                 break;
                             case ParameterDirection.Output:
-                                Append($"{RuntimeHelperType}.CreateOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                Append($"{RuntimeHelperType}.CreateOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                                 break;
                             case ParameterDirection.InputOutput:
-                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                Append($"{RuntimeHelperType}.CreateInOutParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                                 break;
                             case ParameterDirection.Input:
                                 if (parameter.IsMultiple)
                                 {
-                                    Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                    Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                                 }
                                 else
                                 {
-                                    Append($"{RuntimeHelperType}.CreateInParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                                    Append($"{RuntimeHelperType}.CreateInParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                                 }
                                 break;
                         }
@@ -630,8 +631,9 @@ namespace Smart.Data.Accessor.Generator
                         var declaringType = parameter.DeclaringType is null
                             ? "null"
                             : $"typeof({GeneratorHelper.MakeGlobalName(parameter.DeclaringType)})";
+                        var propertyName = parameter.PropertyName is null ? "null" : $"\"{parameter.PropertyName}\"";
 
-                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, \"{parameter.PropertyName}\");");
+                        AppendLine($"{GetHandlerFieldRef(mm.No, parameter.Index)} = {RuntimeHelperType}.CreateHandler({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(parameter.Type)}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                     }
                 }
             }
@@ -1037,7 +1039,7 @@ namespace Smart.Data.Accessor.Generator
                     Append("ref ");
                 }
 
-                var parameterType = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType() : pmi.ParameterType;
+                var parameterType = pmi.ParameterType.IsByRef ? pmi.ParameterType.GetElementType()! : pmi.ParameterType;
                 Append($"{GeneratorHelper.MakeGlobalName(parameterType)} {pmi.Name}");
             }
 
@@ -1071,7 +1073,7 @@ namespace Smart.Data.Accessor.Generator
             }
         }
 
-        private void EndConnectionSimple(MethodMetadata mm)
+        private void EndConnectionSimple(MethodMetadata? mm)
         {
             if ((mm is not null) && (mm.EngineResultType != typeof(void)))
             {
@@ -1300,8 +1302,8 @@ namespace Smart.Data.Accessor.Generator
 
             public override void Visit(ParameterNode node)
             {
-                var parameter = mm.FindParameterByName(node.Name);
-                builder.AppendLine(MakeParameterSetup(mm, parameter, node.ParameterName));
+                var parameter = mm.FindParameterByName(node.Name)!;
+                builder.AppendLine(MakeParameterSetup(mm, parameter, node.ParameterName ?? node.Name));
             }
         }
 
@@ -1327,7 +1329,7 @@ namespace Smart.Data.Accessor.Generator
 
             public override void Visit(ParameterNode node)
             {
-                var parameter = mm.FindParameterByName(node.Name);
+                var parameter = mm.FindParameterByName(node.Name)!;
                 var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
                 sql.Append('@');
                 sql.Append(parameterName);
@@ -1380,7 +1382,7 @@ namespace Smart.Data.Accessor.Generator
 
             public override void Visit(ParameterNode node)
             {
-                var parameter = mm.FindParameterByName(node.Name);
+                var parameter = mm.FindParameterByName(node.Name)!;
                 var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
 
                 if (parameter.IsMultiple)

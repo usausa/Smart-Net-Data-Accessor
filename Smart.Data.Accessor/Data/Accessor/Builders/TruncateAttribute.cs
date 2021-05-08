@@ -12,9 +12,9 @@ namespace Smart.Data.Accessor.Builders
 
     public sealed class TruncateAttribute : MethodAttribute
     {
-        private readonly string table;
+        private readonly string? table;
 
-        private readonly Type type;
+        private readonly Type? type;
 
         public TruncateAttribute(string table)
             : this(table, null)
@@ -26,14 +26,13 @@ namespace Smart.Data.Accessor.Builders
         {
         }
 
-        private TruncateAttribute(string table, Type type)
+        private TruncateAttribute(string? table, Type? type)
             : base(CommandType.Text, MethodType.Execute)
         {
             this.table = table;
             this.type = type;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var tableName = table ??
@@ -41,7 +40,7 @@ namespace Smart.Data.Accessor.Builders
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             return new[]

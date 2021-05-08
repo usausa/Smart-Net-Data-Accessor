@@ -7,6 +7,6 @@ namespace Smart.Data.Accessor.Selectors
 
     public interface IMultiMappingSelector
     {
-        TypeMapInfo[] Select(MethodInfo mi, Type[] types, ColumnInfo[] columns);
+        TypeMapInfo[]? Select(MethodInfo mi, Type[] types, ColumnInfo[] columns);
     }
 }

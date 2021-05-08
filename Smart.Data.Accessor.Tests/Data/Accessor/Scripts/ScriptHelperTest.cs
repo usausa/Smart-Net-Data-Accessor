@@ -28,7 +28,7 @@ namespace Smart.Data.Accessor.Scripts
             Assert.False(ScriptHelper.Any(Array.Empty<int>()));
             Assert.True(ScriptHelper.Any(new[] { 1 }));
 
-            Assert.False(ScriptHelper.Any((List<int>)null));
+            Assert.False(ScriptHelper.Any((List<int>?)null));
             Assert.False(ScriptHelper.Any(new List<int>()));
             Assert.True(ScriptHelper.Any(new List<int> { 1 }));
         }

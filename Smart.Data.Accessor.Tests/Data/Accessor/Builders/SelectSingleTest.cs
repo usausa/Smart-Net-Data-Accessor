@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Builders
         public interface ISelectByKeyAccessor
         {
             [SelectSingle]
-            MultiKeyEntity SelectSingle(MultiKeyEntity entity);
+            MultiKeyEntity? SelectSingle(MultiKeyEntity entity);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace Smart.Data.Accessor.Builders
 
                 var entity = accessor.SelectSingle(new MultiKeyEntity { Key1 = 1L, Key2 = 2L });
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
             }
         }
 
@@ -66,11 +66,11 @@ namespace Smart.Data.Accessor.Builders
 
                 var entity = accessor.SelectByType(1, 2);
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
 
                 entity = accessor.SelectByName(1, 2);
 
-                Assert.NotNull(entity);
+                AssertEx.NotNull(entity);
             }
         }
 

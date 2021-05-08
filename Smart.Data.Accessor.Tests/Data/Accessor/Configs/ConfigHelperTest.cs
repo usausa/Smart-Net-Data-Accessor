@@ -31,7 +31,7 @@ namespace Smart.Data.Accessor.Configs
         [Fact]
         public void TestTableNamings()
         {
-            var mi = GetType().GetMethod(nameof(TestTableNamings));
+            var mi = GetType().GetMethod(nameof(TestTableNamings))!;
 
             Assert.Equal("Table", ConfigHelper.GetMethodTableName(mi, typeof(TableEntity)));
             Assert.Equal("TableSuffixNoMatch", ConfigHelper.GetMethodTableName(mi, typeof(TableSuffixNoMatch)));
@@ -73,15 +73,15 @@ namespace Smart.Data.Accessor.Configs
         [Fact]
         public void TestColumnNamings()
         {
-            var pi = typeof(PropertyEntity).GetProperty(nameof(PropertyEntity.Value));
-            var piWithName = typeof(PropertyWithNameEntity).GetProperty(nameof(PropertyWithNameEntity.Value));
+            var pi = typeof(PropertyEntity).GetProperty(nameof(PropertyEntity.Value))!;
+            var piWithName = typeof(PropertyWithNameEntity).GetProperty(nameof(PropertyWithNameEntity.Value))!;
             var type = typeof(IPropertyInterface);
-            var miQProp = type.GetMethod(nameof(IPropertyInterface.QueryProperty));
-            var miQPropWn = type.GetMethod(nameof(IPropertyInterface.QueryPropertyWithName));
-            var miEProp = type.GetMethod(nameof(IPropertyInterface.ExecuteProperty));
-            var miEPropWn = type.GetMethod(nameof(IPropertyInterface.ExecutePropertyWithName));
-            var miEParam = type.GetMethod(nameof(IPropertyInterface.ExecuteParameter));
-            var miEParamWn = type.GetMethod(nameof(IPropertyInterface.ExecuteParameterWithName));
+            var miQProp = type.GetMethod(nameof(IPropertyInterface.QueryProperty))!;
+            var miQPropWn = type.GetMethod(nameof(IPropertyInterface.QueryPropertyWithName))!;
+            var miEProp = type.GetMethod(nameof(IPropertyInterface.ExecuteProperty))!;
+            var miEPropWn = type.GetMethod(nameof(IPropertyInterface.ExecutePropertyWithName))!;
+            var miEParam = type.GetMethod(nameof(IPropertyInterface.ExecuteParameter))!;
+            var miEParamWn = type.GetMethod(nameof(IPropertyInterface.ExecuteParameterWithName))!;
 
             Assert.Equal("Value", ConfigHelper.GetMethodPropertyColumnName(miQProp, pi));
             Assert.Equal("COL_VALUE", ConfigHelper.GetMethodPropertyColumnName(miQPropWn, piWithName));

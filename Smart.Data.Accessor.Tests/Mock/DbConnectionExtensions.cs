@@ -24,7 +24,7 @@ namespace Smart.Mock
             return con;
         }
 
-        public static DataEntity QueryData(this DbConnection con, long id)
+        public static DataEntity? QueryData(this DbConnection con, long id)
         {
             return con.QueryFirstOrDefault<DataEntity>("SELECT * FROM Data WHERE Id = @Id", new { Id = id });
         }
@@ -35,7 +35,7 @@ namespace Smart.Mock
             return con;
         }
 
-        public static MultiKeyEntity QueryMultiKey(this DbConnection con, long key1, long key2)
+        public static MultiKeyEntity? QueryMultiKey(this DbConnection con, long key1, long key2)
         {
             return con.QueryFirstOrDefault<MultiKeyEntity>("SELECT * FROM MultiKey WHERE Key1 = @Key1 AND Key2 = @Key2", new { Key1 = key1, Key2 = key2 });
         }

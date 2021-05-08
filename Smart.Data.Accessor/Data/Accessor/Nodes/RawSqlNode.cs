@@ -9,7 +9,6 @@ namespace Smart.Data.Accessor.Nodes
             Source = source;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public void Visit(INodeVisitor visitor) => visitor.Visit(this);
     }
 }

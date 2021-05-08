@@ -8,6 +8,7 @@ namespace Smart.Data.Accessor.Selectors
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Accessor.Configs;
     using Smart.Data.Accessor.Engine;
+    using Smart.Linq;
 
     public class ColumnMatcher
     {
@@ -21,19 +22,18 @@ namespace Smart.Data.Accessor.Selectors
             this.columns = columns.Select((x, i) => new ColumnAndIndex(x, i + offset)).ToList();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
-        public ConstructorMapInfo ResolveConstructor(Type type)
+        public ConstructorMapInfo? ResolveConstructor(Type type)
         {
             var ctor = type.GetConstructors()
                 .Select(MatchConstructor)
-                .Where(x => x is not null)
+                .ExcludeNull()
                 .OrderByDescending(x => x.Map.Parameters.Count)
                 .ThenByDescending(x => x.TypeMatch)
                 .FirstOrDefault();
             return ctor?.Map;
         }
 
-        private ConstructorMatch MatchConstructor(ConstructorInfo ci)
+        private ConstructorMatch? MatchConstructor(ConstructorInfo ci)
         {
             var parameters = new List<ParameterMapInfo>();
             var typeMatch = 0;
@@ -53,7 +53,6 @@ namespace Smart.Data.Accessor.Selectors
             return new ConstructorMatch(new ConstructorMapInfo(ci, parameters.OrderBy(x => x.Index).ToList()), typeMatch);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public IReadOnlyList<PropertyMapInfo> ResolveProperties(Type type)
         {
             return type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(IsTargetProperty)
@@ -63,12 +62,12 @@ namespace Smart.Data.Accessor.Selectors
                     var column = FindMatchColumn(name);
                     return column is null ? null : new PropertyMapInfo(x, column.Index);
                 })
-                .Where(x => x is not null)
+                .ExcludeNull()
                 .OrderBy(x => x.Index)
                 .ToList();
         }
 
-        private ColumnAndIndex FindMatchColumn(string name)
+        private ColumnAndIndex? FindMatchColumn(string name)
         {
             return columns.FirstOrDefault(x => String.Equals(x.Column.Name, name, StringComparison.OrdinalIgnoreCase));
         }

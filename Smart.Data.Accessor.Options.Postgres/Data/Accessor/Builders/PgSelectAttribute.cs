@@ -14,11 +14,11 @@ namespace Smart.Data.Accessor.Builders
 
     public sealed class PgSelectAttribute : MethodAttribute
     {
-        private readonly string table;
+        private readonly string? table;
 
-        private readonly Type type;
+        private readonly Type? type;
 
-        public string Order { get; set; }
+        public string? Order { get; set; }
 
         public bool ForUpdate { get; set; }
 
@@ -37,14 +37,13 @@ namespace Smart.Data.Accessor.Builders
         {
         }
 
-        private PgSelectAttribute(string table, Type type)
+        private PgSelectAttribute(string? table, Type? type)
             : base(CommandType.Text, MethodType.Query)
         {
             this.table = table;
             this.type = type;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
         {
             var parameters = BuildHelper.GetParameters(mi);
@@ -57,7 +56,7 @@ namespace Smart.Data.Accessor.Builders
 
             if (String.IsNullOrEmpty(tableName))
             {
-                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
             var sql = new StringBuilder();
@@ -75,7 +74,7 @@ namespace Smart.Data.Accessor.Builders
                 sql.Append(" ORDER BY ");
                 sql.Append(Order);
             }
-            else
+            else if (tableType is not null)
             {
                 var columns = BuildHelper.GetOrderByType(mi, tableType);
                 if (!String.IsNullOrEmpty(columns))

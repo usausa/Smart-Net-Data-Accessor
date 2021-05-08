@@ -19,20 +19,20 @@ namespace Smart.Data.Accessor.Engine
 
         public sealed class InParameterSetup
         {
-            private readonly Action<DbParameter, object> handler;
+            private readonly Action<DbParameter, object>? handler;
 
             private readonly DbType dbType;
 
             private readonly int? size;
 
-            public InParameterSetup(Action<DbParameter, object> handler, DbType dbType, int? size)
+            public InParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
             {
                 this.handler = handler;
                 this.dbType = dbType;
                 this.size = size;
             }
 
-            public void Setup(DbCommand cmd, string name, object value)
+            public void Setup(DbCommand cmd, string name, object? value)
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
@@ -88,20 +88,20 @@ namespace Smart.Data.Accessor.Engine
 
         public sealed class InOutParameterSetup
         {
-            private readonly Action<DbParameter, object> handler;
+            private readonly Action<DbParameter, object>? handler;
 
             private readonly DbType dbType;
 
             private readonly int? size;
 
-            public InOutParameterSetup(Action<DbParameter, object> handler, DbType dbType, int? size)
+            public InOutParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
             {
                 this.handler = handler;
                 this.dbType = dbType;
                 this.size = size;
             }
 
-            public DbParameter Setup(DbCommand cmd, string name, object value)
+            public DbParameter Setup(DbCommand cmd, string name, object? value)
             {
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
@@ -233,13 +233,13 @@ namespace Smart.Data.Accessor.Engine
         {
             private readonly ExecuteEngine engine;
 
-            private readonly Action<DbParameter, object> handler;
+            private readonly Action<DbParameter, object>? handler;
 
             private readonly DbType dbType;
 
             private readonly int? size;
 
-            public ListParameterSetup(ExecuteEngine engine, Action<DbParameter, object> handler, DbType dbType, int? size)
+            public ListParameterSetup(ExecuteEngine engine, Action<DbParameter, object>? handler, DbType dbType, int? size)
             {
                 this.engine = engine;
                 this.handler = handler;
@@ -247,7 +247,7 @@ namespace Smart.Data.Accessor.Engine
                 this.size = size;
             }
 
-            public void AppendSql(ref StringBuffer sql, string name, IList values)
+            public void AppendSql(ref StringBuffer sql, string name, IList? values)
             {
                 sql.Append("(");
 
@@ -270,7 +270,7 @@ namespace Smart.Data.Accessor.Engine
                 sql.Append(") ");
             }
 
-            public void Setup(DbCommand cmd, string name, IList values)
+            public void Setup(DbCommand cmd, string name, IList? values)
             {
                 if (values is null)
                 {
@@ -338,7 +338,7 @@ namespace Smart.Data.Accessor.Engine
         [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
         private sealed class DynamicParameterEntry
         {
-            public static DynamicParameterEntry Empty { get; } = new(null, null);
+            public static DynamicParameterEntry Empty { get; } = new(null!, null!);
 
             public readonly Type Type;
 
@@ -365,7 +365,7 @@ namespace Smart.Data.Accessor.Engine
                 this.isMultiple = isMultiple;
             }
 
-            public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object value)
+            public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object? value)
             {
                 if (value is null)
                 {
@@ -412,14 +412,14 @@ namespace Smart.Data.Accessor.Engine
         {
             if (ParameterHelper.IsMultipleParameter(type))
             {
-                var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic);
+                var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
                 var elementType = ParameterHelper.GetMultipleParameterElementType(type);
-                return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType });
+                return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType })!;
             }
             else
             {
-                var method = GetType().GetMethod(nameof(CreateDynamicSimpleParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic);
-                return (DynamicParameterEntry)method.Invoke(this, new object[] { type });
+                var method = GetType().GetMethod(nameof(CreateDynamicSimpleParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
+                return (DynamicParameterEntry)method.Invoke(this, new object[] { type })!;
             }
         }
 
@@ -440,7 +440,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object> handler, DbType dbType)
+        private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
         {
             void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
             {
@@ -468,15 +468,21 @@ namespace Smart.Data.Accessor.Engine
 
                 for (var i = 0; i < values.Count; i++)
                 {
+                    var elementValue = values[i];
                     var parameter = cmd.CreateParameter();
                     cmd.Parameters.Add(parameter);
-                    if (handler is not null)
+                    if (elementValue is null)
                     {
-                        handler(parameter, values[i]);
+                        parameter.Value = DBNull.Value;
+                        parameter.DbType = dbType;
+                    }
+                    else if (handler is not null)
+                    {
+                        handler(parameter, elementValue);
                     }
                     else
                     {
-                        parameter.Value = values[i];
+                        parameter.Value = elementValue;
                         parameter.DbType = dbType;
                     }
                     parameter.ParameterName = name + GetParameterSubName(i);
@@ -503,7 +509,7 @@ namespace Smart.Data.Accessor.Engine
             throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
         }
 
-        private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object> handler, DbType dbType)
+        private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
         {
             void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
             {

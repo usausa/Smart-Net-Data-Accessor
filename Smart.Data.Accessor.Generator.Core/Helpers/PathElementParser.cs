@@ -17,7 +17,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
         public PathElement[] Parse()
         {
             var list = new List<PathElement>();
-            PathElement element;
+            PathElement? element;
             while ((element = Next()) is not null)
             {
                 list.Add(element);
@@ -25,7 +25,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
             return list.ToArray();
         }
 
-        private PathElement Next()
+        private PathElement? Next()
         {
             SkipWhitespace();
 

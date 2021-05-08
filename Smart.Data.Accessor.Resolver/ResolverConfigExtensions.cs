@@ -14,16 +14,16 @@ namespace Smart.Data.Accessor.Resolver
     {
         public static ResolverConfig UseDataAccessor(this ResolverConfig config)
         {
-            return UseDataAccessor(config, null);
+            return config.UseDataAccessorInternal(null);
         }
 
         public static ResolverConfig UseDataAccessor(this ResolverConfig config, Action<ExecuteEngineFactoryOptions> action)
         {
-            if (config is null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            return config.UseDataAccessorInternal(action);
+        }
 
+        private static ResolverConfig UseDataAccessorInternal(this ResolverConfig config, Action<ExecuteEngineFactoryOptions>? action)
+        {
             var options = new ExecuteEngineFactoryOptions();
             action?.Invoke(options);
 

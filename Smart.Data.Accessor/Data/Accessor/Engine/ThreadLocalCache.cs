@@ -6,6 +6,6 @@ namespace Smart.Data.Accessor.Engine
     internal static class ThreadLocalCache
     {
         [ThreadStatic]
-        public static ColumnInfo[] ColumnInfoPool;
+        public static ColumnInfo[]? ColumnInfoPool;
     }
 }

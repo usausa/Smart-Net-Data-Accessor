@@ -17,9 +17,9 @@ namespace Smart.Data.Accessor.Mappers
 
         private int typeNo;
 
-        private AssemblyBuilder assemblyBuilder;
+        private AssemblyBuilder? assemblyBuilder;
 
-        private ModuleBuilder moduleBuilder;
+        private ModuleBuilder? moduleBuilder;
 
         private ModuleBuilder ModuleBuilder
         {
@@ -41,13 +41,12 @@ namespace Smart.Data.Accessor.Mappers
         public bool IsMatch(Type type, MethodInfo mi) => true;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1508", Justification = "Analyzers bug ?")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
         {
             var type = typeof(T);
             var isNullableType = type.IsValueType && type.IsNullableType();
-            var targetType = isNullableType ? Nullable.GetUnderlyingType(type) : type;
-            var selector = (IMappingSelector)context.ServiceProvider.GetService(typeof(IMappingSelector));
+            var targetType = isNullableType ? Nullable.GetUnderlyingType(type)! : type;
+            var selector = (IMappingSelector)context.ServiceProvider.GetService(typeof(IMappingSelector))!;
             var typeMap = selector.Select(mi, targetType, columns);
             if (typeMap is null)
             {
@@ -77,7 +76,7 @@ namespace Smart.Data.Accessor.Mappers
                 foreach (var parameterMap in typeMap.Constructor.Parameters)
                 {
                     // Stack value
-                    EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal, valueTypeLocals, converters);
+                    EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal!, valueTypeLocals, converters);
                 }
 
                 // Class new
@@ -86,7 +85,7 @@ namespace Smart.Data.Accessor.Mappers
             else
             {
                 // Struct init
-                ilGenerator.EmitInitStruct(targetType, ctorLocal);
+                ilGenerator.EmitInitStruct(targetType, ctorLocal!);
             }
 
             // --------------------------------------------------------------------------------
@@ -105,10 +104,10 @@ namespace Smart.Data.Accessor.Mappers
                 }
 
                 // Stack value
-                EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal, valueTypeLocals, converters);
+                EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal!, valueTypeLocals, converters);
 
                 // Set
-                ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod);
+                ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod!);
             }
 
             if (ctorLocal is not null)
@@ -156,7 +155,7 @@ namespace Smart.Data.Accessor.Mappers
 
             if (converters.ContainsKey(index))
             {
-                ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{index}"), objectLocal);
+                ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{index}")!, objectLocal);
             }
 
             ilGenerator.EmitTypeConversionForType(type);
@@ -185,15 +184,15 @@ namespace Smart.Data.Accessor.Mappers
                 }
             }
 
-            var typeInfo = typeBuilder.CreateTypeInfo();
+            var typeInfo = typeBuilder.CreateTypeInfo()!;
             var holderType = typeInfo.AsType();
-            var holder = Activator.CreateInstance(holderType);
+            var holder = Activator.CreateInstance(holderType)!;
 
             foreach (var index in indexes)
             {
                 if (converters.TryGetValue(index, out var converter))
                 {
-                    var field = holderType.GetField($"parser{index}");
+                    var field = holderType.GetField($"parser{index}")!;
                     field.SetValue(holder, converter);
                 }
             }

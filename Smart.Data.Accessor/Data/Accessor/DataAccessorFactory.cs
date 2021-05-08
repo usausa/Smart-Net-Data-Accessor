@@ -21,10 +21,14 @@ namespace Smart.Data.Accessor
             return (T)Create(typeof(T));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public object Create(Type type)
         {
             var directory = Path.GetDirectoryName(type.Assembly.Location);
+            if (directory is null)
+            {
+                throw new AccessorRuntimeException($"Accessor assmbly location unknown. assembly=[{type.Assembly.FullName}]");
+            }
+
             var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
             var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
             var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
@@ -34,7 +38,7 @@ namespace Smart.Data.Accessor
                 throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
             }
 
-            return Activator.CreateInstance(implType, engine);
+            return Activator.CreateInstance(implType, engine)!;
         }
     }
 }

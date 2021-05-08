@@ -24,11 +24,10 @@ namespace Smart.Data.Accessor.Generator
             this.subDirectory = subDirectory;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods", Justification = "Ignore")]
         public string Load(MethodInfo mi)
         {
-            var type = mi.DeclaringType;
-            var ns = type.Namespace;
+            var type = mi.DeclaringType!;
+            var ns = type.Namespace ?? string.Empty;
 
             // Dir
             var dir = rootDirectory;
@@ -47,7 +46,7 @@ namespace Smart.Data.Accessor.Generator
             }
 
             // File
-            var index = type.FullName.LastIndexOf('.');
+            var index = type.FullName!.LastIndexOf('.');
             var interfaceName = index >= 0 ? type.FullName[(index + 1)..] : type.FullName;
             var methodName = mi.GetCustomAttribute<MethodNameAttribute>()?.Name ?? mi.Name;
             var filename = $"{interfaceName.Replace('+', '.')}.{methodName}.sql";
