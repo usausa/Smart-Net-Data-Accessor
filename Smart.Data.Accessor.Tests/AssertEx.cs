@@ -4,8 +4,10 @@ namespace Smart
 
     using Xunit.Sdk;
 
+    [SuppressMessage("Microsoft.Naming", "CA1711", Justification = "Ignore")]
     public static class AssertEx
     {
+        [SuppressMessage("Microsoft.Naming", "CA1720", Justification = "Ignore")]
         public static void NotNull([NotNull] object? @object)
         {
             if (@object is null)
