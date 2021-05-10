@@ -27,10 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" >
+    <FrameworkReference Include="Microsoft.AspNetCore.App">
       <PrivateAssets>all</PrivateAssets>
     </FrameworkReference>
-    <PackageReference Include="Usa.Smart.Core" Version="2.0.0-beta7" >
+    <PackageReference Include="Usa.Smart.Core" Version="2.0.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
