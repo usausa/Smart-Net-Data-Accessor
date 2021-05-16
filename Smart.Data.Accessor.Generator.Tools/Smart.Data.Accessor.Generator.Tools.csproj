@@ -1,15 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
   <PropertyGroup>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
@@ -21,18 +24,20 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
     <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" PrivateAssets="All" />
-    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App">
-      <PrivateAssets>all</PrivateAssets>
-    </FrameworkReference>
-    <PackageReference Include="Usa.Smart.Core" Version="2.0.0">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
+    <Compile Remove="**\Program.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,8 +46,8 @@
 
   <Target Name="PackToolsDependencies" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <_PackageFiles Include="$(OutDir)\*.dll" Exclude="$(OutDir)$(TargetFileName)">
-        <PackagePath>tools\$(TargetFramework)\%(RecursiveDir)</PackagePath>
+      <_PackageFiles Include="bin\Release\net5.0\**">
+        <PackagePath>tools\net5.0</PackagePath>
         <Visible>false</Visible>
         <BuildAction>Content</BuildAction>
       </_PackageFiles>
