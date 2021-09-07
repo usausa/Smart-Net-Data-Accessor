@@ -15,19 +15,19 @@ namespace Smart.Data.Accessor.Scripts
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNotNull(object? value)
         {
-            return !(value is null);
+            return value is not null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsEmpty(string? value)
         {
-            return value is null || value.Length == 0;
+            return (value is null) || (value.Length == 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNotEmpty(string? value)
         {
-            return !(value is null) && value.Length > 0;
+            return (value is not null) && (value.Length > 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

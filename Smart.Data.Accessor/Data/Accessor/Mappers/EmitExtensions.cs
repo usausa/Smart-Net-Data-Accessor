@@ -26,7 +26,7 @@ namespace Smart.Data.Accessor.Mappers
             { typeof(float), il => il.Emit(OpCodes.Ldc_R4, 0f) },
             { typeof(double), il => il.Emit(OpCodes.Ldc_R8, 0d) },
             { typeof(IntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },    // Simplicity
-            { typeof(UIntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },   // Simplicity
+            { typeof(UIntPtr), il => il.Emit(OpCodes.Ldc_I4_0) }    // Simplicity
         };
 
         private static readonly MethodInfo GetValue = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!;
@@ -106,7 +106,7 @@ namespace Smart.Data.Accessor.Mappers
 
             ilGenerator.EmitLdloc(local);                                       // [Converter][Value]
 
-            ilGenerator.Emit(OpCodes.Callvirt, ConvertFunc!);                   // [Value(Converted)]
+            ilGenerator.Emit(OpCodes.Callvirt, ConvertFunc);                    // [Value(Converted)]
         }
 
         public static void EmitTypeConversionForType(this ILGenerator ilGenerator, Type type)

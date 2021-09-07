@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Builders
     using System.Collections.Generic;
     using System.Data.Common;
     using System.Diagnostics.CodeAnalysis;
+
     using Smart.Data.Accessor.Attributes;
     using Smart.Mock;
     using Smart.Mock.Data;

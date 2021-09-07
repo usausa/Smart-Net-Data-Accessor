@@ -290,15 +290,9 @@ namespace Smart.Data.Accessor.Mappers
 
             var indexes = converters.Select(x => x.Key).OrderBy(x => x).ToList();
 
-            foreach (var index in indexes)
+            foreach (var index in indexes.Where(converters.ContainsKey))
             {
-                if (converters.ContainsKey(index))
-                {
-                    typeBuilder.DefineField(
-                        $"parser{index}",
-                        typeof(Func<object, object>),
-                        FieldAttributes.Public);
-                }
+                typeBuilder.DefineField($"parser{index}", typeof(Func<object, object>), FieldAttributes.Public);
             }
 
             var typeInfo = typeBuilder.CreateTypeInfo()!;

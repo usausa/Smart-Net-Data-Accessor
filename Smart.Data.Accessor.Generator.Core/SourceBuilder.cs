@@ -1572,7 +1572,7 @@ namespace Smart.Data.Accessor.Generator
                 ParameterDirection.ReturnValue => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar});",
                 ParameterDirection.Output => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\");",
                 ParameterDirection.InputOutput => $"{GetOutParamName(parameter.Index)} = {GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});",
-                _ => $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});",
+                _ => $"{GetSetupParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, \"{name}\", {parameter.Source});"
             };
         }
 

@@ -63,7 +63,7 @@ namespace Smart.Data.Accessor.Configs
             var match = suffix.FirstOrDefault(x => type.Name.EndsWith(x, StringComparison.Ordinal));
             var name = match is null
                 ? type.Name
-                : type.Name.Substring(0, type.Name.Length - match.Length);
+                : type.Name[..^match.Length];
             return naming(name);
         }
 

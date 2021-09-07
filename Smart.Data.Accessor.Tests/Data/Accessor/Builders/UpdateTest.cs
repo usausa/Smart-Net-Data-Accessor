@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Builders
 {
     using System.Diagnostics.CodeAnalysis;
+
     using Smart.Data.Accessor.Attributes;
     using Smart.Data.Mapper;
     using Smart.Mock;

@@ -29,7 +29,7 @@ namespace Smart.Data.Accessor.Generator.Helpers
             if (type.IsGenericType)
             {
                 var index = type.FullName!.IndexOf('`', StringComparison.Ordinal);
-                sb.Append("global::").Append(type.FullName.Substring(0, index).Replace('+', '.'));
+                sb.Append("global::").Append(type.FullName[..index].Replace('+', '.'));
                 sb.Append('<');
 
                 var first = true;
