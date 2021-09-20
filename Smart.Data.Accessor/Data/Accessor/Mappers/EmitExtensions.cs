@@ -106,7 +106,7 @@ namespace Smart.Data.Accessor.Mappers
 
             ilGenerator.EmitLdloc(local);                                       // [Converter][Value]
 
-            ilGenerator.Emit(OpCodes.Callvirt, ConvertFunc);                    // [Value(Converted)]
+            ilGenerator.Emit(OpCodes.Call, ConvertFunc);                        // [Value(Converted)]
         }
 
         public static void EmitTypeConversionForType(this ILGenerator ilGenerator, Type type)
