@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Configs
-{
-    using System.Collections.Generic;
+namespace Smart.Data.Accessor.Configs;
 
-    public static class EntitySuffix
-    {
-        public static IReadOnlyList<string> Default { get; } = new[] { "Entity", "Model" };
-    }
+using System.Collections.Generic;
+
+public static class EntitySuffix
+{
+    public static IReadOnlyList<string> Default { get; } = new[] { "Entity", "Model" };
 }

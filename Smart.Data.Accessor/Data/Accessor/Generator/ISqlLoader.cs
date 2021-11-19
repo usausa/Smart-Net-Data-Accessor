@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Generator
-{
-    using System.Reflection;
+namespace Smart.Data.Accessor.Generator;
 
-    public interface ISqlLoader
-    {
-        string Load(MethodInfo mi);
-    }
+using System.Reflection;
+
+public interface ISqlLoader
+{
+    string Load(MethodInfo mi);
 }

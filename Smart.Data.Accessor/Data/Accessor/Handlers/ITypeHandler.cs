@@ -1,12 +1,11 @@
-namespace Smart.Data.Accessor.Handlers
+namespace Smart.Data.Accessor.Handlers;
+
+using System;
+using System.Data.Common;
+
+public interface ITypeHandler
 {
-    using System;
-    using System.Data.Common;
+    void SetValue(DbParameter parameter, object value);
 
-    public interface ITypeHandler
-    {
-        void SetValue(DbParameter parameter, object value);
-
-        Func<object, object> CreateParse(Type type);
-    }
+    Func<object, object> CreateParse(Type type);
 }

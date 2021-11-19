@@ -1,23 +1,22 @@
-namespace Example.WebApplication.Accessor
+namespace Example.WebApplication.Accessor;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using Example.WebApplication.Models;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Builders;
+
+[DataAccessor]
+public interface ISampleAccessor
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
+    [ExecuteScalar]
+    ValueTask<int> CountDataAsync();
 
-    using Example.WebApplication.Models;
+    [Query]
+    ValueTask<IList<DataEntity>> QueryDataAsync(string? type);
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Builders;
-
-    [DataAccessor]
-    public interface ISampleAccessor
-    {
-        [ExecuteScalar]
-        ValueTask<int> CountDataAsync();
-
-        [Query]
-        ValueTask<IList<DataEntity>> QueryDataAsync(string? type);
-
-        [Insert]
-        ValueTask<int> InsertData(DataEntity entity);
-    }
+    [Insert]
+    ValueTask<int> InsertData(DataEntity entity);
 }

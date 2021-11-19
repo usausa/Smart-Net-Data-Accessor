@@ -1,22 +1,21 @@
-namespace Example.ConsoleApplication.Accessor
+namespace Example.ConsoleApplication.Accessor;
+
+using System.Collections.Generic;
+
+using Example.ConsoleApplication.Models;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Builders;
+
+[DataAccessor]
+public interface IExampleAccessor
 {
-    using System.Collections.Generic;
+    [Execute]
+    void Create();
 
-    using Example.ConsoleApplication.Models;
+    [Insert]
+    void Insert(DataEntity entity);
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Builders;
-
-    [DataAccessor]
-    public interface IExampleAccessor
-    {
-        [Execute]
-        void Create();
-
-        [Insert]
-        void Insert(DataEntity entity);
-
-        [Query]
-        List<DataEntity> QueryDataList(string? type = null, string? order = null);
-    }
+    [Query]
+    List<DataEntity> QueryDataList(string? type = null, string? order = null);
 }

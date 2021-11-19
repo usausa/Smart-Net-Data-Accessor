@@ -1,7 +1,6 @@
-namespace Smart.Data.Accessor.Dialect
+namespace Smart.Data.Accessor.Dialect;
+
+public interface IEmptyDialect
 {
-    public interface IEmptyDialect
-    {
-        string GetSql();
-    }
+    string GetSql();
 }

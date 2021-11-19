@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Interface | AttributeTargets.Method)]
+public sealed class ProviderAttribute : Attribute
 {
-    using System;
+    public object Parameter { get; }
 
-    [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Method)]
-    public sealed class ProviderAttribute : Attribute
+    public ProviderAttribute(object parameter)
     {
-        public object Parameter { get; }
-
-        public ProviderAttribute(object parameter)
-        {
-            Parameter = parameter;
-        }
+        Parameter = parameter;
     }
 }

@@ -1,80 +1,79 @@
-namespace Smart.Mock
+namespace Smart.Mock;
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
+using Smart.ComponentModel;
+using Smart.Data;
+using Smart.Data.Accessor.Engine;
+using Smart.Data.Accessor.Generator;
+
+public class TestFactoryBuilder
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+    private readonly ExecuteEngineConfig config = new();
 
-    using Smart.ComponentModel;
-    using Smart.Data;
-    using Smart.Data.Accessor.Engine;
-    using Smart.Data.Accessor.Generator;
+    [AllowNull]
+    private ISqlLoader loader;
 
-    public class TestFactoryBuilder
+    public TestFactoryBuilder Config(Action<ExecuteEngineConfig> action)
     {
-        private readonly ExecuteEngineConfig config = new();
+        action(config);
+        return this;
+    }
 
-        [AllowNull]
-        private ISqlLoader loader;
-
-        public TestFactoryBuilder Config(Action<ExecuteEngineConfig> action)
+    public TestFactoryBuilder UseFileDatabase()
+    {
+        config.ConfigureComponents(c =>
         {
-            action(config);
-            return this;
-        }
+            c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateConnection));
+        });
+        return this;
+    }
 
-        public TestFactoryBuilder UseFileDatabase()
+    public TestFactoryBuilder UseMultipleDatabase()
+    {
+        config.ConfigureComponents(c =>
         {
-            config.ConfigureComponents(c =>
-            {
-                c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateConnection));
-            });
-            return this;
-        }
+            var selector = new NamedDbProviderSelector();
+            selector.AddProvider(ProviderNames.Main, new DelegateDbProvider(TestDatabase.CreateConnection));
+            selector.AddProvider(ProviderNames.Sub, new DelegateDbProvider(TestDatabase.CreateConnection2));
+            c.Add<IDbProviderSelector>(selector);
+        });
+        return this;
+    }
 
-        public TestFactoryBuilder UseMultipleDatabase()
+    public TestFactoryBuilder UseMemoryDatabase()
+    {
+        config.ConfigureComponents(c =>
         {
-            config.ConfigureComponents(c =>
-            {
-                var selector = new NamedDbProviderSelector();
-                selector.AddProvider(ProviderNames.Main, new DelegateDbProvider(TestDatabase.CreateConnection));
-                selector.AddProvider(ProviderNames.Sub, new DelegateDbProvider(TestDatabase.CreateConnection2));
-                c.Add<IDbProviderSelector>(selector);
-            });
-            return this;
-        }
+            c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateMemory));
+        });
+        return this;
+    }
 
-        public TestFactoryBuilder UseMemoryDatabase()
-        {
-            config.ConfigureComponents(c =>
-            {
-                c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateMemory));
-            });
-            return this;
-        }
+    public TestFactoryBuilder ConfigureComponents(Action<ComponentConfig> action)
+    {
+        config.ConfigureComponents(action);
+        return this;
+    }
 
-        public TestFactoryBuilder ConfigureComponents(Action<ComponentConfig> action)
-        {
-            config.ConfigureComponents(action);
-            return this;
-        }
+    public TestFactoryBuilder SetSql(string sql)
+    {
+        loader = new ConstLoader(sql);
+        return this;
+    }
 
-        public TestFactoryBuilder SetSql(string sql)
-        {
-            loader = new ConstLoader(sql);
-            return this;
-        }
+    public TestFactoryBuilder SetSql(Action<Dictionary<string, string>> action)
+    {
+        var map = new Dictionary<string, string>();
+        action(map);
+        loader = new MapLoader(map);
+        return this;
+    }
 
-        public TestFactoryBuilder SetSql(Action<Dictionary<string, string>> action)
-        {
-            var map = new Dictionary<string, string>();
-            action(map);
-            loader = new MapLoader(map);
-            return this;
-        }
-
-        public TestFactory Build()
-        {
-            return new(loader, config.ToEngine());
-        }
+    public TestFactory Build()
+    {
+        return new(loader, config.ToEngine());
     }
 }

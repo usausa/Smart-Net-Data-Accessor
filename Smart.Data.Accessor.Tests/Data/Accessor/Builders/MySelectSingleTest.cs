@@ -1,115 +1,114 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Mock;
+using Smart.Mock.Data;
+
+using Xunit;
+
+public class MySelectSingleTest
 {
-    using System.Collections.Generic;
-    using System.Data.Common;
-    using System.Diagnostics.CodeAnalysis;
+    //--------------------------------------------------------------------------------
+    // Other
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Mock;
-    using Smart.Mock.Data;
-
-    using Xunit;
-
-    public class MySelectSingleTest
+    public class OtherEntity
     {
-        //--------------------------------------------------------------------------------
-        // Other
-        //--------------------------------------------------------------------------------
+        [Key(1)]
+        public long Key1 { get; set; }
 
-        public class OtherEntity
+        [Key(2)]
+        public long Key2 { get; set; }
+
+        [AllowNull]
+        public string Name { get; set; }
+    }
+
+    [DataAccessor]
+    public interface ISelectOtherAccessor
+    {
+        [MySelectSingle(typeof(MultiKeyEntity))]
+        OtherEntity? SelectByType(DbConnection con, OtherEntity key);
+
+        [MySelectSingle("MultiKey")]
+        OtherEntity? SelectByName(DbConnection con, OtherEntity key);
+    }
+
+    [Fact]
+    public void TestSelectOther()
+    {
+        var generator = new TestFactoryBuilder()
+            .UseFileDatabase()
+            .Build();
+        var accessor = generator.Create<ISelectOtherAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            [Key(1)]
-            public long Key1 { get; set; }
-
-            [Key(2)]
-            public long Key2 { get; set; }
-
-            [AllowNull]
-            public string Name { get; set; }
-        }
-
-        [DataAccessor]
-        public interface ISelectOtherAccessor
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
+            cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
+        });
+        con.SetupCommand(cmd =>
         {
-            [MySelectSingle(typeof(MultiKeyEntity))]
-            OtherEntity? SelectByType(DbConnection con, OtherEntity key);
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
+            cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
+        });
 
-            [MySelectSingle("MultiKey")]
-            OtherEntity? SelectByName(DbConnection con, OtherEntity key);
-        }
+        accessor.SelectByType(con, new OtherEntity { Key1 = 1, Key2 = 2 });
+        accessor.SelectByName(con, new OtherEntity { Key1 = 1, Key2 = 2 });
+    }
 
-        [Fact]
-        public void TestSelectOther()
+    //--------------------------------------------------------------------------------
+    // Invalid
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface ISelectInvalidAccessor
+    {
+        [MySelectSingle("")]
+        MultiKeyEntity? Select();
+    }
+
+    [Fact]
+    public void TestSelectInvalid()
+    {
+        var generator = new TestFactoryBuilder()
+            .UseFileDatabase()
+            .Build();
+
+        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
+    }
+
+    //--------------------------------------------------------------------------------
+    // Update
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface ISelectUpdateAccessor
+    {
+        [MySelectSingle(ForUpdate = true)]
+        MultiKeyEntity? Select(DbConnection con, long key1, long key2);
+    }
+
+    [Fact]
+    public void TestSelectUpdate()
+    {
+        var generator = new TestFactoryBuilder()
+            .UseFileDatabase()
+            .Build();
+        var accessor = generator.Create<ISelectUpdateAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            var generator = new TestFactoryBuilder()
-                .UseFileDatabase()
-                .Build();
-            var accessor = generator.Create<ISelectOtherAccessor>();
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1 FOR UPDATE", c.CommandText);
+            cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
+        });
 
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
-                cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
-            });
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
-                cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
-            });
-
-            accessor.SelectByType(con, new OtherEntity { Key1 = 1, Key2 = 2 });
-            accessor.SelectByName(con, new OtherEntity { Key1 = 1, Key2 = 2 });
-        }
-
-        //--------------------------------------------------------------------------------
-        // Invalid
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface ISelectInvalidAccessor
-        {
-            [MySelectSingle("")]
-            MultiKeyEntity? Select();
-        }
-
-        [Fact]
-        public void TestSelectInvalid()
-        {
-            var generator = new TestFactoryBuilder()
-                .UseFileDatabase()
-                .Build();
-
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
-        }
-
-        //--------------------------------------------------------------------------------
-        // Update
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface ISelectUpdateAccessor
-        {
-            [MySelectSingle(ForUpdate = true)]
-            MultiKeyEntity? Select(DbConnection con, long key1, long key2);
-        }
-
-        [Fact]
-        public void TestSelectUpdate()
-        {
-            var generator = new TestFactoryBuilder()
-                .UseFileDatabase()
-                .Build();
-            var accessor = generator.Create<ISelectUpdateAccessor>();
-
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1 FOR UPDATE", c.CommandText);
-                cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
-            });
-
-            accessor.Select(con, 1, 2);
-        }
+        accessor.Select(con, 1, 2);
     }
 }

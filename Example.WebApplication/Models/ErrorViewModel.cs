@@ -1,12 +1,11 @@
-namespace Example.WebApplication.Models
+namespace Example.WebApplication.Models;
+
+using System.Diagnostics.CodeAnalysis;
+
+public class ErrorViewModel
 {
-    using System.Diagnostics.CodeAnalysis;
+    [AllowNull]
+    public string RequestId { get; set; }
 
-    public class ErrorViewModel
-    {
-        [AllowNull]
-        public string RequestId { get; set; }
-
-        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
-    }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 }

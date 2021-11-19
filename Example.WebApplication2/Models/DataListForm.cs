@@ -1,7 +1,6 @@
-namespace Example.WebApplication2.Models
+namespace Example.WebApplication2.Models;
+
+public class DataListForm
 {
-    public class DataListForm
-    {
-        public string? Type { get; set; }
-    }
+    public string? Type { get; set; }
 }

@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Attributes
-{
-    using System;
+namespace Smart.Data.Accessor.Attributes;
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class TimeoutAttribute : Attribute
-    {
-    }
+using System;
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public sealed class TimeoutAttribute : Attribute
+{
 }

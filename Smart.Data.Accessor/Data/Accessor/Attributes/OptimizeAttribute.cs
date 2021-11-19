@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Method)]
+public sealed class OptimizeAttribute : Attribute
 {
-    using System;
+    public bool Value { get; }
 
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Method)]
-    public sealed class OptimizeAttribute : Attribute
+    public OptimizeAttribute(bool value)
     {
-        public bool Value { get; }
-
-        public OptimizeAttribute(bool value)
-        {
-            Value = value;
-        }
+        Value = value;
     }
 }

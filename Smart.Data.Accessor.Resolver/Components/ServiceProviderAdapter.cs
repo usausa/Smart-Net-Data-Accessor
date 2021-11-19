@@ -1,18 +1,17 @@
-namespace Smart.Data.Accessor.Resolver.Components
+namespace Smart.Data.Accessor.Resolver.Components;
+
+using System;
+
+using Smart.Resolver;
+
+public sealed class ServiceProviderAdapter : IServiceProvider
 {
-    using System;
+    private readonly IResolver resolver;
 
-    using Smart.Resolver;
-
-    public sealed class ServiceProviderAdapter : IServiceProvider
+    public ServiceProviderAdapter(IResolver resolver)
     {
-        private readonly IResolver resolver;
-
-        public ServiceProviderAdapter(IResolver resolver)
-        {
-            this.resolver = resolver;
-        }
-
-        public object GetService(Type serviceType) => resolver.Get(serviceType);
+        this.resolver = resolver;
     }
+
+    public object GetService(Type serviceType) => resolver.Get(serviceType);
 }

@@ -1,7 +1,6 @@
-namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor;
+
+public interface IAccessorResolver<out T>
 {
-    public interface IAccessorResolver<out T>
-    {
-        T Accessor { get; }
-    }
+    T Accessor { get; }
 }

@@ -1,52 +1,51 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Reflection;
+
+using Smart.Data.Accessor.Builders.Helpers;
+using Smart.Data.Accessor.Generator;
+using Smart.Data.Accessor.Nodes;
+
+public sealed class ProcedureAttribute : MethodAttribute, IReturnValueBehavior
 {
-    using System.Collections.Generic;
-    using System.Data;
-    using System.Linq;
-    using System.Reflection;
+    private readonly string procedure;
 
-    using Smart.Data.Accessor.Builders.Helpers;
-    using Smart.Data.Accessor.Generator;
-    using Smart.Data.Accessor.Nodes;
+    public bool ReturnValueAsResult { get; }
 
-    public sealed class ProcedureAttribute : MethodAttribute, IReturnValueBehavior
+    public ProcedureAttribute(string procedure)
+        : this(procedure, MethodType.Execute)
     {
-        private readonly string procedure;
+    }
 
-        public bool ReturnValueAsResult { get; }
+    public ProcedureAttribute(string procedure, MethodType methodType)
+        : this(procedure, methodType, true)
+    {
+    }
 
-        public ProcedureAttribute(string procedure)
-            : this(procedure, MethodType.Execute)
+    public ProcedureAttribute(string procedure, bool returnValueAsResult)
+        : this(procedure, MethodType.Execute, returnValueAsResult)
+    {
+    }
+
+    private ProcedureAttribute(string procedure, MethodType methodType, bool returnValueAsResult)
+        : base(CommandType.StoredProcedure, methodType)
+    {
+        this.procedure = procedure;
+        ReturnValueAsResult = returnValueAsResult;
+    }
+
+    public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+    {
+        var nodes = new List<INode>
         {
-        }
+            new SqlNode(procedure)
+        };
 
-        public ProcedureAttribute(string procedure, MethodType methodType)
-            : this(procedure, methodType, true)
-        {
-        }
+        nodes.AddRange(BuildHelper.GetParameters(mi).Select(x => new ParameterNode(x.Name, x.ParameterName)));
 
-        public ProcedureAttribute(string procedure, bool returnValueAsResult)
-            : this(procedure, MethodType.Execute, returnValueAsResult)
-        {
-        }
-
-        private ProcedureAttribute(string procedure, MethodType methodType, bool returnValueAsResult)
-            : base(CommandType.StoredProcedure, methodType)
-        {
-            this.procedure = procedure;
-            ReturnValueAsResult = returnValueAsResult;
-        }
-
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
-        {
-            var nodes = new List<INode>
-            {
-                new SqlNode(procedure)
-            };
-
-            nodes.AddRange(BuildHelper.GetParameters(mi).Select(x => new ParameterNode(x.Name, x.ParameterName)));
-
-            return nodes;
-        }
+        return nodes;
     }
 }

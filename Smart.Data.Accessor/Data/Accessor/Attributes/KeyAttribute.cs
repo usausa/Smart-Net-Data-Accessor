@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class KeyAttribute : Attribute
 {
-    using System;
+    public int Order { get; }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-    public sealed class KeyAttribute : Attribute
+    public KeyAttribute(int order = 0)
     {
-        public int Order { get; }
-
-        public KeyAttribute(int order = 0)
-        {
-            Order = order;
-        }
+        Order = order;
     }
 }

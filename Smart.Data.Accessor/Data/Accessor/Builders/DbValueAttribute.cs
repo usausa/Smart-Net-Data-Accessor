@@ -1,18 +1,17 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
+public sealed class DbValueAttribute : Attribute
 {
-    using System;
+    public string Value { get; }
 
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public sealed class DbValueAttribute : Attribute
+    public string? When { get; }
+
+    public DbValueAttribute(string value, string? when = null)
     {
-        public string Value { get; }
-
-        public string? When { get; }
-
-        public DbValueAttribute(string value, string? when = null)
-        {
-            Value = value;
-            When = when;
-        }
+        Value = value;
+        When = when;
     }
 }

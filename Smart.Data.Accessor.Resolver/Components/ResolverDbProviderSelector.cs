@@ -1,19 +1,18 @@
-namespace Smart.Data.Accessor.Resolver.Components
+namespace Smart.Data.Accessor.Resolver.Components;
+
+using Smart.Resolver;
+
+public sealed class ResolverDbProviderSelector : IDbProviderSelector
 {
-    using Smart.Resolver;
+    private readonly IResolver resolver;
 
-    public sealed class ResolverDbProviderSelector : IDbProviderSelector
+    public ResolverDbProviderSelector(IResolver resolver)
     {
-        private readonly IResolver resolver;
+        this.resolver = resolver;
+    }
 
-        public ResolverDbProviderSelector(IResolver resolver)
-        {
-            this.resolver = resolver;
-        }
-
-        public IDbProvider GetProvider(object parameter)
-        {
-            return resolver.Get<IDbProvider>((string)parameter);
-        }
+    public IDbProvider GetProvider(object parameter)
+    {
+        return resolver.Get<IDbProvider>((string)parameter);
     }
 }

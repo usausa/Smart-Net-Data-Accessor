@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Attributes
-{
-    using System;
+namespace Smart.Data.Accessor.Attributes;
 
-    [AttributeUsage(AttributeTargets.Property)]
-    public sealed class IgnoreAttribute : Attribute
-    {
-    }
+using System;
+
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class IgnoreAttribute : Attribute
+{
 }

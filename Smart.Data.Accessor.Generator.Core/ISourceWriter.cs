@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Generator
-{
-    using System;
+namespace Smart.Data.Accessor.Generator;
 
-    public interface ISourceWriter
-    {
-        void Write(Type type, string source);
-    }
+using System;
+
+public interface ISourceWriter
+{
+    void Write(Type type, string source);
 }

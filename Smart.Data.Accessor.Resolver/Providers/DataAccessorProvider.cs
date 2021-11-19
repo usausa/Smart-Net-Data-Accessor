@@ -1,27 +1,26 @@
-namespace Smart.Data.Accessor.Resolver.Providers
+namespace Smart.Data.Accessor.Resolver.Providers;
+
+using System;
+
+using Smart.Resolver;
+using Smart.Resolver.Bindings;
+using Smart.Resolver.Providers;
+
+public sealed class DataAccessorProvider : IProvider
 {
-    using System;
+    public Type TargetType { get; }
 
-    using Smart.Resolver;
-    using Smart.Resolver.Bindings;
-    using Smart.Resolver.Providers;
-
-    public sealed class DataAccessorProvider : IProvider
+    public DataAccessorProvider(Type type)
     {
-        public Type TargetType { get; }
+        TargetType = type;
+    }
 
-        public DataAccessorProvider(Type type)
+    public Func<IResolver, object> CreateFactory(IKernel kernel, Binding binding)
+    {
+        return r =>
         {
-            TargetType = type;
-        }
-
-        public Func<IResolver, object> CreateFactory(IKernel kernel, Binding binding)
-        {
-            return r =>
-            {
-                var factory = r.Get<DataAccessorFactory>();
-                return factory.Create(TargetType);
-            };
-        }
+            var factory = r.Get<DataAccessorFactory>();
+            return factory.Create(TargetType);
+        };
     }
 }

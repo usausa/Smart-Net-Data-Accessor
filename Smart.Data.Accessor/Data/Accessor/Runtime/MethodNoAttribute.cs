@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Runtime
+namespace Smart.Data.Accessor.Runtime;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MethodNoAttribute : Attribute
 {
-    using System;
+    public int No { get; }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class MethodNoAttribute : Attribute
+    public MethodNoAttribute(int no)
     {
-        public int No { get; }
-
-        public MethodNoAttribute(int no)
-        {
-            No = no;
-        }
+        No = no;
     }
 }

@@ -1,14 +1,13 @@
-namespace Smart.Data.Accessor.Nodes
+namespace Smart.Data.Accessor.Nodes;
+
+public sealed class RawSqlNode : INode
 {
-    public sealed class RawSqlNode : INode
+    public string Source { get; }
+
+    public RawSqlNode(string source)
     {
-        public string Source { get; }
-
-        public RawSqlNode(string source)
-        {
-            Source = source;
-        }
-
-        public void Visit(INodeVisitor visitor) => visitor.Visit(this);
+        Source = source;
     }
+
+    public void Visit(INodeVisitor visitor) => visitor.Visit(this);
 }

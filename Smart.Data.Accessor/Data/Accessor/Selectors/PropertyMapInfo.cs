@@ -1,17 +1,16 @@
-namespace Smart.Data.Accessor.Selectors
+namespace Smart.Data.Accessor.Selectors;
+
+using System.Reflection;
+
+public class PropertyMapInfo
 {
-    using System.Reflection;
+    public PropertyInfo Info { get; }
 
-    public class PropertyMapInfo
+    public int Index { get; }
+
+    public PropertyMapInfo(PropertyInfo pi, int index)
     {
-        public PropertyInfo Info { get; }
-
-        public int Index { get; }
-
-        public PropertyMapInfo(PropertyInfo pi, int index)
-        {
-            Info = pi;
-            Index = index;
-        }
+        Info = pi;
+        Index = index;
     }
 }

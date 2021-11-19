@@ -1,28 +1,27 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System;
+using System.Runtime.Serialization;
+
+[Serializable]
+public class BuilderException : Exception
 {
-    using System;
-    using System.Runtime.Serialization;
-
-    [Serializable]
-    public class BuilderException : Exception
+    public BuilderException()
     {
-        public BuilderException()
-        {
-        }
+    }
 
-        public BuilderException(string message)
-            : base(message)
-        {
-        }
+    public BuilderException(string message)
+        : base(message)
+    {
+    }
 
-        public BuilderException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+    public BuilderException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 
-        protected BuilderException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
+    protected BuilderException(SerializationInfo info, StreamingContext context)
+        : base(info, context)
+    {
     }
 }

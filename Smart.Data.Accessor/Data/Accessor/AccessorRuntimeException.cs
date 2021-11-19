@@ -1,28 +1,27 @@
-namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor;
+
+using System;
+using System.Runtime.Serialization;
+
+[Serializable]
+public class AccessorRuntimeException : Exception
 {
-    using System;
-    using System.Runtime.Serialization;
-
-    [Serializable]
-    public class AccessorRuntimeException : Exception
+    public AccessorRuntimeException()
     {
-        public AccessorRuntimeException()
-        {
-        }
+    }
 
-        public AccessorRuntimeException(string message)
-            : base(message)
-        {
-        }
+    public AccessorRuntimeException(string message)
+        : base(message)
+    {
+    }
 
-        public AccessorRuntimeException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+    public AccessorRuntimeException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 
-        protected AccessorRuntimeException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
+    protected AccessorRuntimeException(SerializationInfo info, StreamingContext context)
+        : base(info, context)
+    {
     }
 }

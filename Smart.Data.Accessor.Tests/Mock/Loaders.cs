@@ -1,31 +1,30 @@
-namespace Smart.Mock
+namespace Smart.Mock;
+
+using System.Collections.Generic;
+using System.Reflection;
+
+using Smart.Data.Accessor.Generator;
+
+public sealed class ConstLoader : ISqlLoader
 {
-    using System.Collections.Generic;
-    using System.Reflection;
+    private readonly string sql;
 
-    using Smart.Data.Accessor.Generator;
-
-    public sealed class ConstLoader : ISqlLoader
+    public ConstLoader(string sql)
     {
-        private readonly string sql;
-
-        public ConstLoader(string sql)
-        {
-            this.sql = sql;
-        }
-
-        public string Load(MethodInfo mi) => sql;
+        this.sql = sql;
     }
 
-    public sealed class MapLoader : ISqlLoader
+    public string Load(MethodInfo mi) => sql;
+}
+
+public sealed class MapLoader : ISqlLoader
+{
+    private readonly Dictionary<string, string> map;
+
+    public MapLoader(Dictionary<string, string> map)
     {
-        private readonly Dictionary<string, string> map;
-
-        public MapLoader(Dictionary<string, string> map)
-        {
-            this.map = map;
-        }
-
-        public string Load(MethodInfo mi) => map[mi.Name];
+        this.map = map;
     }
+
+    public string Load(MethodInfo mi) => map[mi.Name];
 }

@@ -1,12 +1,11 @@
-namespace Smart.Data.Accessor.Mappers
+namespace Smart.Data.Accessor.Mappers;
+
+using System;
+using System.Reflection;
+
+public interface IResultMapperCreateContext
 {
-    using System;
-    using System.Reflection;
+    IServiceProvider ServiceProvider { get; }
 
-    public interface IResultMapperCreateContext
-    {
-        IServiceProvider ServiceProvider { get; }
-
-        Func<object, object>? GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
-    }
+    Func<object, object>? GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
 }

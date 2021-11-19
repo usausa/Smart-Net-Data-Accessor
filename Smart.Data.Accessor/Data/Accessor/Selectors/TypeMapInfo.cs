@@ -1,21 +1,20 @@
-namespace Smart.Data.Accessor.Selectors
+namespace Smart.Data.Accessor.Selectors;
+
+using System;
+using System.Collections.Generic;
+
+public class TypeMapInfo
 {
-    using System;
-    using System.Collections.Generic;
+    public Type Type { get; }
 
-    public class TypeMapInfo
+    public ConstructorMapInfo? Constructor { get; }
+
+    public IReadOnlyList<PropertyMapInfo> Properties { get; }
+
+    public TypeMapInfo(Type type, ConstructorMapInfo? constructor, IReadOnlyList<PropertyMapInfo> properties)
     {
-        public Type Type { get; }
-
-        public ConstructorMapInfo? Constructor { get; }
-
-        public IReadOnlyList<PropertyMapInfo> Properties { get; }
-
-        public TypeMapInfo(Type type, ConstructorMapInfo? constructor, IReadOnlyList<PropertyMapInfo> properties)
-        {
-            Type = type;
-            Constructor = constructor;
-            Properties = properties;
-        }
+        Type = type;
+        Constructor = constructor;
+        Properties = properties;
     }
 }

@@ -1,183 +1,182 @@
-namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine;
+
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
+using Smart.Collections.Concurrent;
+using Smart.Converter;
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Dialect;
+using Smart.Data.Accessor.Handlers;
+using Smart.Data.Accessor.Mappers;
+
+public sealed partial class ExecuteEngine : IEngineController, IResultMapperCreateContext
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
+    private readonly IObjectConverter objectConverter;
 
-    using Smart.Collections.Concurrent;
-    using Smart.Converter;
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Dialect;
-    using Smart.Data.Accessor.Handlers;
-    using Smart.Data.Accessor.Mappers;
+    private readonly IEmptyDialect emptyDialect;
 
-    public sealed partial class ExecuteEngine : IEngineController, IResultMapperCreateContext
+    private readonly Dictionary<Type, DbType> typeMap;
+
+    private readonly Dictionary<Type, ITypeHandler> typeHandlers;
+
+    private readonly IResultMapperFactory[] resultMapperFactories;
+
+    private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new();
+
+    private readonly string[] parameterSubNames;
+
+    public IServiceProvider ServiceProvider { get; }
+
+    //--------------------------------------------------------------------------------
+    // Constructor
+    //--------------------------------------------------------------------------------
+
+    public ExecuteEngine(IExecuteEngineConfig config)
     {
-        private readonly IObjectConverter objectConverter;
+        ServiceProvider = config.GetServiceProvider();
+        objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter))!;
+        emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect))!;
 
-        private readonly IEmptyDialect emptyDialect;
+        typeMap = new Dictionary<Type, DbType>(config.GetTypeMap());
+        typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
+        resultMapperFactories = config.GetResultMapperFactories();
 
-        private readonly Dictionary<Type, DbType> typeMap;
+        parameterSubNames = Enumerable.Range(0, 256).Select(x => $"_{x}").ToArray();
+    }
 
-        private readonly Dictionary<Type, ITypeHandler> typeHandlers;
+    //--------------------------------------------------------------------------------
+    // Controller
+    //--------------------------------------------------------------------------------
 
-        private readonly IResultMapperFactory[] resultMapperFactories;
-
-        private readonly ThreadsafeTypeHashArrayMap<DynamicParameterEntry> dynamicSetupCache = new();
-
-        private readonly string[] parameterSubNames;
-
-        public IServiceProvider ServiceProvider { get; }
-
-        //--------------------------------------------------------------------------------
-        // Constructor
-        //--------------------------------------------------------------------------------
-
-        public ExecuteEngine(IExecuteEngineConfig config)
+    DiagnosticsInfo IEngineController.Diagnostics
+    {
+        get
         {
-            ServiceProvider = config.GetServiceProvider();
-            objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter))!;
-            emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect))!;
+            var dynamicSetupDiagnostics = dynamicSetupCache.Diagnostics;
 
-            typeMap = new Dictionary<Type, DbType>(config.GetTypeMap());
-            typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
-            resultMapperFactories = config.GetResultMapperFactories();
+            return new DiagnosticsInfo(
+                dynamicSetupDiagnostics.Count,
+                dynamicSetupDiagnostics.Width,
+                dynamicSetupDiagnostics.Depth);
+        }
+    }
 
-            parameterSubNames = Enumerable.Range(0, 256).Select(x => $"_{x}").ToArray();
+    void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
+
+    //--------------------------------------------------------------------------------
+    // Lookup
+    //--------------------------------------------------------------------------------
+
+    private bool LookupTypeHandler(Type type, out ITypeHandler handler)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        if (typeHandlers.TryGetValue(type, out handler!))
+        {
+            return true;
         }
 
-        //--------------------------------------------------------------------------------
-        // Controller
-        //--------------------------------------------------------------------------------
-
-        DiagnosticsInfo IEngineController.Diagnostics
+        if (type.IsEnum && typeHandlers.TryGetValue(Enum.GetUnderlyingType(type), out handler!))
         {
-            get
-            {
-                var dynamicSetupDiagnostics = dynamicSetupCache.Diagnostics;
-
-                return new DiagnosticsInfo(
-                    dynamicSetupDiagnostics.Count,
-                    dynamicSetupDiagnostics.Width,
-                    dynamicSetupDiagnostics.Depth);
-            }
+            return true;
         }
 
-        void IEngineController.ClearDynamicSetupCache() => dynamicSetupCache.Clear();
+        return false;
+    }
 
-        //--------------------------------------------------------------------------------
-        // Lookup
-        //--------------------------------------------------------------------------------
-
-        private bool LookupTypeHandler(Type type, out ITypeHandler handler)
+    private bool LookupDbType(Type type, out DbType dbType)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        if (typeMap.TryGetValue(type, out dbType))
         {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            if (typeHandlers.TryGetValue(type, out handler!))
-            {
-                return true;
-            }
-
-            if (type.IsEnum && typeHandlers.TryGetValue(Enum.GetUnderlyingType(type), out handler!))
-            {
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
-        private bool LookupDbType(Type type, out DbType dbType)
+        if (type.IsEnum && typeMap.TryGetValue(Enum.GetUnderlyingType(type), out dbType))
         {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            if (typeMap.TryGetValue(type, out dbType))
-            {
-                return true;
-            }
-
-            if (type.IsEnum && typeMap.TryGetValue(Enum.GetUnderlyingType(type), out dbType))
-            {
-                return true;
-            }
-
-            dbType = DbType.Object;
-            return false;
+            return true;
         }
 
-        //--------------------------------------------------------------------------------
-        // Converter
-        //--------------------------------------------------------------------------------
+        dbType = DbType.Object;
+        return false;
+    }
 
-        Func<object, object>? IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
+    //--------------------------------------------------------------------------------
+    // Converter
+    //--------------------------------------------------------------------------------
+
+    Func<object, object>? IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
+    {
+        var converter = CreateHandler(destinationType, provider);
+        if (converter is not null)
         {
-            var converter = CreateHandler(destinationType, provider);
-            if (converter is not null)
-            {
-                return converter;
-            }
-
-            if ((destinationType == sourceType) ||
-                (destinationType.IsNullableType() && (Nullable.GetUnderlyingType(destinationType) == sourceType)))
-            {
-                return null;
-            }
-
-            return objectConverter.CreateConverter(sourceType, destinationType);
+            return converter;
         }
 
-        public Func<object, object>? CreateHandler(Type type, ICustomAttributeProvider provider)
+        if ((destinationType == sourceType) ||
+            (destinationType.IsNullableType() && (Nullable.GetUnderlyingType(destinationType) == sourceType)))
         {
-            // ResultAttribute
-            var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
-            if (attribute is not null)
-            {
-                return attribute.CreateParser(ServiceProvider, type);
-            }
-
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
-            {
-                return handler.CreateParse(type);
-            }
-
             return null;
         }
 
-        public T Convert<T>(object? source, Func<object, object>? handler)
+        return objectConverter.CreateConverter(sourceType, destinationType);
+    }
+
+    public Func<object, object>? CreateHandler(Type type, ICustomAttributeProvider provider)
+    {
+        // ResultAttribute
+        var attribute = provider.GetCustomAttributes(true).OfType<ResultParserAttribute>().FirstOrDefault();
+        if (attribute is not null)
         {
-            if (handler is not null)
-            {
-                if ((source is null) || (source is DBNull))
-                {
-                    return default!;
-                }
+            return attribute.CreateParser(ServiceProvider, type);
+        }
 
-                return (T)handler(source);
-            }
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
+        {
+            return handler.CreateParse(type);
+        }
 
-            if (source is T value)
-            {
-                return value;
-            }
+        return null;
+    }
 
+    public T Convert<T>(object? source, Func<object, object>? handler)
+    {
+        if (handler is not null)
+        {
             if ((source is null) || (source is DBNull))
             {
                 return default!;
             }
 
-            return objectConverter.Convert<T>(source);
+            return (T)handler(source);
         }
 
-        //--------------------------------------------------------------------------------
-        // Naming
-        //--------------------------------------------------------------------------------
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private string GetParameterSubName(int index)
+        if (source is T value)
         {
-            return index < parameterSubNames.Length ? parameterSubNames[index] : index.ToString(CultureInfo.InvariantCulture);
+            return value;
         }
+
+        if ((source is null) || (source is DBNull))
+        {
+            return default!;
+        }
+
+        return objectConverter.Convert<T>(source);
+    }
+
+    //--------------------------------------------------------------------------------
+    // Naming
+    //--------------------------------------------------------------------------------
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private string GetParameterSubName(int index)
+    {
+        return index < parameterSubNames.Length ? parameterSubNames[index] : index.ToString(CultureInfo.InvariantCulture);
     }
 }

@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Results
-{
-    using System;
+namespace Smart.Data.Accessor.Results;
 
-    public interface IResultParser
-    {
-        object Parse(Type type, object value);
-    }
+using System;
+
+public interface IResultParser
+{
+    object Parse(Type type, object value);
 }

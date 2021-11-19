@@ -1,36 +1,35 @@
-namespace Example.WebApplication2.Controllers
+namespace Example.WebApplication2.Controllers;
+
+using System.Threading.Tasks;
+
+using Example.WebApplication2.Accessor;
+using Example.WebApplication2.Models;
+
+using Microsoft.AspNetCore.Mvc;
+
+public class DataController : Controller
 {
-    using System.Threading.Tasks;
+    private readonly IPrimaryAccessor primaryAccessor;
 
-    using Example.WebApplication2.Accessor;
-    using Example.WebApplication2.Models;
+    private readonly ISecondaryAccessor secondaryAccessor;
 
-    using Microsoft.AspNetCore.Mvc;
-
-    public class DataController : Controller
+    public DataController(IPrimaryAccessor primaryAccessor, ISecondaryAccessor secondaryAccessor)
     {
-        private readonly IPrimaryAccessor primaryAccessor;
+        this.primaryAccessor = primaryAccessor;
+        this.secondaryAccessor = secondaryAccessor;
+    }
 
-        private readonly ISecondaryAccessor secondaryAccessor;
+    public async ValueTask<IActionResult> Primary(DataListForm form)
+    {
+        ViewBag.Count = await primaryAccessor.CountDataAsync().ConfigureAwait(false);
+        ViewBag.List = await primaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
+        return View();
+    }
 
-        public DataController(IPrimaryAccessor primaryAccessor, ISecondaryAccessor secondaryAccessor)
-        {
-            this.primaryAccessor = primaryAccessor;
-            this.secondaryAccessor = secondaryAccessor;
-        }
-
-        public async ValueTask<IActionResult> Primary(DataListForm form)
-        {
-            ViewBag.Count = await primaryAccessor.CountDataAsync().ConfigureAwait(false);
-            ViewBag.List = await primaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
-            return View();
-        }
-
-        public async ValueTask<IActionResult> Secondary(DataListForm form)
-        {
-            ViewBag.Count = await secondaryAccessor.CountDataAsync().ConfigureAwait(false);
-            ViewBag.List = await secondaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
-            return View();
-        }
+    public async ValueTask<IActionResult> Secondary(DataListForm form)
+    {
+        ViewBag.Count = await secondaryAccessor.CountDataAsync().ConfigureAwait(false);
+        ViewBag.List = await secondaryAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
+        return View();
     }
 }

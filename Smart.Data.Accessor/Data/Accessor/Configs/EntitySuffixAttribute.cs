@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Configs
+namespace Smart.Data.Accessor.Configs;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class)]
+public sealed class EntitySuffixAttribute : Attribute
 {
-    using System;
+    public string[] Values { get; }
 
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class)]
-    public sealed class EntitySuffixAttribute : Attribute
+    public EntitySuffixAttribute(params string[] values)
     {
-        public string[] Values { get; }
-
-        public EntitySuffixAttribute(params string[] values)
-        {
-            Values = values;
-        }
+        Values = values;
     }
 }

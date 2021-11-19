@@ -1,44 +1,43 @@
-namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor;
+
+using System;
+using System.IO;
+using System.Reflection;
+
+using Smart.Data.Accessor.Engine;
+using Smart.Data.Accessor.Helpers;
+
+public sealed class DataAccessorFactory
 {
-    using System;
-    using System.IO;
-    using System.Reflection;
+    private readonly ExecuteEngine engine;
 
-    using Smart.Data.Accessor.Engine;
-    using Smart.Data.Accessor.Helpers;
-
-    public sealed class DataAccessorFactory
+    public DataAccessorFactory(ExecuteEngine engine)
     {
-        private readonly ExecuteEngine engine;
+        this.engine = engine;
+    }
 
-        public DataAccessorFactory(ExecuteEngine engine)
+    public T Create<T>()
+    {
+        return (T)Create(typeof(T));
+    }
+
+    public object Create(Type type)
+    {
+        var directory = Path.GetDirectoryName(type.Assembly.Location);
+        if (directory is null)
         {
-            this.engine = engine;
+            throw new AccessorRuntimeException($"Accessor assmbly location unknown. assembly=[{type.Assembly.FullName}]");
         }
 
-        public T Create<T>()
+        var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
+        var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
+        var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
+        var implType = assembly.GetType(accessorName);
+        if (implType is null)
         {
-            return (T)Create(typeof(T));
+            throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
         }
 
-        public object Create(Type type)
-        {
-            var directory = Path.GetDirectoryName(type.Assembly.Location);
-            if (directory is null)
-            {
-                throw new AccessorRuntimeException($"Accessor assmbly location unknown. assembly=[{type.Assembly.FullName}]");
-            }
-
-            var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
-            var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
-            var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
-            var implType = assembly.GetType(accessorName);
-            if (implType is null)
-            {
-                throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
-            }
-
-            return Activator.CreateInstance(implType, engine)!;
-        }
+        return Activator.CreateInstance(implType, engine)!;
     }
 }

@@ -1,67 +1,66 @@
-namespace Smart.Data.Accessor.Resolver
+namespace Smart.Data.Accessor.Resolver;
+
+using System;
+
+using Smart.Converter;
+using Smart.Data.Accessor.Dialect;
+using Smart.Data.Accessor.Engine;
+using Smart.Data.Accessor.Resolver.Components;
+using Smart.Data.Accessor.Resolver.Handlers;
+using Smart.Data.Accessor.Selectors;
+using Smart.Resolver;
+
+public static class ResolverConfigExtensions
 {
-    using System;
-
-    using Smart.Converter;
-    using Smart.Data.Accessor.Dialect;
-    using Smart.Data.Accessor.Engine;
-    using Smart.Data.Accessor.Resolver.Components;
-    using Smart.Data.Accessor.Resolver.Handlers;
-    using Smart.Data.Accessor.Selectors;
-    using Smart.Resolver;
-
-    public static class ResolverConfigExtensions
+    public static ResolverConfig UseDataAccessor(this ResolverConfig config)
     {
-        public static ResolverConfig UseDataAccessor(this ResolverConfig config)
-        {
-            return config.UseDataAccessorInternal(null);
-        }
+        return config.UseDataAccessorInternal(null);
+    }
 
-        public static ResolverConfig UseDataAccessor(this ResolverConfig config, Action<ExecuteEngineFactoryOptions> action)
-        {
-            return config.UseDataAccessorInternal(action);
-        }
+    public static ResolverConfig UseDataAccessor(this ResolverConfig config, Action<ExecuteEngineFactoryOptions> action)
+    {
+        return config.UseDataAccessorInternal(action);
+    }
 
-        private static ResolverConfig UseDataAccessorInternal(this ResolverConfig config, Action<ExecuteEngineFactoryOptions>? action)
-        {
-            var options = new ExecuteEngineFactoryOptions();
-            action?.Invoke(options);
+    private static ResolverConfig UseDataAccessorInternal(this ResolverConfig config, Action<ExecuteEngineFactoryOptions>? action)
+    {
+        var options = new ExecuteEngineFactoryOptions();
+        action?.Invoke(options);
 
-            config.Bind<ExecuteEngine>().ToMethod(r =>
+        config.Bind<ExecuteEngine>().ToMethod(r =>
+        {
+            var engineConfig = new ExecuteEngineConfig();
+            engineConfig.SetServiceProvider(new ServiceProviderAdapter(r));
+
+            if (options.TypeMapConfig is not null)
             {
-                var engineConfig = new ExecuteEngineConfig();
-                engineConfig.SetServiceProvider(new ServiceProviderAdapter(r));
+                engineConfig.ConfigureTypeMap(options.TypeMapConfig);
+            }
 
-                if (options.TypeMapConfig is not null)
-                {
-                    engineConfig.ConfigureTypeMap(options.TypeMapConfig);
-                }
+            if (options.TypeHandlersConfig is not null)
+            {
+                engineConfig.ConfigureTypeHandlers(options.TypeHandlersConfig);
+            }
 
-                if (options.TypeHandlersConfig is not null)
-                {
-                    engineConfig.ConfigureTypeHandlers(options.TypeHandlersConfig);
-                }
+            if (options.ResultMapperFactoriesConfig is not null)
+            {
+                engineConfig.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
+            }
 
-                if (options.ResultMapperFactoriesConfig is not null)
-                {
-                    engineConfig.ConfigureResultMapperFactories(options.ResultMapperFactoriesConfig);
-                }
+            return engineConfig.ToEngine();
+        }).InSingletonScope();
 
-                return engineConfig.ToEngine();
-            }).InSingletonScope();
+        config.Bind<DataAccessorFactory>().ToSelf().InSingletonScope();
 
-            config.Bind<DataAccessorFactory>().ToSelf().InSingletonScope();
+        config.Bind<IObjectConverter>().ToConstant(ObjectConverter.Default).InSingletonScope();
+        config.Bind<IMappingSelector>().To<MappingSelector>().InSingletonScope();
+        config.Bind<IMultiMappingSelector>().To<MultiMappingSelector>().InSingletonScope();
+        config.Bind<IEmptyDialect>().To<EmptyDialect>().InSingletonScope();
 
-            config.Bind<IObjectConverter>().ToConstant(ObjectConverter.Default).InSingletonScope();
-            config.Bind<IMappingSelector>().To<MappingSelector>().InSingletonScope();
-            config.Bind<IMultiMappingSelector>().To<MultiMappingSelector>().InSingletonScope();
-            config.Bind<IEmptyDialect>().To<EmptyDialect>().InSingletonScope();
+        config.Bind<IDbProviderSelector>().To<ResolverDbProviderSelector>().InSingletonScope();
 
-            config.Bind<IDbProviderSelector>().To<ResolverDbProviderSelector>().InSingletonScope();
+        config.UseMissingHandler<AccessorMissingHandler>();
 
-            config.UseMissingHandler<AccessorMissingHandler>();
-
-            return config;
-        }
+        return config;
     }
 }

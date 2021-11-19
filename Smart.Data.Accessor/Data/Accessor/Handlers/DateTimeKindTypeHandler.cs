@@ -1,35 +1,34 @@
-namespace Smart.Data.Accessor.Handlers
+namespace Smart.Data.Accessor.Handlers;
+
+using System;
+using System.Data;
+using System.Data.Common;
+
+public sealed class DateTimeKindTypeHandler : ITypeHandler
 {
-    using System;
-    using System.Data;
-    using System.Data.Common;
+    private readonly DbType dbType;
 
-    public sealed class DateTimeKindTypeHandler : ITypeHandler
+    private readonly DateTimeKind kind;
+
+    public DateTimeKindTypeHandler(DateTimeKind kind)
+        : this(DbType.DateTime, kind)
     {
-        private readonly DbType dbType;
+    }
 
-        private readonly DateTimeKind kind;
+    public DateTimeKindTypeHandler(DbType dbType, DateTimeKind kind)
+    {
+        this.dbType = dbType;
+        this.kind = kind;
+    }
 
-        public DateTimeKindTypeHandler(DateTimeKind kind)
-            : this(DbType.DateTime, kind)
-        {
-        }
+    public void SetValue(DbParameter parameter, object value)
+    {
+        parameter.DbType = dbType;
+        parameter.Value = value;
+    }
 
-        public DateTimeKindTypeHandler(DbType dbType, DateTimeKind kind)
-        {
-            this.dbType = dbType;
-            this.kind = kind;
-        }
-
-        public void SetValue(DbParameter parameter, object value)
-        {
-            parameter.DbType = dbType;
-            parameter.Value = value;
-        }
-
-        public Func<object, object> CreateParse(Type type)
-        {
-            return x => DateTime.SpecifyKind((DateTime)x, kind);
-        }
+    public Func<object, object> CreateParse(Type type)
+    {
+        return x => DateTime.SpecifyKind((DateTime)x, kind);
     }
 }

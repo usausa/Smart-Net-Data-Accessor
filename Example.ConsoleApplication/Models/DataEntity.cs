@@ -1,15 +1,14 @@
-namespace Example.ConsoleApplication.Models
+namespace Example.ConsoleApplication.Models;
+
+using System.Diagnostics.CodeAnalysis;
+
+public class DataEntity
 {
-    using System.Diagnostics.CodeAnalysis;
+    public long Id { get; set; }
 
-    public class DataEntity
-    {
-        public long Id { get; set; }
+    [AllowNull]
+    public string Name { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
-
-        [AllowNull]
-        public string Type { get; set; }
-    }
+    [AllowNull]
+    public string Type { get; set; }
 }

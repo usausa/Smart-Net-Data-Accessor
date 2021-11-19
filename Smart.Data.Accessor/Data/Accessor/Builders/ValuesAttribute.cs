@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Builders
-{
-    using System;
+namespace Smart.Data.Accessor.Builders;
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ValuesAttribute : Attribute
-    {
-    }
+using System;
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public sealed class ValuesAttribute : Attribute
+{
 }

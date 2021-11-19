@@ -1,18 +1,17 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public sealed class AdditionalCodeValueAttribute : Attribute
 {
-    using System;
+    public string Column { get; }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public sealed class AdditionalCodeValueAttribute : Attribute
+    public string Value { get; }
+
+    public AdditionalCodeValueAttribute(string column, string value)
     {
-        public string Column { get; }
-
-        public string Value { get; }
-
-        public AdditionalCodeValueAttribute(string column, string value)
-        {
-            Column = column;
-            Value = value;
-        }
+        Column = column;
+        Value = value;
     }
 }

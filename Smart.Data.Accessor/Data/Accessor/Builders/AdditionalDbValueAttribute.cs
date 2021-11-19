@@ -1,18 +1,17 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public sealed class AdditionalDbValueAttribute : Attribute
 {
-    using System;
+    public string Column { get; }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public sealed class AdditionalDbValueAttribute : Attribute
+    public string Value { get; }
+
+    public AdditionalDbValueAttribute(string column, string value)
     {
-        public string Column { get; }
-
-        public string Value { get; }
-
-        public AdditionalDbValueAttribute(string column, string value)
-        {
-            Column = column;
-            Value = value;
-        }
+        Column = column;
+        Value = value;
     }
 }

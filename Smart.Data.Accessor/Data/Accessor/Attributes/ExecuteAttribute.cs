@@ -1,10 +1,9 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+public sealed class ExecuteAttribute : LoaderMethodAttribute
 {
-    public sealed class ExecuteAttribute : LoaderMethodAttribute
+    public ExecuteAttribute()
+        : base(MethodType.Execute)
     {
-        public ExecuteAttribute()
-            : base(MethodType.Execute)
-        {
-        }
     }
 }

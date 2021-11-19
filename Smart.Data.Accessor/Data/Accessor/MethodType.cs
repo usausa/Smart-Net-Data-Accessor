@@ -1,11 +1,10 @@
-namespace Smart.Data.Accessor
+namespace Smart.Data.Accessor;
+
+public enum MethodType
 {
-    public enum MethodType
-    {
-        Execute,
-        ExecuteScalar,
-        ExecuteReader,
-        Query,
-        QueryFirstOrDefault
-    }
+    Execute,
+    ExecuteScalar,
+    ExecuteReader,
+    Query,
+    QueryFirstOrDefault
 }

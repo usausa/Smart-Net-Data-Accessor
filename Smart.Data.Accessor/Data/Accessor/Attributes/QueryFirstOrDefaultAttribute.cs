@@ -1,10 +1,9 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+public sealed class QueryFirstOrDefaultAttribute : LoaderMethodAttribute
 {
-    public sealed class QueryFirstOrDefaultAttribute : LoaderMethodAttribute
+    public QueryFirstOrDefaultAttribute()
+        : base(MethodType.QueryFirstOrDefault)
     {
-        public QueryFirstOrDefaultAttribute()
-            : base(MethodType.QueryFirstOrDefault)
-        {
-        }
     }
 }

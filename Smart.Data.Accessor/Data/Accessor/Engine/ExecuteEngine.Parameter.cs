@@ -1,523 +1,293 @@
-namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine;
+
+using System;
+using System.Collections;
+using System.Data;
+using System.Data.Common;
+using System.Linq;
+using System.Reflection;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Helpers;
+using Smart.Data.Accessor.Runtime;
+
+public sealed partial class ExecuteEngine
 {
-    using System;
-    using System.Collections;
-    using System.Data;
-    using System.Data.Common;
-    using System.Linq;
-    using System.Reflection;
+    //--------------------------------------------------------------------------------
+    // In
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Helpers;
-    using Smart.Data.Accessor.Runtime;
-
-    public sealed partial class ExecuteEngine
+    public sealed class InParameterSetup
     {
-        //--------------------------------------------------------------------------------
-        // In
-        //--------------------------------------------------------------------------------
+        private readonly Action<DbParameter, object>? handler;
 
-        public sealed class InParameterSetup
+        private readonly DbType dbType;
+
+        private readonly int? size;
+
+        public InParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
         {
-            private readonly Action<DbParameter, object>? handler;
-
-            private readonly DbType dbType;
-
-            private readonly int? size;
-
-            public InParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
-            {
-                this.handler = handler;
-                this.dbType = dbType;
-                this.size = size;
-            }
-
-            public void Setup(DbCommand cmd, string name, object? value)
-            {
-                var parameter = cmd.CreateParameter();
-                cmd.Parameters.Add(parameter);
-                if (value is null)
-                {
-                    parameter.Value = DBNull.Value;
-                    parameter.DbType = dbType;
-                }
-                else if (handler is not null)
-                {
-                    handler(parameter, value);
-                }
-                else
-                {
-                    parameter.Value = value;
-                    parameter.DbType = dbType;
-                    if (size.HasValue)
-                    {
-                        parameter.Size = size.Value;
-                    }
-                }
-                parameter.ParameterName = name;
-            }
+            this.handler = handler;
+            this.dbType = dbType;
+            this.size = size;
         }
 
-        public InParameterSetup CreateInParameterSetup(Type type, ICustomAttributeProvider provider)
+        public void Setup(DbCommand cmd, string name, object? value)
         {
-            // ParameterBuilderAttribute
-            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute is not null)
+            var parameter = cmd.CreateParameter();
+            cmd.Parameters.Add(parameter);
+            if (value is null)
             {
-                return new InParameterSetup(null, attribute.DbType, attribute.Size);
+                parameter.Value = DBNull.Value;
+                parameter.DbType = dbType;
             }
-
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
+            else if (handler is not null)
             {
-                return new InParameterSetup(handler.SetValue, DbType.Object, null);
+                handler(parameter, value);
             }
-
-            // Type
-            if (LookupDbType(type, out var dbType))
+            else
             {
-                return new InParameterSetup(null, dbType, null);
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
-        }
-
-        //--------------------------------------------------------------------------------
-        // In/Out
-        //--------------------------------------------------------------------------------
-
-        public sealed class InOutParameterSetup
-        {
-            private readonly Action<DbParameter, object>? handler;
-
-            private readonly DbType dbType;
-
-            private readonly int? size;
-
-            public InOutParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
-            {
-                this.handler = handler;
-                this.dbType = dbType;
-                this.size = size;
-            }
-
-            public DbParameter Setup(DbCommand cmd, string name, object? value)
-            {
-                var parameter = cmd.CreateParameter();
-                cmd.Parameters.Add(parameter);
-                if (value is null)
-                {
-                    parameter.Value = DBNull.Value;
-                    parameter.DbType = dbType;
-                }
-                else if (handler is not null)
-                {
-                    handler(parameter, value);
-                }
-                else
-                {
-                    parameter.Value = value;
-                    parameter.DbType = dbType;
-                    if (size.HasValue)
-                    {
-                        parameter.Size = size.Value;
-                    }
-                }
-                parameter.ParameterName = name;
-                parameter.Direction = ParameterDirection.InputOutput;
-                return parameter;
-            }
-        }
-
-        public InOutParameterSetup CreateInOutParameterSetup(Type type, ICustomAttributeProvider provider)
-        {
-            // ParameterBuilderAttribute
-            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute is not null)
-            {
-                return new InOutParameterSetup(null, attribute.DbType, attribute.Size);
-            }
-
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
-            {
-                return new InOutParameterSetup(handler.SetValue, DbType.Object, null);
-            }
-
-            // Type
-            if (LookupDbType(type, out var dbType))
-            {
-                return new InOutParameterSetup(null, dbType, null);
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
-        }
-
-        //--------------------------------------------------------------------------------
-        // Out
-        //--------------------------------------------------------------------------------
-
-        public sealed class OutParameterSetup
-        {
-            private readonly DbType dbType;
-
-            private readonly int? size;
-
-            public OutParameterSetup(DbType dbType, int? size)
-            {
-                this.dbType = dbType;
-                this.size = size;
-            }
-
-            public DbParameter Setup(DbCommand cmd, string name)
-            {
-                var parameter = cmd.CreateParameter();
-                cmd.Parameters.Add(parameter);
+                parameter.Value = value;
                 parameter.DbType = dbType;
                 if (size.HasValue)
                 {
                     parameter.Size = size.Value;
                 }
-                parameter.ParameterName = name;
-                parameter.Direction = ParameterDirection.Output;
-                return parameter;
             }
+            parameter.ParameterName = name;
+        }
+    }
+
+    public InParameterSetup CreateInParameterSetup(Type type, ICustomAttributeProvider provider)
+    {
+        // ParameterBuilderAttribute
+        var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+        if (attribute is not null)
+        {
+            return new InParameterSetup(null, attribute.DbType, attribute.Size);
         }
 
-        public OutParameterSetup CreateOutParameterSetup(Type type, ICustomAttributeProvider provider)
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
         {
-            // ParameterBuilderAttribute
-            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute is not null)
-            {
-                return new OutParameterSetup(attribute.DbType, attribute.Size);
-            }
-
-            // Type
-            if (LookupDbType(type, out var dbType))
-            {
-                return new OutParameterSetup(dbType, null);
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+            return new InParameterSetup(handler.SetValue, DbType.Object, null);
         }
 
-        //--------------------------------------------------------------------------------
-        // Return
-        //--------------------------------------------------------------------------------
-
-        public sealed class ReturnParameterSetup
+        // Type
+        if (LookupDbType(type, out var dbType))
         {
-            public static ReturnParameterSetup Instance { get; } = new();
-
-            private ReturnParameterSetup()
-            {
-            }
-
-            public DbParameter Setup(DbCommand cmd)
-            {
-                var parameter = cmd.CreateParameter();
-                cmd.Parameters.Add(parameter);
-                parameter.Direction = ParameterDirection.ReturnValue;
-                return parameter;
-            }
+            return new InParameterSetup(null, dbType, null);
         }
 
-        public ReturnParameterSetup CreateReturnParameterSetup() => ReturnParameterSetup.Instance;
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
 
-        //--------------------------------------------------------------------------------
-        // IList
-        //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // In/Out
+    //--------------------------------------------------------------------------------
 
-        public sealed class ListParameterSetup
+    public sealed class InOutParameterSetup
+    {
+        private readonly Action<DbParameter, object>? handler;
+
+        private readonly DbType dbType;
+
+        private readonly int? size;
+
+        public InOutParameterSetup(Action<DbParameter, object>? handler, DbType dbType, int? size)
         {
-            private readonly ExecuteEngine engine;
-
-            private readonly Action<DbParameter, object>? handler;
-
-            private readonly DbType dbType;
-
-            private readonly int? size;
-
-            public ListParameterSetup(ExecuteEngine engine, Action<DbParameter, object>? handler, DbType dbType, int? size)
-            {
-                this.engine = engine;
-                this.handler = handler;
-                this.dbType = dbType;
-                this.size = size;
-            }
-
-            public void AppendSql(ref StringBuffer sql, string name, IList? values)
-            {
-                sql.Append("(");
-
-                if ((values is null) || (values.Count == 0))
-                {
-                    sql.Append(engine.emptyDialect.GetSql());
-                }
-                else
-                {
-                    for (var i = 0; i < values.Count; i++)
-                    {
-                        sql.Append(name);
-                        sql.Append(engine.GetParameterSubName(i));
-                        sql.Append(", ");
-                    }
-
-                    sql.Length -= 2;
-                }
-
-                sql.Append(") ");
-            }
-
-            public void Setup(DbCommand cmd, string name, IList? values)
-            {
-                if (values is null)
-                {
-                    return;
-                }
-
-                for (var i = 0; i < values.Count; i++)
-                {
-                    var value = values[i];
-                    var parameter = cmd.CreateParameter();
-                    cmd.Parameters.Add(parameter);
-                    if (value is null)
-                    {
-                        parameter.Value = DBNull.Value;
-                        parameter.DbType = dbType;
-                    }
-                    else if (handler is not null)
-                    {
-                        handler(parameter, value);
-                    }
-                    else
-                    {
-                        parameter.Value = value;
-                        parameter.DbType = dbType;
-                        if (size.HasValue)
-                        {
-                            parameter.Size = size.Value;
-                        }
-                    }
-                    parameter.ParameterName = name + engine.GetParameterSubName(i);
-                }
-            }
+            this.handler = handler;
+            this.dbType = dbType;
+            this.size = size;
         }
 
-        public ListParameterSetup CreateListParameterSetup(Type type, ICustomAttributeProvider provider)
+        public DbParameter Setup(DbCommand cmd, string name, object? value)
         {
-            // ParameterBuilderAttribute
-            var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
-            if (attribute is not null)
+            var parameter = cmd.CreateParameter();
+            cmd.Parameters.Add(parameter);
+            if (value is null)
             {
-                return new ListParameterSetup(this, null, attribute.DbType, attribute.Size);
+                parameter.Value = DBNull.Value;
+                parameter.DbType = dbType;
             }
-
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
+            else if (handler is not null)
             {
-                return new ListParameterSetup(this, handler.SetValue, DbType.Object, null);
-            }
-
-            // Type
-            if (LookupDbType(type, out var dbType))
-            {
-                return new ListParameterSetup(this, null, dbType, null);
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
-        }
-
-        //--------------------------------------------------------------------------------
-        // Dynamic
-        //--------------------------------------------------------------------------------
-
-        private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string name, object value);
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
-        private sealed class DynamicParameterEntry
-        {
-            public static DynamicParameterEntry Empty { get; } = new(null!, null!);
-
-            public readonly Type Type;
-
-            public readonly DynamicAction Handler;
-
-            public DynamicParameterEntry(Type type, DynamicAction handler)
-            {
-                Type = type;
-                Handler = handler;
-            }
-        }
-
-        public sealed class DynamicParameterSetup
-        {
-            private readonly ExecuteEngine engine;
-
-            private readonly bool isMultiple;
-
-            private DynamicParameterEntry entry = DynamicParameterEntry.Empty;
-
-            public DynamicParameterSetup(ExecuteEngine engine, bool isMultiple)
-            {
-                this.engine = engine;
-                this.isMultiple = isMultiple;
-            }
-
-            public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object? value)
-            {
-                if (value is null)
-                {
-                    if (isMultiple)
-                    {
-                        sql.Append(engine.emptyDialect.GetSql());
-                    }
-                    else
-                    {
-                        sql.Append(name);
-
-                        var parameter = cmd.CreateParameter();
-                        cmd.Parameters.Add(parameter);
-                        parameter.Value = DBNull.Value;
-                        parameter.DbType = DbType.Object;
-                        parameter.ParameterName = name;
-                    }
-                }
-                else
-                {
-                    var type = value.GetType();
-                    if (type != entry.Type)
-                    {
-                        entry = engine.LookupDynamicParameterEntry(type);
-                    }
-
-                    // [MEMO] Boxed if value type
-                    entry.Handler(cmd, ref sql, name, value);
-                }
-            }
-        }
-
-        private DynamicParameterEntry LookupDynamicParameterEntry(Type type)
-        {
-            if (!dynamicSetupCache.TryGetValue(type, out var entry))
-            {
-                entry = dynamicSetupCache.AddIfNotExist(type, CreateDynamicParameterEntry);
-            }
-
-            return entry;
-        }
-
-        private DynamicParameterEntry CreateDynamicParameterEntry(Type type)
-        {
-            if (ParameterHelper.IsMultipleParameter(type))
-            {
-                var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
-                var elementType = ParameterHelper.GetMultipleParameterElementType(type);
-                return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType })!;
+                handler(parameter, value);
             }
             else
             {
-                var method = GetType().GetMethod(nameof(CreateDynamicSimpleParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
-                return (DynamicParameterEntry)method.Invoke(this, new object[] { type })!;
+                parameter.Value = value;
+                parameter.DbType = dbType;
+                if (size.HasValue)
+                {
+                    parameter.Size = size.Value;
+                }
             }
+            parameter.ParameterName = name;
+            parameter.Direction = ParameterDirection.InputOutput;
+            return parameter;
+        }
+    }
+
+    public InOutParameterSetup CreateInOutParameterSetup(Type type, ICustomAttributeProvider provider)
+    {
+        // ParameterBuilderAttribute
+        var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+        if (attribute is not null)
+        {
+            return new InOutParameterSetup(null, attribute.DbType, attribute.Size);
         }
 
-        private DynamicParameterEntry CreateDynamicListParameterSetup(Type type)
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
         {
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
-            {
-                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(handler.SetValue, DbType.Object));
-            }
-
-            // Type
-            if (LookupDbType(type, out var dbType))
-            {
-                return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(null, dbType));
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+            return new InOutParameterSetup(handler.SetValue, DbType.Object, null);
         }
 
-        private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
+        // Type
+        if (LookupDbType(type, out var dbType))
         {
-            void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
+            return new InOutParameterSetup(null, dbType, null);
+        }
+
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
+
+    //--------------------------------------------------------------------------------
+    // Out
+    //--------------------------------------------------------------------------------
+
+    public sealed class OutParameterSetup
+    {
+        private readonly DbType dbType;
+
+        private readonly int? size;
+
+        public OutParameterSetup(DbType dbType, int? size)
+        {
+            this.dbType = dbType;
+            this.size = size;
+        }
+
+        public DbParameter Setup(DbCommand cmd, string name)
+        {
+            var parameter = cmd.CreateParameter();
+            cmd.Parameters.Add(parameter);
+            parameter.DbType = dbType;
+            if (size.HasValue)
             {
-                var values = (IList)value;
+                parameter.Size = size.Value;
+            }
+            parameter.ParameterName = name;
+            parameter.Direction = ParameterDirection.Output;
+            return parameter;
+        }
+    }
 
-                sql.Append("(");
+    public OutParameterSetup CreateOutParameterSetup(Type type, ICustomAttributeProvider provider)
+    {
+        // ParameterBuilderAttribute
+        var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+        if (attribute is not null)
+        {
+            return new OutParameterSetup(attribute.DbType, attribute.Size);
+        }
 
-                if (values.Count == 0)
-                {
-                    sql.Append(emptyDialect.GetSql());
-                }
-                else
-                {
-                    for (var i = 0; i < values.Count; i++)
-                    {
-                        sql.Append(name);
-                        sql.Append(GetParameterSubName(i));
-                        sql.Append(", ");
-                    }
+        // Type
+        if (LookupDbType(type, out var dbType))
+        {
+            return new OutParameterSetup(dbType, null);
+        }
 
-                    sql.Length -= 2;
-                }
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
 
-                sql.Append(") ");
+    //--------------------------------------------------------------------------------
+    // Return
+    //--------------------------------------------------------------------------------
 
+    public sealed class ReturnParameterSetup
+    {
+        public static ReturnParameterSetup Instance { get; } = new();
+
+        private ReturnParameterSetup()
+        {
+        }
+
+        public DbParameter Setup(DbCommand cmd)
+        {
+            var parameter = cmd.CreateParameter();
+            cmd.Parameters.Add(parameter);
+            parameter.Direction = ParameterDirection.ReturnValue;
+            return parameter;
+        }
+    }
+
+    public ReturnParameterSetup CreateReturnParameterSetup() => ReturnParameterSetup.Instance;
+
+    //--------------------------------------------------------------------------------
+    // IList
+    //--------------------------------------------------------------------------------
+
+    public sealed class ListParameterSetup
+    {
+        private readonly ExecuteEngine engine;
+
+        private readonly Action<DbParameter, object>? handler;
+
+        private readonly DbType dbType;
+
+        private readonly int? size;
+
+        public ListParameterSetup(ExecuteEngine engine, Action<DbParameter, object>? handler, DbType dbType, int? size)
+        {
+            this.engine = engine;
+            this.handler = handler;
+            this.dbType = dbType;
+            this.size = size;
+        }
+
+        public void AppendSql(ref StringBuffer sql, string name, IList? values)
+        {
+            sql.Append("(");
+
+            if ((values is null) || (values.Count == 0))
+            {
+                sql.Append(engine.emptyDialect.GetSql());
+            }
+            else
+            {
                 for (var i = 0; i < values.Count; i++)
                 {
-                    var elementValue = values[i];
-                    var parameter = cmd.CreateParameter();
-                    cmd.Parameters.Add(parameter);
-                    if (elementValue is null)
-                    {
-                        parameter.Value = DBNull.Value;
-                        parameter.DbType = dbType;
-                    }
-                    else if (handler is not null)
-                    {
-                        handler(parameter, elementValue);
-                    }
-                    else
-                    {
-                        parameter.Value = elementValue;
-                        parameter.DbType = dbType;
-                    }
-                    parameter.ParameterName = name + GetParameterSubName(i);
+                    sql.Append(name);
+                    sql.Append(engine.GetParameterSubName(i));
+                    sql.Append(", ");
                 }
+
+                sql.Length -= 2;
             }
 
-            return Build;
+            sql.Append(") ");
         }
 
-        private DynamicParameterEntry CreateDynamicSimpleParameterSetup(Type type)
+        public void Setup(DbCommand cmd, string name, IList? values)
         {
-            // ITypeHandler
-            if (LookupTypeHandler(type, out var handler))
+            if (values is null)
             {
-                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(handler.SetValue, DbType.Object));
+                return;
             }
 
-            // Type
-            if (LookupDbType(type, out var dbType))
+            for (var i = 0; i < values.Count; i++)
             {
-                return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(null, dbType));
-            }
-
-            throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
-        }
-
-        private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
-        {
-            void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
-            {
-                sql.Append(name);
-
+                var value = values[i];
                 var parameter = cmd.CreateParameter();
                 cmd.Parameters.Add(parameter);
-                if (handler is not null)
+                if (value is null)
+                {
+                    parameter.Value = DBNull.Value;
+                    parameter.DbType = dbType;
+                }
+                else if (handler is not null)
                 {
                     handler(parameter, value);
                 }
@@ -525,16 +295,245 @@ namespace Smart.Data.Accessor.Engine
                 {
                     parameter.Value = value;
                     parameter.DbType = dbType;
+                    if (size.HasValue)
+                    {
+                        parameter.Size = size.Value;
+                    }
                 }
-                parameter.ParameterName = name;
+                parameter.ParameterName = name + engine.GetParameterSubName(i);
+            }
+        }
+    }
+
+    public ListParameterSetup CreateListParameterSetup(Type type, ICustomAttributeProvider provider)
+    {
+        // ParameterBuilderAttribute
+        var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
+        if (attribute is not null)
+        {
+            return new ListParameterSetup(this, null, attribute.DbType, attribute.Size);
+        }
+
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
+        {
+            return new ListParameterSetup(this, handler.SetValue, DbType.Object, null);
+        }
+
+        // Type
+        if (LookupDbType(type, out var dbType))
+        {
+            return new ListParameterSetup(this, null, dbType, null);
+        }
+
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
+
+    //--------------------------------------------------------------------------------
+    // Dynamic
+    //--------------------------------------------------------------------------------
+
+    private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string name, object value);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
+    private sealed class DynamicParameterEntry
+    {
+        public static DynamicParameterEntry Empty { get; } = new(null!, null!);
+
+        public readonly Type Type;
+
+        public readonly DynamicAction Handler;
+
+        public DynamicParameterEntry(Type type, DynamicAction handler)
+        {
+            Type = type;
+            Handler = handler;
+        }
+    }
+
+    public sealed class DynamicParameterSetup
+    {
+        private readonly ExecuteEngine engine;
+
+        private readonly bool isMultiple;
+
+        private DynamicParameterEntry entry = DynamicParameterEntry.Empty;
+
+        public DynamicParameterSetup(ExecuteEngine engine, bool isMultiple)
+        {
+            this.engine = engine;
+            this.isMultiple = isMultiple;
+        }
+
+        public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object? value)
+        {
+            if (value is null)
+            {
+                if (isMultiple)
+                {
+                    sql.Append(engine.emptyDialect.GetSql());
+                }
+                else
+                {
+                    sql.Append(name);
+
+                    var parameter = cmd.CreateParameter();
+                    cmd.Parameters.Add(parameter);
+                    parameter.Value = DBNull.Value;
+                    parameter.DbType = DbType.Object;
+                    parameter.ParameterName = name;
+                }
+            }
+            else
+            {
+                var type = value.GetType();
+                if (type != entry.Type)
+                {
+                    entry = engine.LookupDynamicParameterEntry(type);
+                }
+
+                // [MEMO] Boxed if value type
+                entry.Handler(cmd, ref sql, name, value);
+            }
+        }
+    }
+
+    private DynamicParameterEntry LookupDynamicParameterEntry(Type type)
+    {
+        if (!dynamicSetupCache.TryGetValue(type, out var entry))
+        {
+            entry = dynamicSetupCache.AddIfNotExist(type, CreateDynamicParameterEntry);
+        }
+
+        return entry;
+    }
+
+    private DynamicParameterEntry CreateDynamicParameterEntry(Type type)
+    {
+        if (ParameterHelper.IsMultipleParameter(type))
+        {
+            var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var elementType = ParameterHelper.GetMultipleParameterElementType(type);
+            return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType })!;
+        }
+        else
+        {
+            var method = GetType().GetMethod(nameof(CreateDynamicSimpleParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
+            return (DynamicParameterEntry)method.Invoke(this, new object[] { type })!;
+        }
+    }
+
+    private DynamicParameterEntry CreateDynamicListParameterSetup(Type type)
+    {
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
+        {
+            return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(handler.SetValue, DbType.Object));
+        }
+
+        // Type
+        if (LookupDbType(type, out var dbType))
+        {
+            return new DynamicParameterEntry(type, CreateDynamicListParameterHandler(null, dbType));
+        }
+
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
+
+    private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
+    {
+        void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
+        {
+            var values = (IList)value;
+
+            sql.Append("(");
+
+            if (values.Count == 0)
+            {
+                sql.Append(emptyDialect.GetSql());
+            }
+            else
+            {
+                for (var i = 0; i < values.Count; i++)
+                {
+                    sql.Append(name);
+                    sql.Append(GetParameterSubName(i));
+                    sql.Append(", ");
+                }
+
+                sql.Length -= 2;
             }
 
-            return Build;
+            sql.Append(") ");
+
+            for (var i = 0; i < values.Count; i++)
+            {
+                var elementValue = values[i];
+                var parameter = cmd.CreateParameter();
+                cmd.Parameters.Add(parameter);
+                if (elementValue is null)
+                {
+                    parameter.Value = DBNull.Value;
+                    parameter.DbType = dbType;
+                }
+                else if (handler is not null)
+                {
+                    handler(parameter, elementValue);
+                }
+                else
+                {
+                    parameter.Value = elementValue;
+                    parameter.DbType = dbType;
+                }
+                parameter.ParameterName = name + GetParameterSubName(i);
+            }
         }
 
-        public DynamicParameterSetup CreateDynamicParameterSetup(bool isMultiple)
+        return Build;
+    }
+
+    private DynamicParameterEntry CreateDynamicSimpleParameterSetup(Type type)
+    {
+        // ITypeHandler
+        if (LookupTypeHandler(type, out var handler))
         {
-            return new(this, isMultiple);
+            return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(handler.SetValue, DbType.Object));
         }
+
+        // Type
+        if (LookupDbType(type, out var dbType))
+        {
+            return new DynamicParameterEntry(type, CreateDynamicSimpleParameterHandler(null, dbType));
+        }
+
+        throw new AccessorRuntimeException($"Parameter type is not supported. type=[{type.FullName}]");
+    }
+
+    private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
+    {
+        void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
+        {
+            sql.Append(name);
+
+            var parameter = cmd.CreateParameter();
+            cmd.Parameters.Add(parameter);
+            if (handler is not null)
+            {
+                handler(parameter, value);
+            }
+            else
+            {
+                parameter.Value = value;
+                parameter.DbType = dbType;
+            }
+            parameter.ParameterName = name;
+        }
+
+        return Build;
+    }
+
+    public DynamicParameterSetup CreateDynamicParameterSetup(bool isMultiple)
+    {
+        return new(this, isMultiple);
     }
 }

@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+public enum DuplicateBehavior
 {
-    public enum DuplicateBehavior
-    {
-        Default,
-        Ignore,
-        Update
-    }
+    Default,
+    Ignore,
+    Update
 }

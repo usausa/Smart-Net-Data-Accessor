@@ -1,20 +1,19 @@
-namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine;
+
+using System;
+using System.Collections.Generic;
+using System.Data;
+
+using Smart.Data.Accessor.Handlers;
+using Smart.Data.Accessor.Mappers;
+
+public interface IExecuteEngineConfig
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data;
+    IServiceProvider GetServiceProvider();
 
-    using Smart.Data.Accessor.Handlers;
-    using Smart.Data.Accessor.Mappers;
+    IDictionary<Type, DbType> GetTypeMap();
 
-    public interface IExecuteEngineConfig
-    {
-        IServiceProvider GetServiceProvider();
+    IDictionary<Type, ITypeHandler> GetTypeHandlers();
 
-        IDictionary<Type, DbType> GetTypeMap();
-
-        IDictionary<Type, ITypeHandler> GetTypeHandlers();
-
-        IResultMapperFactory[] GetResultMapperFactories();
-    }
+    IResultMapperFactory[] GetResultMapperFactories();
 }

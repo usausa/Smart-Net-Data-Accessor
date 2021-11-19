@@ -1,36 +1,35 @@
-namespace Example.WebApplication.Controllers
+namespace Example.WebApplication.Controllers;
+
+using System.Diagnostics;
+using System.Threading.Tasks;
+
+using Example.WebApplication.Accessor;
+using Example.WebApplication.Models;
+
+using Microsoft.AspNetCore.Mvc;
+
+using Smart.Data.Accessor;
+
+public class HomeController : Controller
 {
-    using System.Diagnostics;
-    using System.Threading.Tasks;
+    private readonly ISampleAccessor sampleAccessor;
 
-    using Example.WebApplication.Accessor;
-    using Example.WebApplication.Models;
-
-    using Microsoft.AspNetCore.Mvc;
-
-    using Smart.Data.Accessor;
-
-    public class HomeController : Controller
+    public HomeController(IAccessorResolver<ISampleAccessor> sampleAccessor)
     {
-        private readonly ISampleAccessor sampleAccessor;
+        this.sampleAccessor = sampleAccessor.Accessor;
+    }
 
-        public HomeController(IAccessorResolver<ISampleAccessor> sampleAccessor)
-        {
-            this.sampleAccessor = sampleAccessor.Accessor;
-        }
+    public async ValueTask<IActionResult> Index(DataListForm form)
+    {
+        ViewBag.Count = await sampleAccessor.CountDataAsync().ConfigureAwait(false);
+        ViewBag.List = await sampleAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
 
-        public async ValueTask<IActionResult> Index(DataListForm form)
-        {
-            ViewBag.Count = await sampleAccessor.CountDataAsync().ConfigureAwait(false);
-            ViewBag.List = await sampleAccessor.QueryDataAsync(form.Type).ConfigureAwait(false);
+        return View();
+    }
 
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

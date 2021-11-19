@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Parameter)]
+public sealed class NameAttribute : Attribute
 {
-    using System;
+    public string Name { get; }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Parameter)]
-    public sealed class NameAttribute : Attribute
+    public NameAttribute(string name)
     {
-        public string Name { get; }
-
-        public NameAttribute(string name)
-        {
-            Name = name;
-        }
+        Name = name;
     }
 }

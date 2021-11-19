@@ -1,77 +1,76 @@
-namespace Smart.Data.Accessor.Runtime
+namespace Smart.Data.Accessor.Runtime;
+
+using System;
+using System.Linq;
+using System.Reflection;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Engine;
+
+public static class RuntimeHelper
 {
-    using System;
-    using System.Linq;
-    using System.Reflection;
+    //--------------------------------------------------------------------------------
+    // Initialize
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Engine;
-
-    public static class RuntimeHelper
+    public static MethodInfo GetInterfaceMethodByNo(Type type, Type interfaceType, int no)
     {
-        //--------------------------------------------------------------------------------
-        // Initialize
-        //--------------------------------------------------------------------------------
+        var implementMethod = type.GetMethods().First(x => x.GetCustomAttribute<MethodNoAttribute>()!.No == no);
+        var parameterTypes = implementMethod.GetParameters().Select(x => x.ParameterType).ToArray();
+        return interfaceType.GetMethod(implementMethod.Name, parameterTypes)!;
+    }
 
-        public static MethodInfo GetInterfaceMethodByNo(Type type, Type interfaceType, int no)
+    public static IDbProvider GetDbProvider(ExecuteEngine engine, Type interfaceType)
+    {
+        var attribute = interfaceType.GetCustomAttribute<ProviderAttribute>()!;
+        var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(typeof(IDbProviderSelector))!;
+        return selector.GetProvider(attribute.Parameter);
+    }
+
+    public static IDbProvider GetDbProvider(ExecuteEngine engine, MethodInfo method)
+    {
+        var attribute = method.GetCustomAttribute<ProviderAttribute>()!;
+        var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(typeof(IDbProviderSelector))!;
+        return selector.GetProvider(attribute.Parameter);
+    }
+
+    private static ICustomAttributeProvider GetCustomAttributeProvider(MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        if (declaringType is not null)
         {
-            var implementMethod = type.GetMethods().First(x => x.GetCustomAttribute<MethodNoAttribute>()!.No == no);
-            var parameterTypes = implementMethod.GetParameters().Select(x => x.ParameterType).ToArray();
-            return interfaceType.GetMethod(implementMethod.Name, parameterTypes)!;
+            return declaringType.GetProperty(propertyName!, BindingFlags.Instance | BindingFlags.Public)!;
         }
 
-        public static IDbProvider GetDbProvider(ExecuteEngine engine, Type interfaceType)
-        {
-            var attribute = interfaceType.GetCustomAttribute<ProviderAttribute>()!;
-            var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(typeof(IDbProviderSelector))!;
-            return selector.GetProvider(attribute.Parameter);
-        }
+        return method.GetParameters()[parameterIndex];
+    }
 
-        public static IDbProvider GetDbProvider(ExecuteEngine engine, MethodInfo method)
-        {
-            var attribute = method.GetCustomAttribute<ProviderAttribute>()!;
-            var selector = (IDbProviderSelector)engine.ServiceProvider.GetService(typeof(IDbProviderSelector))!;
-            return selector.GetProvider(attribute.Parameter);
-        }
+    public static ExecuteEngine.ListParameterSetup CreateListParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
+        return engine.CreateListParameterSetup(type, provider);
+    }
 
-        private static ICustomAttributeProvider GetCustomAttributeProvider(MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            if (declaringType is not null)
-            {
-                return declaringType.GetProperty(propertyName!, BindingFlags.Instance | BindingFlags.Public)!;
-            }
+    public static ExecuteEngine.InParameterSetup CreateInParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
+        return engine.CreateInParameterSetup(type, provider);
+    }
 
-            return method.GetParameters()[parameterIndex];
-        }
+    public static ExecuteEngine.InOutParameterSetup CreateInOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
+        return engine.CreateInOutParameterSetup(type, provider);
+    }
 
-        public static ExecuteEngine.ListParameterSetup CreateListParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
-            return engine.CreateListParameterSetup(type, provider);
-        }
+    public static ExecuteEngine.OutParameterSetup CreateOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
+        return engine.CreateOutParameterSetup(type, provider);
+    }
 
-        public static ExecuteEngine.InParameterSetup CreateInParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
-            return engine.CreateInParameterSetup(type, provider);
-        }
-
-        public static ExecuteEngine.InOutParameterSetup CreateInOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
-            return engine.CreateInOutParameterSetup(type, provider);
-        }
-
-        public static ExecuteEngine.OutParameterSetup CreateOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
-            return engine.CreateOutParameterSetup(type, provider);
-        }
-
-        public static Func<object, object>? CreateHandler(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
-        {
-            var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
-            return engine.CreateHandler(type, provider);
-        }
+    public static Func<object, object>? CreateHandler(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    {
+        var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
+        return engine.CreateHandler(type, provider);
     }
 }

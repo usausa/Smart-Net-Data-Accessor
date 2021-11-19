@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MethodNameAttribute : Attribute
 {
-    using System;
+    public string Name { get; }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class MethodNameAttribute : Attribute
+    public MethodNameAttribute(string name)
     {
-        public string Name { get; }
-
-        public MethodNameAttribute(string name)
-        {
-            Name = name;
-        }
+        Name = name;
     }
 }

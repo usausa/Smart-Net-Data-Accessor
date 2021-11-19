@@ -1,33 +1,32 @@
-namespace Smart.Data.Accessor.Extensions.DependencyInjection
+namespace Smart.Data.Accessor.Extensions.DependencyInjection;
+
+using System;
+using System.Collections.Generic;
+using System.Data;
+
+using Smart.Data.Accessor.Handlers;
+using Smart.Data.Accessor.Mappers;
+
+public sealed class ExecuteEngineFactoryOptions
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data;
+    internal Action<IDictionary<Type, DbType>>? TypeMapConfig { get; private set; }
 
-    using Smart.Data.Accessor.Handlers;
-    using Smart.Data.Accessor.Mappers;
+    internal Action<IDictionary<Type, ITypeHandler>>? TypeHandlersConfig { get; private set; }
 
-    public sealed class ExecuteEngineFactoryOptions
+    internal Action<IList<IResultMapperFactory>>? ResultMapperFactoriesConfig { get; private set; }
+
+    public void ConfigureTypeMap(Action<IDictionary<Type, DbType>> action)
     {
-        internal Action<IDictionary<Type, DbType>>? TypeMapConfig { get; private set; }
+        TypeMapConfig = action;
+    }
 
-        internal Action<IDictionary<Type, ITypeHandler>>? TypeHandlersConfig { get; private set; }
+    public void ConfigureTypeHandlers(Action<IDictionary<Type, ITypeHandler>> action)
+    {
+        TypeHandlersConfig = action;
+    }
 
-        internal Action<IList<IResultMapperFactory>>? ResultMapperFactoriesConfig { get; private set; }
-
-        public void ConfigureTypeMap(Action<IDictionary<Type, DbType>> action)
-        {
-            TypeMapConfig = action;
-        }
-
-        public void ConfigureTypeHandlers(Action<IDictionary<Type, ITypeHandler>> action)
-        {
-            TypeHandlersConfig = action;
-        }
-
-        public void ConfigureTypeHandlers(Action<IList<IResultMapperFactory>> action)
-        {
-            ResultMapperFactoriesConfig = action;
-        }
+    public void ConfigureTypeHandlers(Action<IList<IResultMapperFactory>> action)
+    {
+        ResultMapperFactoriesConfig = action;
     }
 }

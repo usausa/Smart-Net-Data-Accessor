@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Engine
-{
-    public interface IEngineController
-    {
-        DiagnosticsInfo Diagnostics { get; }
+namespace Smart.Data.Accessor.Engine;
 
-        void ClearDynamicSetupCache();
-    }
+public interface IEngineController
+{
+    DiagnosticsInfo Diagnostics { get; }
+
+    void ClearDynamicSetupCache();
 }

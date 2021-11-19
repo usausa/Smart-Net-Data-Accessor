@@ -1,18 +1,17 @@
-namespace Example.WebApplication.Models
+namespace Example.WebApplication.Models;
+
+using System.Diagnostics.CodeAnalysis;
+
+using Smart.Data.Accessor.Attributes;
+
+[Name("Data")]
+public class DataEntity
 {
-    using System.Diagnostics.CodeAnalysis;
+    public long Id { get; set; }
 
-    using Smart.Data.Accessor.Attributes;
+    [AllowNull]
+    public string Name { get; set; }
 
-    [Name("Data")]
-    public class DataEntity
-    {
-        public long Id { get; set; }
-
-        [AllowNull]
-        public string Name { get; set; }
-
-        [AllowNull]
-        public string Type { get; set; }
-    }
+    [AllowNull]
+    public string Type { get; set; }
 }

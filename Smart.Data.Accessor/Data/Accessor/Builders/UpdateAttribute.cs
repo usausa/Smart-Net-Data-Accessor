@@ -1,102 +1,101 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Reflection;
+using System.Text;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Builders.Helpers;
+using Smart.Data.Accessor.Generator;
+using Smart.Data.Accessor.Nodes;
+using Smart.Data.Accessor.Tokenizer;
+
+public sealed class UpdateAttribute : MethodAttribute
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data;
-    using System.Reflection;
-    using System.Text;
+    private readonly string? table;
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Builders.Helpers;
-    using Smart.Data.Accessor.Generator;
-    using Smart.Data.Accessor.Nodes;
-    using Smart.Data.Accessor.Tokenizer;
+    private readonly Type? type;
 
-    public sealed class UpdateAttribute : MethodAttribute
+    public bool Force { get; set; }
+
+    public UpdateAttribute()
+        : this(null, null)
     {
-        private readonly string? table;
+    }
 
-        private readonly Type? type;
+    public UpdateAttribute(string table)
+        : this(table, null)
+    {
+    }
 
-        public bool Force { get; set; }
+    public UpdateAttribute(Type type)
+        : this(null, type)
+    {
+    }
 
-        public UpdateAttribute()
-            : this(null, null)
+    private UpdateAttribute(string? table, Type? type)
+        : base(CommandType.Text, MethodType.Execute)
+    {
+        this.table = table;
+        this.type = type;
+    }
+
+    public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
+    {
+        var parameters = BuildHelper.GetParameters(mi);
+        var values = BuildHelper.GetValueParameters(parameters);
+        var tableName = table ??
+                        (type is not null ? BuildHelper.GetTableNameByType(mi, type) : null) ??
+                        BuildHelper.GetTableNameByParameter(mi);
+
+        if (String.IsNullOrEmpty(tableName))
         {
+            throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
         }
 
-        public UpdateAttribute(string table)
-            : this(table, null)
-        {
-        }
+        var sql = new StringBuilder();
+        sql.Append("UPDATE ");
+        sql.Append(tableName);
+        sql.Append(" SET ");
 
-        public UpdateAttribute(Type type)
-            : this(null, type)
+        if (values.Count > 0)
         {
-        }
+            var conditions = BuildHelper.GetNonValueParameters(parameters);
 
-        private UpdateAttribute(string? table, Type? type)
-            : base(CommandType.Text, MethodType.Execute)
-        {
-            this.table = table;
-            this.type = type;
-        }
-
-        public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
-        {
-            var parameters = BuildHelper.GetParameters(mi);
-            var values = BuildHelper.GetValueParameters(parameters);
-            var tableName = table ??
-                            (type is not null ? BuildHelper.GetTableNameByType(mi, type) : null) ??
-                            BuildHelper.GetTableNameByParameter(mi);
-
-            if (String.IsNullOrEmpty(tableName))
+            if (!Force && (conditions.Count == 0))
             {
-                throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
+                throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
             }
 
-            var sql = new StringBuilder();
-            sql.Append("UPDATE ");
-            sql.Append(tableName);
-            sql.Append(" SET ");
-
-            if (values.Count > 0)
+            BuildHelper.AddUpdateSets(sql, mi, values);
+            BuildHelper.AddCondition(sql, conditions);
+        }
+        else
+        {
+            var keys = BuildHelper.GetKeyParameters(parameters);
+            if (keys.Count > 0)
             {
-                var conditions = BuildHelper.GetNonValueParameters(parameters);
+                BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
+                BuildHelper.AddCondition(sql, keys);
+            }
+            else
+            {
+                var conditions = BuildHelper.GetConditionParameters(parameters);
 
                 if (!Force && (conditions.Count == 0))
                 {
                     throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
                 }
 
-                BuildHelper.AddUpdateSets(sql, mi, values);
+                BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonConditionParameters(parameters));
                 BuildHelper.AddCondition(sql, conditions);
             }
-            else
-            {
-                var keys = BuildHelper.GetKeyParameters(parameters);
-                if (keys.Count > 0)
-                {
-                    BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonKeyParameters(parameters));
-                    BuildHelper.AddCondition(sql, keys);
-                }
-                else
-                {
-                    var conditions = BuildHelper.GetConditionParameters(parameters);
-
-                    if (!Force && (conditions.Count == 0))
-                    {
-                        throw new BuilderException($"Delete all requires force option. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
-                    }
-
-                    BuildHelper.AddUpdateSets(sql, mi, BuildHelper.GetNonConditionParameters(parameters));
-                    BuildHelper.AddCondition(sql, conditions);
-                }
-            }
-
-            var tokenizer = new SqlTokenizer(sql.ToString());
-            var builder = new NodeBuilder(tokenizer.Tokenize());
-            return builder.Build();
         }
+
+        var tokenizer = new SqlTokenizer(sql.ToString());
+        var builder = new NodeBuilder(tokenizer.Tokenize());
+        return builder.Build();
     }
 }

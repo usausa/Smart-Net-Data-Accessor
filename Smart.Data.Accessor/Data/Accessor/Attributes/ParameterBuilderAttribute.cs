@@ -1,24 +1,23 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+using System.Data;
+
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public abstract class ParameterBuilderAttribute : Attribute
 {
-    using System;
-    using System.Data;
+    public DbType DbType { get; }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-    public abstract class ParameterBuilderAttribute : Attribute
+    public int? Size { get;  }
+
+    protected ParameterBuilderAttribute(DbType dbType)
+        : this(dbType, null)
     {
-        public DbType DbType { get; }
+    }
 
-        public int? Size { get;  }
-
-        protected ParameterBuilderAttribute(DbType dbType)
-            : this(dbType, null)
-        {
-        }
-
-        protected ParameterBuilderAttribute(DbType dbType, int? size)
-        {
-            DbType = dbType;
-            Size = size;
-        }
+    protected ParameterBuilderAttribute(DbType dbType, int? size)
+    {
+        DbType = dbType;
+        Size = size;
     }
 }

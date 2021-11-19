@@ -1,15 +1,14 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class SqlSizeAttribute : Attribute
 {
-    using System;
+    public int Size { get; }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class SqlSizeAttribute : Attribute
+    public SqlSizeAttribute(int size)
     {
-        public int Size { get; }
-
-        public SqlSizeAttribute(int size)
-        {
-            Size = Math.Max(size, 32);
-        }
+        Size = Math.Max(size, 32);
     }
 }

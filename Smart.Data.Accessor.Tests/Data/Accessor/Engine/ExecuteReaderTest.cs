@@ -1,232 +1,231 @@
-namespace Smart.Data.Accessor.Engine
+namespace Smart.Data.Accessor.Engine;
+
+using System.Data;
+using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Data.Accessor.Generator;
+using Smart.Mock;
+
+using Xunit;
+
+public class ExecuteReaderTest
 {
-    using System.Data;
-    using System.Data.Common;
-    using System.Threading;
-    using System.Threading.Tasks;
+    //--------------------------------------------------------------------------------
+    // Execute
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Data.Accessor.Generator;
-    using Smart.Mock;
-
-    using Xunit;
-
-    public class ExecuteReaderTest
+    [DataAccessor]
+    public interface IExecuteReaderSimpleAccessor
     {
-        //--------------------------------------------------------------------------------
-        // Execute
-        //--------------------------------------------------------------------------------
+        [ExecuteReader]
+        IDataReader ExecuteReader();
+    }
 
-        [DataAccessor]
-        public interface IExecuteReaderSimpleAccessor
+    [Fact]
+    public void TestExecuteReaderSimple()
+    {
+        using (TestDatabase.Initialize()
+            .SetupDataTable()
+            .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+            .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
         {
-            [ExecuteReader]
-            IDataReader ExecuteReader();
-        }
-
-        [Fact]
-        public void TestExecuteReaderSimple()
-        {
-            using (TestDatabase.Initialize()
-                .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-
-                var accessor = generator.Create<IExecuteReaderSimpleAccessor>();
-
-                using (var reader = accessor.ExecuteReader())
-                {
-                    Assert.True(reader.Read());
-                    Assert.True(reader.Read());
-                    Assert.False(reader.Read());
-                }
-            }
-        }
-
-        [DataAccessor]
-        public interface IExecuteReaderSimpleAsyncAccessor
-        {
-            [ExecuteReader]
-            ValueTask<IDataReader> ExecuteReaderAsync();
-        }
-
-        [Fact]
-        public async ValueTask TestExecuteReaderSimpleAsync()
-        {
-            await using (TestDatabase.Initialize()
-                .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
-
-                var accessor = generator.Create<IExecuteReaderSimpleAsyncAccessor>();
-
-                using (var reader = await accessor.ExecuteReaderAsync())
-                {
-                    Assert.True(reader.Read());
-                    Assert.True(reader.Read());
-                    Assert.False(reader.Read());
-                }
-            }
-        }
-
-        //--------------------------------------------------------------------------------
-        // With Connection
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface IExecuteReaderWithConnectionAccessor
-        {
-            [ExecuteReader]
-            IDataReader ExecuteReader(DbConnection con);
-        }
-
-        [Fact]
-        public void TestExecuteReaderWithConnection()
-        {
-            using var con = TestDatabase.Initialize()
-                .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
             var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
                 .SetSql("SELECT * FROM Data ORDER BY Id")
                 .Build();
 
-            con.Open();
+            var accessor = generator.Create<IExecuteReaderSimpleAccessor>();
 
-            var accessor = generator.Create<IExecuteReaderWithConnectionAccessor>();
-
-            Assert.Equal(ConnectionState.Open, con.State);
-
-            using (var reader = accessor.ExecuteReader(con))
+            using (var reader = accessor.ExecuteReader())
             {
                 Assert.True(reader.Read());
                 Assert.True(reader.Read());
                 Assert.False(reader.Read());
             }
-
-            Assert.Equal(ConnectionState.Open, con.State);
         }
+    }
 
-        [DataAccessor]
-        public interface IExecuteReaderWithConnectionAsyncAccessor
-        {
-            [ExecuteReader]
-            ValueTask<IDataReader> ExecuteReaderAsync(DbConnection con);
-        }
+    [DataAccessor]
+    public interface IExecuteReaderSimpleAsyncAccessor
+    {
+        [ExecuteReader]
+        ValueTask<IDataReader> ExecuteReaderAsync();
+    }
 
-        [Fact]
-        public async ValueTask TestExecuteReaderWithConnectionAsync()
+    [Fact]
+    public async ValueTask TestExecuteReaderSimpleAsync()
+    {
+        await using (TestDatabase.Initialize()
+            .SetupDataTable()
+            .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+            .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
         {
-            await using var con = TestDatabase.Initialize()
-                .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
             var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
                 .SetSql("SELECT * FROM Data ORDER BY Id")
                 .Build();
 
-            await con.OpenAsync();
+            var accessor = generator.Create<IExecuteReaderSimpleAsyncAccessor>();
 
-            var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
-
-            Assert.Equal(ConnectionState.Open, con.State);
-
-            using (var reader = await accessor.ExecuteReaderAsync(con))
+            using (var reader = await accessor.ExecuteReaderAsync())
             {
                 Assert.True(reader.Read());
                 Assert.True(reader.Read());
                 Assert.False(reader.Read());
             }
+        }
+    }
 
-            Assert.Equal(ConnectionState.Open, con.State);
+    //--------------------------------------------------------------------------------
+    // With Connection
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface IExecuteReaderWithConnectionAccessor
+    {
+        [ExecuteReader]
+        IDataReader ExecuteReader(DbConnection con);
+    }
+
+    [Fact]
+    public void TestExecuteReaderWithConnection()
+    {
+        using var con = TestDatabase.Initialize()
+            .SetupDataTable()
+            .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+            .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+        var generator = new TestFactoryBuilder()
+            .SetSql("SELECT * FROM Data ORDER BY Id")
+            .Build();
+
+        con.Open();
+
+        var accessor = generator.Create<IExecuteReaderWithConnectionAccessor>();
+
+        Assert.Equal(ConnectionState.Open, con.State);
+
+        using (var reader = accessor.ExecuteReader(con))
+        {
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.False(reader.Read());
         }
 
-        //--------------------------------------------------------------------------------
-        // Cancel
-        //--------------------------------------------------------------------------------
+        Assert.Equal(ConnectionState.Open, con.State);
+    }
 
-        [DataAccessor]
-        public interface IExecuteReaderCancelAsyncAccessor
+    [DataAccessor]
+    public interface IExecuteReaderWithConnectionAsyncAccessor
+    {
+        [ExecuteReader]
+        ValueTask<IDataReader> ExecuteReaderAsync(DbConnection con);
+    }
+
+    [Fact]
+    public async ValueTask TestExecuteReaderWithConnectionAsync()
+    {
+        await using var con = TestDatabase.Initialize()
+            .SetupDataTable()
+            .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+            .InsertData(new DataEntity { Id = 2, Name = "Data-2" });
+        var generator = new TestFactoryBuilder()
+            .SetSql("SELECT * FROM Data ORDER BY Id")
+            .Build();
+
+        await con.OpenAsync();
+
+        var accessor = generator.Create<IExecuteReaderWithConnectionAsyncAccessor>();
+
+        Assert.Equal(ConnectionState.Open, con.State);
+
+        using (var reader = await accessor.ExecuteReaderAsync(con))
         {
-            [ExecuteReader]
-            ValueTask<IDataReader> ExecuteReaderAsync(CancellationToken cancel);
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.False(reader.Read());
         }
 
-        [Fact]
-        public async ValueTask TestExecuteReaderCancelAsync()
+        Assert.Equal(ConnectionState.Open, con.State);
+    }
+
+    //--------------------------------------------------------------------------------
+    // Cancel
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface IExecuteReaderCancelAsyncAccessor
+    {
+        [ExecuteReader]
+        ValueTask<IDataReader> ExecuteReaderAsync(CancellationToken cancel);
+    }
+
+    [Fact]
+    public async ValueTask TestExecuteReaderCancelAsync()
+    {
+        await using (TestDatabase.Initialize()
+            .SetupDataTable()
+            .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
+            .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
         {
-            await using (TestDatabase.Initialize()
-                .SetupDataTable()
-                .InsertData(new DataEntity { Id = 1, Name = "Data-1" })
-                .InsertData(new DataEntity { Id = 2, Name = "Data-2" }))
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .SetSql("SELECT * FROM Data ORDER BY Id")
+                .Build();
+
+            var accessor = generator.Create<IExecuteReaderCancelAsyncAccessor>();
+
+            using (await accessor.ExecuteReaderAsync(default))
             {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .SetSql("SELECT * FROM Data ORDER BY Id")
-                    .Build();
+            }
 
-                var accessor = generator.Create<IExecuteReaderCancelAsyncAccessor>();
-
-                using (await accessor.ExecuteReaderAsync(default))
+            await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            {
+                var cancel = new CancellationToken(true);
+                using (await accessor.ExecuteReaderAsync(cancel))
                 {
                 }
-
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-                {
-                    var cancel = new CancellationToken(true);
-                    using (await accessor.ExecuteReaderAsync(cancel))
-                    {
-                    }
-                });
-            }
+            });
         }
+    }
 
-        //--------------------------------------------------------------------------------
-        // Execute
-        //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // Execute
+    //--------------------------------------------------------------------------------
 
-        [DataAccessor]
-        public interface IExecuteReaderInvalidAccessor
-        {
-            [ExecuteReader]
-            void ExecuteReader();
-        }
+    [DataAccessor]
+    public interface IExecuteReaderInvalidAccessor
+    {
+        [ExecuteReader]
+        void ExecuteReader();
+    }
 
-        [Fact]
-        public void TestExecuteReaderInvalid()
-        {
-            var generator = new TestFactoryBuilder()
-                .SetSql(string.Empty)
-                .Build();
+    [Fact]
+    public void TestExecuteReaderInvalid()
+    {
+        var generator = new TestFactoryBuilder()
+            .SetSql(string.Empty)
+            .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAccessor>());
-        }
+        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAccessor>());
+    }
 
-        [DataAccessor]
-        public interface IExecuteReaderInvalidAsyncAccessor
-        {
-            [ExecuteReader]
-            ValueTask ExecuteReaderAsync();
-        }
+    [DataAccessor]
+    public interface IExecuteReaderInvalidAsyncAccessor
+    {
+        [ExecuteReader]
+        ValueTask ExecuteReaderAsync();
+    }
 
-        [Fact]
-        public void TestExecuteReaderInvalidAsync()
-        {
-            var generator = new TestFactoryBuilder()
-                .SetSql(string.Empty)
-                .Build();
+    [Fact]
+    public void TestExecuteReaderInvalidAsync()
+    {
+        var generator = new TestFactoryBuilder()
+            .SetSql(string.Empty)
+            .Build();
 
-            Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAsyncAccessor>());
-        }
+        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAsyncAccessor>());
     }
 }

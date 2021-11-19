@@ -1,7 +1,6 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+public interface IReturnValueBehavior
 {
-    public interface IReturnValueBehavior
-    {
-        bool ReturnValueAsResult { get; }
-    }
+    bool ReturnValueAsResult { get; }
 }

@@ -1,48 +1,47 @@
-namespace Smart.Data.Accessor.Attributes
+namespace Smart.Data.Accessor.Attributes;
+
+using System;
+using System.Data;
+
+[AttributeUsage(AttributeTargets.Property)]
+public abstract class DirectionAttribute : Attribute
 {
-    using System;
-    using System.Data;
+    public ParameterDirection Direction { get; }
 
-    [AttributeUsage(AttributeTargets.Property)]
-    public abstract class DirectionAttribute : Attribute
+    protected DirectionAttribute(ParameterDirection direction)
     {
-        public ParameterDirection Direction { get; }
-
-        protected DirectionAttribute(ParameterDirection direction)
-        {
-            Direction = direction;
-        }
+        Direction = direction;
     }
+}
 
-    public sealed class InputAttribute : DirectionAttribute
+public sealed class InputAttribute : DirectionAttribute
+{
+    public InputAttribute()
+        : base(ParameterDirection.Input)
     {
-        public InputAttribute()
-            : base(ParameterDirection.Input)
-        {
-        }
     }
+}
 
-    public sealed class InputOutputAttribute : DirectionAttribute
+public sealed class InputOutputAttribute : DirectionAttribute
+{
+    public InputOutputAttribute()
+        : base(ParameterDirection.InputOutput)
     {
-        public InputOutputAttribute()
-            : base(ParameterDirection.InputOutput)
-        {
-        }
     }
+}
 
-    public sealed class OutputAttribute : DirectionAttribute
+public sealed class OutputAttribute : DirectionAttribute
+{
+    public OutputAttribute()
+        : base(ParameterDirection.Output)
     {
-        public OutputAttribute()
-            : base(ParameterDirection.Output)
-        {
-        }
     }
+}
 
-    public sealed class ReturnValueAttribute : DirectionAttribute
+public sealed class ReturnValueAttribute : DirectionAttribute
+{
+    public ReturnValueAttribute()
+        : base(ParameterDirection.ReturnValue)
     {
-        public ReturnValueAttribute()
-            : base(ParameterDirection.ReturnValue)
-        {
-        }
     }
 }

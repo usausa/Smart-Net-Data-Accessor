@@ -1,96 +1,95 @@
-namespace Smart.Data.Accessor.Generator.Helpers
+namespace Smart.Data.Accessor.Generator.Helpers;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+internal static class GeneratorHelper
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
+    //--------------------------------------------------------------------------------
+    // Name
+    //--------------------------------------------------------------------------------
 
-    internal static class GeneratorHelper
+    public static string MakeGlobalName(Type type)
     {
-        //--------------------------------------------------------------------------------
-        // Name
-        //--------------------------------------------------------------------------------
+        var sb = new StringBuilder();
+        MakeGlobalName(sb, type);
+        return sb.ToString();
+    }
 
-        public static string MakeGlobalName(Type type)
+    public static void MakeGlobalName(StringBuilder sb, Type type)
+    {
+        if (type == typeof(void))
         {
-            var sb = new StringBuilder();
-            MakeGlobalName(sb, type);
-            return sb.ToString();
+            sb.Append("void");
+            return;
         }
 
-        public static void MakeGlobalName(StringBuilder sb, Type type)
+        if (type.IsGenericType)
         {
-            if (type == typeof(void))
-            {
-                sb.Append("void");
-                return;
-            }
+            var index = type.FullName!.IndexOf('`', StringComparison.Ordinal);
+            sb.Append("global::").Append(type.FullName[..index].Replace('+', '.'));
+            sb.Append('<');
 
-            if (type.IsGenericType)
+            var first = true;
+            foreach (var argumentType in type.GetGenericArguments())
             {
-                var index = type.FullName!.IndexOf('`', StringComparison.Ordinal);
-                sb.Append("global::").Append(type.FullName[..index].Replace('+', '.'));
-                sb.Append('<');
-
-                var first = true;
-                foreach (var argumentType in type.GetGenericArguments())
+                if (first)
                 {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        sb.Append(", ");
-                    }
-
-                    MakeGlobalName(sb, argumentType);
+                    first = false;
+                }
+                else
+                {
+                    sb.Append(", ");
                 }
 
-                sb.Append('>');
+                MakeGlobalName(sb, argumentType);
             }
-            else
-            {
-                sb.Append("global::").Append(type.FullName!.Replace('+', '.'));
-            }
+
+            sb.Append('>');
         }
-
-        //--------------------------------------------------------------------------------
-        // Type
-        //--------------------------------------------------------------------------------
-
-        public static bool IsEnumerable(Type type)
+        else
         {
-            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            sb.Append("global::").Append(type.FullName!.Replace('+', '.'));
         }
+    }
 
-        public static bool IsAsyncEnumerable(Type type)
-        {
-            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>));
-        }
+    //--------------------------------------------------------------------------------
+    // Type
+    //--------------------------------------------------------------------------------
 
-        public static bool IsList(Type type)
-        {
-            return type.IsGenericType && ((type.GetGenericTypeDefinition() == typeof(IList<>)) || (type.GetGenericTypeDefinition() == typeof(List<>)));
-        }
+    public static bool IsEnumerable(Type type)
+    {
+        return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+    }
 
-        //--------------------------------------------------------------------------------
-        // For parameter element
-        //--------------------------------------------------------------------------------
+    public static bool IsAsyncEnumerable(Type type)
+    {
+        return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>));
+    }
 
-        public static Type GetEnumerableElementType(Type type)
-        {
-            return type.GetInterfaces()
-                .Prepend(type)
-                .First(t => t.IsGenericType &&
-                            ((t.GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
-                             (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))))
-                .GetGenericArguments()[0];
-        }
+    public static bool IsList(Type type)
+    {
+        return type.IsGenericType && ((type.GetGenericTypeDefinition() == typeof(IList<>)) || (type.GetGenericTypeDefinition() == typeof(List<>)));
+    }
 
-        public static Type GetListElementType(Type type)
-        {
-            return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
-        }
+    //--------------------------------------------------------------------------------
+    // For parameter element
+    //--------------------------------------------------------------------------------
+
+    public static Type GetEnumerableElementType(Type type)
+    {
+        return type.GetInterfaces()
+            .Prepend(type)
+            .First(t => t.IsGenericType &&
+                        ((t.GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
+                         (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))))
+            .GetGenericArguments()[0];
+    }
+
+    public static Type GetListElementType(Type type)
+    {
+        return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
     }
 }

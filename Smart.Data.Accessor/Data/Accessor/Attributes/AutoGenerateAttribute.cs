@@ -1,9 +1,8 @@
-namespace Smart.Data.Accessor.Attributes
-{
-    using System;
+namespace Smart.Data.Accessor.Attributes;
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-    public sealed class AutoGenerateAttribute : Attribute
-    {
-    }
+using System;
+
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class AutoGenerateAttribute : Attribute
+{
 }

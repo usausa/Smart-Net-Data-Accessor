@@ -1,305 +1,304 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Mock;
+
+using Xunit;
+
+public class SelectTest
 {
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Threading.Tasks;
+    //--------------------------------------------------------------------------------
+    // Order
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Mock;
-
-    using Xunit;
-
-    public class SelectTest
+    [DataAccessor]
+    public interface ISelectOrderAccessor
     {
-        //--------------------------------------------------------------------------------
-        // Order
-        //--------------------------------------------------------------------------------
+        [Select]
+        List<MultiKeyEntity> SelectKeyOrder();
 
-        [DataAccessor]
-        public interface ISelectOrderAccessor
-        {
-            [Select]
-            List<MultiKeyEntity> SelectKeyOrder();
+        [Select(Order = "Name DESC")]
+        List<MultiKeyEntity> SelectCustomOrder();
 
-            [Select(Order = "Name DESC")]
-            List<MultiKeyEntity> SelectCustomOrder();
+        [Select]
+        List<MultiKeyEntity> SelectParameterOrder([Order] string order);
+    }
 
-            [Select]
-            List<MultiKeyEntity> SelectParameterOrder([Order] string order);
-        }
-
-        [Fact]
-        public void TestSelectOrder()
-        {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectOrderAccessor>();
-
-                var list = accessor.SelectKeyOrder();
-
-                Assert.Equal(3, list.Count);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal("Data-2", list[1].Name);
-                Assert.Equal("Data-3", list[2].Name);
-
-                list = accessor.SelectCustomOrder();
-
-                Assert.Equal(3, list.Count);
-                Assert.Equal("Data-3", list[0].Name);
-                Assert.Equal("Data-2", list[1].Name);
-                Assert.Equal("Data-1", list[2].Name);
-
-                list = accessor.SelectParameterOrder("Name DESC");
-
-                Assert.Equal(3, list.Count);
-                Assert.Equal("Data-3", list[0].Name);
-                Assert.Equal("Data-2", list[1].Name);
-                Assert.Equal("Data-1", list[2].Name);
-            }
-        }
-
-        //--------------------------------------------------------------------------------
-        // Other
-        //--------------------------------------------------------------------------------
-
-        public class OtherEntity
-        {
-            [Key(1)]
-            public long Key1 { get; set; }
-
-            [Key(2)]
-            public long Key2 { get; set; }
-
-            [AllowNull]
-            public string Name { get; set; }
-        }
-
-        [DataAccessor]
-        public interface ISelectOtherAccessor
-        {
-            [Select(typeof(MultiKeyEntity))]
-            List<OtherEntity> SelectByType();
-
-            [Select("MultiKey")]
-            List<OtherEntity> SelectByName();
-        }
-
-        [Fact]
-        public void TestSelectOther()
-        {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectOtherAccessor>();
-
-                var list = accessor.SelectByType();
-
-                Assert.Equal(3, list.Count);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal("Data-2", list[1].Name);
-                Assert.Equal("Data-3", list[2].Name);
-
-                list = accessor.SelectByName();
-
-                Assert.Equal(3, list.Count);
-                Assert.Equal("Data-1", list[0].Name);
-                Assert.Equal("Data-2", list[1].Name);
-                Assert.Equal("Data-3", list[2].Name);
-            }
-        }
-
-        //--------------------------------------------------------------------------------
-        // Invalid
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface ISelectInvalid1Accessor
-        {
-            [Select("")]
-            List<MultiKeyEntity> Select();
-        }
-
-        [DataAccessor]
-        public interface ISelectInvalid2Accessor
-        {
-            [Select]
-            void Select();
-        }
-
-        [DataAccessor]
-        public interface ISelectInvalid3Accessor
-        {
-            [Select]
-            ValueTask Select();
-        }
-
-        [Fact]
-        public void TestSelectInvalid()
+    [Fact]
+    public void TestSelectOrder()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
             var generator = new TestFactoryBuilder()
                 .UseFileDatabase()
                 .Build();
+            var accessor = generator.Create<ISelectOrderAccessor>();
 
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid1Accessor>());
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid2Accessor>());
-            Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid3Accessor>());
+            var list = accessor.SelectKeyOrder();
+
+            Assert.Equal(3, list.Count);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal("Data-2", list[1].Name);
+            Assert.Equal("Data-3", list[2].Name);
+
+            list = accessor.SelectCustomOrder();
+
+            Assert.Equal(3, list.Count);
+            Assert.Equal("Data-3", list[0].Name);
+            Assert.Equal("Data-2", list[1].Name);
+            Assert.Equal("Data-1", list[2].Name);
+
+            list = accessor.SelectParameterOrder("Name DESC");
+
+            Assert.Equal(3, list.Count);
+            Assert.Equal("Data-3", list[0].Name);
+            Assert.Equal("Data-2", list[1].Name);
+            Assert.Equal("Data-1", list[2].Name);
         }
+    }
 
-        //--------------------------------------------------------------------------------
-        // Argument
-        //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // Other
+    //--------------------------------------------------------------------------------
 
-        [DataAccessor]
-        public interface ISelectByArgumentAccessor
+    public class OtherEntity
+    {
+        [Key(1)]
+        public long Key1 { get; set; }
+
+        [Key(2)]
+        public long Key2 { get; set; }
+
+        [AllowNull]
+        public string Name { get; set; }
+    }
+
+    [DataAccessor]
+    public interface ISelectOtherAccessor
+    {
+        [Select(typeof(MultiKeyEntity))]
+        List<OtherEntity> SelectByType();
+
+        [Select("MultiKey")]
+        List<OtherEntity> SelectByName();
+    }
+
+    [Fact]
+    public void TestSelectOther()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
-            [Select]
-            List<MultiKeyEntity> Select(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<ISelectOtherAccessor>();
+
+            var list = accessor.SelectByType();
+
+            Assert.Equal(3, list.Count);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal("Data-2", list[1].Name);
+            Assert.Equal("Data-3", list[2].Name);
+
+            list = accessor.SelectByName();
+
+            Assert.Equal(3, list.Count);
+            Assert.Equal("Data-1", list[0].Name);
+            Assert.Equal("Data-2", list[1].Name);
+            Assert.Equal("Data-3", list[2].Name);
         }
+    }
 
-        [Fact]
-        public void TestSelectByArgument()
+    //--------------------------------------------------------------------------------
+    // Invalid
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface ISelectInvalid1Accessor
+    {
+        [Select("")]
+        List<MultiKeyEntity> Select();
+    }
+
+    [DataAccessor]
+    public interface ISelectInvalid2Accessor
+    {
+        [Select]
+        void Select();
+    }
+
+    [DataAccessor]
+    public interface ISelectInvalid3Accessor
+    {
+        [Select]
+        ValueTask Select();
+    }
+
+    [Fact]
+    public void TestSelectInvalid()
+    {
+        var generator = new TestFactoryBuilder()
+            .UseFileDatabase()
+            .Build();
+
+        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid1Accessor>());
+        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid2Accessor>());
+        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid3Accessor>());
+    }
+
+    //--------------------------------------------------------------------------------
+    // Argument
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface ISelectByArgumentAccessor
+    {
+        [Select]
+        List<MultiKeyEntity> Select(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
+    }
+
+    [Fact]
+    public void TestSelectByArgument()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectByArgumentAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<ISelectByArgumentAccessor>();
 
-                var list = accessor.Select(1L, 2L);
+            var list = accessor.Select(1L, 2L);
 
-                Assert.Equal(2, list.Count);
-            }
+            Assert.Equal(2, list.Count);
         }
+    }
 
-        //--------------------------------------------------------------------------------
-        // Parameter
-        //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // Parameter
+    //--------------------------------------------------------------------------------
 
-        public class Parameter
+    public class Parameter
+    {
+        public long Key1 { get; set; }
+
+        [Condition(Operand.GreaterEqualThan)]
+        public long Key2 { get; set; }
+    }
+
+    [DataAccessor]
+    public interface ISelectByParameterAccessor
+    {
+        [Select]
+        List<MultiKeyEntity> Select(Parameter parameter);
+    }
+
+    [Fact]
+    public void TestSelectByParameter()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
-            public long Key1 { get; set; }
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<ISelectByParameterAccessor>();
 
-            [Condition(Operand.GreaterEqualThan)]
-            public long Key2 { get; set; }
+            var list = accessor.Select(new Parameter { Key1 = 1L, Key2 = 2L });
+
+            Assert.Equal(2, list.Count);
         }
+    }
 
-        [DataAccessor]
-        public interface ISelectByParameterAccessor
+    //--------------------------------------------------------------------------------
+    // Exclude
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface ISelectExcludeNullAccessor
+    {
+        [Select]
+        List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string? type = null);
+    }
+
+    [Fact]
+    public void TestSelectExcludeNull()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
-            [Select]
-            List<MultiKeyEntity> Select(Parameter parameter);
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<ISelectExcludeNullAccessor>();
+
+            var list = accessor.Select("A");
+
+            Assert.Equal(2, list.Count);
+
+            list = accessor.Select();
+
+            Assert.Equal(3, list.Count);
+
+            list = accessor.Select(string.Empty);
+
+            Assert.Empty(list);
         }
+    }
 
-        [Fact]
-        public void TestSelectByParameter()
+    [DataAccessor]
+    public interface ISelectExcludeEmptyAccessor
+    {
+        [Select]
+        List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string? type = null);
+    }
+
+    [Fact]
+    public void TestSelectExcludeEmpty()
+    {
+        using (TestDatabase.Initialize()
+            .SetupMultiKeyTable()
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
+            .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
         {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectByParameterAccessor>();
+            var generator = new TestFactoryBuilder()
+                .UseFileDatabase()
+                .Build();
+            var accessor = generator.Create<ISelectExcludeEmptyAccessor>();
 
-                var list = accessor.Select(new Parameter { Key1 = 1L, Key2 = 2L });
+            var list = accessor.Select("A");
 
-                Assert.Equal(2, list.Count);
-            }
-        }
+            Assert.Equal(2, list.Count);
 
-        //--------------------------------------------------------------------------------
-        // Exclude
-        //--------------------------------------------------------------------------------
+            list = accessor.Select();
 
-        [DataAccessor]
-        public interface ISelectExcludeNullAccessor
-        {
-            [Select]
-            List<MultiKeyEntity> Select([Condition(ExcludeNull = true)] string? type = null);
-        }
+            Assert.Equal(3, list.Count);
 
-        [Fact]
-        public void TestSelectExcludeNull()
-        {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectExcludeNullAccessor>();
+            list = accessor.Select(string.Empty);
 
-                var list = accessor.Select("A");
-
-                Assert.Equal(2, list.Count);
-
-                list = accessor.Select();
-
-                Assert.Equal(3, list.Count);
-
-                list = accessor.Select(string.Empty);
-
-                Assert.Empty(list);
-            }
-        }
-
-        [DataAccessor]
-        public interface ISelectExcludeEmptyAccessor
-        {
-            [Select]
-            List<MultiKeyEntity> Select([Condition(ExcludeEmpty = true)] string? type = null);
-        }
-
-        [Fact]
-        public void TestSelectExcludeEmpty()
-        {
-            using (TestDatabase.Initialize()
-                .SetupMultiKeyTable()
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 1, Type = "A", Name = "Data-1" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "B", Name = "Data-2" })
-                .InsertMultiKey(new MultiKeyEntity { Key1 = 1, Key2 = 3, Type = "A", Name = "Data-3" }))
-            {
-                var generator = new TestFactoryBuilder()
-                    .UseFileDatabase()
-                    .Build();
-                var accessor = generator.Create<ISelectExcludeEmptyAccessor>();
-
-                var list = accessor.Select("A");
-
-                Assert.Equal(2, list.Count);
-
-                list = accessor.Select();
-
-                Assert.Equal(3, list.Count);
-
-                list = accessor.Select(string.Empty);
-
-                Assert.Equal(3, list.Count);
-            }
+            Assert.Equal(3, list.Count);
         }
     }
 }

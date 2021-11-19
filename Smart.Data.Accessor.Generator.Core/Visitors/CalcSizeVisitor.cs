@@ -1,49 +1,48 @@
-namespace Smart.Data.Accessor.Generator.Visitors
+namespace Smart.Data.Accessor.Generator.Visitors;
+
+using System;
+
+using Smart.Data.Accessor.Generator.Metadata;
+using Smart.Data.Accessor.Nodes;
+
+internal sealed class CalcSizeVisitor : NodeVisitorBase
 {
-    using System;
+    private readonly MethodMetadata mm;
 
-    using Smart.Data.Accessor.Generator.Metadata;
-    using Smart.Data.Accessor.Nodes;
+    private int size;
 
-    internal sealed class CalcSizeVisitor : NodeVisitorBase
+    private int args;
+
+    public int InitialSize => (int)(Math.Ceiling((double)size / 32) * 32);
+
+    public CalcSizeVisitor(MethodMetadata mm)
     {
-        private readonly MethodMetadata mm;
+        this.mm = mm;
+    }
 
-        private int size;
+    public override void Visit(SqlNode node) => size += node.Sql.Length;
 
-        private int args;
+    public override void Visit(RawSqlNode node) => size += 16;
 
-        public int InitialSize => (int)(Math.Ceiling((double)size / 32) * 32);
+    public override void Visit(ParameterNode node)
+    {
+        var parameterSize = (int)Math.Log10(++args) + 4;
 
-        public CalcSizeVisitor(MethodMetadata mm)
+        var parameter = mm.FindParameterByName(node.Name);
+        if (parameter is not null)
         {
-            this.mm = mm;
-        }
-
-        public override void Visit(SqlNode node) => size += node.Sql.Length;
-
-        public override void Visit(RawSqlNode node) => size += 16;
-
-        public override void Visit(ParameterNode node)
-        {
-            var parameterSize = (int)Math.Log10(++args) + 4;
-
-            var parameter = mm.FindParameterByName(node.Name);
-            if (parameter is not null)
+            if (parameter.IsMultiple)
             {
-                if (parameter.IsMultiple)
-                {
-                    size += (parameterSize + 4) * 8;
-                }
-                else
-                {
-                    size += parameterSize;
-                }
+                size += (parameterSize + 4) * 8;
             }
             else
             {
-                size += parameterSize + 4;
+                size += parameterSize;
             }
+        }
+        else
+        {
+            size += parameterSize + 4;
         }
     }
 }

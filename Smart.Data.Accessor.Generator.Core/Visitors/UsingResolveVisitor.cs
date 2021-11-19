@@ -1,30 +1,29 @@
-namespace Smart.Data.Accessor.Generator.Visitors
+namespace Smart.Data.Accessor.Generator.Visitors;
+
+using System.Collections.Generic;
+using System.Linq;
+
+using Smart.Data.Accessor.Nodes;
+
+internal sealed class UsingResolveVisitor : NodeVisitorBase
 {
-    using System.Collections.Generic;
-    using System.Linq;
+    private readonly HashSet<string> usings = new();
 
-    using Smart.Data.Accessor.Nodes;
+    private readonly HashSet<string> helpers = new();
 
-    internal sealed class UsingResolveVisitor : NodeVisitorBase
+    public IEnumerable<string> Usings => usings.OrderBy(x => x);
+
+    public IEnumerable<string> Helpers => helpers.OrderBy(x => x);
+
+    public override void Visit(UsingNode node)
     {
-        private readonly HashSet<string> usings = new();
-
-        private readonly HashSet<string> helpers = new();
-
-        public IEnumerable<string> Usings => usings.OrderBy(x => x);
-
-        public IEnumerable<string> Helpers => helpers.OrderBy(x => x);
-
-        public override void Visit(UsingNode node)
+        if (node.IsStatic)
         {
-            if (node.IsStatic)
-            {
-                helpers.Add(node.Name);
-            }
-            else
-            {
-                usings.Add(node.Name);
-            }
+            helpers.Add(node.Name);
+        }
+        else
+        {
+            usings.Add(node.Name);
         }
     }
 }

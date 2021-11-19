@@ -1,175 +1,174 @@
-namespace Smart.Data.Accessor.Builders
+namespace Smart.Data.Accessor.Builders;
+
+using System.Data.Common;
+
+using Smart.Data.Accessor.Attributes;
+using Smart.Mock;
+using Smart.Mock.Data;
+
+using Xunit;
+
+public class PgInsertTest
 {
-    using System.Data.Common;
+    //--------------------------------------------------------------------------------
+    // Entity
+    //--------------------------------------------------------------------------------
 
-    using Smart.Data.Accessor.Attributes;
-    using Smart.Mock;
-    using Smart.Mock.Data;
-
-    using Xunit;
-
-    public class PgInsertTest
+    [DataAccessor]
+    public interface IInsertEntityAccessor
     {
-        //--------------------------------------------------------------------------------
-        // Entity
-        //--------------------------------------------------------------------------------
+        [PgInsert]
+        void Insert(DbConnection con, DataEntity entity);
+    }
 
-        [DataAccessor]
-        public interface IInsertEntityAccessor
+    [Fact]
+    public void TestInsertEntity()
+    {
+        var generator = new TestFactoryBuilder()
+            .Build();
+        var accessor = generator.Create<IInsertEntityAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            [PgInsert]
-            void Insert(DbConnection con, DataEntity entity);
-        }
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.SetupResult(0);
+        });
 
-        [Fact]
-        public void TestInsertEntity()
+        accessor.Insert(con, new DataEntity { Id = 1, Name = "Data" });
+    }
+
+    //--------------------------------------------------------------------------------
+    // Parameter
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface IInsertParameterAccessor
+    {
+        [PgInsert(typeof(DataEntity))]
+        void InsertByType(DbConnection con, long id, string name);
+
+        [PgInsert("Data")]
+        void InsertByName(DbConnection con, long id, string name);
+    }
+
+    [Fact]
+    public void TestInsertParameter()
+    {
+        var generator = new TestFactoryBuilder()
+            .Build();
+        var accessor = generator.Create<IInsertParameterAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            var generator = new TestFactoryBuilder()
-                .Build();
-            var accessor = generator.Create<IInsertEntityAccessor>();
-
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
-                cmd.SetupResult(0);
-            });
-
-            accessor.Insert(con, new DataEntity { Id = 1, Name = "Data" });
-        }
-
-        //--------------------------------------------------------------------------------
-        // Parameter
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface IInsertParameterAccessor
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.SetupResult(0);
+        });
+        con.SetupCommand(cmd =>
         {
-            [PgInsert(typeof(DataEntity))]
-            void InsertByType(DbConnection con, long id, string name);
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.SetupResult(0);
+        });
 
-            [PgInsert("Data")]
-            void InsertByName(DbConnection con, long id, string name);
-        }
+        accessor.InsertByType(con, 1, "Data");
+        accessor.InsertByName(con, 1, "Data");
+    }
 
-        [Fact]
-        public void TestInsertParameter()
+    //--------------------------------------------------------------------------------
+    // Invalid
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface IInsertInvalidAccessor
+    {
+        [PgInsert]
+        void Insert();
+    }
+
+    [Fact]
+    public void TestInsertInvalid()
+    {
+        var generator = new TestFactoryBuilder()
+            .UseFileDatabase()
+            .Build();
+
+        Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidAccessor>());
+    }
+
+    //--------------------------------------------------------------------------------
+    // Ignore
+    //--------------------------------------------------------------------------------
+
+    [DataAccessor]
+    public interface IInsertIgnoreAccessor
+    {
+        [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Ignore)]
+        void InsertIgnore(DbConnection con, [Key] long id, string name);
+    }
+
+    [Fact]
+    public void TestInsertIgnore()
+    {
+        var generator = new TestFactoryBuilder()
+            .Build();
+        var accessor = generator.Create<IInsertIgnoreAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            var generator = new TestFactoryBuilder()
-                .Build();
-            var accessor = generator.Create<IInsertParameterAccessor>();
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
+            cmd.SetupResult(0);
+        });
 
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
-                cmd.SetupResult(0);
-            });
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
-                cmd.SetupResult(0);
-            });
+        accessor.InsertIgnore(con, 1, "Data");
+    }
 
-            accessor.InsertByType(con, 1, "Data");
-            accessor.InsertByName(con, 1, "Data");
-        }
+    //--------------------------------------------------------------------------------
+    // InsertOrUpdate
+    //--------------------------------------------------------------------------------
 
-        //--------------------------------------------------------------------------------
-        // Invalid
-        //--------------------------------------------------------------------------------
+    [DataAccessor]
+    public interface IInsertOrUpdateAccessor
+    {
+        [PgInsert(OnDuplicate = DuplicateBehavior.Update)]
+        void InsertOrUpdate(DbConnection con, MultiKeyEntity entity);
+    }
 
-        [DataAccessor]
-        public interface IInsertInvalidAccessor
+    [Fact]
+    public void TestInsertOrUpdate()
+    {
+        var generator = new TestFactoryBuilder()
+            .Build();
+        var accessor = generator.Create<IInsertOrUpdateAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
         {
-            [PgInsert]
-            void Insert();
-        }
+            cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @_p2, Name = @_p3", c.CommandText);
+            cmd.SetupResult(0);
+        });
 
-        [Fact]
-        public void TestInsertInvalid()
-        {
-            var generator = new TestFactoryBuilder()
-                .UseFileDatabase()
-                .Build();
+        accessor.InsertOrUpdate(con, new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "A", Name = "Data" });
+    }
 
-            Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidAccessor>());
-        }
+    //--------------------------------------------------------------------------------
+    // Invalid
+    //--------------------------------------------------------------------------------
 
-        //--------------------------------------------------------------------------------
-        // Ignore
-        //--------------------------------------------------------------------------------
+    [DataAccessor]
+    public interface IInsertOrUpdateInvalidAccessor
+    {
+        [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Update)]
+        void InsertOrUpdate(DbConnection con, long id, string name);
+    }
 
-        [DataAccessor]
-        public interface IInsertIgnoreAccessor
-        {
-            [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Ignore)]
-            void InsertIgnore(DbConnection con, [Key] long id, string name);
-        }
+    [Fact]
+    public void TestInsertOrUpdateInvalid()
+    {
+        var generator = new TestFactoryBuilder()
+            .Build();
 
-        [Fact]
-        public void TestInsertIgnore()
-        {
-            var generator = new TestFactoryBuilder()
-                .Build();
-            var accessor = generator.Create<IInsertIgnoreAccessor>();
-
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
-                cmd.SetupResult(0);
-            });
-
-            accessor.InsertIgnore(con, 1, "Data");
-        }
-
-        //--------------------------------------------------------------------------------
-        // InsertOrUpdate
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface IInsertOrUpdateAccessor
-        {
-            [PgInsert(OnDuplicate = DuplicateBehavior.Update)]
-            void InsertOrUpdate(DbConnection con, MultiKeyEntity entity);
-        }
-
-        [Fact]
-        public void TestInsertOrUpdate()
-        {
-            var generator = new TestFactoryBuilder()
-                .Build();
-            var accessor = generator.Create<IInsertOrUpdateAccessor>();
-
-            var con = new MockDbConnection();
-            con.SetupCommand(cmd =>
-            {
-                cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @_p2, Name = @_p3", c.CommandText);
-                cmd.SetupResult(0);
-            });
-
-            accessor.InsertOrUpdate(con, new MultiKeyEntity { Key1 = 1, Key2 = 2, Type = "A", Name = "Data" });
-        }
-
-        //--------------------------------------------------------------------------------
-        // Invalid
-        //--------------------------------------------------------------------------------
-
-        [DataAccessor]
-        public interface IInsertOrUpdateInvalidAccessor
-        {
-            [PgInsert(typeof(DataEntity), OnDuplicate = DuplicateBehavior.Update)]
-            void InsertOrUpdate(DbConnection con, long id, string name);
-        }
-
-        [Fact]
-        public void TestInsertOrUpdateInvalid()
-        {
-            var generator = new TestFactoryBuilder()
-                .Build();
-
-            Assert.Throws<BuilderException>(() => generator.Create<IInsertOrUpdateInvalidAccessor>());
-        }
+        Assert.Throws<BuilderException>(() => generator.Create<IInsertOrUpdateInvalidAccessor>());
     }
 }

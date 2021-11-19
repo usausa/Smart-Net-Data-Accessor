@@ -1,44 +1,43 @@
-namespace Smart.Data.Accessor.Generator
+namespace Smart.Data.Accessor.Generator;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+public class FileSourceWriter : ISourceWriter
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
+    private readonly string outputDirectory;
 
-    public class FileSourceWriter : ISourceWriter
+    private readonly List<string> newFiles = new();
+
+    public IEnumerable<string> NewFiles => newFiles;
+
+    public FileSourceWriter(string outputDirectory)
     {
-        private readonly string outputDirectory;
+        this.outputDirectory = outputDirectory;
 
-        private readonly List<string> newFiles = new();
-
-        public IEnumerable<string> NewFiles => newFiles;
-
-        public FileSourceWriter(string outputDirectory)
+        if (!Directory.Exists(outputDirectory))
         {
-            this.outputDirectory = outputDirectory;
+            Directory.CreateDirectory(outputDirectory);
+        }
+    }
 
-            if (!Directory.Exists(outputDirectory))
+    public void Write(Type type, string source)
+    {
+        var filename = type.FullName!.Replace('.', '_').Replace('+', '_') + ".g.cs";
+        var path = Path.Combine(outputDirectory, filename);
+
+        newFiles.Add(filename);
+
+        if (File.Exists(path))
+        {
+            var currentSource = File.ReadAllText(path);
+            if (currentSource == source)
             {
-                Directory.CreateDirectory(outputDirectory);
+                return;
             }
         }
 
-        public void Write(Type type, string source)
-        {
-            var filename = type.FullName!.Replace('.', '_').Replace('+', '_') + ".g.cs";
-            var path = Path.Combine(outputDirectory, filename);
-
-            newFiles.Add(filename);
-
-            if (File.Exists(path))
-            {
-                var currentSource = File.ReadAllText(path);
-                if (currentSource == source)
-                {
-                    return;
-                }
-            }
-
-            File.WriteAllText(path, source);
-        }
+        File.WriteAllText(path, source);
     }
 }
