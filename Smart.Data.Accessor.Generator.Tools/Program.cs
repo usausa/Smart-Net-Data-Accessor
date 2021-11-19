@@ -61,16 +61,16 @@ namespace Smart.Data.Accessor.Generator
             sb.AppendLine("// Option:");
             sb.AppendLine("using System.Reflection;");
             sb.AppendLine();
-            sb.AppendLine("[assembly: AssemblyVersion(\"").Append(assembly.GetName().Version).Append("\")]");
+            sb.Append("[assembly: AssemblyVersion(\"").Append(assembly.GetName().Version).AppendLine("\")]");
             var fileVersion = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
             if (fileVersion is not null)
             {
-                sb.AppendLine("[assembly: AssemblyFileVersion(\"").Append(fileVersion.Version).Append("\")]");
+                sb.Append("[assembly: AssemblyFileVersion(\"").Append(fileVersion.Version).AppendLine("\")]");
             }
             var informationVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
             if (informationVersion is not null)
             {
-                sb.AppendLine("[assembly: AssemblyInformationalVersion(\"").Append(informationVersion.InformationalVersion).Append("\")]");
+                sb.Append("[assembly: AssemblyInformationalVersion(\"").Append(informationVersion.InformationalVersion).AppendLine("\")]");
             }
 
             var source = sb.ToString();
