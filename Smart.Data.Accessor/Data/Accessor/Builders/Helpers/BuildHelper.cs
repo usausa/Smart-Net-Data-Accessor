@@ -219,11 +219,11 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     if (excludeNull)
                     {
-                        sql.Append("/*% if (IsNotNull(").Append(parameter.Name).Append(")) {{ */");
+                        sql.Append("/*% if (IsNotNull(").Append(parameter.Name).Append(")) { */");
                     }
                     else if (excludeEmpty)
                     {
-                        sql.Append("/*% if (IsNotEmpty(").Append(parameter.Name).Append(")) {{ */");
+                        sql.Append("/*% if (IsNotEmpty(").Append(parameter.Name).Append(")) { */");
                     }
 
                     if (addAnd)
