@@ -65,7 +65,7 @@ namespace Smart.Data.Accessor.Builders
             sql.Append("SELECT");
             if (Top > 0)
             {
-                sql.Append($" TOP {Top}");
+                sql.Append(" TOP ").Append(Top);
             }
             sql.Append(" * FROM ");
             sql.Append(tableName);
@@ -78,7 +78,7 @@ namespace Smart.Data.Accessor.Builders
             if (order is not null)
             {
                 sql.Append(" ORDER BY ");
-                sql.Append($"/*# {order.Name} */dummy");
+                sql.Append("/*# ").Append(order.Name).Append(" */dummy");
             }
             else if (!String.IsNullOrEmpty(Order))
             {
@@ -98,13 +98,13 @@ namespace Smart.Data.Accessor.Builders
             if (limit is not null)
             {
                 sql.Append(" LIMIT ");
-                sql.Append($"/*@ {limit.Name} */dummy");
+                sql.Append("/*@ ").Append(limit.Name).Append(" */dummy");
             }
 
             if (offset is not null)
             {
                 sql.Append(" OFFSET ");
-                sql.Append($"/*@ {offset.Name} */dummy");
+                sql.Append("/*@ ").Append(offset.Name).Append(" */dummy");
             }
 
             var tokenizer = new SqlTokenizer(sql.ToString());

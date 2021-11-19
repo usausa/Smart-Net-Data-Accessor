@@ -63,7 +63,7 @@ namespace Smart.Data.Accessor.Builders
             if (order is not null)
             {
                 sql.Append(" ORDER BY ");
-                sql.Append($"/*# {order.Name} */dummy");
+                sql.Append("/*# ").Append(order.Name).Append(" */dummy");
             }
             else if (!String.IsNullOrEmpty(Order))
             {

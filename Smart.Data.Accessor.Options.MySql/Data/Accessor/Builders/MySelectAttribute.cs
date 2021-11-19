@@ -67,7 +67,7 @@ namespace Smart.Data.Accessor.Builders
             if (order is not null)
             {
                 sql.Append(" ORDER BY ");
-                sql.Append($"/*# {order.Name} */dummy");
+                sql.Append("/*# ").Append(order.Name).Append(" */dummy");
             }
             else if (!String.IsNullOrEmpty(Order))
             {
@@ -87,13 +87,13 @@ namespace Smart.Data.Accessor.Builders
             if (limit is not null)
             {
                 sql.Append(" LIMIT ");
-                sql.Append($"/*@ {limit.Name} */dummy");
+                sql.Append("/*@ ").Append(limit.Name).Append(" */dummy");
             }
 
             if (offset is not null)
             {
                 sql.Append(" OFFSET ");
-                sql.Append($"/*@ {offset.Name} */dummy");
+                sql.Append("/*@ ").Append(offset.Name).Append(" */dummy");
             }
 
             if (ForUpdate)

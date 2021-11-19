@@ -209,7 +209,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     sql.Append(parameter.ParameterName);
                     sql.Append(" IN ");
-                    sql.Append($"/*@ {parameter.Name} */dummy");
+                    sql.Append("/*@ ").Append(parameter.Name).Append(" */dummy");
                 }
                 else
                 {
@@ -219,11 +219,11 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     if (excludeNull)
                     {
-                        sql.Append($"/*% if (IsNotNull({parameter.Name})) {{ */");
+                        sql.Append("/*% if (IsNotNull(").Append(parameter.Name).Append(")) {{ */");
                     }
                     else if (excludeEmpty)
                     {
-                        sql.Append($"/*% if (IsNotEmpty({parameter.Name})) {{ */");
+                        sql.Append("/*% if (IsNotEmpty(").Append(parameter.Name).Append(")) {{ */");
                     }
 
                     if (addAnd)
@@ -235,14 +235,14 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
                     if (condition is not null)
                     {
-                        sql.Append($" {condition.Operand} ");
+                        sql.Append(' ').Append(condition.Operand).Append(' ');
                     }
                     else
                     {
                         sql.Append(" = ");
                     }
 
-                    sql.Append($"/*@ {parameter.Name} */dummy");
+                    sql.Append("/*@ ").Append(parameter.Name).Append(" */dummy");
 
                     if (excludeNull || excludeEmpty)
                     {
@@ -268,11 +268,11 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 .FirstOrDefault(x => x.When is null || x.When == operation);
             if (codeValue is not null)
             {
-                sql.Append($"/*# {codeValue.Value} */dummy");
+                sql.Append("/*# ").Append(codeValue.Value).Append(" */dummy");
                 return;
             }
 
-            sql.Append($"/*@ {parameter.Name} */dummy");
+            sql.Append("/*@ ").Append(parameter.Name).Append(" */dummy");
         }
 
         public static void AddDbParameter(StringBuilder sql, string value)
@@ -282,12 +282,12 @@ namespace Smart.Data.Accessor.Builders.Helpers
 
         public static void AddCodeParameter(StringBuilder sql, string value)
         {
-            sql.Append($"/*# {value} */dummy");
+            sql.Append("/*# ").Append(value).Append(" */dummy");
         }
 
         public static void AddBindParameter(StringBuilder sql, BuildParameterInfo parameter)
         {
-            sql.Append($"/*@ {parameter.Name} */dummy");
+            sql.Append("/*@ ").Append(parameter.Name).Append(" */dummy");
         }
 
         private static void AddSplitter(StringBuilder sql, bool add)
@@ -386,7 +386,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 AddSplitter(sql, add);
                 add = true;
 
-                sql.Append($" {parameter.ParameterName} = ");
+                sql.Append(' ').Append(parameter.ParameterName).Append(" = ");
                 AddParameter(sql, parameter, Operation.Update);
             }
 
@@ -395,7 +395,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 AddSplitter(sql, add);
                 add = true;
 
-                sql.Append($" {attribute.Column} = ");
+                sql.Append(' ').Append(attribute.Column).Append(" = ");
                 AddDbParameter(sql, attribute.Value);
             }
 
@@ -404,7 +404,7 @@ namespace Smart.Data.Accessor.Builders.Helpers
                 AddSplitter(sql, add);
                 add = true;
 
-                sql.Append($" {attribute.Column} = ");
+                sql.Append(' ').Append(attribute.Column).Append(" = ");
                 AddCodeParameter(sql, attribute.Value);
             }
         }

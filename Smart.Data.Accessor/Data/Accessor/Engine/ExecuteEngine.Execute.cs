@@ -124,7 +124,9 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask<List<T>> QueryBufferAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
         {
+#pragma warning disable CA2007
             await using var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForList, cancel).ConfigureAwait(false);
+#pragma warning restore CA2007
             var mapper = info.ResolveMapper(reader);
 
             var list = new List<T>();
@@ -157,7 +159,9 @@ namespace Smart.Data.Accessor.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async Task<T?> QueryFirstOrDefaultAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
         {
+#pragma warning disable CA2007
             await using var reader = await cmd.ExecuteReaderAsync(CommandBehaviorForSingle, cancel).ConfigureAwait(false);
+#pragma warning restore CA2007
             var mapper = info.ResolveMapper(reader);
 
             if (await reader.ReadAsync(cancel).ConfigureAwait(false))

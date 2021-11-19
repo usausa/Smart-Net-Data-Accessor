@@ -41,11 +41,11 @@ namespace Smart.Data.Accessor.Engine
 
         public byte GetByte(int i) => reader.GetByte(i);
 
-        public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length) => reader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
+        public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length) => reader.GetBytes(i, fieldOffset, buffer, bufferoffset, length);
 
         public char GetChar(int i) => reader.GetChar(i);
 
-        public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length) => reader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
+        public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length) => reader.GetChars(i, fieldoffset, buffer, bufferoffset, length);
 
         public IDataReader GetData(int i) => reader.GetData(i);
 

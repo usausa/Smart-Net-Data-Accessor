@@ -85,7 +85,7 @@ namespace Smart.Data.Accessor.Builders
                     sql.Append(" AND ");
                 }
 
-                sql.Append($"_T0.{keys[i].ParameterName} = _T1.{keys[i].ParameterName}");
+                sql.Append("_T0.").Append(keys[i].ParameterName).Append(" = _T1.").Append(keys[i].ParameterName);
             }
 
             sql.Append(") ");

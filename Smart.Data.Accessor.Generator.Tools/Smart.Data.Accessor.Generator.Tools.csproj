@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net6.0;net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
@@ -24,11 +24,11 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" PrivateAssets="All" />
   </ItemGroup>
 
@@ -36,7 +36,7 @@
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0'">
     <Compile Remove="**\Program.cs" />
   </ItemGroup>
 
@@ -46,8 +46,8 @@
 
   <Target Name="PackToolsDependencies" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <_PackageFiles Include="bin\Release\net5.0\**">
-        <PackagePath>tools\net5.0</PackagePath>
+      <_PackageFiles Include="bin\Release\net6.0\**">
+        <PackagePath>tools\net6.0</PackagePath>
         <Visible>false</Visible>
         <BuildAction>Content</BuildAction>
       </_PackageFiles>

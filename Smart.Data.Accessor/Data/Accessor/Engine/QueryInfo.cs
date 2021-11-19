@@ -185,7 +185,7 @@ namespace Smart.Data.Accessor.Engine
                     return false;
                 }
 
-                if (String.Compare(column1.Name, column2.Name, StringComparison.Ordinal) != 0)
+                if (!String.Equals(column1.Name, column2.Name, StringComparison.Ordinal))
                 {
                     return false;
                 }

@@ -1392,7 +1392,7 @@ namespace Smart.Data.Accessor.Generator
                 }
                 else
                 {
-                    sql.Append($"@{parameterName}");
+                    sql.Append('@').Append(parameterName);
                 }
             }
 
@@ -1499,7 +1499,7 @@ namespace Smart.Data.Accessor.Generator
                     }
                     else
                     {
-                        sql.Append($"@{parameterName}");
+                        sql.Append('@').Append(parameterName);
                     }
                     builder.AppendLine($"{FlagVar}{parameter.Index} = true;");
                 }
