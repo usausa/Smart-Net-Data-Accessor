@@ -26,7 +26,7 @@ public sealed class DataAccessorFactory
         var directory = Path.GetDirectoryName(type.Assembly.Location);
         if (directory is null)
         {
-            throw new AccessorRuntimeException($"Accessor assmbly location unknown. assembly=[{type.Assembly.FullName}]");
+            throw new AccessorRuntimeException($"Accessor assembly location unknown. assembly=[{type.Assembly.FullName}]");
         }
 
         var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
