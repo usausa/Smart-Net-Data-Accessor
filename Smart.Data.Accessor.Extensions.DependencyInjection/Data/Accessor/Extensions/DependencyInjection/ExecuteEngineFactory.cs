@@ -10,11 +10,6 @@ public class ExecuteEngineFactory
 
     public ExecuteEngineFactory(ExecuteEngineFactoryOptions options, IServiceProvider serviceProvider)
     {
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
         config = new ExecuteEngineConfig();
         config.SetServiceProvider(serviceProvider);
 
