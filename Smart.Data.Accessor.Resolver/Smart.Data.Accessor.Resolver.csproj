@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Core" Version="2.0.13" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.0.15" />
     <PackageReference Include="Usa.Smart.Data" Version="2.0.2" />
     <PackageReference Include="Usa.Smart.Resolver" Version="2.0.6" />
   </ItemGroup>
