@@ -17,6 +17,7 @@
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.0.2" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="2.0.2" />
     <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.analyzers" Version="0.10.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
