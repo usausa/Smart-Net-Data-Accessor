@@ -17,8 +17,7 @@ internal class PathElementParser
     public PathElement[] Parse()
     {
         var list = new List<PathElement>();
-        PathElement? element;
-        while ((element = Next()) is not null)
+        while (Next() is { } element)
         {
             list.Add(element);
         }
