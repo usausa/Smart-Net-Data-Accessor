@@ -1,7 +1,5 @@
 namespace Example.ConsoleApplication.Accessor;
 
-using System.Collections.Generic;
-
 using Example.ConsoleApplication.Models;
 
 using Smart.Data.Accessor.Attributes;

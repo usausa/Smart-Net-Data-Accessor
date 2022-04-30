@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Mapper;
 using Smart.Mock;
@@ -132,11 +130,9 @@ public class UpdateTest
 
     public class UpdateValues
     {
-        [AllowNull]
-        public string Type { get; set; }
+        public string Type { get; set; } = default!;
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [DataAccessor]
@@ -223,8 +219,7 @@ public class UpdateTest
         public long Id { get; set; }
 
         [DbValue("CURRENT_TIMESTAMP")]
-        [AllowNull]
-        public string DateTime { get; set; }
+        public string DateTime { get; set; } = default!;
     }
 
     [DataAccessor]
@@ -304,8 +299,7 @@ public class UpdateTest
     public class CodeValueEntity
     {
         [Key]
-        [AllowNull]
-        public string Key { get; set; }
+        public string Key { get; set; } = default!;
 
         [CodeValue("counter.Next()")]
         public long Value { get; set; }

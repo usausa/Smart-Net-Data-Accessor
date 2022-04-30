@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System;
-using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;

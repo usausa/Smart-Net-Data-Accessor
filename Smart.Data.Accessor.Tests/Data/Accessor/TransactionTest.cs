@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor;
 
 using System.Data.Common;
-using System.Threading.Tasks;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;

@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Runtime;
 
-using System;
 using System.Runtime.CompilerServices;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1815:OverrideEqualsAndOperatorEqualsOnValue", Justification = "Ignore")]

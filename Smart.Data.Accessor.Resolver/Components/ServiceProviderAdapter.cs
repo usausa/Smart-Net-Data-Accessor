@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Resolver.Components;
 
-using System;
-
 using Smart.Resolver;
 
 public sealed class ServiceProviderAdapter : IServiceProvider

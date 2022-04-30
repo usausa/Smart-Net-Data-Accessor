@@ -1,10 +1,7 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 

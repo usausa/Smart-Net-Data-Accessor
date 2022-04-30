@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Configs;
 
-using System;
-
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class)]
 public sealed class EntitySuffixAttribute : Attribute
 {

@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Handlers;
 
-using System;
 using System.Data.Common;
 
 public interface ITypeHandler

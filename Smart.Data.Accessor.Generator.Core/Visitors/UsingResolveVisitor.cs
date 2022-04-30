@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Visitors;
 
-using System.Collections.Generic;
-using System.Linq;
-
 using Smart.Data.Accessor.Nodes;
 
 internal sealed class UsingResolveVisitor : NodeVisitorBase

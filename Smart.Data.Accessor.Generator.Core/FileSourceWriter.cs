@@ -1,9 +1,5 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
 public class FileSourceWriter : ISourceWriter
 {
     private readonly string outputDirectory;

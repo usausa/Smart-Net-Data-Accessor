@@ -1,7 +1,5 @@
 namespace Example.WebApplication2.Controllers;
 
-using System.Threading.Tasks;
-
 using Example.WebApplication2.Accessor;
 using Example.WebApplication2.Models;
 

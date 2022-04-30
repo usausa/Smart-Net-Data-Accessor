@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Visitors;
 
-using System;
-
 using Smart.Data.Accessor.Generator.Metadata;
 using Smart.Data.Accessor.Nodes;
 

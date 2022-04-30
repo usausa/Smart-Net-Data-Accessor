@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Reflection;
 
 using Smart.Data.Accessor.Builders.Helpers;

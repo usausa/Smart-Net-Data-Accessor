@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Handlers;
 
-using System;
 using System.Data;
 using System.Data.Common;
 

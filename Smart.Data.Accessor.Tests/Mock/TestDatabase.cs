@@ -1,7 +1,6 @@
 namespace Smart.Mock;
 
 using System.Data.Common;
-using System.IO;
 
 using Microsoft.Data.Sqlite;
 

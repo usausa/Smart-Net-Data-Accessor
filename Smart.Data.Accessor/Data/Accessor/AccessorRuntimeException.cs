@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor;
 
-using System;
 using System.Runtime.Serialization;
 
 [Serializable]

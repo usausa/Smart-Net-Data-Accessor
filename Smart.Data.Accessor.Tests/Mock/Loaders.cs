@@ -1,6 +1,5 @@
 namespace Smart.Mock;
 
-using System.Collections.Generic;
 using System.Reflection;
 
 using Smart.Data.Accessor.Generator;

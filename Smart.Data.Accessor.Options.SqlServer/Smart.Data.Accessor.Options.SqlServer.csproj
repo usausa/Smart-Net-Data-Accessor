@@ -8,9 +8,9 @@
 
   <PropertyGroup>
     <PackageId>Usa.Smart.Data.Accessor.Options.SqlServer</PackageId>
-    <Title>Smart.Data.Accessor.Options.SqlServer .NET</Title>
-    <Description>Smart data accessor generator library for .NET</Description>
-    <Summary>Smart data accessor generator library for .NET</Summary>
+    <Title>Smart.Data.Accessor.Options.SqlServer</Title>
+    <Description>Smart data accessor generator library</Description>
+    <Summary>Smart data accessor generator library</Summary>
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 

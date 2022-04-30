@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Extensions.DependencyInjection;
 
-using System;
-using System.Linq;
 using System.Reflection;
 
 using Microsoft.Extensions.DependencyInjection;

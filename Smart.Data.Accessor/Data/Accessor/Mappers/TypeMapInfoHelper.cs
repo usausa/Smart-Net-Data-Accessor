@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Mappers;
 
-using System;
-using System.Collections.Generic;
-
 using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Selectors;
 

@@ -1,9 +1,6 @@
 namespace Smart.Data.Accessor.Configs;
 
-using System;
-
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter)]
-
 public abstract class NamingAttribute : Attribute
 {
     public abstract Func<string, string> GetNaming();

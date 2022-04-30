@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Selectors;
 
-using System;
 using System.Reflection;
 
 using Smart.Data.Accessor.Engine;

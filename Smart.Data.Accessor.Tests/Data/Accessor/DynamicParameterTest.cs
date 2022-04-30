@@ -1,10 +1,7 @@
 namespace Smart.Data.Accessor;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Attributes;
@@ -286,8 +283,7 @@ public class DynamicParameterTest
     {
         public int Key1 { get; set; }
 
-        [AllowNull]
-        public string Key2 { get; set; }
+        public string Key2 { get; set; } = default!;
     }
 
     [DataAccessor]

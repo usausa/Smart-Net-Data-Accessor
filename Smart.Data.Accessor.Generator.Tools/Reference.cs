@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System.IO;
-
 public class Reference
 {
     public string Name { get; }

@@ -1,7 +1,6 @@
 namespace Example.WebApplication.Controllers;
 
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 using Example.WebApplication.Accessor;
 using Example.WebApplication.Models;

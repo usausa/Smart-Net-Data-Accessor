@@ -1,11 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Metadata;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Generator.Helpers;

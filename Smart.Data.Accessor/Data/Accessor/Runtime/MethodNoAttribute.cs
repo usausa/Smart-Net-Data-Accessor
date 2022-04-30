@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Runtime;
 
-using System;
-
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MethodNoAttribute : Attribute
 {

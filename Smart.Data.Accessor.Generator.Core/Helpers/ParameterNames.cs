@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Helpers;
 
-using System.Linq;
-
 internal static class ParameterNames
 {
     private static readonly string[] Names;

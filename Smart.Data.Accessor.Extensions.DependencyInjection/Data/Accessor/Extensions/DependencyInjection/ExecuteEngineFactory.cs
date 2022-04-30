@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Extensions.DependencyInjection;
 
-using System;
-
 using Smart.Data.Accessor.Engine;
 
 public class ExecuteEngineFactory

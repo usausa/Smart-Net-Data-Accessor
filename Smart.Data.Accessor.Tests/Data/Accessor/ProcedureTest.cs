@@ -1,10 +1,7 @@
 namespace Smart.Data.Accessor;
 
-using System;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
@@ -61,8 +58,7 @@ public class ProcedureTest
         public Value? Output6 { get; set; }
 
         [Output]
-        [AllowNull]
-        public string Output7 { get; set; }
+        public string Output7 { get; set; } = default!;
     }
 
     [DataAccessor]
@@ -131,8 +127,7 @@ public class ProcedureTest
     public class DirectionParameter
     {
         [Input]
-        [AllowNull]
-        public string InParam { get; set; }
+        public string InParam { get; set; } = default!;
 
         [InputOutput]
         public int? InOutParam { get; set; }

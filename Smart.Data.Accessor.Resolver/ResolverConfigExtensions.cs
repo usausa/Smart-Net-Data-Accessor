@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Resolver;
 
-using System;
-
 using Smart.Converter;
 using Smart.Data.Accessor.Dialect;
 using Smart.Data.Accessor.Engine;

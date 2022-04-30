@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Selectors;
 
-using System;
-using System.Collections.Generic;
-
 public class TypeMapInfo
 {
     public Type Type { get; }

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Nodes;
 
-using System.Collections.Generic;
-
 public abstract class NodeVisitorBase : INodeVisitor
 {
     public void Visit(IEnumerable<INode> nodes)

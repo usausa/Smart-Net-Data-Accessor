@@ -1,10 +1,6 @@
 namespace Smart.Data.Accessor.Mappers;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Engine;
@@ -320,8 +316,7 @@ public class ObjectResultMapperFactoryTest
         public long Id { get; set; }
 
         [CustomParser]
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [Fact]
@@ -428,8 +423,7 @@ public class ObjectResultMapperFactoryTest
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [Fact]
@@ -467,8 +461,7 @@ public class ObjectResultMapperFactoryTest
     {
         public int Id { get; init; }
 
-        [AllowNull]
-        public string Name { get; init; }
+        public string Name { get; init; } = default!;
     }
 
     [Fact]

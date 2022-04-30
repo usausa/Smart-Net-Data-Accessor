@@ -1,11 +1,9 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System;
 using System.Data;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 public sealed class QueryInfo<T>
 {

@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Mappers;
 
-using System;
 using System.Reflection;
 
 public interface IResultMapperCreateContext

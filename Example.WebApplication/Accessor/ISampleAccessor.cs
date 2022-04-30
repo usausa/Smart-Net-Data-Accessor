@@ -1,8 +1,5 @@
 namespace Example.WebApplication.Accessor;
 
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 using Example.WebApplication.Models;
 
 using Smart.Data.Accessor.Attributes;

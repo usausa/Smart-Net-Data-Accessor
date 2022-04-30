@@ -1,9 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Visitors;
 
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Nodes;
@@ -18,30 +16,24 @@ public class ParameterResolverVisitorTest
 
     public class ChildParameter
     {
-        [AllowNull]
-        public string Id { get; set; }
+        public string Id { get; set; } = default!;
     }
 
     public class Parameter
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public int[] Values { get; set; }
+        public int[] Values { get; set; } = default!;
 
         public ChildParameter? Child { get; set; }
 
-        [AllowNull]
-        public ChildParameter[] Children { get; set; }
+        public ChildParameter[] Children { get; set; } = default!;
 
-        [AllowNull]
-        public Dictionary<int, string> Map { get; set; }
+        public Dictionary<int, string> Map { get; set; } = default!;
 
-        [AllowNull]
-        public Dictionary<int, ChildParameter> ChildMap { get; set; }
+        public Dictionary<int, ChildParameter> ChildMap { get; set; } = default!;
 
-        [AllowNull]
-        public Dictionary<int, int[]> Nested { get; set; }
+        public Dictionary<int, int[]> Nested { get; set; } = default!;
     }
 
     public interface IResolveTarget

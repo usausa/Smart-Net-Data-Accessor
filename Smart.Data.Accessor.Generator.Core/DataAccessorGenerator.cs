@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System;
-using System.Linq;
 using System.Reflection;
 
 using Smart.Data.Accessor.Attributes;

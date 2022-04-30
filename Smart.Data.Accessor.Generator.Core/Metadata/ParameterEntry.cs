@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Metadata;
 
-using System;
 using System.Data;
 
 internal sealed class ParameterEntry

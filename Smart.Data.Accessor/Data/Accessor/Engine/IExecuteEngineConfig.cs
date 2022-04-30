@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 
 using Smart.Data.Accessor.Handlers;

@@ -1,9 +1,5 @@
 namespace Smart.Data.Accessor.Mappers;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.Data.Accessor.Engine;
 using Smart.Mock.Data;
 
@@ -19,16 +15,14 @@ public class TupleResultMapperFactoryTest
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class ClassPropertySlaveEntity
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [Fact]
@@ -749,8 +743,7 @@ public class TupleResultMapperFactoryTest
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [Fact]
@@ -799,8 +792,7 @@ public class TupleResultMapperFactoryTest
     {
         public int Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     public class NoMapSlaveSlaveEntity

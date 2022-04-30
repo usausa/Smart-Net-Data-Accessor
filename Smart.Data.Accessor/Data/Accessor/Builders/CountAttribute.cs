@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System;
-
 public sealed class CountAttribute : ScalarAttribute
 {
     private const string Field = "COUNT(*)";

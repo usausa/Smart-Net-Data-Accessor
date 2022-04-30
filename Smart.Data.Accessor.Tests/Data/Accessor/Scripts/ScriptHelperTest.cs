@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Scripts;
 
-using System;
-using System.Collections.Generic;
-
 using Xunit;
 
 public class ScriptHelperTest

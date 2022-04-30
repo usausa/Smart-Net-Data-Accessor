@@ -1,9 +1,6 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text;
 
 using BenchmarkDotNet.Attributes;
@@ -43,19 +40,13 @@ public class BenchmarkConfig : ManualConfig
 [Config(typeof(BenchmarkConfig))]
 public class AccessorBenchmark
 {
-    [AllowNull]
-    private MockRepeatDbConnection mockExecute;
-    [AllowNull]
-    private MockRepeatDbConnection mockExecuteScalar;
-    [AllowNull]
-    private MockRepeatDbConnection mockQuery;
-    [AllowNull]
-    private MockRepeatDbConnection mockQueryFirst;
+    private MockRepeatDbConnection mockExecute = default!;
+    private MockRepeatDbConnection mockExecuteScalar = default!;
+    private MockRepeatDbConnection mockQuery = default!;
+    private MockRepeatDbConnection mockQueryFirst = default!;
 
-    [AllowNull]
-    private IBenchmarkAccessorForDapper dapperExecuteAccessor;
-    [AllowNull]
-    private IBenchmarkAccessor smartExecuteAccessor;
+    private IBenchmarkAccessorForDapper dapperExecuteAccessor = default!;
+    private IBenchmarkAccessor smartExecuteAccessor = default!;
 
     [GlobalSetup]
     public void Setup()
@@ -228,6 +219,5 @@ public class DataEntity
 {
     public long Id { get; set; }
 
-    [AllowNull]
-    public string Name { get; set; }
+    public string Name { get; set; } = default!;
 }

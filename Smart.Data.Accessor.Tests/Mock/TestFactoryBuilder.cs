@@ -1,9 +1,5 @@
 namespace Smart.Mock;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.ComponentModel;
 using Smart.Data;
 using Smart.Data.Accessor.Engine;
@@ -13,8 +9,7 @@ public class TestFactoryBuilder
 {
     private readonly ExecuteEngineConfig config = new();
 
-    [AllowNull]
-    private ISqlLoader loader;
+    private ISqlLoader loader = default!;
 
     public TestFactoryBuilder Config(Action<ExecuteEngineConfig> action)
     {

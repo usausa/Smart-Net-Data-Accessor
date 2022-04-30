@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
-
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Method)]
 public sealed class OptimizeAttribute : Attribute
 {

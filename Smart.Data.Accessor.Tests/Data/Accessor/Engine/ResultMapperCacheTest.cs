@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.Mock.Data;
 
 using Xunit;
@@ -120,7 +117,6 @@ public class ResultMapperCacheTest
     {
         public long Id { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 }

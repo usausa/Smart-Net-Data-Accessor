@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Tokenizer;
 
-using System;
-using System.Collections.Generic;
-
 public sealed class SqlTokenizer
 {
     private readonly List<Token> tokens = new();

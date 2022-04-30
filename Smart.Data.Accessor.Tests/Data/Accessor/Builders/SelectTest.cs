@@ -1,9 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
-
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
@@ -77,8 +73,7 @@ public class SelectTest
         [Key(2)]
         public long Key2 { get; set; }
 
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [DataAccessor]

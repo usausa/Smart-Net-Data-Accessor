@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Configs;
 
-using System;
-
 using Smart.Text;
 
 public static class Naming

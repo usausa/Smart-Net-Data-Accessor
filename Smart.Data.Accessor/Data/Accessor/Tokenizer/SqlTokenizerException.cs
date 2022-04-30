@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Tokenizer;
 
-using System;
 using System.Runtime.Serialization;
 
 [Serializable]

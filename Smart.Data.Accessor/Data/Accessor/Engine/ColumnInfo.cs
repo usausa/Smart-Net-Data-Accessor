@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System;
-
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Ignore")]
 public readonly struct ColumnInfo
 {

@@ -1,10 +1,8 @@
 namespace Smart.Data.Accessor.Engine;
 
-using System;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Reflection;
 
 using Smart.Data.Accessor.Attributes;

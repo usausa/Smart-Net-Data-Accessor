@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Helpers;
 
-using System;
-using System.Collections.Generic;
-
 internal class PathElementParser
 {
     private readonly string path;

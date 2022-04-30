@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor;
 
-using System.Collections.Generic;
-
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 

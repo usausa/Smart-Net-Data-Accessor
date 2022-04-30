@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Resolver.Providers;
 
-using System;
-
 using Smart.Resolver;
 using Smart.Resolver.Bindings;
 using Smart.Resolver.Providers;

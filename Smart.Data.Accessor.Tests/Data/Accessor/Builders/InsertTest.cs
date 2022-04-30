@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Mapper;
 using Smart.Mock;
@@ -103,8 +101,7 @@ public class InsertTest
         public long Id { get; set; }
 
         [AutoGenerate]
-        [AllowNull]
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
     }
 
     [DataAccessor]
@@ -147,8 +144,7 @@ public class InsertTest
         public long Id { get; set; }
 
         [DbValue("CURRENT_TIMESTAMP")]
-        [AllowNull]
-        public string DateTime { get; set; }
+        public string DateTime { get; set; } = default!;
     }
 
     [DataAccessor]
@@ -226,8 +222,7 @@ public class InsertTest
     public class CodeValueEntity
     {
         [Key]
-        [AllowNull]
-        public string Key { get; set; }
+        public string Key { get; set; } = default!;
 
         [CodeValue("counter.Next()")]
         public long Value { get; set; }

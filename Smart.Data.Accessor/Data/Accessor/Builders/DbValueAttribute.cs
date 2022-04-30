@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System;
-
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
 public sealed class DbValueAttribute : Attribute
 {

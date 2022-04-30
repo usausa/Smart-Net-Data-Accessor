@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Helpers;
 
-using System;
-
 public static class TypeNaming
 {
     public static string MakeAccessorName(Type type)
