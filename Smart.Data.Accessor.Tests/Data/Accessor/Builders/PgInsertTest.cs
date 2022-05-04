@@ -31,7 +31,7 @@ public class PgInsertTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -62,12 +62,12 @@ public class PgInsertTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1)", c.CommandText);
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -117,7 +117,7 @@ public class PgInsertTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@_p0, @_p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
+            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -145,7 +145,7 @@ public class PgInsertTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @_p2, Name = @_p3", c.CommandText);
+            cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@p0, @p1, @p2, @p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @p2, Name = @p3", c.CommandText);
             cmd.SetupResult(0);
         });
 

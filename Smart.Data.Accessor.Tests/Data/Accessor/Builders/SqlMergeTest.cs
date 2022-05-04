@@ -32,9 +32,9 @@ public class SqlMergeTest
         con.SetupCommand(cmd =>
         {
             cmd.Executing = c => Assert.Equal(
-                "MERGE INTO MultiKey _T0 USING (SELECT @_p0 AS Key1, @_p1 AS Key2) AS _T1 ON (_T0.Key1 = _T1.Key1 AND _T0.Key2 = _T1.Key2) " +
-                "WHEN NOT MATCHED THEN INSERT (Key1, Key2, Type, Name) VALUES (@_p0, @_p1, @_p2, @_p3) " +
-                "WHEN MATCHED THEN UPDATE SET Type = @_p2, Name = @_p3",
+                "MERGE INTO MultiKey _T0 USING (SELECT @p0 AS Key1, @p1 AS Key2) AS _T1 ON (_T0.Key1 = _T1.Key1 AND _T0.Key2 = _T1.Key2) " +
+                "WHEN NOT MATCHED THEN INSERT (Key1, Key2, Type, Name) VALUES (@p0, @p1, @p2, @p3) " +
+                "WHEN MATCHED THEN UPDATE SET Type = @p2, Name = @p3",
                 c.CommandText);
             cmd.SetupResult(0);
         });
@@ -67,18 +67,18 @@ public class SqlMergeTest
         con.SetupCommand(cmd =>
         {
             cmd.Executing = c => Assert.Equal(
-                "MERGE INTO Data _T0 USING (SELECT @_p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
-                "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@_p0, @_p1) " +
-                "WHEN MATCHED THEN UPDATE SET Name = @_p1",
+                "MERGE INTO Data _T0 USING (SELECT @p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
+                "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@p0, @p1) " +
+                "WHEN MATCHED THEN UPDATE SET Name = @p1",
                 c.CommandText);
             cmd.SetupResult(0);
         });
         con.SetupCommand(cmd =>
         {
             cmd.Executing = c => Assert.Equal(
-                "MERGE INTO Data _T0 USING (SELECT @_p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
-                "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@_p0, @_p1) " +
-                "WHEN MATCHED THEN UPDATE SET Name = @_p1",
+                "MERGE INTO Data _T0 USING (SELECT @p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
+                "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@p0, @p1) " +
+                "WHEN MATCHED THEN UPDATE SET Name = @p1",
                 c.CommandText);
             cmd.SetupResult(0);
         });

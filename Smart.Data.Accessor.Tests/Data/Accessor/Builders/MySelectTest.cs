@@ -151,7 +151,7 @@ public class MySelectTest
         {
             cmd.Executing = c =>
             {
-                Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2 LIMIT @_p0 OFFSET @_p1", c.CommandText);
+                Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2 LIMIT @p0 OFFSET @p1", c.CommandText);
                 Assert.Equal(10, c.Parameters[0].Value);
                 Assert.Equal(20, c.Parameters[1].Value);
             };

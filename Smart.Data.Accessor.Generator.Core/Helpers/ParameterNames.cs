@@ -6,13 +6,13 @@ internal static class ParameterNames
 
     static ParameterNames()
     {
-        Names = Enumerable.Range(0, 256).Select(x => $"_p{x}").ToArray();
+        Names = Enumerable.Range(0, 256).Select(x => $"p{x}").ToArray();
     }
 
     public static string GetParameterName(int index)
     {
-        return index < Names.Length ? Names[index] : $"_p{index}";
+        return index < Names.Length ? Names[index] : $"p{index}";
     }
 
-    public static string GetDynamicParameterName() => "_dp";
+    public static string GetDynamicParameterName() => "dp";
 }

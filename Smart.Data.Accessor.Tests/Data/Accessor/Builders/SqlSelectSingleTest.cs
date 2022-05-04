@@ -46,12 +46,12 @@ public class SqlSelectSingleTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 
@@ -102,7 +102,7 @@ public class SqlSelectSingleTest
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WITH (UPDLOCK, HOLDLOCK) WHERE Key1 = @_p0 AND Key2 = @_p1", c.CommandText);
+            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WITH (UPDLOCK, HOLDLOCK) WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 
