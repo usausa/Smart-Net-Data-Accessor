@@ -1328,7 +1328,7 @@ internal sealed class SourceBuilder
         {
             var parameter = mm.FindParameterByName(node.Name)!;
             var parameterName = parameter.ParameterName ?? ParameterNames.GetParameterName(parameter.Index);
-            sql.Append('@');
+            sql.Append(mm.BindPrefix);
             sql.Append(parameterName);
         }
 
@@ -1385,11 +1385,11 @@ internal sealed class SourceBuilder
             if (parameter.IsMultiple)
             {
                 FlushSql();
-                builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
+                builder.AppendLine(MakeSqlSetup(mm, parameter, $"{mm.BindPrefix}{parameterName}"));
             }
             else
             {
-                sql.Append('@').Append(parameterName);
+                sql.Append(mm.BindPrefix).Append(parameterName);
             }
         }
 
@@ -1492,11 +1492,11 @@ internal sealed class SourceBuilder
                 if (parameter.IsMultiple)
                 {
                     FlushSql();
-                    builder.AppendLine(MakeSqlSetup(mm, parameter, $"@{parameterName}"));
+                    builder.AppendLine(MakeSqlSetup(mm, parameter, $"{mm.BindPrefix}{parameterName}"));
                 }
                 else
                 {
-                    sql.Append('@').Append(parameterName);
+                    sql.Append(mm.BindPrefix).Append(parameterName);
                 }
                 builder.AppendLine($"{FlagVar}{parameter.Index} = true;");
             }
@@ -1509,7 +1509,7 @@ internal sealed class SourceBuilder
                 }
 
                 FlushSql();
-                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"@{ParameterNames.GetDynamicParameterName()}"));
+                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"{mm.BindPrefix}{ParameterNames.GetDynamicParameterName()}"));
             }
         }
 

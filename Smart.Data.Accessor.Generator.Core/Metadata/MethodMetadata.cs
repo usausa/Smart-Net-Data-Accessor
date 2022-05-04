@@ -14,6 +14,8 @@ internal sealed class MethodMetadata
 
     public bool Optimize { get; }
 
+    public char BindPrefix { get; }
+
     public MethodInfo MethodInfo { get; }
 
     public CommandType CommandType { get; }
@@ -75,6 +77,10 @@ internal sealed class MethodMetadata
         Parameters = parameters;
         DynamicParameters = dynamicParameters;
 
+        BindPrefix = mi.GetCustomAttribute<BindPrefixAttribute>()?.Value ??
+                     mi.DeclaringType!.GetCustomAttribute<BindPrefixAttribute>()?.Value ??
+                     mi.DeclaringType!.Assembly.GetCustomAttribute<BindPrefixAttribute>()?.Value ??
+                     '@';
         Optimize = mi.GetCustomAttribute<OptimizeAttribute>()?.Value ??
                    mi.DeclaringType!.GetCustomAttribute<OptimizeAttribute>()?.Value ??
                    mi.DeclaringType!.Assembly.GetCustomAttribute<OptimizeAttribute>()?.Value ??
