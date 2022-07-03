@@ -9,8 +9,8 @@ public static class TestDatabase
     private const string FileName = "test.db";
     private const string FileName2 = "test2.db";
 
-    private const string ConnectionString = "Data Source=" + FileName;
-    private const string ConnectionString2 = "Data Source=" + FileName2;
+    private const string ConnectionString = "Data Source=" + FileName + ";Pooling=False";
+    private const string ConnectionString2 = "Data Source=" + FileName2 + ";Pooling=False";
 
     public static DbConnection Initialize()
     {
