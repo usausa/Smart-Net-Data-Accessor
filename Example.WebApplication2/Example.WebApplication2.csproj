@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -12,8 +12,8 @@
     <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.1.0" />
-    <PackageReference Include="Usa.Smart.Resolver" Version="2.1.0" />
-    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="2.1.0" />
+    <PackageReference Include="Usa.Smart.Resolver" Version="2.2.0" />
+    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="2.2.0" />
   </ItemGroup>
 
 </Project>

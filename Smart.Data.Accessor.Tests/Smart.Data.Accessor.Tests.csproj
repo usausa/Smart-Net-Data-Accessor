@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Linq.Async" Version="5.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="Usa.Smart.Core" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="2.1.0" />
