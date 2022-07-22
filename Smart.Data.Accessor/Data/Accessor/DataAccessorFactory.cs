@@ -21,21 +21,31 @@ public sealed class DataAccessorFactory
 
     public object Create(Type type)
     {
-        var directory = Path.GetDirectoryName(type.Assembly.Location);
-        if (directory is null)
+        var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
+        var implType = type.Assembly.GetType(accessorName);
+        if (implType is null)
         {
-            throw new AccessorRuntimeException($"Accessor assembly location unknown. assembly=[{type.Assembly.FullName}]");
+            var assembly = ResolveImplementAssembly(type);
+            implType = assembly.GetType(accessorName);
         }
 
-        var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor.dll";
-        var assembly = Assembly.LoadFile(Path.Combine(directory, assemblyName));
-        var accessorName = $"{type.Namespace}.{TypeNaming.MakeAccessorName(type)}";
-        var implType = assembly.GetType(accessorName);
         if (implType is null)
         {
             throw new AccessorRuntimeException($"Accessor implement not exist. type=[{type.FullName}]");
         }
 
         return Activator.CreateInstance(implType, engine)!;
+    }
+
+    private static Assembly ResolveImplementAssembly(Type type)
+    {
+        var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor";
+
+        if (String.IsNullOrEmpty(type.Assembly.Location))
+        {
+            return Assembly.Load(assemblyName);
+        }
+
+        return Assembly.LoadFile(Path.Combine(type.Assembly.Location, assemblyName + ".dll"));
     }
 }
