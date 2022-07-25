@@ -41,11 +41,12 @@ public sealed class DataAccessorFactory
     {
         var assemblyName = $"{type.Assembly.GetName().Name}.DataAccessor";
 
-        if (String.IsNullOrEmpty(type.Assembly.Location))
+        var directory = Path.GetDirectoryName(type.Assembly.Location);
+        if (String.IsNullOrEmpty(directory))
         {
             return Assembly.Load(assemblyName);
         }
 
-        return Assembly.LoadFile(Path.Combine(type.Assembly.Location, assemblyName + ".dll"));
+        return Assembly.LoadFile(Path.Combine(directory, assemblyName + ".dll"));
     }
 }
