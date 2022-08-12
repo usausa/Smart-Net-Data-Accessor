@@ -18,11 +18,10 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="Usa.Smart.Converter" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Core" Version="2.1.0" />
     <PackageReference Include="Usa.Smart.Data" Version="2.2.0" />
