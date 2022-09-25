@@ -30,10 +30,10 @@ public class ConditionalSqlTest
             var generator = new TestFactoryBuilder()
                 .UseFileDatabase()
                 .SetSql(
-                    "SELECT * FROM Data" +
-                    "/*% if (IsNotNull(id)) { */" +
-                    "WHERE Id >= /*@ id */0" +
-                    "/*% } */")
+                    "SELECT * FROM Data\r\n" +
+                    "/*% if (IsNotNull(id)) { */\r\n" +
+                    "WHERE Id >= /*@ id */0\r\n" +
+                    "/*% } */\r\n")
                 .Build();
             var accessor = generator.Create<IDynamicAccessor>();
 
@@ -63,11 +63,11 @@ public class ConditionalSqlTest
             var generator = new TestFactoryBuilder()
                 .UseFileDatabase()
                 .SetSql(
-                    "/*!helper Smart.Mock.CustomScriptHelper */" +
-                    "SELECT * FROM Data" +
-                    "/*% if (HasValue(id)) { */" +
-                    "WHERE Id >= /*@ id */0" +
-                    "/*% } */")
+                    "/*!helper Smart.Mock.CustomScriptHelper */\r\n" +
+                    "SELECT * FROM Data\r\n" +
+                    "/*% if (HasValue(id)) { */\r\n" +
+                    "WHERE Id >= /*@ id */0\r\n" +
+                    "/*% } */\r\n")
                 .Build();
             var accessor = generator.Create<IDynamicAccessor>();
 
@@ -93,11 +93,11 @@ public class ConditionalSqlTest
             var generator = new TestFactoryBuilder()
                 .UseFileDatabase()
                 .SetSql(
-                    "/*!using Smart.Mock */" +
-                    "SELECT * FROM Data" +
-                    "/*% if (CustomScriptHelper.HasValue(id)) { */" +
-                    "WHERE Id >= /*@ id */0" +
-                    "/*% } */")
+                    "/*!using Smart.Mock */\r\n" +
+                    "SELECT * FROM Data\r\n" +
+                    "/*% if (CustomScriptHelper.HasValue(id)) { */\r\n" +
+                    "WHERE Id >= /*@ id */0\r\n" +
+                    "/*% } */\r\n")
                 .Build();
             var accessor = generator.Create<IDynamicAccessor>();
 
@@ -135,10 +135,10 @@ public class ConditionalSqlTest
             var generator = new TestFactoryBuilder()
                 .UseFileDatabase()
                 .SetSql(
-                    "SELECT * FROM Data" +
-                    "/*% if (ids is not null) { */" +
-                    "WHERE Id IN /*@ ids */(2, 4)" +
-                    "/*% } */")
+                    "SELECT * FROM Data\r\n" +
+                    "/*% if (ids is not null) { */\r\n" +
+                    "WHERE Id IN /*@ ids */(2, 4)\r\n" +
+                    "/*% } */\r\n")
                 .Build();
             var accessor = generator.Create<IDynamicArrayAccessor>();
 

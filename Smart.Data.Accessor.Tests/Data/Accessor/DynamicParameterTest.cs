@@ -300,7 +300,7 @@ public class DynamicParameterTest
             .SetSql(
                 "WHERE ((1 = 0)" +
                 "/*% foreach (var p in parameters) { */" +
-                "OR (Key1 = /*@ p.Key1 */ 1 AND Key2 = /*@ p.Key2 */ 'a')" +
+                " OR (Key1 = /*@ p.Key1 */ 1 AND Key2 = /*@ p.Key2 */ 'a')" +
                 "/*% } */" +
                 ")")
             .Build();

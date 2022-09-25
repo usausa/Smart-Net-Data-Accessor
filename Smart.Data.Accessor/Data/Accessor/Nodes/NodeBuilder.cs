@@ -16,8 +16,6 @@ public sealed class NodeBuilder
 
     private int current;
 
-    private bool lastParenthesis;
-
     public NodeBuilder(IReadOnlyList<Token> tokens)
     {
         this.tokens = tokens;
@@ -25,15 +23,10 @@ public sealed class NodeBuilder
 
     private Token? NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;
 
-    private void Flush(bool appendBlank)
+    private void Flush()
     {
         if (sql.Length > 0)
         {
-            if (appendBlank)
-            {
-                sql.Append(' ');
-            }
-
             bodyNodes.Add(new SqlNode(sql.ToString()));
             sql.Clear();
         }
@@ -41,26 +34,14 @@ public sealed class NodeBuilder
 
     private void AddPragmaNode(INode node)
     {
-        Flush(true);
+        Flush();
         pragmaNodes.Add(node);
     }
 
-    private void AddBody(INode node, bool appendBlank)
+    private void AddBody(INode node)
     {
-        Flush(appendBlank);
+        Flush();
         bodyNodes.Add(node);
-        lastParenthesis = false;
-    }
-
-    private void AppendSql(string value, bool appendBlank)
-    {
-        if (!lastParenthesis && appendBlank && ((sql.Length > 0) || (bodyNodes.Count > 0)))
-        {
-            sql.Append(' ');
-        }
-
-        sql.Append(value);
-        lastParenthesis = false;
     }
 
     public IReadOnlyList<INode> Build()
@@ -71,17 +52,19 @@ public sealed class NodeBuilder
             switch (token.TokenType)
             {
                 case TokenType.Block:
-                    AppendSql(token.Value.Trim(), true);
+                    sql.Append(token.Value.Trim());
                     break;
                 case TokenType.OpenParenthesis:
-                    AppendSql(token.Value.Trim(), true);
-                    lastParenthesis = true;
+                    sql.Append(token.Value.Trim());
                     break;
                 case TokenType.Comma:
-                    AppendSql(token.Value.Trim(), false);
+                    sql.Append(token.Value.Trim());
+                    break;
+                case TokenType.Blank:
+                    sql.Append(' ');
                     break;
                 case TokenType.CloseParenthesis:
-                    AppendSql(token.Value.Trim(), false);
+                    sql.Append(token.Value.Trim());
                     break;
                 case TokenType.Comment:
                     ParseComment(token.Value.Trim());
@@ -91,7 +74,7 @@ public sealed class NodeBuilder
             current++;
         }
 
-        Flush(false);
+        Flush();
 
         return pragmaNodes.Concat(bodyNodes).ToList();
     }
@@ -112,22 +95,21 @@ public sealed class NodeBuilder
         // Code
         if (value.StartsWith("%", StringComparison.Ordinal))
         {
-            AddBody(new CodeNode(value[1..].Trim()), false);
+            AddBody(new CodeNode(value[1..].Trim()));
         }
 
         // Raw
         if (value.StartsWith("#", StringComparison.Ordinal))
         {
             SkipToken();
-            AddBody(new RawSqlNode(value[1..].Trim()), true);
+            AddBody(new RawSqlNode(value[1..].Trim()));
         }
 
         // Parameter
         if (value.StartsWith("@", StringComparison.Ordinal))
         {
             var hasParenthesis = SkipToken();
-            AddBody(new ParameterNode(value[1..].Trim(), hasParenthesis), !lastParenthesis);
-            lastParenthesis = false;
+            AddBody(new ParameterNode(value[1..].Trim(), hasParenthesis));
         }
     }
 
@@ -135,6 +117,12 @@ public sealed class NodeBuilder
     {
         var hasParenthesis = false;
         var token = NextToken();
+
+        while ((token is not null) && (token.TokenType == TokenType.Blank))
+        {
+            token = NextToken();
+        }
+
         if (token is not null)
         {
             if (token.TokenType == TokenType.OpenParenthesis)

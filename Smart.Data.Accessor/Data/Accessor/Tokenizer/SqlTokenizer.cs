@@ -6,6 +6,8 @@ public sealed class SqlTokenizer
 
     private readonly string source;
 
+    private bool blank;
+
     private int current;
 
     public SqlTokenizer(string source)
@@ -31,16 +33,29 @@ public sealed class SqlTokenizer
         return tokens;
     }
 
+    private void AddToken(Token token)
+    {
+        if (blank)
+        {
+            tokens.Add(new Token(TokenType.Blank, " "));
+        }
+
+        tokens.Add(token);
+        blank = false;
+    }
+
     private void Peek2Chars()
     {
         if ((source[current] == '\r') && (source[current + 1] == '\n'))
         {
             // EOL
+            blank = true;
             current += 2;
         }
         else if ((source[current] == '-') && (source[current + 1] == '-'))
         {
             // Line comment
+            blank = true;
             current += 2;
 
             int remain;
@@ -70,7 +85,7 @@ public sealed class SqlTokenizer
             {
                 if ((source[current] == '*') && (source[current + 1] == '/'))
                 {
-                    tokens.Add(new Token(TokenType.Comment, source[start..current].Trim()));
+                    AddToken(new Token(TokenType.Comment, source[start..current].Trim()));
 
                     current += 2;
 
@@ -93,11 +108,13 @@ public sealed class SqlTokenizer
         if ((source[current] == '\r') || (source[current] == '\n'))
         {
             // EOL
+            blank = true;
             current += 1;
         }
         else if (Char.IsWhiteSpace(source[current]))
         {
             // Space
+            blank = true;
             current += 1;
         }
         else if (source[current] == '\'')
@@ -133,24 +150,24 @@ public sealed class SqlTokenizer
                 throw new SqlTokenizerException("Invalid sql. Quote is not closed.");
             }
 
-            tokens.Add(new Token(TokenType.Block, source[start..current]));
+            AddToken(new Token(TokenType.Block, source[start..current]));
         }
         else if (source[current] == ',')
         {
             // Open
-            tokens.Add(new Token(TokenType.Comma, ","));
+            AddToken(new Token(TokenType.Comma, ","));
             current += 1;
         }
         else if (source[current] == '(')
         {
             // Open
-            tokens.Add(new Token(TokenType.OpenParenthesis, "("));
+            AddToken(new Token(TokenType.OpenParenthesis, "("));
             current += 1;
         }
         else if (source[current] == ')')
         {
             // Close
-            tokens.Add(new Token(TokenType.CloseParenthesis, ")"));
+            AddToken(new Token(TokenType.CloseParenthesis, ")"));
             current += 1;
         }
         else
@@ -164,7 +181,7 @@ public sealed class SqlTokenizer
                 current++;
             }
 
-            tokens.Add(new Token(TokenType.Block, source[start..current]));
+            AddToken(new Token(TokenType.Block, source[start..current]));
         }
     }
 
@@ -175,19 +192,17 @@ public sealed class SqlTokenizer
             return false;
         }
 
-        switch (c)
+        return c switch
         {
-            case '\'':
-            case ',':
-            case '(':
-            case ')':
-            case '\r':
-            case '\n':
-            case '/':
-            case '-':
-                return false;
-        }
-
-        return true;
+            '\'' => false,
+            ',' => false,
+            '(' => false,
+            ')' => false,
+            '\r' => false,
+            '\n' => false,
+            '/' => false,
+            '-' => false,
+            _ => true
+        };
     }
 }
