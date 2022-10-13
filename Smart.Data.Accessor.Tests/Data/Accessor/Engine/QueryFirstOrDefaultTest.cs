@@ -56,7 +56,7 @@ public class QueryFirstOrDefaultTest
     }
 
     [Fact]
-    public async ValueTask TestQueryFirstOrDefaultSimpleAsync()
+    public async Task TestQueryFirstOrDefaultSimpleAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -124,7 +124,7 @@ public class QueryFirstOrDefaultTest
     }
 
     [Fact]
-    public async ValueTask TestQueryFirstOrDefaultWithConnectionAsync()
+    public async Task TestQueryFirstOrDefaultWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable()
@@ -159,7 +159,7 @@ public class QueryFirstOrDefaultTest
     }
 
     [Fact]
-    public async ValueTask TestQueryFirstOrDefaultCancelAsync()
+    public async Task TestQueryFirstOrDefaultCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()

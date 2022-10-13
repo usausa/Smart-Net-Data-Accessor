@@ -59,7 +59,7 @@ public class TransactionTest
     }
 
     [Fact]
-    public async ValueTask TestTransactionAsync()
+    public async Task TestTransactionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable();

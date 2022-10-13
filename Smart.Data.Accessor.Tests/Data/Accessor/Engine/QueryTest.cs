@@ -86,7 +86,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryBufferdSimpleAsync()
+    public async Task TestQueryBufferdSimpleAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -110,7 +110,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryNonBufferdSimpleAsync()
+    public async Task TestQueryNonBufferdSimpleAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -208,7 +208,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryBufferdWithConnectionAsync()
+    public async Task TestQueryBufferdWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable()
@@ -232,7 +232,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryNonBufferdWithConnectionAsync()
+    public async Task TestQueryNonBufferdWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable()
@@ -270,7 +270,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryBufferdCancelAsync()
+    public async Task TestQueryBufferdCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -293,7 +293,7 @@ public class QueryTest
     }
 
     [Fact]
-    public async ValueTask TestQueryNonBufferdCancelAsync()
+    public async Task TestQueryNonBufferdCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()

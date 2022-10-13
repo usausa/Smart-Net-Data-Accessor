@@ -54,7 +54,7 @@ public class ExecuteReaderTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteReaderSimpleAsync()
+    public async Task TestExecuteReaderSimpleAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -123,7 +123,7 @@ public class ExecuteReaderTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteReaderWithConnectionAsync()
+    public async Task TestExecuteReaderWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable()
@@ -161,7 +161,7 @@ public class ExecuteReaderTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteReaderCancelAsync()
+    public async Task TestExecuteReaderCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()

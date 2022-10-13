@@ -50,7 +50,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarSimpleAsync()
+    public async Task TestExecuteScalarSimpleAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -91,7 +91,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarResultIsNullAsync()
+    public async Task TestExecuteScalarResultIsNullAsync()
     {
         await using (TestDatabase.Initialize())
         {
@@ -146,7 +146,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarObjectAsync()
+    public async Task TestExecuteScalarObjectAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -204,7 +204,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarWithConvertAsync()
+    public async Task TestExecuteScalarWithConvertAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()
@@ -262,7 +262,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarWithConnectionAsync()
+    public async Task TestExecuteScalarWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable()
@@ -293,7 +293,7 @@ public class ExecuteScalarTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteScalarCancelAsync()
+    public async Task TestExecuteScalarCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable()

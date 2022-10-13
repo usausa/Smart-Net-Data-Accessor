@@ -51,7 +51,7 @@ public class ExecuteTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteSimpleAsync()
+    public async Task TestExecuteSimpleAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable();
@@ -107,7 +107,7 @@ public class ExecuteTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteVoidAsync()
+    public async Task TestExecuteVoidAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable();
@@ -165,7 +165,7 @@ public class ExecuteTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteWithConnectionAsync()
+    public async Task TestExecuteWithConnectionAsync()
     {
         await using var con = TestDatabase.Initialize()
             .SetupDataTable();
@@ -199,7 +199,7 @@ public class ExecuteTest
     }
 
     [Fact]
-    public async ValueTask TestExecuteCancelAsync()
+    public async Task TestExecuteCancelAsync()
     {
         await using (TestDatabase.Initialize()
             .SetupDataTable())
