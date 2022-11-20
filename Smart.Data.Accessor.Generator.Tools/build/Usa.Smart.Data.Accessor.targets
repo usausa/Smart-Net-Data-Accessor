@@ -6,14 +6,17 @@
     <SmartDataAccessorTargetName>$(AssemblyName).DataAccessor</SmartDataAccessorTargetName>
     <SmartDataAccessorAssembly>$(SmartDataAccessorTargetName).dll</SmartDataAccessorAssembly>
     <SmartDataAccessorDebugSymbol>$(SmartDataAccessorTargetName).pdb</SmartDataAccessorDebugSymbol>
-    <SmartDataAccessorReferenceFileName>$(OutputPath)$(TargetFileName)</SmartDataAccessorReferenceFileName>
+    <SmartDataAccessorReferenceFileName>$(TargetPath)</SmartDataAccessorReferenceFileName>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net7.0')) == true">
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net7.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net7.0')) != true">
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net6.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
 
-  <ItemGroup>
+    <ItemGroup>
     <SqlFiles Include="**\*.sql" />
   </ItemGroup>
 

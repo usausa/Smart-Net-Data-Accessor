@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net7.0;net6.0</TargetFrameworks>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Core" Version="2.1.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
