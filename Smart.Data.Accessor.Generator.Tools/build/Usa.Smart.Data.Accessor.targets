@@ -16,7 +16,7 @@
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net6.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
 
-    <ItemGroup>
+  <ItemGroup>
     <SqlFiles Include="**\*.sql" />
   </ItemGroup>
 
