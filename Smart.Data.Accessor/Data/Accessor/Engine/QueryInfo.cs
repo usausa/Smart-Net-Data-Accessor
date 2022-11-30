@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Smart.Data.Accessor.Mappers;
+
 public sealed class QueryInfo<T>
 {
     private static readonly Node EmptyNode = new(Array.Empty<ColumnInfo>(), null!);
@@ -17,7 +19,7 @@ public sealed class QueryInfo<T>
 
     private readonly bool optimize;
 
-    private Func<IDataRecord, T>? optimizedMapper;
+    private ResultMapper<T>? optimizedMapper;
 
     private Node firstNode = EmptyNode;
 
@@ -54,7 +56,7 @@ public sealed class QueryInfo<T>
         this.optimize = optimize;
     }
 
-    public Func<IDataRecord, T> ResolveMapper(IDataReader reader)
+    public ResultMapper<T> ResolveMapper(IDataReader reader)
     {
         if (optimize)
         {
@@ -131,7 +133,7 @@ public sealed class QueryInfo<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Func<IDataRecord, T>? FindMapper(Span<ColumnInfo> columns)
+    private ResultMapper<T>? FindMapper(Span<ColumnInfo> columns)
     {
         var node = firstNode;
         do
@@ -166,45 +168,48 @@ public sealed class QueryInfo<T>
         }
     }
 
+#pragma warning disable CA1307
+#pragma warning disable CA1309
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsMatchColumn(Span<ColumnInfo> columns1, Span<ColumnInfo> columns2)
     {
-        if (columns1.Length != columns2.Length)
+        var length = columns1.Length;
+        if (length != columns2.Length)
         {
             return false;
         }
 
         ref var column1 = ref MemoryMarshal.GetReference(columns1);
         ref var column2 = ref MemoryMarshal.GetReference(columns2);
-        for (var i = 0; i < columns1.Length; i++)
+        do
         {
-            if (column1.Type != column2.Type)
-            {
-                return false;
-            }
-
-            if (!String.Equals(column1.Name, column2.Name, StringComparison.Ordinal))
+            if (column1.Type != column2.Type || !String.Equals(column1.Name, column2.Name))
             {
                 return false;
             }
 
             column1 = ref Unsafe.Add(ref column1, 1);
             column2 = ref Unsafe.Add(ref column2, 1);
+
+            length--;
         }
+        while (length != 0);
 
         return true;
     }
+#pragma warning restore CA1309
+#pragma warning restore CA1307
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsShouldBePrivate", Justification = "Ignore")]
     private sealed class Node
     {
         public readonly ColumnInfo[] Columns;
 
-        public readonly Func<IDataRecord, T> Value;
+        public readonly ResultMapper<T> Value;
 
         public Node? Next;
 
-        public Node(ColumnInfo[] columns, Func<IDataRecord, T> value)
+        public Node(ColumnInfo[] columns, ResultMapper<T> value)
         {
             Columns = columns;
             Value = value;

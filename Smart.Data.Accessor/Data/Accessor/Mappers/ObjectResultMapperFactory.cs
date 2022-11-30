@@ -1,8 +1,10 @@
 namespace Smart.Data.Accessor.Mappers;
 
+using System;
 using System.Data;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Selectors;
@@ -12,33 +14,40 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 {
     public static ObjectResultMapperFactory Instance { get; } = new();
 
+    private readonly HashSet<string> targetAssemblies = new();
+
     private int typeNo;
 
     private AssemblyBuilder? assemblyBuilder;
 
-    private ModuleBuilder? moduleBuilder;
-
-    private ModuleBuilder ModuleBuilder
-    {
-        get
-        {
-            if (moduleBuilder is null)
-            {
-                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                    new AssemblyName("ObjectResultMapperFactoryAssembly"),
-                    AssemblyBuilderAccess.Run);
-                moduleBuilder = assemblyBuilder.DefineDynamicModule(
-                    "ObjectResultMapperFactoryModule");
-            }
-
-            return moduleBuilder;
-        }
-    }
+    private ModuleBuilder moduleBuilder = default!;
 
     public bool IsMatch(Type type, MethodInfo mi) => true;
 
+    private void PrepareAssembly(Type type)
+    {
+        if (assemblyBuilder is null)
+        {
+            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("ObjectResultMapperFactoryAssembly"),
+                AssemblyBuilderAccess.Run);
+            moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                "ObjectResultMapperFactoryModule");
+        }
+
+        var assemblyName = type.Assembly.GetName().Name;
+        if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
+        {
+            assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(IgnoresAccessChecksToAttribute).GetConstructor(new[] { typeof(string) })!,
+                new object[] { assemblyName }));
+
+            targetAssemblies.Add(assemblyName);
+        }
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1508", Justification = "Analyzers bug ?")]
-    public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
+    public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
         var isNullableType = type.IsValueType && type.IsNullableType();
@@ -50,14 +59,34 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
+        PrepareAssembly(type);
+
         var converters = new Dictionary<int, Func<object, object>>();
         TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
 
-        var holder = CreateHolder(converters);
-        var holderType = holder.GetType();
+        // Define type
+        var typeBuilder = moduleBuilder.DefineType(
+            $"Holder_{typeNo}",
+            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+        typeNo++;
 
-        var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
-        var ilGenerator = dynamicMethod.GetILGenerator();
+        // Set base type
+        var baseType = typeof(ResultMapper<>).MakeGenericType(type);
+        typeBuilder.SetParent(baseType);
+
+        // Define fields
+        var fields = converters.ToDictionary(
+            x => x.Key,
+            x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
+
+        // Define method
+        var methodBuilder = typeBuilder.DefineMethod(
+            nameof(ResultMapper<T>.Map),
+            MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            type,
+            new[] { typeof(IDataRecord) });
+
+        var ilGenerator = methodBuilder.GetILGenerator();
 
         // Variables
         var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
@@ -73,7 +102,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             foreach (var parameterMap in typeMap.Constructor.Parameters)
             {
                 // Stack value
-                EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, holderType, objectLocal!, valueTypeLocals, converters);
+                EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(parameterMap.Index));
             }
 
             // Class new
@@ -101,7 +130,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             }
 
             // Stack value
-            EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, holderType, objectLocal!, valueTypeLocals, converters);
+            EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(propertyMap.Index));
 
             // Set
             ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod!);
@@ -119,17 +148,28 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
         ilGenerator.Emit(OpCodes.Ret);
 
-        return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
+        // Create instance
+        var typeInfo = typeBuilder.CreateTypeInfo();
+        var holderType = typeInfo!.AsType();
+        var holder = (ResultMapper<T>)Activator.CreateInstance(holderType)!;
+
+        // Set field
+        foreach (var entry in converters)
+        {
+            var field = holderType.GetField($"parser{entry.Key}")!;
+            field.SetValue(holder, entry.Value);
+        }
+
+        return holder;
     }
 
     private static void EmitStackColumnValue(
         ILGenerator ilGenerator,
         int index,
         Type type,
-        Type holderType,
         LocalBuilder objectLocal,
         Dictionary<Type, LocalBuilder> valueTypeLocals,
-        Dictionary<int, Func<object, object>> converters)
+        FieldBuilder? field)
     {
         var hasValueLabel = ilGenerator.DefineLabel();
         var next = ilGenerator.DefineLabel();
@@ -150,44 +190,14 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         // Value:
         ilGenerator.MarkLabel(hasValueLabel);
 
-        if (converters.ContainsKey(index))
+        if (field is not null)
         {
-            ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{index}")!, objectLocal);
+            ilGenerator.EmitValueConvertByField(field, objectLocal);
         }
 
         ilGenerator.EmitTypeConversionForType(type);
 
         // Next:
         ilGenerator.MarkLabel(next);
-    }
-
-    private object CreateHolder(Dictionary<int, Func<object, object>> converters)
-    {
-        var typeBuilder = ModuleBuilder.DefineType(
-            $"Holder_{typeNo}",
-            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        typeNo++;
-
-        var indexes = converters.Select(x => x.Key).OrderBy(x => x).ToList();
-
-        foreach (var index in indexes.Where(converters.ContainsKey))
-        {
-            typeBuilder.DefineField($"parser{index}", typeof(Func<object, object>), FieldAttributes.Public);
-        }
-
-        var typeInfo = typeBuilder.CreateTypeInfo()!;
-        var holderType = typeInfo.AsType();
-        var holder = Activator.CreateInstance(holderType)!;
-
-        foreach (var index in indexes)
-        {
-            if (converters.TryGetValue(index, out var converter))
-            {
-                var field = holderType.GetField($"parser{index}")!;
-                field.SetValue(holder, converter);
-            }
-        }
-
-        return holder;
     }
 }

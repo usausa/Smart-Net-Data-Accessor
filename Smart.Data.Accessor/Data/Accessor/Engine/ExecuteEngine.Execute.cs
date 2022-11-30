@@ -5,6 +5,8 @@ using System.Data.Common;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+using Smart.Data.Accessor.Mappers;
+
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
 public sealed partial class ExecuteEngine
 {
@@ -24,7 +26,7 @@ public sealed partial class ExecuteEngine
     // ResultMapper
     //--------------------------------------------------------------------------------
 
-    public Func<IDataRecord, T> CreateResultMapper<T>(MethodInfo mi, ColumnInfo[] columns)
+    public ResultMapper<T> CreateResultMapper<T>(MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
         foreach (var factory in resultMapperFactories)
@@ -111,7 +113,7 @@ public sealed partial class ExecuteEngine
         var list = new List<T>();
         while (reader.Read())
         {
-            list.Add(mapper(reader));
+            list.Add(mapper.Map(reader));
         }
 
         return list;
@@ -128,7 +130,7 @@ public sealed partial class ExecuteEngine
         var list = new List<T>();
         while (await reader.ReadAsync(cancel).ConfigureAwait(false))
         {
-            list.Add(mapper(reader));
+            list.Add(mapper.Map(reader));
         }
 
         return list;
@@ -146,7 +148,7 @@ public sealed partial class ExecuteEngine
 
         if (reader.Read())
         {
-            return mapper(reader);
+            return mapper.Map(reader);
         }
 
         return default;
@@ -162,7 +164,7 @@ public sealed partial class ExecuteEngine
 
         if (await reader.ReadAsync(cancel).ConfigureAwait(false))
         {
-            return mapper(reader);
+            return mapper.Map(reader);
         }
 
         return default;

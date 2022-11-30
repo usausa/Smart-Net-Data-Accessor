@@ -48,31 +48,37 @@ public sealed class SingleResultMapperFactory : IResultMapperFactory
         return supportedTypes.Contains(targetType);
     }
 
-    public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
+    public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
-        var defaultValue = default(T);
         var parser = context.GetConverter(columns[0].Type, type, type);
         return parser is null
-            ? CreateConvertMapper(defaultValue!)
-            : CreateConvertMapper(defaultValue!, parser);
+            ? new Mapper<T>()
+            : new ParserMapper<T>(parser);
     }
 
-    private static Func<IDataRecord, T> CreateConvertMapper<T>(T defaultValue)
+    private sealed class Mapper<T> : ResultMapper<T>
     {
-        return record =>
+        public override T Map(IDataRecord record)
         {
             var value = record.GetValue(0);
-            return value is DBNull ? defaultValue : (T)value;
-        };
+            return value is DBNull ? default! : (T)value;
+        }
     }
 
-    private static Func<IDataRecord, T> CreateConvertMapper<T>(T defaultValue, Func<object, object> parser)
+    private sealed class ParserMapper<T> : ResultMapper<T>
     {
-        return record =>
+        private readonly Func<object, object> parser;
+
+        public ParserMapper(Func<object, object> parser)
+        {
+            this.parser = parser;
+        }
+
+        public override T Map(IDataRecord record)
         {
             var value = record.GetValue(0);
-            return value is DBNull ? defaultValue : (T)parser(value);
-        };
+            return value is DBNull ? default! : (T)parser(value);
+        }
     }
 }

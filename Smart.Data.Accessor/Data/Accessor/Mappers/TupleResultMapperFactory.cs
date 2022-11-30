@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Mappers;
 using System.Data;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Selectors;
@@ -12,35 +13,42 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();
 
+    private readonly HashSet<string> targetAssemblies = new();
+
     private int typeNo;
 
     private AssemblyBuilder? assemblyBuilder;
 
-    private ModuleBuilder? moduleBuilder;
-
-    private ModuleBuilder ModuleBuilder
-    {
-        get
-        {
-            if (moduleBuilder is null)
-            {
-                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                    new AssemblyName("TupleResultMapperFactoryAssembly"),
-                    AssemblyBuilderAccess.Run);
-                moduleBuilder = assemblyBuilder.DefineDynamicModule(
-                    "TupleResultMapperFactoryModule");
-            }
-
-            return moduleBuilder;
-        }
-    }
+    private ModuleBuilder moduleBuilder = default!;
 
     public bool IsMatch(Type type, MethodInfo mi)
     {
         return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) is not null);
     }
 
-    public Func<IDataRecord, T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
+    private void PrepareAssembly(Type type)
+    {
+        if (assemblyBuilder is null)
+        {
+            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("TupleResultMapperFactoryAssembly"),
+                AssemblyBuilderAccess.Run);
+            moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                "TupleResultMapperFactoryModule");
+        }
+
+        var assemblyName = type.Assembly.GetName().Name;
+        if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
+        {
+            assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(IgnoresAccessChecksToAttribute).GetConstructor(new[] { typeof(string) })!,
+                new object[] { assemblyName }));
+
+            targetAssemblies.Add(assemblyName);
+        }
+    }
+
+    public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
         var types = type.GetGenericArguments();
@@ -53,17 +61,37 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
+        PrepareAssembly(type);
+
         var converters = new Dictionary<int, Func<object, object>>();
         foreach (var typeMap in typeMaps)
         {
             TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
         }
 
-        var holder = CreateHolder(converters);
-        var holderType = holder.GetType();
+        // Define type
+        var typeBuilder = moduleBuilder.DefineType(
+            $"Holder_{typeNo}",
+            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+        typeNo++;
 
-        var dynamicMethod = new DynamicMethod(string.Empty, type, new[] { holderType, typeof(IDataRecord) }, true);
-        var ilGenerator = dynamicMethod.GetILGenerator();
+        // Set base type
+        var baseType = typeof(ResultMapper<>).MakeGenericType(type);
+        typeBuilder.SetParent(baseType);
+
+        // Define fields
+        var fields = converters.ToDictionary(
+            x => x.Key,
+            x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
+
+        // Define method
+        var methodBuilder = typeBuilder.DefineMethod(
+            nameof(ResultMapper<T>.Map),
+            MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            type,
+            new[] { typeof(IDataRecord) });
+
+        var ilGenerator = methodBuilder.GetILGenerator();
 
         // Variables
         var objectLocal = ilGenerator.DeclareLocal(typeof(object));
@@ -123,9 +151,9 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
                         // Value:
                         ilGenerator.MarkLabel(hasValueLabel);
 
-                        if (converters.ContainsKey(parameterMap.Index))
+                        if (fields.TryGetValue(parameterMap.Index, out var field))
                         {
-                            ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{parameterMap.Index}")!, objectLocal);
+                            ilGenerator.EmitValueConvertByField(field, objectLocal);
                         }
 
                         ilGenerator.EmitTypeConversionForType(parameterMap.Info.ParameterType);
@@ -225,9 +253,9 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
                     ilGenerator.EmitLdloc(objectLocal);
                 }
 
-                if (converters.ContainsKey(propertyMap.Index))
+                if (fields.TryGetValue(propertyMap.Index, out var field))
                 {
-                    ilGenerator.EmitValueConvertByField(holderType.GetField($"parser{propertyMap.Index}")!, objectLocal);
+                    ilGenerator.EmitValueConvertByField(field, objectLocal);
                 }
 
                 ilGenerator.EmitTypeConversionForType(propertyMap.Info.PropertyType);
@@ -275,34 +303,16 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 
         ilGenerator.Emit(OpCodes.Ret);
 
-        return (Func<IDataRecord, T>)dynamicMethod.CreateDelegate(typeof(Func<IDataRecord, T>), holder);
-    }
+        // Create instance
+        var typeInfo = typeBuilder.CreateTypeInfo();
+        var holderType = typeInfo!.AsType();
+        var holder = (ResultMapper<T>)Activator.CreateInstance(holderType)!;
 
-    private object CreateHolder(Dictionary<int, Func<object, object>> converters)
-    {
-        var typeBuilder = ModuleBuilder.DefineType(
-            $"Holder_{typeNo}",
-            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        typeNo++;
-
-        var indexes = converters.Select(x => x.Key).OrderBy(x => x).ToList();
-
-        foreach (var index in indexes.Where(converters.ContainsKey))
+        // Set field
+        foreach (var entry in converters)
         {
-            typeBuilder.DefineField($"parser{index}", typeof(Func<object, object>), FieldAttributes.Public);
-        }
-
-        var typeInfo = typeBuilder.CreateTypeInfo()!;
-        var holderType = typeInfo.AsType();
-        var holder = Activator.CreateInstance(holderType)!;
-
-        foreach (var index in indexes)
-        {
-            if (converters.TryGetValue(index, out var converter))
-            {
-                var field = holderType.GetField($"parser{index}")!;
-                field.SetValue(holder, converter);
-            }
+            var field = holderType.GetField($"parser{entry.Key}")!;
+            field.SetValue(holder, entry.Value);
         }
 
         return holder;

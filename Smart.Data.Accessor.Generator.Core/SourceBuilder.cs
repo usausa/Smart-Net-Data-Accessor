@@ -852,7 +852,7 @@ internal sealed class SourceBuilder
         AppendLine("{");
         indent++;
 
-        AppendLine($"yield return {MapperVar}({ReaderVar});");
+        AppendLine($"yield return {MapperVar}.Map({ReaderVar});");
 
         indent--;
         AppendLine("}");
@@ -896,7 +896,7 @@ internal sealed class SourceBuilder
         AppendLine("{");
         indent++;
 
-        AppendLine($"yield return {MapperVar}({ReaderVar});");
+        AppendLine($"yield return {MapperVar}.Map({ReaderVar});");
 
         indent--;
         AppendLine("}");
