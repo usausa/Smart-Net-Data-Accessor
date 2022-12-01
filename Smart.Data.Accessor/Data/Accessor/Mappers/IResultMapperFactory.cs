@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Mappers;
 
-using System.Data;
 using System.Reflection;
 
 using Smart.Data.Accessor.Engine;
