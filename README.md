@@ -967,29 +967,31 @@ Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataA
 ## Benchmark (for reference purpose only)
 
 ``` ini
-BenchmarkDotNet=v0.12.1, OS=Windows 10.0.22000
+
+BenchmarkDotNet=v0.13.1, OS=Windows 10.0.22621
 AMD Ryzen 9 5900X, 1 CPU, 24 logical and 12 physical cores
-.NET Core SDK=6.0.100
-  [Host]    : .NET Core 6.0.0 (CoreCLR 6.0.21.52210, CoreFX 6.0.21.52210), X64 RyuJIT
-  MediumRun : .NET Core 6.0.0 (CoreCLR 6.0.21.52210, CoreFX 6.0.21.52210), X64 RyuJIT
+.NET SDK=7.0.100
+  [Host]    : .NET 7.0.0 (7.0.22.51805), X64 RyuJIT
+  MediumRun : .NET 7.0.0 (7.0.22.51805), X64 RyuJIT
 
 Job=MediumRun  IterationCount=15  LaunchCount=2  
 WarmupCount=10  
+
 ```
-|                            Method |        Mean |     Error |    StdDev |      Median |  Gen 0 |  Gen 1 | Gen 2 | Allocated |
-|---------------------------------- |------------:|----------:|----------:|------------:|-------:|-------:|------:|----------:|
-|                     DapperExecute |   193.28 ns |  1.823 ns |  2.729 ns |   193.28 ns | 0.0272 |      - |     - |     456 B |
-|                      SmartExecute |    85.38 ns |  0.609 ns |  0.892 ns |    85.47 ns | 0.0219 |      - |     - |     368 B |
-|               DapperExecuteScalar |    66.82 ns |  3.157 ns |  4.725 ns |    66.95 ns | 0.0086 |      - |     - |     144 B |
-|                SmartExecuteScalar |    46.72 ns |  0.144 ns |  0.212 ns |    46.74 ns | 0.0086 |      - |     - |     144 B |
-|             DapperQueryBufferd100 | 2,506.09 ns | 18.730 ns | 26.862 ns | 2,505.07 ns | 0.3471 | 0.0038 |     - |    5832 B |
-|              SmartQueryBufferd100 | 1,695.42 ns | 23.415 ns | 32.824 ns | 1,676.89 ns | 0.3300 | 0.0038 |     - |    5536 B |
-|     SmartQueryBufferd100Optimized | 1,699.67 ns |  9.432 ns | 14.117 ns | 1,696.23 ns | 0.3300 | 0.0038 |     - |    5536 B |
-|         DapperQueryFirstOrDefault |   262.46 ns |  1.274 ns |  1.867 ns |   262.09 ns | 0.0253 |      - |     - |     424 B |
-|          SmartQueryFirstOrDefault |   136.41 ns | 12.446 ns | 17.447 ns |   151.72 ns | 0.0186 |      - |     - |     312 B |
-| SmartQueryFirstOrDefaultOptimized |    93.06 ns |  0.536 ns |  0.803 ns |    93.34 ns | 0.0186 |      - |     - |     312 B |
-|               DapperWithCondition |   234.51 ns |  1.182 ns |  1.732 ns |   234.89 ns | 0.0491 |      - |     - |     824 B |
-|                SmartWithCondition |    90.11 ns |  0.292 ns |  0.437 ns |    90.02 ns | 0.0219 |      - |     - |     368 B |
+|                            Method |        Mean |     Error |    StdDev |         Min |         Max |         P90 |  Gen 0 |  Gen 1 | Allocated |
+|---------------------------------- |------------:|----------:|----------:|------------:|------------:|------------:|-------:|-------:|----------:|
+|                     DapperExecute |   182.55 ns |  2.567 ns |  3.843 ns |   177.16 ns |   189.54 ns |   187.94 ns | 0.0272 |      - |     456 B |
+|                      SmartExecute |    79.19 ns |  0.407 ns |  0.610 ns |    78.00 ns |    80.43 ns |    79.78 ns | 0.0219 |      - |     368 B |
+|               DapperExecuteScalar |    59.11 ns |  0.253 ns |  0.363 ns |    58.59 ns |    60.02 ns |    59.59 ns | 0.0086 |      - |     144 B |
+|                SmartExecuteScalar |    43.55 ns |  0.198 ns |  0.291 ns |    42.78 ns |    44.11 ns |    43.92 ns | 0.0086 |      - |     144 B |
+|             DapperQueryBufferd100 | 2,467.93 ns | 12.487 ns | 18.690 ns | 2,429.29 ns | 2,505.93 ns | 2,495.21 ns | 0.3471 | 0.0038 |   5,832 B |
+|              SmartQueryBufferd100 | 1,656.82 ns |  6.230 ns |  8.733 ns | 1,642.46 ns | 1,680.08 ns | 1,666.48 ns | 0.3300 | 0.0057 |   5,536 B |
+|     SmartQueryBufferd100Optimized | 1,646.78 ns |  7.451 ns | 10.445 ns | 1,620.13 ns | 1,672.51 ns | 1,657.38 ns | 0.3300 | 0.0057 |   5,536 B |
+|         DapperQueryFirstOrDefault |   219.29 ns |  1.832 ns |  2.686 ns |   214.77 ns |   223.51 ns |   222.33 ns | 0.0253 |      - |     424 B |
+|          SmartQueryFirstOrDefault |   115.53 ns |  1.979 ns |  2.774 ns |   112.03 ns |   120.31 ns |   118.94 ns | 0.0186 |      - |     312 B |
+| SmartQueryFirstOrDefaultOptimized |    83.91 ns |  0.813 ns |  1.217 ns |    82.00 ns |    86.71 ns |    85.52 ns | 0.0186 |      - |     312 B |
+|               DapperWithCondition |   224.01 ns |  0.761 ns |  1.115 ns |   221.79 ns |   225.92 ns |   225.49 ns | 0.0491 |      - |     824 B |
+|                SmartWithCondition |    83.14 ns |  0.977 ns |  1.462 ns |    80.77 ns |    85.65 ns |    85.12 ns | 0.0219 |      - |     368 B |
 
 ## Example Project
 
