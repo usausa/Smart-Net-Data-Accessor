@@ -1,4 +1,3 @@
-#pragma warning disable CA1812
 using Example.WebApplication2;
 
 using Microsoft.Data.Sqlite;
@@ -8,6 +7,8 @@ using Smart.Data.Accessor.Extensions.DependencyInjection;
 using Smart.Data.Accessor.Resolver;
 using Smart.Data.Mapper;
 using Smart.Resolver;
+
+#pragma warning disable CA1852
 
 // Configure builder
 var builder = WebApplication.CreateBuilder(args);

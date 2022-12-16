@@ -98,7 +98,7 @@ public class TestFactory
         }
     }
 
-    private class MemorySourceWriter : ISourceWriter
+    private sealed class MemorySourceWriter : ISourceWriter
     {
         public string? Source { get; private set; }
 
