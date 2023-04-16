@@ -6,12 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.5" />
     <PackageReference Include="Usa.Smart.Core" Version="2.2.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.4.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="2.4.0" />
     <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="2.4.0" />
-    <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.3.2" />
+    <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.3.3" />
     <PackageReference Include="Usa.Smart.Resolver" Version="2.3.0" />
     <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="2.3.0" />
   </ItemGroup>
