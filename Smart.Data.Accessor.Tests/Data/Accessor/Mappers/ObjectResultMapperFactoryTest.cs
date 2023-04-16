@@ -242,8 +242,8 @@ public class ObjectResultMapperFactoryTest
         Assert.Equal(1u, list[0].UIntColumnN);
         Assert.Equal(1ul, list[0].ULongColumn);
         Assert.Equal(1ul, list[0].ULongColumnN);
-        Assert.Equal((IntPtr)1, list[0].IntPtrColumn);
-        Assert.Equal((IntPtr)1, list[0].IntPtrColumnN);
+        Assert.Equal(1, list[0].IntPtrColumn);
+        Assert.Equal(1, list[0].IntPtrColumnN);
         Assert.Equal((UIntPtr)1, list[0].UIntPtrColumn);
         Assert.Equal((UIntPtr)1, list[0].UIntPtrColumnN);
 

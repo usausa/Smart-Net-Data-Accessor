@@ -305,7 +305,11 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 
         // Create instance
         var typeInfo = typeBuilder.CreateTypeInfo();
+#if NET7_0_OR_GREATER
+        var holderType = typeInfo.AsType();
+#else
         var holderType = typeInfo!.AsType();
+#endif
         var holder = (ResultMapper<T>)Activator.CreateInstance(holderType)!;
 
         // Set field
