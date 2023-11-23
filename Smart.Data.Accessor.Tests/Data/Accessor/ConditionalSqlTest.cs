@@ -146,7 +146,7 @@ public class ConditionalSqlTest
 
             Assert.Equal(4, list.Count);
 
-            list = accessor.QueryData(new[] { 2, 4 });
+            list = accessor.QueryData([2, 4]);
 
             Assert.Equal(2, list.Count);
         }

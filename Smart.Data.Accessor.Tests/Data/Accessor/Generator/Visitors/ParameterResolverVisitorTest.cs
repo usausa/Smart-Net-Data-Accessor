@@ -19,6 +19,7 @@ public class ParameterResolverVisitorTest
         public string Id { get; set; } = default!;
     }
 
+#pragma warning disable CA1819
     public class Parameter
     {
         public int Id { get; set; }
@@ -35,6 +36,7 @@ public class ParameterResolverVisitorTest
 
         public Dictionary<int, int[]> Nested { get; set; } = default!;
     }
+#pragma warning restore CA1819
 
     public interface IResolveTarget
     {
@@ -53,7 +55,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("id", parameter.Source);
@@ -71,7 +73,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("values") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("values", parameter.Source);
@@ -89,7 +91,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("values[0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("values[0]", parameter.Source);
@@ -107,7 +109,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("values[data.Get()[0]]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("values[data.Get()[0]]", parameter.Source);
@@ -125,7 +127,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("child.Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("child.Id", parameter.Source);
@@ -143,7 +145,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("child?.Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("child?.Id", parameter.Source);
@@ -161,7 +163,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("children[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("children[0].Id", parameter.Source);
@@ -179,7 +181,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("children?[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("children?[0].Id", parameter.Source);
@@ -197,7 +199,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("children[data.Get()[0]].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("children[data.Get()[0]].Id", parameter.Source);
@@ -215,7 +217,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("map[0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("map[0]", parameter.Source);
@@ -233,7 +235,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("childMap[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("childMap[0].Id", parameter.Source);
@@ -251,7 +253,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("childMap[data.Get()[0]].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("childMap[data.Get()[0]].Id", parameter.Source);
@@ -269,7 +271,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("childMap [ 0 ] . Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("childMap [ 0 ] . Id", parameter.Source);
@@ -287,7 +289,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Argument))!);
         visitor.Visit(new[] { new ParameterNode("nested[0][0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("nested[0][0]", parameter.Source);
@@ -309,7 +311,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Id", parameter.Source);
@@ -327,7 +329,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Values") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Values", parameter.Source);
@@ -345,7 +347,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Values[0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Values[0]", parameter.Source);
@@ -363,7 +365,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Values[data.Get()[0]]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Values[data.Get()[0]]", parameter.Source);
@@ -381,7 +383,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Child.Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Child.Id", parameter.Source);
@@ -399,7 +401,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Child?.Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Child?.Id", parameter.Source);
@@ -417,7 +419,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Children[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Children[0].Id", parameter.Source);
@@ -435,7 +437,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Children?[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Children?[0].Id", parameter.Source);
@@ -453,7 +455,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Children[data.Get()[0]].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Children[data.Get()[0]].Id", parameter.Source);
@@ -471,7 +473,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Map[0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Map[0]", parameter.Source);
@@ -489,7 +491,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("ChildMap[0].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.ChildMap[0].Id", parameter.Source);
@@ -507,7 +509,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("ChildMap[data.Get()[0]].Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.ChildMap[data.Get()[0]].Id", parameter.Source);
@@ -525,7 +527,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("ChildMap [ 0 ] . Id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.ChildMap [ 0 ] . Id", parameter.Source);
@@ -543,7 +545,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IResolveTarget).GetMethod(nameof(IResolveTarget.Parameter))!);
         visitor.Visit(new[] { new ParameterNode("Nested[0][0]") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.Equal("parameter.Nested[0][0]", parameter.Source);
@@ -572,7 +574,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.NoSqlParameter))!);
         visitor.Visit(new[] { new ParameterNode("id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
     }
 
     [Fact]
@@ -581,7 +583,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IMiscTarget).GetMethod(nameof(IMiscTarget.Twice))!);
         visitor.Visit(new[] { new ParameterNode("id"), new ParameterNode("id") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
     }
 
     //--------------------------------------------------------------------------------
@@ -648,7 +650,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.Array))!);
         visitor.Visit(new[] { new ParameterNode("parameters") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.True(parameter.IsMultiple);
@@ -660,7 +662,7 @@ public class ParameterResolverVisitorTest
         var visitor = new ParameterResolveVisitor(typeof(IEnumerableTarget).GetMethod(nameof(IEnumerableTarget.List))!);
         visitor.Visit(new[] { new ParameterNode("parameters") });
 
-        Assert.Equal(1, visitor.Parameters.Count);
+        Assert.Single(visitor.Parameters);
 
         var parameter = visitor.Parameters[0];
         Assert.True(parameter.IsMultiple);

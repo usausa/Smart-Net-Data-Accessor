@@ -46,8 +46,8 @@ public class BenchmarkConfig : ManualConfig
     }
 }
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", Justification = "Ignore")]
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Ignore")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", Justification = "Ignore")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Ignore")]
 [Config(typeof(BenchmarkConfig))]
 public class AccessorBenchmark
 {
@@ -56,7 +56,7 @@ public class AccessorBenchmark
     private MockRepeatDbConnection mockQuery = default!;
     private MockRepeatDbConnection mockQueryFirst = default!;
 
-    private IBenchmarkAccessorForDapper dapperExecuteAccessor = default!;
+    private DapperAccessor dapperExecuteAccessor = default!;
     private IBenchmarkAccessor smartExecuteAccessor = default!;
 
     [GlobalSetup]
@@ -134,7 +134,7 @@ public class AccessorBenchmark
     public long SmartQueryBufferd100Optimized() => smartExecuteAccessor.QueryBufferdOptimized(mockQuery).Count;
 
     [Benchmark]
-    public DataEntity DapperQueryFirstOrDefault() => dapperExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
+    public DataEntity? DapperQueryFirstOrDefault() => dapperExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
 
     [Benchmark]
     public DataEntity SmartQueryFirstOrDefault() => smartExecuteAccessor.QueryFirstOrDefault(mockQueryFirst, 1);
@@ -188,7 +188,7 @@ public interface IBenchmarkAccessorForDapper
 
     IEnumerable<DataEntity> QueryBufferd(DbConnection con);
 
-    DataEntity QueryFirstOrDefault(DbConnection con, long id);
+    DataEntity? QueryFirstOrDefault(DbConnection con, long id);
 }
 
 public sealed class DapperAccessor : IBenchmarkAccessorForDapper
@@ -220,9 +220,9 @@ public sealed class DapperAccessor : IBenchmarkAccessorForDapper
         return con.Query<DataEntity>("SELECT * FROM Data");
     }
 
-    public DataEntity QueryFirstOrDefault(DbConnection con, long id)
+    public DataEntity? QueryFirstOrDefault(DbConnection con, long id)
     {
-        return con.QueryFirstOrDefault<DataEntity>("SELECT * FROM Data WHERE Id = @Id", new { Id = id });
+        return con.QueryFirstOrDefault<DataEntity?>("SELECT * FROM Data WHERE Id = @Id", new { Id = id });
     }
 }
 

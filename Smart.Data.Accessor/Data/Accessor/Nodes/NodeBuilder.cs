@@ -93,20 +93,20 @@ public sealed class NodeBuilder
         }
 
         // Code
-        if (value.StartsWith("%", StringComparison.Ordinal))
+        if (value.StartsWith('%'))
         {
             AddBody(new CodeNode(value[1..].Trim()));
         }
 
         // Raw
-        if (value.StartsWith("#", StringComparison.Ordinal))
+        if (value.StartsWith('#'))
         {
             SkipToken();
             AddBody(new RawSqlNode(value[1..].Trim()));
         }
 
         // Parameter
-        if (value.StartsWith("@", StringComparison.Ordinal))
+        if (value.StartsWith('@'))
         {
             var hasParenthesis = SkipToken();
             AddBody(new ParameterNode(value[1..].Trim(), hasParenthesis));

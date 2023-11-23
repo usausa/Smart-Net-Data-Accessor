@@ -24,7 +24,7 @@ public static class Program
         var engine = new ExecuteEngineConfig()
             .ConfigureComponents(c =>
             {
-                c.Add<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection(ConnectionString)));
+                c.Add<IDbProvider>(new DelegateDbProvider(static () => new SqliteConnection(ConnectionString)));
             })
             .ToEngine();
         var factory = new DataAccessorFactory(engine);

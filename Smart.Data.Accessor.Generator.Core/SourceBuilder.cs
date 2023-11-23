@@ -216,8 +216,8 @@ internal sealed class SourceBuilder
     {
         return (((mm.MethodType == MethodType.Execute) && mm.ReturnValueAsResult) ||
                 (mm.MethodType == MethodType.ExecuteScalar)) &&
-               (mm.EngineResultType != typeof(object) &&
-                (mm.EngineResultType != typeof(void)));
+               (mm.EngineResultType != typeof(object)) &&
+               (mm.EngineResultType != typeof(void));
     }
 
     private static bool IsQueryMethod(MethodMetadata mm)
@@ -425,7 +425,7 @@ internal sealed class SourceBuilder
         NewLine();
 
         // Provider
-        var useDefaultProvider = methods.Any(x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
+        var useDefaultProvider = methods.Any(static x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
         if (useDefaultProvider)
         {
             AppendLine($"private readonly {ProviderType} {ProviderField};");
@@ -497,7 +497,7 @@ internal sealed class SourceBuilder
                 AppendLine($"private readonly {DynamicSetupType} {GetSetupDynamicParameterFieldName(mm.No, parameter.Index)};");
             }
 
-            foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
+            foreach (var parameter in mm.Parameters.Where(static x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
             {
                 AppendLine($"private readonly {HandlerType} {GetHandlerFieldName(mm.No, parameter.Index)};");
             }
@@ -524,7 +524,7 @@ internal sealed class SourceBuilder
     {
         AppendLine($"{EngineFieldRef} = {CtorArg};");
 
-        var useDefaultProvider = methods.Any(x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
+        var useDefaultProvider = methods.Any(static x => (x.ConnectionParameter is null) && (x.TransactionParameter is null));
         if (useDefaultProvider)
         {
             NewLine();
@@ -623,7 +623,7 @@ internal sealed class SourceBuilder
                     AppendLine($"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)} = {CtorArg}.CreateDynamicParameterSetup({multiple});");
                 }
 
-                foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
+                foreach (var parameter in mm.Parameters.Where(static x => x.Direction != ParameterDirection.Input && x.Type != typeof(object)))
                 {
                     var declaringType = parameter.DeclaringType is null
                         ? "null"
@@ -1167,7 +1167,7 @@ internal sealed class SourceBuilder
     {
         var current = source.Length;
 
-        foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input))
+        foreach (var parameter in mm.Parameters.Where(static x => x.Direction != ParameterDirection.Input))
         {
             AppendLine($"var {GetOutParamName(parameter.Index)} = default({DbParameterType});");
         }
@@ -1181,7 +1181,7 @@ internal sealed class SourceBuilder
     private void DefinePostProcess(MethodMetadata mm, bool blankBefore)
     {
         var first = true;
-        foreach (var parameter in mm.Parameters.Where(x => x.Direction != ParameterDirection.Input))
+        foreach (var parameter in mm.Parameters.Where(static x => x.Direction != ParameterDirection.Input))
         {
             if (first)
             {
@@ -1243,7 +1243,7 @@ internal sealed class SourceBuilder
                 visitor.Visit(mm.Nodes);
                 visitor.Flush();
             }
-            else if (mm.Parameters.Any(x => x.IsMultiple))
+            else if (mm.Parameters.Any(static x => x.IsMultiple))
             {
                 var calc = new CalcSizeVisitor(mm);
                 calc.Visit(mm.Nodes);

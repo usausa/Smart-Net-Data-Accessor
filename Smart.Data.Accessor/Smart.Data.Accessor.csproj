@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net6.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
     <RootNamespace>Smart</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -14,17 +14,10 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
-    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-  </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Converter" Version="2.2.0" />
-    <PackageReference Include="Usa.Smart.Core" Version="2.2.0" />
-    <PackageReference Include="Usa.Smart.Data" Version="2.3.0" />
+    <PackageReference Include="Usa.Smart.Converter" Version="2.3.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.3.0" />
+    <PackageReference Include="Usa.Smart.Data" Version="2.4.0" />
   </ItemGroup>
 
 </Project>

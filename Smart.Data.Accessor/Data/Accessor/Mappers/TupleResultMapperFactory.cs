@@ -52,7 +52,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
     {
         var type = typeof(T);
         var types = type.GetGenericArguments();
-        var isNullableTypes = types.Select(x => x.IsValueType && x.IsNullableType()).ToArray();
+        var isNullableTypes = types.Select(static x => x.IsValueType && x.IsNullableType()).ToArray();
         var targetTypes = types.Select((x, i) => isNullableTypes[i] ? Nullable.GetUnderlyingType(x)! : x).ToArray();
         var selector = (IMultiMappingSelector)context.ServiceProvider.GetService(typeof(IMultiMappingSelector))!;
         var typeMaps = selector.Select(mi, targetTypes, columns);
@@ -81,7 +81,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 
         // Define fields
         var fields = converters.ToDictionary(
-            x => x.Key,
+            static x => x.Key,
             x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
 
         // Define method

@@ -13,6 +13,6 @@ public sealed class DateTimeTickTypeHandler : ITypeHandler
 
     public Func<object, object> CreateParse(Type type)
     {
-        return x => new DateTime((long)x);
+        return static x => new DateTime((long)x);
     }
 }

@@ -13,8 +13,8 @@ public static class Program
         var target = Path.GetFullPath(args[0]);
         var outputDirectory = Path.GetFullPath(args[1]);
         var references = File.ReadAllLines(Path.GetFullPath(args[2]))
-            .Select(x => new Reference(x))
-            .ToDictionary(x => x.Name);
+            .Select(static x => new Reference(x))
+            .ToDictionary(static x => x.Name);
         var sqlRootDirectory = Path.GetFullPath(args[3]);
         var sqlRootNamespace = args[4];
         var sqlSubDirectory = args[5];

@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Data access
-builder.Services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
+builder.Services.AddSingleton<IDbProvider>(new DelegateDbProvider(static () => new SqliteConnection("Data Source=test.db")));
 builder.Services.AddDataAccessor();
 
 // Configure

@@ -20,7 +20,7 @@ builder.Host.UseServiceProviderFactory(new SmartServiceProviderFactory());
 builder.Services.AddControllersWithViews();
 
 // Data access
-builder.Services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
+builder.Services.AddSingleton<IDbProvider>(new DelegateDbProvider(static () => new SqliteConnection("Data Source=test.db")));
 builder.Services.AddDataAccessor();
 
 // Custom service provider
@@ -29,11 +29,11 @@ builder.Host.ConfigureContainer<ResolverConfig>(config =>
     config.UseDataAccessor();
     config
         .Bind<IDbProvider>()
-        .ToConstant(new DelegateDbProvider(() => new SqliteConnection("Data Source=primary.db")))
+        .ToConstant(new DelegateDbProvider(static () => new SqliteConnection("Data Source=primary.db")))
         .Named(DataSource.Primary);
     config
         .Bind<IDbProvider>()
-        .ToConstant(new DelegateDbProvider(() => new SqliteConnection("Data Source=secondary.db")))
+        .ToConstant(new DelegateDbProvider(static () => new SqliteConnection("Data Source=secondary.db")))
         .Named(DataSource.Secondary);
 });
 

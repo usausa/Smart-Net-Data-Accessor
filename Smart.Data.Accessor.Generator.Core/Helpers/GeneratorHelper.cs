@@ -79,14 +79,14 @@ internal static class GeneratorHelper
     {
         return type.GetInterfaces()
             .Prepend(type)
-            .First(t => t.IsGenericType &&
-                        ((t.GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
-                         (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))))
+            .First(static t => t.IsGenericType &&
+                               ((t.GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
+                                (t.GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>))))
             .GetGenericArguments()[0];
     }
 
     public static Type GetListElementType(Type type)
     {
-        return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
+        return type.GetInterfaces().Prepend(type).First(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
     }
 }

@@ -43,7 +43,7 @@ public static class BuildHelper
     public static string? GetTableNameByParameter(MethodInfo mi)
     {
         var pmi = mi.GetParameters()
-            .FirstOrDefault(x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
+            .FirstOrDefault(static x => ParameterHelper.IsSqlParameter(x) && ParameterHelper.IsNestedParameter(x));
         if (pmi is null)
         {
             return null;
@@ -59,9 +59,9 @@ public static class BuildHelper
     public static string GetOrderByType(MethodInfo mi, Type type)
     {
         return String.Join(", ", type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Select(x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
-            .Where(x => x.Key is not null)
-            .OrderBy(x => x.Key!.Order)
+            .Select(static x => new { Property = x, Key = x.GetCustomAttribute<KeyAttribute>() })
+            .Where(static x => x.Key is not null)
+            .OrderBy(static x => x.Key!.Order)
             .Select(x => ConfigHelper.GetMethodPropertyColumnName(mi, x.Property)));
     }
 
@@ -77,7 +77,7 @@ public static class BuildHelper
             if (ParameterHelper.IsNestedParameter(pmi))
             {
                 parameters.AddRange(pmi.ParameterType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(x => x.GetCustomAttribute<IgnoreAttribute>() is null)
+                    .Where(static x => x.GetCustomAttribute<IgnoreAttribute>() is null)
                     .Select(pi =>
                     {
                         var name = ConfigHelper.GetMethodParameterPropertyColumnName(mi, pmi, pi);
@@ -97,55 +97,55 @@ public static class BuildHelper
     public static IList<BuildParameterInfo> GetInsertParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
+            .Where(static x => x.GetAttribute<AutoGenerateAttribute>() is null)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetKeyParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Select(x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
-            .Where(x => x.Key is not null)
-            .OrderBy(x => x.Key!.Order)
-            .Select(x => x.Parameter)
+            .Select(static x => new { Parameter = x, Key = x.GetAttribute<KeyAttribute>() })
+            .Where(static x => x.Key is not null)
+            .OrderBy(static x => x.Key!.Order)
+            .Select(static x => x.Parameter)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetNonKeyParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetAttribute<KeyAttribute>() is null)
-            .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
+            .Where(static x => x.GetAttribute<KeyAttribute>() is null)
+            .Where(static x => x.GetAttribute<AutoGenerateAttribute>() is null)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetValueParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetParameterAttribute<ValuesAttribute>() is not null)
-            .Where(x => x.GetParameterAttribute<AutoGenerateAttribute>() is null)
+            .Where(static x => x.GetParameterAttribute<ValuesAttribute>() is not null)
+            .Where(static x => x.GetParameterAttribute<AutoGenerateAttribute>() is null)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetNonValueParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetParameterAttribute<ValuesAttribute>() is null)
+            .Where(static x => x.GetParameterAttribute<ValuesAttribute>() is null)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetConditionParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetAttribute<ConditionAttribute>() is not null)
+            .Where(static x => x.GetAttribute<ConditionAttribute>() is not null)
             .ToList();
     }
 
     public static IList<BuildParameterInfo> GetNonConditionParameters(IList<BuildParameterInfo> parameters)
     {
         return parameters
-            .Where(x => x.GetAttribute<ConditionAttribute>() is null)
-            .Where(x => x.GetAttribute<AutoGenerateAttribute>() is null)
+            .Where(static x => x.GetAttribute<ConditionAttribute>() is null)
+            .Where(static x => x.GetAttribute<AutoGenerateAttribute>() is null)
             .ToList();
     }
 
@@ -181,8 +181,8 @@ public static class BuildHelper
         }
 
         var addAnd = parameters
-            .Select(x => x.GetAttribute<ConditionAttribute>())
-            .Any(x => (x?.ExcludeNull ?? false) || (x?.ExcludeEmpty ?? false));
+            .Select(static x => x.GetAttribute<ConditionAttribute>())
+            .Any(static x => (x?.ExcludeNull ?? false) || (x?.ExcludeEmpty ?? false));
 
         sql.Append(" WHERE");
         if (addAnd)

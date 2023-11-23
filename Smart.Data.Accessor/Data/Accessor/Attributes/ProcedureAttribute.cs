@@ -42,7 +42,7 @@ public sealed class ProcedureAttribute : MethodAttribute, IReturnValueBehavior
             new SqlNode(procedure)
         };
 
-        nodes.AddRange(BuildHelper.GetParameters(mi).Select(x => new ParameterNode(x.Name, x.ParameterName)));
+        nodes.AddRange(BuildHelper.GetParameters(mi).Select(static x => new ParameterNode(x.Name, x.ParameterName)));
 
         return nodes;
     }

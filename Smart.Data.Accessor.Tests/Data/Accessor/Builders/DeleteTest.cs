@@ -50,7 +50,7 @@ public class DeleteTest
     {
         var generator = new TestFactoryBuilder()
             .Build();
-        Assert.Throws<BuilderException>(() => generator.Create<IDeleteAllWithoutForceAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IDeleteAllWithoutForceAccessor>);
     }
 
     //--------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ public class DeleteTest
                 .Build();
             var accessor = generator.Create<IDeleteByArrayArgumentAccessor>();
 
-            var effect = accessor.Delete(1L, new[] { 1L, 2L });
+            var effect = accessor.Delete(1L, [1L, 2L]);
 
             Assert.Equal(2, effect);
         }
@@ -197,6 +197,6 @@ public class DeleteTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<IDeleteInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IDeleteInvalidAccessor>);
     }
 }

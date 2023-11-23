@@ -18,9 +18,4 @@ public class AccessorGeneratorException : Exception
         : base(message, innerException)
     {
     }
-
-    protected AccessorGeneratorException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
-    {
-    }
 }

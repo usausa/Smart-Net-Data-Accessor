@@ -21,7 +21,7 @@ public class DataAccessorGenerator
 
     public void Generate(Type[] types)
     {
-        foreach (var targetType in types.Where(x => x.GetCustomAttribute<DataAccessorAttribute>() is not null))
+        foreach (var targetType in types.Where(static x => x.GetCustomAttribute<DataAccessorAttribute>() is not null))
         {
             var source = CreateSource(targetType);
 
@@ -29,7 +29,7 @@ public class DataAccessorGenerator
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1508", Justification = "Analyzers bug ?")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508", Justification = "Analyzers bug ?")]
     private string CreateSource(Type type)
     {
         var builder = new SourceBuilder(type, TypeNaming.MakeAccessorName(type));

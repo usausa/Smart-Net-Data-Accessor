@@ -2,13 +2,13 @@ namespace Smart.Data.Accessor.Runtime;
 
 using System.Runtime.CompilerServices;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1815:OverrideEqualsAndOperatorEqualsOnValue", Justification = "Ignore")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1815:OverrideEqualsAndOperatorEqualsOnValue", Justification = "Ignore")]
 public struct StringBuffer
 {
     [ThreadStatic]
     private static char[]? bufferCache;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields", Justification = "Ignore")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:DoNotDeclareVisibleInstanceFields", Justification = "Ignore")]
     public int Length;
 
     private char[] buffer;

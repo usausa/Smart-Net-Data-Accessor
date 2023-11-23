@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
 
         service.AddSingleton(option.EngineOption);
         service.AddSingleton<ExecuteEngineFactory>();
-        service.AddSingleton(c => c.GetService<ExecuteEngineFactory>()!.Create());
+        service.AddSingleton(static c => c.GetService<ExecuteEngineFactory>()!.Create());
         service.AddSingleton<DataAccessorFactory>();
 
         service.TryAddSingleton<IObjectConverter>(ObjectConverter.Default);
@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
 
         service.AddSingleton(typeof(IAccessorResolver<>), typeof(AccessorResolver<>));
 
-        foreach (var type in option.AccessorAssemblies.SelectMany(x => x.ExportedTypes))
+        foreach (var type in option.AccessorAssemblies.SelectMany(static x => x.ExportedTypes))
         {
             if (type.GetCustomAttribute<DataAccessorAttribute>() is not null)
             {

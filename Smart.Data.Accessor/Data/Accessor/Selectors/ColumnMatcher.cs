@@ -24,8 +24,8 @@ public class ColumnMatcher
         var ctor = type.GetConstructors()
             .Select(MatchConstructor)
             .ExcludeNull()
-            .OrderByDescending(x => x.Map.Parameters.Count)
-            .ThenByDescending(x => x.TypeMatch)
+            .OrderByDescending(static x => x.Map.Parameters.Count)
+            .ThenByDescending(static x => x.TypeMatch)
             .FirstOrDefault();
         return ctor?.Map;
     }
@@ -47,7 +47,7 @@ public class ColumnMatcher
             typeMatch += (column.Column.Type == pi.ParameterType) ? 1 : 0;
         }
 
-        return new ConstructorMatch(new ConstructorMapInfo(ci, parameters.OrderBy(x => x.Index).ToList()), typeMatch);
+        return new ConstructorMatch(new ConstructorMapInfo(ci, parameters.OrderBy(static x => x.Index).ToList()), typeMatch);
     }
 
     public IReadOnlyList<PropertyMapInfo> ResolveProperties(Type type)
@@ -60,7 +60,7 @@ public class ColumnMatcher
                 return column is null ? null : new PropertyMapInfo(x, column.Index);
             })
             .ExcludeNull()
-            .OrderBy(x => x.Index)
+            .OrderBy(static x => x.Index)
             .ToList();
     }
 

@@ -77,7 +77,7 @@ public static class ParameterHelper
             return false;
         }
 
-        if (type.GetInterfaces().Prepend(type).Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+        if (type.GetInterfaces().Prepend(type).Any(static t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
         {
             return false;
         }
@@ -87,7 +87,7 @@ public static class ParameterHelper
 
     public static bool IsMultipleParameter(Type type)
     {
-        return (type != typeof(byte[])) && (type.IsArray || type.GetInterfaces().Prepend(type).Any(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))));
+        return (type != typeof(byte[])) && (type.IsArray || type.GetInterfaces().Prepend(type).Any(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))));
     }
 
     public static Type GetMultipleParameterElementType(Type type)
@@ -97,6 +97,6 @@ public static class ParameterHelper
             return type.GetElementType()!;
         }
 
-        return type.GetInterfaces().Prepend(type).First(t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
+        return type.GetInterfaces().Prepend(type).First(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))).GetGenericArguments()[0];
     }
 }

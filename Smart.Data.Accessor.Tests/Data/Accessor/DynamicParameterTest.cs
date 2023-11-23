@@ -163,7 +163,7 @@ public class DynamicParameterTest
 
         accessor.Execute(con, null);
         accessor.Execute(con, Array.Empty<int>());
-        accessor.Execute(con, new[] { 1, 2 });
+        accessor.Execute(con, [1, 2]);
     }
 
     //--------------------------------------------------------------------------------
@@ -218,7 +218,7 @@ public class DynamicParameterTest
 
         accessor.Execute(con, null);
         accessor.Execute(con, new List<int>());
-        accessor.Execute(con, new List<int>(new[] { 1, 2 }));
+        accessor.Execute(con, new List<int>([1, 2]));
     }
 
     //--------------------------------------------------------------------------------
@@ -434,7 +434,7 @@ public class DynamicParameterTest
             cmd.SetupResult(0);
         });
 
-        accessor.Execute(con, new List<string>(new[] { "1", "2" }));
+        accessor.Execute(con, ["1", "2"]);
 
         var controller = (IEngineController)generator.Engine;
         Assert.Equal(1, controller.Diagnostics.DynamicSetupCacheCount);
@@ -489,6 +489,6 @@ public class DynamicParameterTest
 
         var accessor = generator.Create<ISetupFailedListAccessor>();
 
-        Assert.Throws<TargetInvocationException>(() => accessor.Execute(new MockDbConnection(), new List<string>(new[] { "1", "2" })));
+        Assert.Throws<TargetInvocationException>(() => accessor.Execute(new MockDbConnection(), ["1", "2"]));
     }
 }

@@ -157,7 +157,8 @@ internal sealed class ParameterResolveVisitor : NodeVisitorBase
             return type.GenericTypeArguments[1];
         }
 
-        var dictionaryType = type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+        var dictionaryType = type.GetInterfaces()
+            .FirstOrDefault(static t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>));
         if (dictionaryType is not null)
         {
             return dictionaryType.GenericTypeArguments[1];
@@ -168,7 +169,8 @@ internal sealed class ParameterResolveVisitor : NodeVisitorBase
             return type.GenericTypeArguments[0];
         }
 
-        var enumerableType = type.GetInterfaces().FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        var enumerableType = type.GetInterfaces()
+            .FirstOrDefault(static t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
         if (enumerableType is not null)
         {
             return enumerableType.GenericTypeArguments[0];

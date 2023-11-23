@@ -46,7 +46,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1508", Justification = "Analyzers bug ?")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508", Justification = "Analyzers bug ?")]
     public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
@@ -76,7 +76,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
         // Define fields
         var fields = converters.ToDictionary(
-            x => x.Key,
+            static x => x.Key,
             x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
 
         // Define method

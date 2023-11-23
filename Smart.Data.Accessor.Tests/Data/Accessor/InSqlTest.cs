@@ -36,13 +36,13 @@ public class InSqlTest
 
             var list = accessor.QueryData(null);
 
-            Assert.Equal(0, list.Count);
+            Assert.Empty(list);
 
             list = accessor.QueryData(Array.Empty<int>());
 
-            Assert.Equal(0, list.Count);
+            Assert.Empty(list);
 
-            list = accessor.QueryData(new[] { 2, 4 });
+            list = accessor.QueryData([2, 4]);
 
             Assert.Equal(2, list.Count);
 
@@ -75,9 +75,9 @@ public class InSqlTest
                 .Build();
             var accessor = generator.Create<IInArrayMixedAccessor>();
 
-            var list = accessor.QueryData(new[] { 2, 4 }, "AAA");
+            var list = accessor.QueryData([2, 4], "AAA");
 
-            Assert.Equal(1, list.Count);
+            Assert.Single(list);
         }
     }
 
@@ -110,11 +110,11 @@ public class InSqlTest
 
             var list = accessor.QueryData(null);
 
-            Assert.Equal(0, list.Count);
+            Assert.Empty(list);
 
             list = accessor.QueryData(new List<int>());
 
-            Assert.Equal(0, list.Count);
+            Assert.Empty(list);
 
             list = accessor.QueryData(new List<int> { 2, 4 });
 
@@ -151,7 +151,7 @@ public class InSqlTest
 
             var list = accessor.QueryData(new List<int> { 2, 4 }, "AAA");
 
-            Assert.Equal(1, list.Count);
+            Assert.Single(list);
         }
     }
 }

@@ -10,6 +10,7 @@ public class DataEntity
     public string Name { get; set; } = default!;
 }
 
+#pragma warning disable CA1819
 public class MultiKeyEntity
 {
     [Key(1)]
@@ -30,3 +31,4 @@ public class MultiKeyEntity
         new(typeof(string), nameof(Name))
     };
 }
+#pragma warning restore CA1819

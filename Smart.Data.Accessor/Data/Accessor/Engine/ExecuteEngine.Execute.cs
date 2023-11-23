@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Mappers;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
 public sealed partial class ExecuteEngine
 {
     private const CommandBehavior CommandBehaviorForEnumerable =

@@ -18,9 +18,4 @@ public class AccessorRuntimeException : Exception
         : base(message, innerException)
     {
     }
-
-    protected AccessorRuntimeException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
-    {
-    }
 }

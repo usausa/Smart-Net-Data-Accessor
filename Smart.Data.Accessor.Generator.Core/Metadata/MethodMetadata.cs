@@ -120,13 +120,9 @@ internal sealed class MethodMetadata
         }
     }
 
-    public ParameterEntry? FindParameterByName(string name)
-    {
-        return Parameters.FirstOrDefault(x => x.Name == name);
-    }
+    public ParameterEntry? FindParameterByName(string name) =>
+        Parameters.FirstOrDefault(x => x.Name == name);
 
-    public DynamicParameterEntry? FindDynamicParameterByName(string name)
-    {
-        return DynamicParameters.FirstOrDefault(x => x.Name == name);
-    }
+    public DynamicParameterEntry? FindDynamicParameterByName(string name) =>
+        DynamicParameters.FirstOrDefault(x => x.Name == name);
 }

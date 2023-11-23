@@ -44,7 +44,7 @@ public sealed partial class ExecuteEngine : IEngineController, IResultMapperCrea
         typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
         resultMapperFactories = config.GetResultMapperFactories();
 
-        parameterSubNames = Enumerable.Range(0, 256).Select(x => $"_{x}").ToArray();
+        parameterSubNames = Enumerable.Range(0, 256).Select(static x => $"_{x}").ToArray();
     }
 
     //--------------------------------------------------------------------------------

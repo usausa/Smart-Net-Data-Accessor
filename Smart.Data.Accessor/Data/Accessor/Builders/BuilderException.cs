@@ -18,9 +18,4 @@ public class BuilderException : Exception
         : base(message, innerException)
     {
     }
-
-    protected BuilderException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
-    {
-    }
 }

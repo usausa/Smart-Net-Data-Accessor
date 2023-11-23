@@ -18,9 +18,4 @@ public class SqlTokenizerException : Exception
         : base(message, innerException)
     {
     }
-
-    protected SqlTokenizerException(SerializationInfo info, StreamingContext context)
-        : base(info, context)
-    {
-    }
 }

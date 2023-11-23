@@ -10,20 +10,20 @@ internal static class EmitExtensions
 {
     private static readonly Dictionary<Type, Action<ILGenerator>> LdcDictionary = new()
     {
-        { typeof(bool), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(byte), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(char), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(short), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(int), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(sbyte), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(ushort), il => il.Emit(OpCodes.Ldc_I4_0) },
-        { typeof(uint), il => il.Emit(OpCodes.Ldc_I4_0) },      // Simplicity
-        { typeof(long), il => il.Emit(OpCodes.Ldc_I8, 0L) },
-        { typeof(ulong), il => il.Emit(OpCodes.Ldc_I8, 0L) },   // Simplicity
-        { typeof(float), il => il.Emit(OpCodes.Ldc_R4, 0f) },
-        { typeof(double), il => il.Emit(OpCodes.Ldc_R8, 0d) },
-        { typeof(IntPtr), il => il.Emit(OpCodes.Ldc_I4_0) },    // Simplicity
-        { typeof(UIntPtr), il => il.Emit(OpCodes.Ldc_I4_0) }    // Simplicity
+        { typeof(bool), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(byte), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(char), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(short), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(int), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(sbyte), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(ushort), static il => il.Emit(OpCodes.Ldc_I4_0) },
+        { typeof(uint), static il => il.Emit(OpCodes.Ldc_I4_0) },      // Simplicity
+        { typeof(long), static il => il.Emit(OpCodes.Ldc_I8, 0L) },
+        { typeof(ulong), static il => il.Emit(OpCodes.Ldc_I8, 0L) },   // Simplicity
+        { typeof(float), static il => il.Emit(OpCodes.Ldc_R4, 0f) },
+        { typeof(double), static il => il.Emit(OpCodes.Ldc_R8, 0d) },
+        { typeof(IntPtr), static il => il.Emit(OpCodes.Ldc_I4_0) },    // Simplicity
+        { typeof(UIntPtr), static il => il.Emit(OpCodes.Ldc_I4_0) }    // Simplicity
     };
 
     private static readonly MethodInfo GetValue = typeof(IDataRecord).GetMethod(nameof(IDataRecord.GetValue))!;
@@ -34,8 +34,8 @@ internal static class EmitExtensions
     {
         return types
             .Distinct()
-            .Where(x => x.IsValueType && (x.IsNullableType() || !LdcDictionary.ContainsKey(x)))
-            .ToDictionary(x => x, ilGenerator.DeclareLocal);
+            .Where(static x => x.IsValueType && (x.IsNullableType() || !LdcDictionary.ContainsKey(x)))
+            .ToDictionary(static x => x, ilGenerator.DeclareLocal);
     }
 
     public static void EmitGetColumnValue(this ILGenerator ilGenerator, int index)
