@@ -35,12 +35,12 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
         { typeof(object), DbType.Object }
     };
 
-    private static readonly List<IResultMapperFactory> DefaultResultMapperFactories = new()
-    {
+    private static readonly List<IResultMapperFactory> DefaultResultMapperFactories =
+    [
         new SingleResultMapperFactory(),
         TupleResultMapperFactory.Instance,
         ObjectResultMapperFactory.Instance
-    };
+    ];
 
     private IServiceProvider? serviceProvider;
 
@@ -50,7 +50,7 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
 
     private Dictionary<Type, ITypeHandler> typeHandlers = new();
 
-    private List<IResultMapperFactory> resultMapperFactories = new(DefaultResultMapperFactories);
+    private List<IResultMapperFactory> resultMapperFactories = [..DefaultResultMapperFactories];
 
     //--------------------------------------------------------------------------------
     // Config

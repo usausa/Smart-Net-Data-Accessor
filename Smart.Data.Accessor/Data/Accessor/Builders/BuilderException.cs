@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System.Runtime.Serialization;
-
 [Serializable]
 public class BuilderException : Exception
 {

@@ -149,7 +149,7 @@ public class InSqlTest
                 .Build();
             var accessor = generator.Create<IInListMixedAccessor>();
 
-            var list = accessor.QueryData(new List<int> { 2, 4 }, "AAA");
+            var list = accessor.QueryData([2, 4], "AAA");
 
             Assert.Single(list);
         }

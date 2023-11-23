@@ -85,12 +85,10 @@ public class TestFactory
 
     private static void AddReference(HashSet<Assembly> assemblies, Assembly assembly)
     {
-        if (assemblies.Contains(assembly))
+        if (!assemblies.Add(assembly))
         {
             return;
         }
-
-        assemblies.Add(assembly);
 
         foreach (var assemblyName in assembly.GetReferencedAssemblies())
         {

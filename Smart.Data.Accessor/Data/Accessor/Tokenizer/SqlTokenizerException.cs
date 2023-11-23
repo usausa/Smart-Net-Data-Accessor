@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Tokenizer;
 
-using System.Runtime.Serialization;
-
 [Serializable]
 public class SqlTokenizerException : Exception
 {

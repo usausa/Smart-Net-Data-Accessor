@@ -32,12 +32,10 @@ internal sealed class ParameterResolveVisitor : NodeVisitorBase
 
     public override void Visit(ParameterNode node)
     {
-        if (processed.Contains(node.Name))
+        if (!processed.Add(node.Name))
         {
             return;
         }
-
-        processed.Add(node.Name);
 
         // [MEMO] Simple property only
         var parser = new PathElementParser(node.Name);

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor;
 
-using System.Runtime.Serialization;
-
 [Serializable]
 public class AccessorRuntimeException : Exception
 {
