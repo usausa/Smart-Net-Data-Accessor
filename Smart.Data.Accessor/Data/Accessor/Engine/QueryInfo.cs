@@ -9,7 +9,7 @@ using Smart.Data.Accessor.Mappers;
 
 public sealed class QueryInfo<T>
 {
-    private static readonly Node EmptyNode = new(Array.Empty<ColumnInfo>(), null!);
+    private static readonly Node EmptyNode = new([], null!);
 
     private readonly object sync = new();
 

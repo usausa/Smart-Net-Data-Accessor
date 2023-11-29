@@ -27,7 +27,7 @@ public class TestFactory
         var type = typeof(T);
         var writer = new MemorySourceWriter();
         var generator = new DataAccessorGenerator(loader, writer);
-        generator.Generate(new[] { type });
+        generator.Generate([type]);
 
         if (writer.Source is null)
         {

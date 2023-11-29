@@ -63,7 +63,7 @@ internal sealed class SourceBuilder
 
     private readonly Type targetType;
 
-    private readonly List<MethodMetadata> methods = new();
+    private readonly List<MethodMetadata> methods = [];
 
     private readonly StringBuilder source = new();
 

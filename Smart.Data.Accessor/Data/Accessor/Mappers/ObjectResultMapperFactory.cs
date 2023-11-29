@@ -14,7 +14,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 {
     public static ObjectResultMapperFactory Instance { get; } = new();
 
-    private readonly HashSet<string> targetAssemblies = new();
+    private readonly HashSet<string> targetAssemblies = [];
 
     private int typeNo;
 
@@ -39,14 +39,13 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
         {
             assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(IgnoresAccessChecksToAttribute).GetConstructor(new[] { typeof(string) })!,
+                typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
                 new object[] { assemblyName }));
 
             targetAssemblies.Add(assemblyName);
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508", Justification = "Analyzers bug ?")]
     public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
@@ -84,7 +83,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             nameof(ResultMapper<T>.Map),
             MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
             type,
-            new[] { typeof(IDataRecord) });
+            [typeof(IDataRecord)]);
 
         var ilGenerator = methodBuilder.GetILGenerator();
 

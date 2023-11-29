@@ -8,9 +8,9 @@ public sealed class NodeBuilder
 {
     private readonly IReadOnlyList<Token> tokens;
 
-    private readonly List<INode> pragmaNodes = new();
+    private readonly List<INode> pragmaNodes = [];
 
-    private readonly List<INode> bodyNodes = new();
+    private readonly List<INode> bodyNodes = [];
 
     private readonly StringBuilder sql = new();
 

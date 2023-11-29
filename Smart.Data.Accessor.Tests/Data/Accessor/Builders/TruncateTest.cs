@@ -80,8 +80,8 @@ public class TruncateTest
         var generator = new TestFactoryBuilder()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid1Accessor>());
-        Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid2Accessor>());
-        Assert.Throws<BuilderException>(() => generator.Create<ITruncateInvalid3Accessor>());
+        Assert.Throws<BuilderException>(generator.Create<ITruncateInvalid1Accessor>);
+        Assert.Throws<BuilderException>(generator.Create<ITruncateInvalid2Accessor>);
+        Assert.Throws<BuilderException>(generator.Create<ITruncateInvalid3Accessor>);
     }
 }

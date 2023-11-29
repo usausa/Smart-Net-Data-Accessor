@@ -77,7 +77,7 @@ public class MySelectSingleTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<ISelectInvalidAccessor>);
     }
 
     //--------------------------------------------------------------------------------

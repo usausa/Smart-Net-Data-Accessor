@@ -13,7 +13,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();
 
-    private readonly HashSet<string> targetAssemblies = new();
+    private readonly HashSet<string> targetAssemblies = [];
 
     private int typeNo;
 
@@ -41,7 +41,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
         {
             assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(IgnoresAccessChecksToAttribute).GetConstructor(new[] { typeof(string) })!,
+                typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
                 new object[] { assemblyName }));
 
             targetAssemblies.Add(assemblyName);
@@ -89,7 +89,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
             nameof(ResultMapper<T>.Map),
             MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
             type,
-            new[] { typeof(IDataRecord) });
+            [typeof(IDataRecord)]);
 
         var ilGenerator = methodBuilder.GetILGenerator();
 

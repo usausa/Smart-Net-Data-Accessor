@@ -148,9 +148,9 @@ public class SelectTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid1Accessor>());
-        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid2Accessor>());
-        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalid3Accessor>());
+        Assert.Throws<BuilderException>(generator.Create<ISelectInvalid1Accessor>);
+        Assert.Throws<BuilderException>(generator.Create<ISelectInvalid2Accessor>);
+        Assert.Throws<BuilderException>(generator.Create<ISelectInvalid3Accessor>);
     }
 
     //--------------------------------------------------------------------------------

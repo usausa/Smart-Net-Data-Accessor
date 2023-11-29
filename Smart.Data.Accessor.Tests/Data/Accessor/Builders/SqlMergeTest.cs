@@ -105,6 +105,6 @@ public class SqlMergeTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<IMergeInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IMergeInvalidAccessor>);
     }
 }

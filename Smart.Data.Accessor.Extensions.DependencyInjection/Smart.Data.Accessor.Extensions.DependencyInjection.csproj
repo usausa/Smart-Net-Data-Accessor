@@ -10,7 +10,6 @@
     <PackageId>Usa.Smart.Data.Accessor.Extensions.DependencyInjection</PackageId>
     <Title>Smart.Data.Accessor.Extensions.DependencyInjection</Title>
     <Description>Smart data accessor generator library</Description>
-    <Summary>Smart data accessor generator library</Summary>
     <PackageTags>smart ado.net orm dao ioc di dependencyinjection</PackageTags>
   </PropertyGroup>
 

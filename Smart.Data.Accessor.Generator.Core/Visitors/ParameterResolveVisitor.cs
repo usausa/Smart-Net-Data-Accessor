@@ -11,9 +11,9 @@ using Smart.Data.Accessor.Nodes;
 
 internal sealed class ParameterResolveVisitor : NodeVisitorBase
 {
-    private readonly List<ParameterEntry> parameters = new();
+    private readonly List<ParameterEntry> parameters = [];
 
-    private readonly List<DynamicParameterEntry> dynamicParameters = new();
+    private readonly List<DynamicParameterEntry> dynamicParameters = [];
 
     public IReadOnlyList<ParameterEntry> Parameters => parameters;
 
@@ -21,7 +21,7 @@ internal sealed class ParameterResolveVisitor : NodeVisitorBase
 
     private readonly MethodInfo method;
 
-    private readonly HashSet<string> processed = new();
+    private readonly HashSet<string> processed = [];
 
     private int index;
 

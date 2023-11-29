@@ -7,7 +7,7 @@ public abstract class ParameterBuilderAttribute : Attribute
 {
     public DbType DbType { get; }
 
-    public int? Size { get;  }
+    public int? Size { get; }
 
     protected ParameterBuilderAttribute(DbType dbType)
         : this(dbType, null)

@@ -18,7 +18,7 @@ internal class PathElementParser
         {
             list.Add(element);
         }
-        return list.ToArray();
+        return [.. list];
     }
 
     private PathElement? Next()

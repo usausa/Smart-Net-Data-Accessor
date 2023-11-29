@@ -48,9 +48,9 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
 
     private Dictionary<Type, DbType> typeMap = new(DefaultTypeMap);
 
-    private Dictionary<Type, ITypeHandler> typeHandlers = new();
+    private Dictionary<Type, ITypeHandler> typeHandlers = [];
 
-    private List<IResultMapperFactory> resultMapperFactories = [..DefaultResultMapperFactories];
+    private List<IResultMapperFactory> resultMapperFactories = DefaultResultMapperFactories;
 
     //--------------------------------------------------------------------------------
     // Config

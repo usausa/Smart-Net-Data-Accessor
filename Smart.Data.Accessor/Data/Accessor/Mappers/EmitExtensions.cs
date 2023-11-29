@@ -113,7 +113,7 @@ internal static class EmitExtensions
             if (type.IsNullableType())
             {
                 var underlyingType = Nullable.GetUnderlyingType(type)!;
-                var nullableCtor = type.GetConstructor(new[] { underlyingType })!;
+                var nullableCtor = type.GetConstructor([underlyingType])!;
 
                 ilGenerator.Emit(OpCodes.Unbox_Any, underlyingType);
                 ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
@@ -132,7 +132,7 @@ internal static class EmitExtensions
     public static void EmitValueToNullableType(this ILGenerator ilGenerator, Type type)
     {
         var underlyingType = Nullable.GetUnderlyingType(type)!;
-        var nullableCtor = type.GetConstructor(new[] { underlyingType })!;
+        var nullableCtor = type.GetConstructor([underlyingType])!;
         ilGenerator.Emit(OpCodes.Newobj, nullableCtor);
     }
 }

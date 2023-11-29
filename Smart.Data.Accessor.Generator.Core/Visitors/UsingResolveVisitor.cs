@@ -4,9 +4,9 @@ using Smart.Data.Accessor.Nodes;
 
 internal sealed class UsingResolveVisitor : NodeVisitorBase
 {
-    private readonly HashSet<string> usings = new();
+    private readonly HashSet<string> usings = [];
 
-    private readonly HashSet<string> helpers = new();
+    private readonly HashSet<string> helpers = [];
 
     public IEnumerable<string> Usings => usings.OrderBy(x => x);
 

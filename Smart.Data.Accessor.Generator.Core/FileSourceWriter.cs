@@ -4,7 +4,7 @@ public class FileSourceWriter : ISourceWriter
 {
     private readonly string outputDirectory;
 
-    private readonly List<string> newFiles = new();
+    private readonly List<string> newFiles = [];
 
     public IEnumerable<string> NewFiles => newFiles;
 

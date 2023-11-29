@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Tokenizer;
 
 public sealed class SqlTokenizer
 {
-    private readonly List<Token> tokens = new();
+    private readonly List<Token> tokens = [];
 
     private readonly string source;
 

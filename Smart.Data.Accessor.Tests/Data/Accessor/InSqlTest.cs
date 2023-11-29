@@ -38,7 +38,7 @@ public class InSqlTest
 
             Assert.Empty(list);
 
-            list = accessor.QueryData(Array.Empty<int>());
+            list = accessor.QueryData([]);
 
             Assert.Empty(list);
 
@@ -112,11 +112,11 @@ public class InSqlTest
 
             Assert.Empty(list);
 
-            list = accessor.QueryData(new List<int>());
+            list = accessor.QueryData([]);
 
             Assert.Empty(list);
 
-            list = accessor.QueryData(new List<int> { 2, 4 });
+            list = accessor.QueryData([2, 4]);
 
             Assert.Equal(2, list.Count);
 

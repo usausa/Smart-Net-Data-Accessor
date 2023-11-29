@@ -198,7 +198,7 @@ public class QueryFirstOrDefaultTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IQueryFirstOrDefaultInvalidAccessor>);
     }
 
     [DataAccessor]
@@ -215,6 +215,6 @@ public class QueryFirstOrDefaultTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryFirstOrDefaultInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IQueryFirstOrDefaultInvalidAsyncAccessor>);
     }
 }

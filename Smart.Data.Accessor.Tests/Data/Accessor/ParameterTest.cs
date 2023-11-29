@@ -363,7 +363,7 @@ public class ParameterTest
             cmd.SetupResult(0);
         });
 
-        accessor.ExecuteArray(con, new[] { string.Empty, null });
+        accessor.ExecuteArray(con, [string.Empty, null]);
 
         con.SetupCommand(cmd =>
         {
@@ -387,7 +387,7 @@ public class ParameterTest
             cmd.SetupResult(0);
         });
 
-        accessor.ExecuteList(con, new List<string?> { string.Empty, null });
+        accessor.ExecuteList(con, [string.Empty, null]);
 
         con.SetupCommand(cmd =>
         {
@@ -498,7 +498,7 @@ public class ParameterTest
             cmd.SetupResult(0);
         });
 
-        accessor.ExecuteArray(con, new[] { string.Empty, null });
+        accessor.ExecuteArray(con, [string.Empty, null]);
 
         con.SetupCommand(cmd =>
         {
@@ -522,7 +522,7 @@ public class ParameterTest
             cmd.SetupResult(0);
         });
 
-        accessor.ExecuteList(con, new List<string?> { string.Empty, null });
+        accessor.ExecuteList(con, [string.Empty, null]);
 
         con.SetupCommand(cmd =>
         {
@@ -558,7 +558,7 @@ public class ParameterTest
             })
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<ISetupFailedInAccessor>);
     }
 
     [DataAccessor]
@@ -579,7 +579,7 @@ public class ParameterTest
             })
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedInOutAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<ISetupFailedInOutAccessor>);
     }
 
     [DataAccessor]
@@ -600,7 +600,7 @@ public class ParameterTest
             })
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedOutAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<ISetupFailedOutAccessor>);
     }
 
     [DataAccessor]
@@ -621,7 +621,7 @@ public class ParameterTest
             })
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedArrayAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<ISetupFailedArrayAccessor>);
     }
 
     [DataAccessor]
@@ -642,6 +642,6 @@ public class ParameterTest
             })
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<ISetupFailedListAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<ISetupFailedListAccessor>);
     }
 }

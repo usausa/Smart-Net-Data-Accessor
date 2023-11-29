@@ -37,12 +37,10 @@ public class ExecuteReaderTest
 
             var accessor = generator.Create<IExecuteReaderSimpleAccessor>();
 
-            using (var reader = accessor.ExecuteReader())
-            {
-                Assert.True(reader.Read());
-                Assert.True(reader.Read());
-                Assert.False(reader.Read());
-            }
+            using var reader = accessor.ExecuteReader();
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.False(reader.Read());
         }
     }
 
@@ -68,12 +66,10 @@ public class ExecuteReaderTest
 
             var accessor = generator.Create<IExecuteReaderSimpleAsyncAccessor>();
 
-            using (var reader = await accessor.ExecuteReaderAsync())
-            {
-                Assert.True(reader.Read());
-                Assert.True(reader.Read());
-                Assert.False(reader.Read());
-            }
+            using var reader = await accessor.ExecuteReaderAsync();
+            Assert.True(reader.Read());
+            Assert.True(reader.Read());
+            Assert.False(reader.Read());
         }
     }
 
@@ -207,7 +203,7 @@ public class ExecuteReaderTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteReaderInvalidAccessor>);
     }
 
     [DataAccessor]
@@ -224,6 +220,6 @@ public class ExecuteReaderTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteReaderInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteReaderInvalidAsyncAccessor>);
     }
 }

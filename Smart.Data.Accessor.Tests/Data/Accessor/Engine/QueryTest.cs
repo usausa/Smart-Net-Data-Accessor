@@ -333,7 +333,7 @@ public class QueryTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IQueryInvalidAccessor>);
     }
 
     [DataAccessor]
@@ -350,6 +350,6 @@ public class QueryTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IQueryInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IQueryInvalidAsyncAccessor>);
     }
 }

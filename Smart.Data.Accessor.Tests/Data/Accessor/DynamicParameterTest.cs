@@ -162,7 +162,7 @@ public class DynamicParameterTest
         });
 
         accessor.Execute(con, null);
-        accessor.Execute(con, Array.Empty<int>());
+        accessor.Execute(con, []);
         accessor.Execute(con, [1, 2]);
     }
 
@@ -217,7 +217,7 @@ public class DynamicParameterTest
         });
 
         accessor.Execute(con, null);
-        accessor.Execute(con, new List<int>());
+        accessor.Execute(con, []);
         accessor.Execute(con, new List<int>([1, 2]));
     }
 

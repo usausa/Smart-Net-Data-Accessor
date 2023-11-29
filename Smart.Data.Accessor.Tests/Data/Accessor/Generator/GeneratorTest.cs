@@ -20,9 +20,9 @@ public class AccessorGeneratorTest
     {
         var generator = new TestFactoryBuilder().Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<object>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<object>);
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidMethodAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IInvalidMethodAccessor>);
     }
 
     [DataAccessor]
@@ -37,6 +37,6 @@ public class AccessorGeneratorTest
     {
         var generator = new TestFactoryBuilder().Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidCodeAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IInvalidCodeAccessor>);
     }
 }

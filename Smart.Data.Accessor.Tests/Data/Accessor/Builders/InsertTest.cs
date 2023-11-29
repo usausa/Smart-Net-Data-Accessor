@@ -88,7 +88,7 @@ public class InsertTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<IInsertInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IInsertInvalidAccessor>);
     }
 
     //--------------------------------------------------------------------------------

@@ -74,7 +74,7 @@ public class UpdateTest
     {
         var generator = new TestFactoryBuilder()
             .Build();
-        Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutForceAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IUpdateAllWithoutForceAccessor>);
     }
 
     [DataAccessor]
@@ -89,7 +89,7 @@ public class UpdateTest
     {
         var generator = new TestFactoryBuilder()
             .Build();
-        Assert.Throws<BuilderException>(() => generator.Create<IUpdateAllWithoutValuesWithoutForceAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IUpdateAllWithoutValuesWithoutForceAccessor>);
     }
 
     //--------------------------------------------------------------------------------
@@ -402,6 +402,6 @@ public class UpdateTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<IUpdateInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<IUpdateInvalidAccessor>);
     }
 }

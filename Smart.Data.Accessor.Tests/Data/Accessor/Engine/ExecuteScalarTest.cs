@@ -333,7 +333,7 @@ public class ExecuteScalarTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteScalarInvalidAccessor>);
     }
 
     [DataAccessor]
@@ -350,6 +350,6 @@ public class ExecuteScalarTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteScalarInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteScalarInvalidAsyncAccessor>);
     }
 }

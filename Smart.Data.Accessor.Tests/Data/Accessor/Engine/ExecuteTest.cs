@@ -237,7 +237,7 @@ public class ExecuteTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteInvalidAsyncAccessor>);
     }
 
     [DataAccessor]
@@ -254,6 +254,6 @@ public class ExecuteTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IExecuteInvalidAsyncAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IExecuteInvalidAsyncAccessor>);
     }
 }

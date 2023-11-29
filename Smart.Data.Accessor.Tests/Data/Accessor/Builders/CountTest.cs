@@ -94,6 +94,6 @@ public class CountTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<ICountInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<ICountInvalidAccessor>);
     }
 }

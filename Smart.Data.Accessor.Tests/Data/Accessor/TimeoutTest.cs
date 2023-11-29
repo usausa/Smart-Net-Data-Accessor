@@ -84,6 +84,6 @@ public class TimeoutTest
             .SetSql(string.Empty)
             .Build();
 
-        Assert.Throws<AccessorGeneratorException>(() => generator.Create<IInvalidTimeoutParameterAccessor>());
+        Assert.Throws<AccessorGeneratorException>(generator.Create<IInvalidTimeoutParameterAccessor>);
     }
 }

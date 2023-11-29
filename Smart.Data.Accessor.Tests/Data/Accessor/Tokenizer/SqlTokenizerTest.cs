@@ -388,14 +388,14 @@ public class SqlTokenizerTest
     public void TestQuoteNotClosed()
     {
         var tokenizer = new SqlTokenizer("Name = 'abc");
-        Assert.Throws<SqlTokenizerException>(() => tokenizer.Tokenize());
+        Assert.Throws<SqlTokenizerException>(tokenizer.Tokenize);
     }
 
     [Fact]
     public void TestQuoteEscapedNotClosed()
     {
         var tokenizer = new SqlTokenizer("Name = 'abc''xyz''");
-        Assert.Throws<SqlTokenizerException>(() => tokenizer.Tokenize());
+        Assert.Throws<SqlTokenizerException>(tokenizer.Tokenize);
     }
 
     //--------------------------------------------------------------------------------
@@ -516,7 +516,7 @@ public class SqlTokenizerTest
     public void TestCommentNotClosed()
     {
         var tokenizer = new SqlTokenizer("WHERE /* comment");
-        Assert.Throws<SqlTokenizerException>(() => tokenizer.Tokenize());
+        Assert.Throws<SqlTokenizerException>(tokenizer.Tokenize);
     }
 
     //--------------------------------------------------------------------------------

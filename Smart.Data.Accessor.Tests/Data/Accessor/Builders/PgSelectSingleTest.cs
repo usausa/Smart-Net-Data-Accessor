@@ -77,7 +77,7 @@ public class PgSelectSingleTest
             .UseFileDatabase()
             .Build();
 
-        Assert.Throws<BuilderException>(() => generator.Create<ISelectInvalidAccessor>());
+        Assert.Throws<BuilderException>(generator.Create<ISelectInvalidAccessor>);
     }
 
     //--------------------------------------------------------------------------------
