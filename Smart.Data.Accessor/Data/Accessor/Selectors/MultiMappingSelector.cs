@@ -33,6 +33,6 @@ public class MultiMappingSelector : IMultiMappingSelector
             }
         }
 
-        return [.. list];
+        return list.ToArray();
     }
 }
