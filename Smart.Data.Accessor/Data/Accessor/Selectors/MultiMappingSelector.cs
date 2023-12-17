@@ -4,7 +4,7 @@ using System.Reflection;
 
 using Smart.Data.Accessor.Engine;
 
-public class MultiMappingSelector : IMultiMappingSelector
+public sealed class MultiMappingSelector : IMultiMappingSelector
 {
     public TypeMapInfo[]? Select(MethodInfo mi, Type[] types, ColumnInfo[] columns)
     {

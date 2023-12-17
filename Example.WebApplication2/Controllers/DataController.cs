@@ -5,7 +5,7 @@ using Example.WebApplication2.Models;
 
 using Microsoft.AspNetCore.Mvc;
 
-public class DataController : Controller
+public sealed class DataController : Controller
 {
     private readonly IPrimaryAccessor primaryAccessor;
 

@@ -2,9 +2,8 @@ namespace Smart.Data.Accessor.Builders;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
-using Xunit;
 
-public class CountTest
+public sealed class CountTest
 {
     //--------------------------------------------------------------------------------
     // Argument
@@ -41,7 +40,7 @@ public class CountTest
     // Parameter
     //--------------------------------------------------------------------------------
 
-    public class Parameter
+    public sealed class Parameter
     {
         public long Key1 { get; set; }
 

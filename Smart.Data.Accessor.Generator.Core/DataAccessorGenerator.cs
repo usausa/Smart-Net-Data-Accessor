@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Generator.Metadata;
 using Smart.Data.Accessor.Generator.Visitors;
 using Smart.Data.Accessor.Helpers;
 
-public class DataAccessorGenerator
+public sealed class DataAccessorGenerator
 {
     private readonly ISqlLoader sqlLoader;
 
@@ -29,7 +29,6 @@ public class DataAccessorGenerator
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508", Justification = "Analyzers bug ?")]
     private string CreateSource(Type type)
     {
         var builder = new SourceBuilder(type, TypeNaming.MakeAccessorName(type));

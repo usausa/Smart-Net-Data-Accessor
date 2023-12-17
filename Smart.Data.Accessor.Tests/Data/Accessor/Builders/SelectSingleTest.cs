@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor.Builders;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class SelectSingleTest
+public sealed class SelectSingleTest
 {
     //--------------------------------------------------------------------------------
     // Key

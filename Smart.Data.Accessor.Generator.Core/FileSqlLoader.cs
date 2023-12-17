@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Generator.Helpers;
 
-public class FileSqlLoader : ISqlLoader
+public sealed class FileSqlLoader : ISqlLoader
 {
     private readonly string rootDirectory;
 

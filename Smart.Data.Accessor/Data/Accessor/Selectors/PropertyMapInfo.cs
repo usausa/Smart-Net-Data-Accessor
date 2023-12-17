@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Selectors;
 
 using System.Reflection;
 
-public class PropertyMapInfo
+public sealed class PropertyMapInfo
 {
     public PropertyInfo Info { get; }
 

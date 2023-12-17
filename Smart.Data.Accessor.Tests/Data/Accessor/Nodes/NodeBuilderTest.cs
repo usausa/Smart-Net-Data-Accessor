@@ -2,9 +2,7 @@ namespace Smart.Data.Accessor.Nodes;
 
 using Smart.Data.Accessor.Tokenizer;
 
-using Xunit;
-
-public class NodeBuilderTest
+public sealed class NodeBuilderTest
 {
     //--------------------------------------------------------------------------------
     // Basic

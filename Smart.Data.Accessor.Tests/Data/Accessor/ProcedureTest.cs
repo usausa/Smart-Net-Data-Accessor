@@ -7,9 +7,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class ProcedureTest
+public sealed class ProcedureTest
 {
     //--------------------------------------------------------------------------------
     // Parameter
@@ -21,7 +19,7 @@ public class ProcedureTest
         One = 1
     }
 
-    public class Parameter
+    public sealed class Parameter
     {
         [DbType(DbType.Int64, 10)]
         public int Value1 { get; set; }
@@ -124,7 +122,7 @@ public class ProcedureTest
     // Class
     //--------------------------------------------------------------------------------
 
-    public class DirectionParameter
+    public sealed class DirectionParameter
     {
         [Input]
         public string InParam { get; set; } = default!;

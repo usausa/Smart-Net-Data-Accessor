@@ -2,9 +2,7 @@ namespace Smart.Data.Accessor.Engine;
 
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class ResultMapperCacheTest
+public sealed class ResultMapperCacheTest
 {
     [Fact]
     public void TestResultMapperCache()
@@ -113,7 +111,7 @@ public class ResultMapperCacheTest
         Assert.Equal(4, info.MapperCount);
     }
 
-    public class CacheEntity
+    public sealed class CacheEntity
     {
         public long Id { get; set; }
 

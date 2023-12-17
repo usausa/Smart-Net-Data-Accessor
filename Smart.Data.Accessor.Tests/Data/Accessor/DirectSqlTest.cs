@@ -5,9 +5,7 @@ using System.Data;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class DirectSqlTest
+public sealed class DirectSqlTest
 {
     [DataAccessor]
     public interface IDirectSqlAccessor

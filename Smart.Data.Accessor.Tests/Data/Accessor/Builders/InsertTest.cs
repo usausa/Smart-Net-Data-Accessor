@@ -4,9 +4,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Mapper;
 using Smart.Mock;
 
-using Xunit;
-
-public class InsertTest
+public sealed class InsertTest
 {
     //--------------------------------------------------------------------------------
     // Entity
@@ -95,7 +93,7 @@ public class InsertTest
     // Auto Generate
     //--------------------------------------------------------------------------------
 
-    public class AutoGenerateEntity
+    public sealed class AutoGenerateEntity
     {
         [Key]
         public long Id { get; set; }
@@ -138,7 +136,7 @@ public class InsertTest
     // DbValue
     //--------------------------------------------------------------------------------
 
-    public class DbValueEntity
+    public sealed class DbValueEntity
     {
         [Key]
         public long Id { get; set; }
@@ -212,14 +210,14 @@ public class InsertTest
     // CodeValue
     //--------------------------------------------------------------------------------
 
-    public class Counter
+    public sealed class Counter
     {
         private long counter;
 
         public long Next() => ++counter;
     }
 
-    public class CodeValueEntity
+    public sealed class CodeValueEntity
     {
         [Key]
         public string Key { get; set; } = default!;

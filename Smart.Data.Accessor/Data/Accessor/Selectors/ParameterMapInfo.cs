@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Selectors;
 
 using System.Reflection;
 
-public class ParameterMapInfo
+public sealed class ParameterMapInfo
 {
     public ParameterInfo Info { get; }
 

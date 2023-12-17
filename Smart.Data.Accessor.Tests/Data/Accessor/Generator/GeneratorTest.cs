@@ -5,9 +5,7 @@ using System.Data;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class AccessorGeneratorTest
+public sealed class AccessorGeneratorTest
 {
     [DataAccessor]
     public interface IInvalidMethodAccessor

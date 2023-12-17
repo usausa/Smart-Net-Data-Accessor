@@ -5,7 +5,7 @@ using Smart.Data;
 using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Generator;
 
-public class TestFactoryBuilder
+public sealed class TestFactoryBuilder
 {
     private readonly ExecuteEngineConfig config = new();
 

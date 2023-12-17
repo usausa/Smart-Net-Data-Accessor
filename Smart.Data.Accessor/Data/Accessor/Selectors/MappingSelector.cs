@@ -4,7 +4,7 @@ using System.Reflection;
 
 using Smart.Data.Accessor.Engine;
 
-public class MappingSelector : IMappingSelector
+public sealed class MappingSelector : IMappingSelector
 {
     public TypeMapInfo? Select(MethodInfo mi, Type type, ColumnInfo[] columns)
     {

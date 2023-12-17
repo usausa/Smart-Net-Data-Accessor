@@ -7,11 +7,9 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class InjectTest
+public sealed class InjectTest
 {
-    public class Counter
+    public sealed class Counter
     {
         private int counter;
 

@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Configs;
 
-using Xunit;
-
-public class NamingTest
+public sealed class NamingTest
 {
     public interface INamingAccessor
     {

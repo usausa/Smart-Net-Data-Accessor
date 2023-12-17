@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Smart.Data.Accessor;
 
-public class HomeController : Controller
+public sealed class HomeController : Controller
 {
     private readonly ISampleAccessor sampleAccessor;
 

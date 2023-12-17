@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Tokenizer;
 
-using Xunit;
-
-public class SqlTokenizerTest
+public sealed class SqlTokenizerTest
 {
     //--------------------------------------------------------------------------------
     // Basic

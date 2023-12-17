@@ -11,7 +11,6 @@ using Smart.Resolver.Scopes;
 
 public sealed class AccessorMissingHandler : IMissingHandler
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Factory")]
     public IEnumerable<Binding> Handle(ComponentContainer components, BindingTable table, Type type)
     {
         if (!type.IsInterface || (type.GetCustomAttribute<DataAccessorAttribute>() is null))
@@ -19,9 +18,11 @@ public sealed class AccessorMissingHandler : IMissingHandler
             return Enumerable.Empty<Binding>();
         }
 
+#pragma warning disable CA2000
         return new[]
         {
             new Binding(type, new DataAccessorProvider(type), new SingletonScope(components), null, null, null)
         };
+#pragma warning restore CA2000
     }
 }

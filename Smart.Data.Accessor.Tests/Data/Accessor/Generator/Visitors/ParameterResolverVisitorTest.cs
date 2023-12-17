@@ -6,21 +6,19 @@ using System.Data.Common;
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Nodes;
 
-using Xunit;
-
-public class ParameterResolverVisitorTest
+public sealed class ParameterResolverVisitorTest
 {
     //--------------------------------------------------------------------------------
     // Basic
     //--------------------------------------------------------------------------------
 
-    public class ChildParameter
+    public sealed class ChildParameter
     {
         public string Id { get; set; } = default!;
     }
 
 #pragma warning disable CA1819
-    public class Parameter
+    public sealed class Parameter
     {
         public int Id { get; set; }
 
@@ -590,7 +588,7 @@ public class ParameterResolverVisitorTest
     // Direction
     //--------------------------------------------------------------------------------
 
-    public class DirectionParameter
+    public sealed class DirectionParameter
     {
         [Input]
         public int InParam { get; set; }

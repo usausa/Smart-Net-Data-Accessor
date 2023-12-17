@@ -6,9 +6,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class PgSelectTest
+public sealed class PgSelectTest
 {
     //--------------------------------------------------------------------------------
     // Order
@@ -61,7 +59,7 @@ public class PgSelectTest
     // Other
     //--------------------------------------------------------------------------------
 
-    public class OtherEntity
+    public sealed class OtherEntity
     {
         [Key(1)]
         public long Key1 { get; set; }

@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor.Builders;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class SelectTest
+public sealed class SelectTest
 {
     //--------------------------------------------------------------------------------
     // Order
@@ -65,7 +63,7 @@ public class SelectTest
     // Other
     //--------------------------------------------------------------------------------
 
-    public class OtherEntity
+    public sealed class OtherEntity
     {
         [Key(1)]
         public long Key1 { get; set; }
@@ -188,7 +186,7 @@ public class SelectTest
     // Parameter
     //--------------------------------------------------------------------------------
 
-    public class Parameter
+    public sealed class Parameter
     {
         public long Key1 { get; set; }
 

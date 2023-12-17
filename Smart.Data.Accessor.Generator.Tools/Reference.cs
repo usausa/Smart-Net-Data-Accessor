@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator;
 
-public class Reference
+public sealed class Reference
 {
     public string Name { get; }
 

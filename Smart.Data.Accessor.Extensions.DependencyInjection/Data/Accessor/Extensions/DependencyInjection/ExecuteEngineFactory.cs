@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Extensions.DependencyInjection;
 
 using Smart.Data.Accessor.Engine;
 
-public class ExecuteEngineFactory
+public sealed class ExecuteEngineFactory
 {
     private readonly ExecuteEngineConfig config;
 

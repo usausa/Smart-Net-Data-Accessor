@@ -73,7 +73,7 @@ public sealed class QueryInfo<T>
                     columns[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
                 }
 
-                // Double checked locking
+                // Double-checked locking
                 if (optimizedMapper is not null)
                 {
                     return optimizedMapper;
@@ -109,7 +109,7 @@ public sealed class QueryInfo<T>
 
             lock (sync)
             {
-                // Double checked locking
+                // Double-checked locking
                 mapper = FindMapper(columns);
                 if (mapper is not null)
                 {
@@ -200,7 +200,7 @@ public sealed class QueryInfo<T>
 #pragma warning restore CA1309
 #pragma warning restore CA1307
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsShouldBePrivate", Justification = "Ignore")]
+#pragma warning disable SA1401
     private sealed class Node
     {
         public readonly ColumnInfo[] Columns;
@@ -215,4 +215,5 @@ public sealed class QueryInfo<T>
             Value = value;
         }
     }
+#pragma warning restore SA1401
 }

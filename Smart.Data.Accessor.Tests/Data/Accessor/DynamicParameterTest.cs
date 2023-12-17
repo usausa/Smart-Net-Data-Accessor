@@ -10,9 +10,7 @@ using Smart.Data.Accessor.Handlers;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class DynamicParameterTest
+public sealed class DynamicParameterTest
 {
     //--------------------------------------------------------------------------------
     // Simple
@@ -279,7 +277,7 @@ public class DynamicParameterTest
     // ForEach
     //--------------------------------------------------------------------------------
 
-    public class Parameter
+    public sealed class Parameter
     {
         public int Key1 { get; set; }
 
@@ -351,7 +349,7 @@ public class DynamicParameterTest
     // Handler
     //--------------------------------------------------------------------------------
 
-    public class DummyTypeHandler : ITypeHandler
+    public sealed class DummyTypeHandler : ITypeHandler
     {
         public void SetValue(DbParameter parameter, object value) => parameter.Size = 5;
 

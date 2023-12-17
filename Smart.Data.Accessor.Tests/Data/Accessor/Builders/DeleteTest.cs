@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor.Builders;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class DeleteTest
+public sealed class DeleteTest
 {
     //--------------------------------------------------------------------------------
     // All
@@ -144,7 +142,7 @@ public class DeleteTest
     // Parameter
     //--------------------------------------------------------------------------------
 
-    public class Parameter
+    public sealed class Parameter
     {
         public long Key1 { get; set; }
 

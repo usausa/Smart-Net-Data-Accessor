@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Selectors;
 
-public class TypeMapInfo
+public sealed class TypeMapInfo
 {
     public Type Type { get; }
 

@@ -5,9 +5,7 @@ using System.Data.Common;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class TransactionTest
+public sealed class TransactionTest
 {
     [DataAccessor]
     public interface ITransactionAccessor

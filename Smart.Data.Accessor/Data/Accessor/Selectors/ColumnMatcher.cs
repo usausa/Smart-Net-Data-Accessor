@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Configs;
 using Smart.Data.Accessor.Engine;
 using Smart.Linq;
 
-public class ColumnMatcher
+public sealed class ColumnMatcher
 {
     private readonly MethodInfo mi;
 

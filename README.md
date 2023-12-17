@@ -14,7 +14,7 @@ Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.
 Create data accessor interface and model class like this.
 
 ```csharp
-public class DataEntity
+public sealed class DataEntity
 {
     public long Id { get; set; }
 
@@ -346,7 +346,7 @@ public interface IQueryAccessor
 * IgnoreAttribute
 
 ```csharp
-public class DataEntity
+public sealed class DataEntity
 {
     // Ignore mapping
     [Ignore]
@@ -357,7 +357,7 @@ public class DataEntity
 * NameAttribute
 
 ```csharp
-public class UserEntity
+public sealed class UserEntity
 {
     // Map from USER_NAME column
     [Name("USER_NAME")]
@@ -368,7 +368,7 @@ public class UserEntity
 * DirectionAttribute
 
 ```csharp
-public class Parameter
+public sealed class Parameter
 {
     // ParameterDirection.Input is used
     [Input]
@@ -405,7 +405,7 @@ public interface IAnsiStringAccessor
 * DbTypeAttribute
 
 ```csharp
-public class Parameter
+public sealed class Parameter
 {
     // DbType.AnsiStringFixedLength is set
     [DbType(DbType.AnsiStringFixedLength, 3)]
@@ -437,7 +437,7 @@ public sealed class CustomParserAttribute : ResultParserAttribute
 ```
 
 ```csharp
-public class ParserEntity
+public sealed class ParserEntity
 {
     // DB value parsed by CustomParserAttribute
     [CustomParser]
@@ -448,7 +448,7 @@ public class ParserEntity
 ### Injection attribute
 
 ```csharp
-public class Counter
+public sealed class Counter
 {
     private long counter;
 
@@ -547,7 +547,7 @@ public interface IInsertAccessor
 * UpdateAttribute
 
 ```csharp
-public class UpdateValues
+public sealed class UpdateValues
 {
     [Key]
     public long Id { get; set; }
@@ -557,7 +557,7 @@ public class UpdateValues
 ```
 
 ```csharp
-public class UpdateValues
+public sealed class UpdateValues
 {
     public string Type { get; set; }
 
@@ -689,7 +689,7 @@ END
 ```
 
 ```csharp
-public class Parameter
+public sealed class Parameter
 {
     [Input]
     [Name("param1")]
@@ -757,7 +757,7 @@ List<DataEntity> Select([Condition(ExcludeEmpty = true)] string typel);
 * DbValueAttribute
 
 ```csharp
-public class DbValueEntity
+public sealed class DbValueEntity
 {
     [Key]
     public long Id { get; set; }
@@ -771,7 +771,7 @@ public class DbValueEntity
 * CodeValueAttribute
 
 ```csharp
-public class DataEntity
+public sealed class DataEntity
 {
     [Key]
     public string Key { get; set; }

@@ -1,6 +1,6 @@
 namespace Example.ConsoleApplication.Models;
 
-public class DataEntity
+public sealed class DataEntity
 {
     public long Id { get; set; }
 

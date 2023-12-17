@@ -2,9 +2,7 @@ namespace Smart.Data.Accessor.Engine;
 
 using Smart.ComponentModel;
 
-using Xunit;
-
-public class ExecuteEngineConfigTest
+public sealed class ExecuteEngineConfigTest
 {
     [Fact]
     public void CoverageFix()

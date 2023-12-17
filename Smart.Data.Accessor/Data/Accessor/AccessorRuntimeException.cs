@@ -1,7 +1,7 @@
 namespace Smart.Data.Accessor;
 
 [Serializable]
-public class AccessorRuntimeException : Exception
+public sealed class AccessorRuntimeException : Exception
 {
     public AccessorRuntimeException()
     {

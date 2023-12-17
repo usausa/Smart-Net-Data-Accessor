@@ -7,9 +7,7 @@ using Smart.Data.Accessor.Engine;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class ObjectResultMapperFactoryTest
+public sealed class ObjectResultMapperFactoryTest
 {
     //--------------------------------------------------------------------------------
     // Map
@@ -21,7 +19,7 @@ public class ObjectResultMapperFactoryTest
         One = 1
     }
 
-    public class MapEntity
+    public sealed class MapEntity
     {
         public bool BoolColumn { get; set; }
 
@@ -310,7 +308,7 @@ public class ObjectResultMapperFactoryTest
         }
     }
 
-    public class ParserEntity
+    public sealed class ParserEntity
     {
         [CustomParser]
         public long Id { get; set; }
@@ -457,7 +455,7 @@ public class ObjectResultMapperFactoryTest
     // InitOnly
     //--------------------------------------------------------------------------------
 
-    public class InitOnlyEntity
+    public sealed class InitOnlyEntity
     {
         public int Id { get; init; }
 
@@ -495,7 +493,7 @@ public class ObjectResultMapperFactoryTest
     // Constructor
     //--------------------------------------------------------------------------------
 
-    public class ClassConstructorEntity
+    public sealed class ClassConstructorEntity
     {
         public int Id { get; }
 
@@ -605,7 +603,7 @@ public class ObjectResultMapperFactoryTest
     // Invalid
     //--------------------------------------------------------------------------------
 
-    public class NoMapEntity
+    public sealed class NoMapEntity
     {
         public int Id { get; }
 

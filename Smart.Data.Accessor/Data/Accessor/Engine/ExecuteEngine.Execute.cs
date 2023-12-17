@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Mappers;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:MarkMembersAsStatic", Justification = "Ignore")]
 public sealed partial class ExecuteEngine
 {
     private const CommandBehavior CommandBehaviorForEnumerable =
@@ -44,66 +43,83 @@ public sealed partial class ExecuteEngine
     // Execute
     //--------------------------------------------------------------------------------
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Execute(DbCommand cmd)
     {
         return cmd.ExecuteNonQuery();
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Task<int> ExecuteAsync(DbCommand cmd, CancellationToken cancel = default)
     {
         return cmd.ExecuteNonQueryAsync(cancel);
     }
+#pragma warning restore CA1822
 
     //--------------------------------------------------------------------------------
     // ExecuteScalar
     //--------------------------------------------------------------------------------
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public object? ExecuteScalar(DbCommand cmd)
     {
         return cmd.ExecuteScalar();
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Task<object?> ExecuteScalarAsync(DbCommand cmd, CancellationToken cancel = default)
     {
         return cmd.ExecuteScalarAsync(cancel);
     }
+#pragma warning restore CA1822
 
     //--------------------------------------------------------------------------------
     // ExecuteReader
     //--------------------------------------------------------------------------------
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public DbDataReader ExecuteReaderWithClose(DbCommand cmd)
     {
         return cmd.ExecuteReader(CommandBehaviorForEnumerableWithClose);
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Task<DbDataReader> ExecuteReaderWithCloseAsync(DbCommand cmd, CancellationToken cancel = default)
     {
         return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerableWithClose, cancel);
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public DbDataReader ExecuteReader(DbCommand cmd)
     {
         return cmd.ExecuteReader(CommandBehaviorForEnumerable);
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Task<DbDataReader> ExecuteReaderAsync(DbCommand cmd, CancellationToken cancel = default)
     {
         return cmd.ExecuteReaderAsync(CommandBehaviorForEnumerable, cancel);
     }
+#pragma warning restore CA1822
 
     //--------------------------------------------------------------------------------
     // QueryBuffer
     //--------------------------------------------------------------------------------
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public List<T> QueryBuffer<T>(QueryInfo<T> info, DbCommand cmd)
     {
@@ -118,7 +134,9 @@ public sealed partial class ExecuteEngine
 
         return list;
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public async ValueTask<List<T>> QueryBufferAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
     {
@@ -135,11 +153,13 @@ public sealed partial class ExecuteEngine
 
         return list;
     }
+#pragma warning restore CA1822
 
     //--------------------------------------------------------------------------------
     // QueryFirstOrDefault
     //--------------------------------------------------------------------------------
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T? QueryFirstOrDefault<T>(QueryInfo<T> info, DbCommand cmd)
     {
@@ -153,7 +173,9 @@ public sealed partial class ExecuteEngine
 
         return default;
     }
+#pragma warning restore CA1822
 
+#pragma warning disable CA1822
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public async Task<T?> QueryFirstOrDefaultAsync<T>(QueryInfo<T> info, DbCommand cmd, CancellationToken cancel = default)
     {
@@ -169,4 +191,5 @@ public sealed partial class ExecuteEngine
 
         return default;
     }
+#pragma warning restore CA1822
 }

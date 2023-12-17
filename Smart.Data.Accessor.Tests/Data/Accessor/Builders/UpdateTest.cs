@@ -4,9 +4,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Mapper;
 using Smart.Mock;
 
-using Xunit;
-
-public class UpdateTest
+public sealed class UpdateTest
 {
     [DataAccessor]
     public interface IUpdateAllAccessor
@@ -128,7 +126,7 @@ public class UpdateTest
     // Values
     //--------------------------------------------------------------------------------
 
-    public class UpdateValues
+    public sealed class UpdateValues
     {
         public string Type { get; set; } = default!;
 
@@ -213,7 +211,7 @@ public class UpdateTest
     // DbValue
     //--------------------------------------------------------------------------------
 
-    public class DbValueEntity
+    public sealed class DbValueEntity
     {
         [Key]
         public long Id { get; set; }
@@ -289,14 +287,14 @@ public class UpdateTest
     // CodeValue
     //--------------------------------------------------------------------------------
 
-    public class Counter
+    public sealed class Counter
     {
         private long counter;
 
         public long Next() => ++counter;
     }
 
-    public class CodeValueEntity
+    public sealed class CodeValueEntity
     {
         [Key]
         public string Key { get; set; } = default!;

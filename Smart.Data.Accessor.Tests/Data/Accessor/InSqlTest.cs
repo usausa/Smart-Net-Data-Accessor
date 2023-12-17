@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
-using Xunit;
-
-public class InSqlTest
+public sealed class InSqlTest
 {
     //--------------------------------------------------------------------------------
     // Array

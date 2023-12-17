@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator;
 
-public class FileSourceWriter : ISourceWriter
+public sealed class FileSourceWriter : ISourceWriter
 {
     private readonly string outputDirectory;
 

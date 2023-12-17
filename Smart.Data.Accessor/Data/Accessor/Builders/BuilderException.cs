@@ -1,7 +1,7 @@
 namespace Smart.Data.Accessor.Builders;
 
 [Serializable]
-public class BuilderException : Exception
+public sealed class BuilderException : Exception
 {
     public BuilderException()
     {

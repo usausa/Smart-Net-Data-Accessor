@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor.Mappers;
 using Smart.Data.Accessor.Engine;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class SingleResultMapperFactoryTest
+public sealed class SingleResultMapperFactoryTest
 {
     //--------------------------------------------------------------------------------
     // Query

@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Scripts;
 
-using Xunit;
-
-public class ScriptHelperTest
+public sealed class ScriptHelperTest
 {
     [Fact]
     public void CoverageFix()

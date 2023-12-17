@@ -9,9 +9,7 @@ using Smart.Data.Accessor.Handlers;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class ParameterTest
+public sealed class ParameterTest
 {
     //--------------------------------------------------------------------------------
     // Enum
@@ -24,7 +22,7 @@ public class ParameterTest
         Two
     }
 
-    public class ToStringTypeHandler : ITypeHandler
+    public sealed class ToStringTypeHandler : ITypeHandler
     {
         public void SetValue(DbParameter parameter, object value)
         {
@@ -275,7 +273,7 @@ public class ParameterTest
     // TypeHandler
     //--------------------------------------------------------------------------------
 
-    public class DummyTypeHandler : ITypeHandler
+    public sealed class DummyTypeHandler : ITypeHandler
     {
         public void SetValue(DbParameter parameter, object value) => parameter.Size = 5;
 

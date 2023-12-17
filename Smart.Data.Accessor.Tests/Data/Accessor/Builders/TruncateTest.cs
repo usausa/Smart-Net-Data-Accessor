@@ -6,9 +6,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class TruncateTest
+public sealed class TruncateTest
 {
     //--------------------------------------------------------------------------------
     // Truncate

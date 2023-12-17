@@ -10,7 +10,7 @@ using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Generator;
 using Smart.Data.Accessor.Helpers;
 
-public class TestFactory
+public sealed class TestFactory
 {
     private readonly ISqlLoader loader;
 

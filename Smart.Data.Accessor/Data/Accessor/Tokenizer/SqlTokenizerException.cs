@@ -1,7 +1,7 @@
 namespace Smart.Data.Accessor.Tokenizer;
 
 [Serializable]
-public class SqlTokenizerException : Exception
+public sealed class SqlTokenizerException : Exception
 {
     public SqlTokenizerException()
     {

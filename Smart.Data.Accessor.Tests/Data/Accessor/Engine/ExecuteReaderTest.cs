@@ -7,9 +7,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Generator;
 using Smart.Mock;
 
-using Xunit;
-
-public class ExecuteReaderTest
+public sealed class ExecuteReaderTest
 {
     //--------------------------------------------------------------------------------
     // Execute

@@ -1,7 +1,7 @@
 namespace Smart.Data.Accessor.Generator;
 
 [Serializable]
-public class AccessorGeneratorException : Exception
+public sealed class AccessorGeneratorException : Exception
 {
     public AccessorGeneratorException()
     {

@@ -2,29 +2,27 @@ namespace Smart.Data.Accessor.Configs;
 
 using Smart.Data.Accessor.Attributes;
 
-using Xunit;
-
-public class ConfigHelperTest
+public sealed class ConfigHelperTest
 {
     //--------------------------------------------------------------------------------
     // Table
     //--------------------------------------------------------------------------------
 
-    public class TableEntity
+    public sealed class TableEntity
     {
     }
 
-    public class TableSuffixNoMatch
+    public sealed class TableSuffixNoMatch
     {
     }
 
     [Name("T_TABLE")]
-    public class TableWithNameEntity
+    public sealed class TableWithNameEntity
     {
     }
 
     [EntitySuffix("Table")]
-    public class TableWithSuffixTable
+    public sealed class TableWithSuffixTable
     {
     }
 
@@ -43,12 +41,12 @@ public class ConfigHelperTest
     // Column
     //--------------------------------------------------------------------------------
 
-    public class PropertyEntity
+    public sealed class PropertyEntity
     {
         public int Value { get; set; }
     }
 
-    public class PropertyWithNameEntity
+    public sealed class PropertyWithNameEntity
     {
         [Name("COL_VALUE")]
         public int Value { get; set; }

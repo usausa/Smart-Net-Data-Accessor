@@ -212,6 +212,7 @@ public sealed partial class ExecuteEngine
         {
         }
 
+#pragma warning disable CA1822
         public DbParameter Setup(DbCommand cmd)
         {
             var parameter = cmd.CreateParameter();
@@ -219,9 +220,12 @@ public sealed partial class ExecuteEngine
             parameter.Direction = ParameterDirection.ReturnValue;
             return parameter;
         }
+#pragma warning restore CA1822
     }
 
+#pragma warning disable CA1822
     public ReturnParameterSetup CreateReturnParameterSetup() => ReturnParameterSetup.Instance;
+#pragma warning restore CA1822
 
     //--------------------------------------------------------------------------------
     // IList
@@ -333,7 +337,7 @@ public sealed partial class ExecuteEngine
 
     private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string name, object value);
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Performance")]
+#pragma warning disable SA1401
     private sealed class DynamicParameterEntry
     {
         public static DynamicParameterEntry Empty { get; } = new(null!, null!);
@@ -348,6 +352,7 @@ public sealed partial class ExecuteEngine
             Handler = handler;
         }
     }
+#pragma warning restore SA1401
 
     public sealed class DynamicParameterSetup
     {

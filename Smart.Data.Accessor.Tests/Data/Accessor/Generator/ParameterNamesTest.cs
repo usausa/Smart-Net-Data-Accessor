@@ -2,9 +2,7 @@ namespace Smart.Data.Accessor.Generator;
 
 using Smart.Data.Accessor.Generator.Helpers;
 
-using Xunit;
-
-public class ParameterNamesTest
+public sealed class ParameterNamesTest
 {
     [Fact]
     public void TestGetParameterNames()

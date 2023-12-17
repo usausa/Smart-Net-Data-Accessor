@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Engine;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Ignore")]
+#pragma warning disable CA1815
 public readonly struct ColumnInfo
 {
     public string Name { get; }
@@ -13,3 +13,4 @@ public readonly struct ColumnInfo
         Type = type;
     }
 }
+#pragma warning restore CA1815

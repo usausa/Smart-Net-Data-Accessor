@@ -7,9 +7,7 @@ using Smart.Data.Accessor.Generator;
 using Smart.Mock;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class TimeoutTest
+public sealed class TimeoutTest
 {
     [DataAccessor]
     public interface ICommandTimeoutAttributeAccessor

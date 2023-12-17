@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Selectors;
 
 using System.Reflection;
 
-public class ConstructorMapInfo
+public sealed class ConstructorMapInfo
 {
     public ConstructorInfo Info { get; }
 

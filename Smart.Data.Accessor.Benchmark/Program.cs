@@ -26,7 +26,7 @@ public static class Program
     }
 }
 
-public class BenchmarkConfig : ManualConfig
+public sealed class BenchmarkConfig : ManualConfig
 {
     public BenchmarkConfig()
     {
@@ -46,10 +46,9 @@ public class BenchmarkConfig : ManualConfig
     }
 }
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", Justification = "Ignore")]
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Ignore")]
+#pragma warning disable CA1001
 [Config(typeof(BenchmarkConfig))]
-public class AccessorBenchmark
+public sealed class AccessorBenchmark
 {
     private MockRepeatDbConnection mockExecute = default!;
     private MockRepeatDbConnection mockExecuteScalar = default!;
@@ -59,6 +58,7 @@ public class AccessorBenchmark
     private DapperAccessor dapperExecuteAccessor = default!;
     private IBenchmarkAccessor smartExecuteAccessor = default!;
 
+#pragma warning disable CA2000
     [GlobalSetup]
     public void Setup()
     {
@@ -96,6 +96,7 @@ public class AccessorBenchmark
         var factory = new DataAccessorFactory(engine);
         smartExecuteAccessor = factory.Create<IBenchmarkAccessor>();
     }
+#pragma warning restore CA2000
 
     [GlobalCleanup]
     public void Cleanup()
@@ -146,6 +147,7 @@ public class AccessorBenchmark
     [Benchmark]
     public long SmartWithCondition() => smartExecuteAccessor.ExecuteScalarWithCondition(mockExecuteScalar, "1");
 }
+#pragma warning restore CA1001
 
 [DataAccessor]
 public interface IBenchmarkAccessor
@@ -224,7 +226,7 @@ public sealed class DapperAccessor : IBenchmarkAccessorForDapper
     }
 }
 
-public class DataEntity
+public sealed class DataEntity
 {
     public long Id { get; set; }
 

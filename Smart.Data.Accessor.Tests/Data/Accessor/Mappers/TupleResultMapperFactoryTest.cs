@@ -3,22 +3,20 @@ namespace Smart.Data.Accessor.Mappers;
 using Smart.Data.Accessor.Engine;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public class TupleResultMapperFactoryTest
+public sealed class TupleResultMapperFactoryTest
 {
     //--------------------------------------------------------------------------------
     // Class/Property
     //--------------------------------------------------------------------------------
 
-    public class ClassPropertyMasterEntity
+    public sealed class ClassPropertyMasterEntity
     {
         public int Id { get; set; }
 
         public string Name { get; set; } = default!;
     }
 
-    public class ClassPropertySlaveEntity
+    public sealed class ClassPropertySlaveEntity
     {
         public int Id { get; set; }
 
@@ -139,7 +137,7 @@ public class TupleResultMapperFactoryTest
     // Class/Constructor
     //--------------------------------------------------------------------------------
 
-    public class ClassConstructorMasterEntity
+    public sealed class ClassConstructorMasterEntity
     {
         public int Id { get; }
 
@@ -152,7 +150,7 @@ public class TupleResultMapperFactoryTest
         }
     }
 
-    public class ClassConstructorSlaveEntity
+    public sealed class ClassConstructorSlaveEntity
     {
         public int Id { get; }
 
@@ -735,11 +733,11 @@ public class TupleResultMapperFactoryTest
     // NoMap/Master
     //--------------------------------------------------------------------------------
 
-    public class NoMapMasterMasterEntity
+    public sealed class NoMapMasterMasterEntity
     {
     }
 
-    public class NoMapMasterSlaveEntity
+    public sealed class NoMapMasterSlaveEntity
     {
         public int Id { get; set; }
 
@@ -788,14 +786,14 @@ public class TupleResultMapperFactoryTest
     // NoMap/Slave
     //--------------------------------------------------------------------------------
 
-    public class NoMapSlaveMasterEntity
+    public sealed class NoMapSlaveMasterEntity
     {
         public int Id { get; set; }
 
         public string Name { get; set; } = default!;
     }
 
-    public class NoMapSlaveSlaveEntity
+    public sealed class NoMapSlaveSlaveEntity
     {
     }
 
@@ -940,7 +938,7 @@ public class TupleResultMapperFactoryTest
     // NoMap
     //--------------------------------------------------------------------------------
 
-    public class NoMapMasterEntity
+    public sealed class NoMapMasterEntity
     {
         public int Id { get; }
 
@@ -950,7 +948,7 @@ public class TupleResultMapperFactoryTest
         }
     }
 
-    public class NoMapSlaveEntity
+    public sealed class NoMapSlaveEntity
     {
     }
 

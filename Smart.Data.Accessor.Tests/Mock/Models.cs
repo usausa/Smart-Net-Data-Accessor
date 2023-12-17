@@ -3,7 +3,7 @@ namespace Smart.Mock;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock.Data;
 
-public class DataEntity
+public sealed class DataEntity
 {
     public long Id { get; set; }
 
@@ -11,7 +11,7 @@ public class DataEntity
 }
 
 #pragma warning disable CA1819
-public class MultiKeyEntity
+public sealed class MultiKeyEntity
 {
     [Key(1)]
     public long Key1 { get; set; }
