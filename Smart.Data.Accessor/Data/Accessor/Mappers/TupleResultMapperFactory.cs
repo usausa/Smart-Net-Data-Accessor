@@ -42,7 +42,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         {
             assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
-                new object[] { assemblyName }));
+                [assemblyName]));
 
             targetAssemblies.Add(assemblyName);
         }

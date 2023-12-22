@@ -417,12 +417,12 @@ public sealed partial class ExecuteEngine
         {
             var method = GetType().GetMethod(nameof(CreateDynamicListParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
             var elementType = ParameterHelper.GetMultipleParameterElementType(type);
-            return (DynamicParameterEntry)method.Invoke(this, new object[] { elementType })!;
+            return (DynamicParameterEntry)method.Invoke(this, [elementType])!;
         }
         else
         {
             var method = GetType().GetMethod(nameof(CreateDynamicSimpleParameterSetup), BindingFlags.Instance | BindingFlags.NonPublic)!;
-            return (DynamicParameterEntry)method.Invoke(this, new object[] { type })!;
+            return (DynamicParameterEntry)method.Invoke(this, [type])!;
         }
     }
 

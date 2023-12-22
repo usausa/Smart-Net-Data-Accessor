@@ -40,7 +40,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         {
             assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
                 typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
-                new object[] { assemblyName }));
+                [assemblyName]));
 
             targetAssemblies.Add(assemblyName);
         }
