@@ -48,7 +48,7 @@ public sealed class BenchmarkConfig : ManualConfig
 
 #pragma warning disable CA1001
 [Config(typeof(BenchmarkConfig))]
-public sealed class AccessorBenchmark
+public class AccessorBenchmark
 {
     private MockRepeatDbConnection mockExecute = default!;
     private MockRepeatDbConnection mockExecuteScalar = default!;
@@ -191,7 +191,7 @@ public interface IBenchmarkAccessorForDapper
     DataEntity? QueryFirstOrDefault(DbConnection con, long id);
 }
 
-public sealed class DapperAccessor : IBenchmarkAccessorForDapper
+public class DapperAccessor : IBenchmarkAccessorForDapper
 {
     public int Execute(DbConnection con, DataEntity entity)
     {
