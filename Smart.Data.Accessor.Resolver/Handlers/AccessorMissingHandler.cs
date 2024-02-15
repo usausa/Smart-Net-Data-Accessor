@@ -15,7 +15,7 @@ public sealed class AccessorMissingHandler : IMissingHandler
     {
         if (!type.IsInterface || (type.GetCustomAttribute<DataAccessorAttribute>() is null))
         {
-            return Enumerable.Empty<Binding>();
+            return [];
         }
 
 #pragma warning disable CA2000
