@@ -37,7 +37,7 @@
 
   <PropertyGroup>
     <AnalysisMode>All</AnalysisMode>
-    <AnalysisLevel>preview</AnalysisLevel>
+    <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>
