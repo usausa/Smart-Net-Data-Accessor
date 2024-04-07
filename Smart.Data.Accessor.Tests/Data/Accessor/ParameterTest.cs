@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor;
 
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Generator;
@@ -159,6 +160,65 @@ public sealed class ParameterTest
         });
 
         accessor.Execute(con, "xxx", "a");
+    }
+
+    //--------------------------------------------------------------------------------
+    // Attribute handler
+    //--------------------------------------------------------------------------------
+
+    public sealed class CustomParameterAttribute : ParameterBuilderAttribute
+    {
+        public CustomParameterAttribute()
+            : base(DbType.AnsiString)
+        {
+        }
+
+        public override Action<DbParameter, object> CreateHandler(IServiceProvider provider)
+        {
+            return static (p, v) =>
+            {
+                if (v is DateTime dateTime)
+                {
+                    p.Value = dateTime.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+                }
+            };
+        }
+    }
+
+    public sealed class CustomParameter
+    {
+        [CustomParameter]
+        public DateTime Date { get; set; }
+    }
+
+    [DataAccessor]
+    public interface ICustomParameterAccessor
+    {
+        [Execute]
+        int Execute(DbConnection con, CustomParameter parameter);
+    }
+
+    [Fact]
+    public void TestCustomParameter()
+    {
+        var generator = new TestFactoryBuilder()
+            .SetSql("Date = /*@ Date */'20001231'")
+            .Build();
+
+        var accessor = generator.Create<ICustomParameterAccessor>();
+
+        var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
+        {
+            cmd.Executing = c =>
+            {
+                Assert.Equal(DbType.AnsiString, c.Parameters[0].DbType);
+                Assert.Equal("20001231", c.Parameters[0].Value);
+            };
+            cmd.SetupResult(1);
+        });
+
+        accessor.Execute(con, new CustomParameter { Date = new DateTime(2000, 12, 31) });
     }
 
     //--------------------------------------------------------------------------------

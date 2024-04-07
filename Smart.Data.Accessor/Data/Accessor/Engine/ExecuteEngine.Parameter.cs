@@ -62,7 +62,7 @@ public sealed partial class ExecuteEngine
         var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
         if (attribute is not null)
         {
-            return new InParameterSetup(null, attribute.DbType, attribute.Size);
+            return new InParameterSetup(attribute.CreateHandler(ServiceProvider), attribute.DbType, attribute.Size);
         }
 
         // ITypeHandler
@@ -133,7 +133,7 @@ public sealed partial class ExecuteEngine
         var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
         if (attribute is not null)
         {
-            return new InOutParameterSetup(null, attribute.DbType, attribute.Size);
+            return new InOutParameterSetup(attribute.CreateHandler(ServiceProvider), attribute.DbType, attribute.Size);
         }
 
         // ITypeHandler
@@ -313,7 +313,7 @@ public sealed partial class ExecuteEngine
         var attribute = provider.GetCustomAttributes(true).OfType<ParameterBuilderAttribute>().FirstOrDefault();
         if (attribute is not null)
         {
-            return new ListParameterSetup(this, null, attribute.DbType, attribute.Size);
+            return new ListParameterSetup(this, attribute.CreateHandler(ServiceProvider), attribute.DbType, attribute.Size);
         }
 
         // ITypeHandler
