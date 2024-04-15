@@ -604,7 +604,7 @@ internal sealed class SourceBuilder
                         case ParameterDirection.Input:
                             if (parameter.IsMultiple)
                             {
-                                Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(GeneratorHelper.GetEnumerableElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
+                                Append($"{RuntimeHelperType}.CreateListParameterSetup({CtorArg}, typeof({GeneratorHelper.MakeGlobalName(GeneratorHelper.GetListElementType(parameter.Type))}), method{mm.No}, {parameter.ParameterIndex}, {declaringType}, {propertyName});");
                             }
                             else
                             {

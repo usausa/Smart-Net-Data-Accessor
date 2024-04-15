@@ -87,9 +87,7 @@ public static class ParameterHelper
 
     public static bool IsMultipleParameter(Type type)
     {
-        return (type != typeof(byte[])) &&
-               (type != typeof(string)) &&
-               (type.IsArray || type.GetInterfaces().Prepend(type).Any(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IEnumerable<>))));
+        return (type != typeof(byte[])) && (type.IsArray || type.GetInterfaces().Prepend(type).Any(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))));
     }
 
     public static Type GetMultipleParameterElementType(Type type)
