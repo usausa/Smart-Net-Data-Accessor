@@ -165,24 +165,24 @@ public sealed class DynamicParameterTest
     }
 
     //--------------------------------------------------------------------------------
-    // List
+    // Enumerable
     //--------------------------------------------------------------------------------
 
     [DataAccessor]
-    public interface IListAccessor
+    public interface IEnumerableAccessor
     {
         [Execute]
-        void Execute(DbConnection con, List<int>? values);
+        void Execute(DbConnection con, IEnumerable<int>? values);
     }
 
     [Fact]
-    public void TestList()
+    public void TestEnumerable()
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
             .Build();
 
-        var accessor = generator.Create<IListAccessor>();
+        var accessor = generator.Create<IEnumerableAccessor>();
 
         var con = new MockDbConnection();
         con.SetupCommand(cmd =>
