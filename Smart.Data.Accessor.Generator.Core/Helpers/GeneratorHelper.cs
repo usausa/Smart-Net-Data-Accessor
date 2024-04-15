@@ -23,7 +23,12 @@ internal static class GeneratorHelper
             return;
         }
 
-        if (type.IsGenericType)
+        if (type.IsArray)
+        {
+            MakeGlobalName(sb, type.GetElementType()!);
+            sb.Append("[]");
+        }
+        else if (type.IsGenericType)
         {
             var index = type.FullName!.IndexOf('`', StringComparison.Ordinal);
             sb.Append("global::").Append(type.FullName[..index].Replace('+', '.'));
