@@ -1293,7 +1293,7 @@ internal sealed class SourceBuilder
 
         public override void Visit(SqlNode node)
         {
-            builder.AppendLine($"{CommandVar}.CommandText = \"{node.Sql}\";");
+            builder.AppendLine($"{CommandVar}.CommandText = @\"{node.Sql}\";");
             builder.NewLine();
         }
 
@@ -1347,7 +1347,7 @@ internal sealed class SourceBuilder
                 builder.NewLine();
             }
 
-            builder.AppendLine($"{CommandVar}.CommandText = \"{sql}\";");
+            builder.AppendLine($"{CommandVar}.CommandText = @\"{sql}\";");
         }
     }
 
@@ -1372,10 +1372,7 @@ internal sealed class SourceBuilder
             builder.NewLine();
         }
 
-        public override void Visit(SqlNode node)
-        {
-            sql.Append(node.Sql);
-        }
+        public override void Visit(SqlNode node) => sql.Append(node.Sql);
 
         public override void Visit(ParameterNode node)
         {
@@ -1397,7 +1394,7 @@ internal sealed class SourceBuilder
         {
             if (sql.Length > 0)
             {
-                builder.AppendLine($"{SqlVar}.Append(\"{sql}\");");
+                builder.AppendLine($"{SqlVar}.Append(@\"{sql}\");");
             }
 
             sql.Clear();
@@ -1465,10 +1462,7 @@ internal sealed class SourceBuilder
             }
         }
 
-        public override void Visit(SqlNode node)
-        {
-            sql.Append(node.Sql);
-        }
+        public override void Visit(SqlNode node) => sql.Append(node.Sql);
 
         public override void Visit(RawSqlNode node)
         {
@@ -1517,7 +1511,7 @@ internal sealed class SourceBuilder
         {
             if (sql.Length > 0)
             {
-                builder.AppendLine($"{SqlVar}.Append(\"{sql}\");");
+                builder.AppendLine($"{SqlVar}.Append(@\"{sql}\");");
             }
 
             sql.Clear();
