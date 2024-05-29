@@ -6,7 +6,7 @@ public sealed class SqlNode : INode
 
     public SqlNode(string sql)
     {
-        Sql = sql.Replace(@"\", @"\\", StringComparison.Ordinal);
+        Sql = sql;
     }
 
     public void Visit(INodeVisitor visitor) => visitor.Visit(this);
