@@ -335,7 +335,7 @@ public sealed partial class ExecuteEngine
     // Dynamic
     //--------------------------------------------------------------------------------
 
-    private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string name, object value);
+    private delegate void DynamicAction(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object value);
 
 #pragma warning disable SA1401
     private sealed class DynamicParameterEntry
@@ -368,7 +368,7 @@ public sealed partial class ExecuteEngine
             this.isMultiple = isMultiple;
         }
 
-        public void Setup(DbCommand cmd, ref StringBuffer sql, string name, object? value)
+        public void Setup(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object? value)
         {
             if (value is null)
             {
@@ -378,6 +378,7 @@ public sealed partial class ExecuteEngine
                 }
                 else
                 {
+                    sql.Append(prefix);
                     sql.Append(name);
 
                     var parameter = cmd.CreateParameter();
@@ -396,7 +397,7 @@ public sealed partial class ExecuteEngine
                 }
 
                 // [MEMO] Boxed if value type
-                entry.Handler(cmd, ref sql, name, value);
+                entry.Handler(cmd, ref sql, prefix, name, value);
             }
         }
     }
@@ -445,7 +446,7 @@ public sealed partial class ExecuteEngine
 
     private DynamicAction CreateDynamicListParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
     {
-        void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
+        void Build(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object value)
         {
             var values = (IList)value;
 
@@ -459,6 +460,7 @@ public sealed partial class ExecuteEngine
             {
                 for (var i = 0; i < values.Count; i++)
                 {
+                    sql.Append(prefix);
                     sql.Append(name);
                     sql.Append(GetParameterSubName(i));
                     sql.Append(", ");
@@ -514,8 +516,9 @@ public sealed partial class ExecuteEngine
 
     private static DynamicAction CreateDynamicSimpleParameterHandler(Action<DbParameter, object>? handler, DbType dbType)
     {
-        void Build(DbCommand cmd, ref StringBuffer sql, string name, object value)
+        void Build(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object value)
         {
+            sql.Append(prefix);
             sql.Append(name);
 
             var parameter = cmd.CreateParameter();

@@ -1503,7 +1503,7 @@ internal sealed class SourceBuilder
                 }
 
                 FlushSql();
-                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"{ParameterNames.GetDynamicParameterName()}"));
+                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"{mm.BindPrefix}", $"{ParameterNames.GetDynamicParameterName()}"));
             }
         }
 
@@ -1567,8 +1567,8 @@ internal sealed class SourceBuilder
         };
     }
 
-    private static string MakeDynamicParameterSetup(MethodMetadata mm, DynamicParameterEntry parameter, string name)
+    private static string MakeDynamicParameterSetup(MethodMetadata mm, DynamicParameterEntry parameter, string prefix, string name)
     {
-        return $"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, ref {BuilderVar}, $\"{name}{{{DynamicIndexVar}++}}\", {parameter.Name});";
+        return $"{GetSetupDynamicParameterFieldRef(mm.No, parameter.Index)}.Setup({CommandVar}, ref {BuilderVar}, $\"{prefix}\", $\"{name}{{{DynamicIndexVar}++}}\", {parameter.Name});";
     }
 }
