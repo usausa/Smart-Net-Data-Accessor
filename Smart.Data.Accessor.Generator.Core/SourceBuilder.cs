@@ -1503,7 +1503,7 @@ internal sealed class SourceBuilder
                 }
 
                 FlushSql();
-                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"{mm.BindPrefix}{ParameterNames.GetDynamicParameterName()}"));
+                builder.AppendLine(MakeDynamicParameterSetup(mm, dynamicParameter, $"{ParameterNames.GetDynamicParameterName()}"));
             }
         }
 
