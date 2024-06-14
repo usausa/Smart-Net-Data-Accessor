@@ -314,22 +314,22 @@ public sealed class DynamicParameterTest
                     "WHERE ((1 = 0) OR (Key1 = @dp0 AND Key2 = @dp1) OR (Key1 = @dp2 AND Key2 = @dp3) OR (Key1 = @dp4 AND Key2 = @dp5))",
                     c.CommandText);
                 Assert.Equal(6, c.Parameters.Count);
-                Assert.Equal("@dp0", c.Parameters[0].ParameterName);
+                Assert.Equal("dp0", c.Parameters[0].ParameterName);
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
                 Assert.Equal(1, c.Parameters[0].Value);
-                Assert.Equal("@dp1", c.Parameters[1].ParameterName);
+                Assert.Equal("dp1", c.Parameters[1].ParameterName);
                 Assert.Equal(DbType.String, c.Parameters[1].DbType);
                 Assert.Equal("a", c.Parameters[1].Value);
-                Assert.Equal("@dp2", c.Parameters[2].ParameterName);
+                Assert.Equal("dp2", c.Parameters[2].ParameterName);
                 Assert.Equal(DbType.Int32, c.Parameters[2].DbType);
                 Assert.Equal(2, c.Parameters[2].Value);
-                Assert.Equal("@dp3", c.Parameters[3].ParameterName);
+                Assert.Equal("dp3", c.Parameters[3].ParameterName);
                 Assert.Equal(DbType.String, c.Parameters[3].DbType);
                 Assert.Equal("b", c.Parameters[3].Value);
-                Assert.Equal("@dp4", c.Parameters[4].ParameterName);
+                Assert.Equal("dp4", c.Parameters[4].ParameterName);
                 Assert.Equal(DbType.Int32, c.Parameters[4].DbType);
                 Assert.Equal(3, c.Parameters[4].Value);
-                Assert.Equal("@dp5", c.Parameters[5].ParameterName);
+                Assert.Equal("dp5", c.Parameters[5].ParameterName);
                 Assert.Equal(DbType.String, c.Parameters[5].DbType);
                 Assert.Equal("c", c.Parameters[5].Value);
             };
