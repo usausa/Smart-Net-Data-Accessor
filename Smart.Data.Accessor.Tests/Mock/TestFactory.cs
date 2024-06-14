@@ -56,7 +56,7 @@ public sealed class TestFactory
 
         var compilation = CSharpCompilation.Create(
             assemblyName,
-            new[] { syntax },
+            [syntax],
             metadataReferences,
             options);
 

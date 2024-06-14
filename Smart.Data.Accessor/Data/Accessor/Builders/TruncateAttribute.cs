@@ -41,9 +41,6 @@ public sealed class TruncateAttribute : MethodAttribute
             throw new BuilderException($"Table name resolve failed. type=[{mi.DeclaringType!.FullName}], method=[{mi.Name}]");
         }
 
-        return new[]
-        {
-            new SqlNode($"TRUNCATE TABLE {tableName}")
-        };
+        return [new SqlNode($"TRUNCATE TABLE {tableName}")];
     }
 }

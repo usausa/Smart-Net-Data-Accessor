@@ -19,10 +19,7 @@ public sealed class AccessorMissingHandler : IMissingHandler
         }
 
 #pragma warning disable CA2000
-        return new[]
-        {
-            new Binding(type, new DataAccessorProvider(type), new SingletonScope(components), null, null, null)
-        };
+        return [new Binding(type, new DataAccessorProvider(type), new SingletonScope(components), null, null, null)];
 #pragma warning restore CA2000
     }
 }
