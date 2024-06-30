@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net8.0-windows;net6.0</TargetFrameworks>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net6.0'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net8.0-windows' or'$(TargetFramework)' == 'net6.0'">
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
@@ -25,10 +25,13 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net6.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net6.0'">
+  <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor.Generator.Core\Smart.Data.Accessor.Generator.Core.csproj" PrivateAssets="All" />
   </ItemGroup>
 
@@ -44,6 +47,13 @@
     <ItemGroup>
       <_PackageFiles Include="bin\Release\net8.0\**">
         <PackagePath>tools\net8.0</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
+    <ItemGroup>
+      <_PackageFiles Include="bin\Release\net8.0-windows\**">
+        <PackagePath>tools\net8.0-windows</PackagePath>
         <Visible>false</Visible>
         <BuildAction>Content</BuildAction>
       </_PackageFiles>

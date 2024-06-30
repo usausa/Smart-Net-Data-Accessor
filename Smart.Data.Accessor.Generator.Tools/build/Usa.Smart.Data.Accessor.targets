@@ -12,6 +12,9 @@
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net8.0')) == true">
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net8.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net8.0-windows')) == true">
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net8.0-windows\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+  </PropertyGroup>
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net8.0')) != true">
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net6.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
