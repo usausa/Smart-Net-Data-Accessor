@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
@@ -15,8 +15,8 @@
 
   <ItemGroup>
     <PackageReference Include="Usa.Smart.Converter" Version="2.3.0" />
-    <PackageReference Include="Usa.Smart.Core" Version="2.3.6" />
-    <PackageReference Include="Usa.Smart.Data" Version="2.4.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.3.7" />
+    <PackageReference Include="Usa.Smart.Data" Version="2.4.3" />
   </ItemGroup>
 
 </Project>
