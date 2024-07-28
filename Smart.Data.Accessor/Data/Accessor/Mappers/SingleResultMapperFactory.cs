@@ -39,7 +39,9 @@ public sealed class SingleResultMapperFactory : IResultMapperFactory
 
     public SingleResultMapperFactory(IEnumerable<Type> types)
     {
+#pragma warning disable IDE0055
         supportedTypes = [..types];
+#pragma warning restore IDE0055
     }
 
     public bool IsMatch(Type type, MethodInfo mi)
