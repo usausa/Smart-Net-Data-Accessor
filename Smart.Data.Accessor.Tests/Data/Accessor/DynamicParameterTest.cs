@@ -216,7 +216,7 @@ public sealed class DynamicParameterTest
 
         accessor.Execute(con, null);
         accessor.Execute(con, []);
-        accessor.Execute(con, new List<int>([1, 2]));
+        accessor.Execute(con, [1, 2]);
     }
 
     //--------------------------------------------------------------------------------
