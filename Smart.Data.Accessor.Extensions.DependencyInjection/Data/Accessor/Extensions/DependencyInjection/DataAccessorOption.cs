@@ -6,5 +6,5 @@ public sealed class DataAccessorOption
 {
     public ExecuteEngineFactoryOptions EngineOption { get; } = new();
 
-    public IList<Assembly> AccessorAssemblies { get; } = new List<Assembly>();
+    public IList<Assembly> AccessorAssemblies { get; } = [];
 }
