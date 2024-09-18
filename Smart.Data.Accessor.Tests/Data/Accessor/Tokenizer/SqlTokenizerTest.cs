@@ -12,7 +12,7 @@ public sealed class SqlTokenizerTest
         var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */ 1");
         var tokens = tokenizer.Tokenize();
 
-        Assert.Equal(17, tokens.Count);
+        Assert.Equal(16, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
         Assert.Equal("SELECT", tokens[0].Value);
         Assert.Equal(TokenType.Blank, tokens[1].TokenType);
@@ -36,9 +36,8 @@ public sealed class SqlTokenizerTest
         Assert.Equal(TokenType.Blank, tokens[13].TokenType);
         Assert.Equal(TokenType.Comment, tokens[14].TokenType);
         Assert.Equal("@ id", tokens[14].Value);
-        Assert.Equal(TokenType.Blank, tokens[15].TokenType);
-        Assert.Equal(TokenType.Block, tokens[16].TokenType);
-        Assert.Equal("1", tokens[16].Value);
+        Assert.Equal(TokenType.Block, tokens[15].TokenType);
+        Assert.Equal("1", tokens[15].Value);
     }
 
     [Fact]
@@ -115,13 +114,39 @@ public sealed class SqlTokenizerTest
         var tokenizer = new SqlTokenizer("IN /*@ ids */ ('1', '2')");
         var tokens = tokenizer.Tokenize();
 
-        Assert.Equal(10, tokens.Count);
+        Assert.Equal(9, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
         Assert.Equal("IN", tokens[0].Value);
         Assert.Equal(TokenType.Blank, tokens[1].TokenType);
         Assert.Equal(TokenType.Comment, tokens[2].TokenType);
         Assert.Equal("@ ids", tokens[2].Value);
-        Assert.Equal(TokenType.Blank, tokens[3].TokenType);
+        Assert.Equal(TokenType.OpenParenthesis, tokens[3].TokenType);
+        Assert.Equal("(", tokens[3].Value);
+        Assert.Equal(TokenType.Block, tokens[4].TokenType);
+        Assert.Equal("'1'", tokens[4].Value);
+        Assert.Equal(TokenType.Comma, tokens[5].TokenType);
+        Assert.Equal(",", tokens[5].Value);
+        Assert.Equal(TokenType.Blank, tokens[6].TokenType);
+        Assert.Equal(TokenType.Block, tokens[7].TokenType);
+        Assert.Equal("'2'", tokens[7].Value);
+        Assert.Equal(TokenType.CloseParenthesis, tokens[8].TokenType);
+        Assert.Equal(")", tokens[8].Value);
+    }
+
+    [Fact]
+    public void TestInNested()
+    {
+        var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2'))");
+        var tokens = tokenizer.Tokenize();
+
+        Assert.Equal(11, tokens.Count);
+        Assert.Equal(TokenType.Block, tokens[0].TokenType);
+        Assert.Equal("IN", tokens[0].Value);
+        Assert.Equal(TokenType.Blank, tokens[1].TokenType);
+        Assert.Equal(TokenType.Comment, tokens[2].TokenType);
+        Assert.Equal("@ ids", tokens[2].Value);
+        Assert.Equal(TokenType.OpenParenthesis, tokens[3].TokenType);
+        Assert.Equal("(", tokens[3].Value);
         Assert.Equal(TokenType.OpenParenthesis, tokens[4].TokenType);
         Assert.Equal("(", tokens[4].Value);
         Assert.Equal(TokenType.Block, tokens[5].TokenType);
@@ -133,36 +158,8 @@ public sealed class SqlTokenizerTest
         Assert.Equal("'2'", tokens[8].Value);
         Assert.Equal(TokenType.CloseParenthesis, tokens[9].TokenType);
         Assert.Equal(")", tokens[9].Value);
-    }
-
-    [Fact]
-    public void TestInNested()
-    {
-        var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2'))");
-        var tokens = tokenizer.Tokenize();
-
-        Assert.Equal(12, tokens.Count);
-        Assert.Equal(TokenType.Block, tokens[0].TokenType);
-        Assert.Equal("IN", tokens[0].Value);
-        Assert.Equal(TokenType.Blank, tokens[1].TokenType);
-        Assert.Equal(TokenType.Comment, tokens[2].TokenType);
-        Assert.Equal("@ ids", tokens[2].Value);
-        Assert.Equal(TokenType.Blank, tokens[3].TokenType);
-        Assert.Equal(TokenType.OpenParenthesis, tokens[4].TokenType);
-        Assert.Equal("(", tokens[4].Value);
-        Assert.Equal(TokenType.OpenParenthesis, tokens[5].TokenType);
-        Assert.Equal("(", tokens[5].Value);
-        Assert.Equal(TokenType.Block, tokens[6].TokenType);
-        Assert.Equal("'1'", tokens[6].Value);
-        Assert.Equal(TokenType.Comma, tokens[7].TokenType);
-        Assert.Equal(",", tokens[7].Value);
-        Assert.Equal(TokenType.Blank, tokens[8].TokenType);
-        Assert.Equal(TokenType.Block, tokens[9].TokenType);
-        Assert.Equal("'2'", tokens[9].Value);
         Assert.Equal(TokenType.CloseParenthesis, tokens[10].TokenType);
         Assert.Equal(")", tokens[10].Value);
-        Assert.Equal(TokenType.CloseParenthesis, tokens[11].TokenType);
-        Assert.Equal(")", tokens[11].Value);
     }
 
     //--------------------------------------------------------------------------------
@@ -309,7 +306,7 @@ public sealed class SqlTokenizerTest
             "/*% } */\r\n");
         var tokens = tokenizer.Tokenize();
 
-        Assert.Equal(21, tokens.Count);
+        Assert.Equal(19, tokens.Count);
         Assert.Equal(TokenType.Comment, tokens[0].TokenType);
         Assert.Equal("!using System", tokens[0].Value);
         Assert.Equal(TokenType.Blank, tokens[1].TokenType);
@@ -327,21 +324,19 @@ public sealed class SqlTokenizerTest
         Assert.Equal(TokenType.Blank, tokens[9].TokenType);
         Assert.Equal(TokenType.Comment, tokens[10].TokenType);
         Assert.Equal("% if (!String.IsNullOrEmpty(sort)) {", tokens[10].Value);
-        Assert.Equal(TokenType.Blank, tokens[11].TokenType);
-        Assert.Equal(TokenType.Block, tokens[12].TokenType);
-        Assert.Equal("ORDER", tokens[12].Value);
-        Assert.Equal(TokenType.Blank, tokens[13].TokenType);
-        Assert.Equal(TokenType.Block, tokens[14].TokenType);
-        Assert.Equal("BY", tokens[14].Value);
-        Assert.Equal(TokenType.Blank, tokens[15].TokenType);
-        Assert.Equal(TokenType.Comment, tokens[16].TokenType);
-        Assert.Equal("# sort", tokens[16].Value);
+        Assert.Equal(TokenType.Block, tokens[11].TokenType);
+        Assert.Equal("ORDER", tokens[11].Value);
+        Assert.Equal(TokenType.Blank, tokens[12].TokenType);
+        Assert.Equal(TokenType.Block, tokens[13].TokenType);
+        Assert.Equal("BY", tokens[13].Value);
+        Assert.Equal(TokenType.Blank, tokens[14].TokenType);
+        Assert.Equal(TokenType.Comment, tokens[15].TokenType);
+        Assert.Equal("# sort", tokens[15].Value);
+        Assert.Equal(TokenType.Block, tokens[16].TokenType);
+        Assert.Equal("Id", tokens[16].Value);
         Assert.Equal(TokenType.Blank, tokens[17].TokenType);
-        Assert.Equal(TokenType.Block, tokens[18].TokenType);
-        Assert.Equal("Id", tokens[18].Value);
-        Assert.Equal(TokenType.Blank, tokens[19].TokenType);
-        Assert.Equal(TokenType.Comment, tokens[20].TokenType);
-        Assert.Equal("% }", tokens[20].Value);
+        Assert.Equal(TokenType.Comment, tokens[18].TokenType);
+        Assert.Equal("% }", tokens[18].Value);
     }
 
     //--------------------------------------------------------------------------------
@@ -470,21 +465,20 @@ public sealed class SqlTokenizerTest
         var tokenizer = new SqlTokenizer("WHERE /* comment */ Id = 1");
         var tokens = tokenizer.Tokenize();
 
-        Assert.Equal(9, tokens.Count);
+        Assert.Equal(8, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
         Assert.Equal("WHERE", tokens[0].Value);
         Assert.Equal(TokenType.Blank, tokens[1].TokenType);
         Assert.Equal(TokenType.Comment, tokens[2].TokenType);
         Assert.Equal("comment", tokens[2].Value);
-        Assert.Equal(TokenType.Blank, tokens[3].TokenType);
-        Assert.Equal(TokenType.Block, tokens[4].TokenType);
-        Assert.Equal("Id", tokens[4].Value);
-        Assert.Equal(TokenType.Blank, tokens[5].TokenType);
-        Assert.Equal(TokenType.Block, tokens[6].TokenType);
-        Assert.Equal("=", tokens[6].Value);
-        Assert.Equal(TokenType.Blank, tokens[7].TokenType);
-        Assert.Equal(TokenType.Block, tokens[8].TokenType);
-        Assert.Equal("1", tokens[8].Value);
+        Assert.Equal(TokenType.Block, tokens[3].TokenType);
+        Assert.Equal("Id", tokens[3].Value);
+        Assert.Equal(TokenType.Blank, tokens[4].TokenType);
+        Assert.Equal(TokenType.Block, tokens[5].TokenType);
+        Assert.Equal("=", tokens[5].Value);
+        Assert.Equal(TokenType.Blank, tokens[6].TokenType);
+        Assert.Equal(TokenType.Block, tokens[7].TokenType);
+        Assert.Equal("1", tokens[7].Value);
     }
 
     [Fact]
@@ -493,21 +487,20 @@ public sealed class SqlTokenizerTest
         var tokenizer = new SqlTokenizer("WHERE /**/ Id = 1");
         var tokens = tokenizer.Tokenize();
 
-        Assert.Equal(9, tokens.Count);
+        Assert.Equal(8, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
         Assert.Equal("WHERE", tokens[0].Value);
         Assert.Equal(TokenType.Blank, tokens[1].TokenType);
         Assert.Equal(TokenType.Comment, tokens[2].TokenType);
         Assert.Equal(string.Empty, tokens[2].Value);
-        Assert.Equal(TokenType.Blank, tokens[3].TokenType);
-        Assert.Equal(TokenType.Block, tokens[4].TokenType);
-        Assert.Equal("Id", tokens[4].Value);
-        Assert.Equal(TokenType.Blank, tokens[5].TokenType);
-        Assert.Equal(TokenType.Block, tokens[6].TokenType);
-        Assert.Equal("=", tokens[6].Value);
-        Assert.Equal(TokenType.Blank, tokens[7].TokenType);
-        Assert.Equal(TokenType.Block, tokens[8].TokenType);
-        Assert.Equal("1", tokens[8].Value);
+        Assert.Equal(TokenType.Block, tokens[3].TokenType);
+        Assert.Equal("Id", tokens[3].Value);
+        Assert.Equal(TokenType.Blank, tokens[4].TokenType);
+        Assert.Equal(TokenType.Block, tokens[5].TokenType);
+        Assert.Equal("=", tokens[5].Value);
+        Assert.Equal(TokenType.Blank, tokens[6].TokenType);
+        Assert.Equal(TokenType.Block, tokens[7].TokenType);
+        Assert.Equal("1", tokens[7].Value);
     }
 
     [Fact]
