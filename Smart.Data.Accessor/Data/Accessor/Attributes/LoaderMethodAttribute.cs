@@ -18,7 +18,7 @@ public abstract class LoaderMethodAttribute : MethodAttribute
     {
         var sql = loader.Load(mi);
         var tokenizer = new SqlTokenizer(sql);
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
         var builder = new NodeBuilder(tokens);
         return builder.Build();
     }

@@ -12,7 +12,7 @@ public sealed class NodeBuilderTest
     public void TestBasic()
     {
         var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */ 1");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(2, nodes.Count);
@@ -31,7 +31,7 @@ public sealed class NodeBuilderTest
     public void TestIn()
     {
         var tokenizer = new SqlTokenizer("IN /*@ ids */ ('1', '2')");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(2, nodes.Count);
@@ -46,7 +46,7 @@ public sealed class NodeBuilderTest
     public void TestInNested()
     {
         var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2')");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(2, nodes.Count);
@@ -65,7 +65,7 @@ public sealed class NodeBuilderTest
     public void TestReplace()
     {
         var tokenizer = new SqlTokenizer("SELECT * FROM Data ORDER BY /*# sort */");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(2, nodes.Count);
@@ -89,7 +89,7 @@ public sealed class NodeBuilderTest
             "/*% if (HasValue(id)) { */" +
             "WHERE Id >= /*@ id */0" +
             "/*% } */");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(6, nodes.Count);
@@ -121,7 +121,7 @@ public sealed class NodeBuilderTest
             "/*% if (CustomScriptHelper.HasValue(id)) { */" +
             "WHERE Id >= /*@ id */0" +
             "/*% } */");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(6, nodes.Count);
@@ -152,7 +152,7 @@ public sealed class NodeBuilderTest
     public void TestInsert()
     {
         var tokenizer = new SqlTokenizer("INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'name')");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(5, nodes.Count);
@@ -181,7 +181,7 @@ public sealed class NodeBuilderTest
             "UPDATE Data " +
             "SET Value1 = /*@ value1 */100, Value2 = /*@ value2 */'x' " +
             "WHERE Key1 = /*@ key1 */1 AND Key2 = /*@ key2 */'a'");
-        var builder = new NodeBuilder(tokenizer.Tokenize());
+        var builder = new NodeBuilder(SqlTokenNormalizer.Normalize(tokenizer.Tokenize()));
         var nodes = builder.Build();
 
         Assert.Equal(8, nodes.Count);

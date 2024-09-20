@@ -10,7 +10,7 @@ public sealed class SqlTokenizerTest
     public void TestBasic()
     {
         var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */ 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(16, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -44,7 +44,7 @@ public sealed class SqlTokenizerTest
     public void TestBasic2()
     {
         var tokenizer = new SqlTokenizer("SELECT * FROM User WHERE Id = /*@ id */1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(16, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -82,7 +82,7 @@ public sealed class SqlTokenizerTest
     public void TestFunction()
     {
         var tokenizer = new SqlTokenizer("SELECT COUNT(*) FROM User");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(10, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -112,7 +112,7 @@ public sealed class SqlTokenizerTest
     public void TestIn()
     {
         var tokenizer = new SqlTokenizer("IN /*@ ids */ ('1', '2')");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(9, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -137,7 +137,7 @@ public sealed class SqlTokenizerTest
     public void TestInNested()
     {
         var tokenizer = new SqlTokenizer("IN /*@ ids */ (('1', '2'))");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(11, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -171,7 +171,7 @@ public sealed class SqlTokenizerTest
     {
         var tokenizer = new SqlTokenizer(
             "INSERT INTO Data (Id, Name) VALUES (/*@ id */1, /*@ name */'name')");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(23, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -226,7 +226,7 @@ public sealed class SqlTokenizerTest
             "UPDATE Data\r\n" +
             "SET Value1 = /*@ value1 */100, Value2 = /*@ value2 */'x'\r\n" +
             "WHERE Key1 = /*@ key1 */1 AND Key2 = /*@ key2 */'a'\r\n");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(38, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -304,7 +304,7 @@ public sealed class SqlTokenizerTest
             "/*% if (!String.IsNullOrEmpty(sort)) { */\r\n" +
             "ORDER BY /*# sort */ Id\r\n" +
             "/*% } */\r\n");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(19, tokens.Count);
         Assert.Equal(TokenType.Comment, tokens[0].TokenType);
@@ -347,7 +347,7 @@ public sealed class SqlTokenizerTest
     public void TestQuote()
     {
         var tokenizer = new SqlTokenizer("Name = 'abc'");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(5, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -364,7 +364,7 @@ public sealed class SqlTokenizerTest
     public void TestQuoteEscaped()
     {
         var tokenizer = new SqlTokenizer("Name = 'abc'''");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(5, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -399,7 +399,7 @@ public sealed class SqlTokenizerTest
     public void TestEol()
     {
         var tokenizer = new SqlTokenizer("SELECT\r\n  *\r\nFROM\r\n  User\r\n");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -419,7 +419,7 @@ public sealed class SqlTokenizerTest
     public void TestEol2()
     {
         var tokenizer = new SqlTokenizer("SELECT\r  *\rFROM\r  User\r");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -439,7 +439,7 @@ public sealed class SqlTokenizerTest
     public void TestEol3()
     {
         var tokenizer = new SqlTokenizer("SELECT\n  *\nFROM\n  User\n");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -463,7 +463,7 @@ public sealed class SqlTokenizerTest
     public void TestComment()
     {
         var tokenizer = new SqlTokenizer("WHERE /* comment */ Id = 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(8, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -485,7 +485,7 @@ public sealed class SqlTokenizerTest
     public void TestEmptyComment()
     {
         var tokenizer = new SqlTokenizer("WHERE /**/ Id = 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(8, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -518,7 +518,7 @@ public sealed class SqlTokenizerTest
     public void TestLineComment()
     {
         var tokenizer = new SqlTokenizer("WHERE--comment\r\nId = 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -538,7 +538,7 @@ public sealed class SqlTokenizerTest
     public void TestLastLineComment2()
     {
         var tokenizer = new SqlTokenizer("WHERE--comment\rId = 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -558,7 +558,7 @@ public sealed class SqlTokenizerTest
     public void TestLastLineComment3()
     {
         var tokenizer = new SqlTokenizer("WHERE--comment\nId = 1");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);
@@ -578,7 +578,7 @@ public sealed class SqlTokenizerTest
     public void TestLineCommentLast()
     {
         var tokenizer = new SqlTokenizer("WHERE Id = 1--comment");
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
 
         Assert.Equal(7, tokens.Count);
         Assert.Equal(TokenType.Block, tokens[0].TokenType);

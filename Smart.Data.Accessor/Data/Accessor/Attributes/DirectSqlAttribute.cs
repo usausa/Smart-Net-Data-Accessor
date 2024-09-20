@@ -20,7 +20,7 @@ public sealed class DirectSqlAttribute : MethodAttribute
     public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
     {
         var tokenizer = new SqlTokenizer(sql);
-        var tokens = tokenizer.Tokenize();
+        var tokens = SqlTokenNormalizer.Normalize(tokenizer.Tokenize());
         var builder = new NodeBuilder(tokens);
         return builder.Build();
     }
