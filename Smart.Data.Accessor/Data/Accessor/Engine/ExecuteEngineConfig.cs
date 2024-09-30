@@ -130,5 +130,5 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
 
     IDictionary<Type, ITypeHandler> IExecuteEngineConfig.GetTypeHandlers() => typeHandlers;
 
-    IResultMapperFactory[] IExecuteEngineConfig.GetResultMapperFactories() => resultMapperFactories.ToArray();
+    IResultMapperFactory[] IExecuteEngineConfig.GetResultMapperFactories() => [.. resultMapperFactories];
 }
