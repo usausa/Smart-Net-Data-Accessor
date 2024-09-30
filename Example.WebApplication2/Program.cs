@@ -30,11 +30,11 @@ builder.Host.ConfigureContainer<ResolverConfig>(config =>
     config
         .Bind<IDbProvider>()
         .ToConstant(new DelegateDbProvider(static () => new SqliteConnection("Data Source=primary.db")))
-        .Named(DataSource.Primary);
+        .Keyed(DataSource.Primary);
     config
         .Bind<IDbProvider>()
         .ToConstant(new DelegateDbProvider(static () => new SqliteConnection("Data Source=secondary.db")))
-        .Named(DataSource.Secondary);
+        .Keyed(DataSource.Secondary);
 });
 
 // Configure

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
     <PackageReference Include="Dapper" Version="2.1.35" />
-    <PackageReference Include="Usa.Smart.Core" Version="2.3.7" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.6.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.3.8" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.7.0" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="2.3.0" />
   </ItemGroup>
 
