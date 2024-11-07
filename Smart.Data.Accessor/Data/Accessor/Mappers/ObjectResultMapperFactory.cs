@@ -14,6 +14,8 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 {
     public static ObjectResultMapperFactory Instance { get; } = new();
 
+    private readonly object sync = new();
+
     private readonly HashSet<string> targetAssemblies = [];
 
     private int typeNo;
@@ -24,25 +26,36 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
     public bool IsMatch(Type type, MethodInfo mi) => true;
 
-    private void PrepareAssembly(Type type)
+    private TypeBuilder DefineTypeBuilder(Type type)
     {
-        if (assemblyBuilder is null)
+        lock (sync)
         {
-            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("ObjectResultMapperFactoryAssembly"),
-                AssemblyBuilderAccess.Run);
-            moduleBuilder = assemblyBuilder.DefineDynamicModule(
-                "ObjectResultMapperFactoryModule");
-        }
+            if (assemblyBuilder is null)
+            {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                    new AssemblyName("ObjectResultMapperFactoryAssembly"),
+                    AssemblyBuilderAccess.Run);
+                moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                    "ObjectResultMapperFactoryModule");
+            }
 
-        var assemblyName = type.Assembly.GetName().Name;
-        if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
-        {
-            assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
-                [assemblyName]));
+            var assemblyName = type.Assembly.GetName().Name;
+            if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
+            {
+                assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
+                    typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
+                    [assemblyName]));
 
-            targetAssemblies.Add(assemblyName);
+                targetAssemblies.Add(assemblyName);
+            }
+
+            // Define type
+            var typeBuilder = moduleBuilder.DefineType(
+                $"Holder_{typeNo}",
+                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+            typeNo++;
+
+            return typeBuilder;
         }
     }
 
@@ -58,16 +71,11 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
-        PrepareAssembly(type);
-
         var converters = new Dictionary<int, Func<object, object>>();
         TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
 
         // Define type
-        var typeBuilder = moduleBuilder.DefineType(
-            $"Holder_{typeNo}",
-            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        typeNo++;
+        var typeBuilder = DefineTypeBuilder(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);

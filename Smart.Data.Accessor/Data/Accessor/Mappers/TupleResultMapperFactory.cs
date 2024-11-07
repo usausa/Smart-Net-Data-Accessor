@@ -13,6 +13,8 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();
 
+    private readonly object sync = new();
+
     private readonly HashSet<string> targetAssemblies = [];
 
     private int typeNo;
@@ -26,25 +28,36 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) is not null);
     }
 
-    private void PrepareAssembly(Type type)
+    private TypeBuilder DefineTypeBuilder(Type type)
     {
-        if (assemblyBuilder is null)
+        lock (sync)
         {
-            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("TupleResultMapperFactoryAssembly"),
-                AssemblyBuilderAccess.Run);
-            moduleBuilder = assemblyBuilder.DefineDynamicModule(
-                "TupleResultMapperFactoryModule");
-        }
+            if (assemblyBuilder is null)
+            {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                    new AssemblyName("TupleResultMapperFactoryAssembly"),
+                    AssemblyBuilderAccess.Run);
+                moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                    "TupleResultMapperFactoryModule");
+            }
 
-        var assemblyName = type.Assembly.GetName().Name;
-        if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
-        {
-            assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
-                [assemblyName]));
+            var assemblyName = type.Assembly.GetName().Name;
+            if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
+            {
+                assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
+                    typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
+                    [assemblyName]));
 
-            targetAssemblies.Add(assemblyName);
+                targetAssemblies.Add(assemblyName);
+            }
+
+            // Define type
+            var typeBuilder = moduleBuilder.DefineType(
+                $"Holder_{typeNo}",
+                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+            typeNo++;
+
+            return typeBuilder;
         }
     }
 
@@ -61,8 +74,6 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
-        PrepareAssembly(type);
-
         var converters = new Dictionary<int, Func<object, object>>();
         foreach (var typeMap in typeMaps)
         {
@@ -70,10 +81,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         }
 
         // Define type
-        var typeBuilder = moduleBuilder.DefineType(
-            $"Holder_{typeNo}",
-            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        typeNo++;
+        var typeBuilder = DefineTypeBuilder(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);
