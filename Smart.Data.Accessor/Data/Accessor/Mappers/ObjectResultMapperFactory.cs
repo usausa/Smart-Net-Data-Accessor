@@ -48,7 +48,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         }
     }
 
-    private TypeBuilder CreateNewTypeBuilder(Type type)
+    private TypeBuilder DefineTypeBuilder(Type type)
     {
         lock (sync)
         {
@@ -80,7 +80,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
 
         // Define type
-        var typeBuilder = CreateNewTypeBuilder(type);
+        var typeBuilder = DefineTypeBuilder(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);
