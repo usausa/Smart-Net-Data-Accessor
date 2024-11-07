@@ -26,7 +26,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
     public bool IsMatch(Type type, MethodInfo mi) => true;
 
-    private TypeBuilder DefineTypeBuilder(Type type)
+    private TypeBuilder DefineType(Type type)
     {
         lock (sync)
         {
@@ -75,7 +75,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
 
         // Define type
-        var typeBuilder = DefineTypeBuilder(type);
+        var typeBuilder = DefineType(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);

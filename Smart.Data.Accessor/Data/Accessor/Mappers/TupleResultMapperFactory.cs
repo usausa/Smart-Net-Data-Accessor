@@ -28,7 +28,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         return type.IsGenericType && !type.IsNullableType() && (type.GetConstructor(type.GetGenericArguments()) is not null);
     }
 
-    private TypeBuilder DefineTypeBuilder(Type type)
+    private TypeBuilder DefineType(Type type)
     {
         lock (sync)
         {
@@ -81,7 +81,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         }
 
         // Define type
-        var typeBuilder = DefineTypeBuilder(type);
+        var typeBuilder = DefineType(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);
