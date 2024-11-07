@@ -13,6 +13,8 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();
 
+    private readonly object sync = new();
+
     private readonly HashSet<string> targetAssemblies = [];
 
     private int typeNo;
@@ -48,6 +50,22 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         }
     }
 
+    private TypeBuilder CreateNewTypeBuilder(Type type)
+    {
+        lock (sync)
+        {
+            PrepareAssembly(type);
+
+            // Define type
+            var typeBuilder = moduleBuilder.DefineType(
+                $"Holder_{typeNo}",
+                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+            typeNo++;
+
+            return typeBuilder;
+        }
+    }
+
     public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
@@ -70,10 +88,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
         }
 
         // Define type
-        var typeBuilder = moduleBuilder.DefineType(
-            $"Holder_{typeNo}",
-            TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        typeNo++;
+        var typeBuilder = CreateNewTypeBuilder(type);
 
         // Set base type
         var baseType = typeof(ResultMapper<>).MakeGenericType(type);

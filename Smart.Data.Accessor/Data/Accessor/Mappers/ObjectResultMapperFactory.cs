@@ -48,6 +48,22 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
         }
     }
 
+    private TypeBuilder CreateNewTypeBuilder(Type type)
+    {
+        lock (sync)
+        {
+            PrepareAssembly(type);
+
+            // Define type
+            var typeBuilder = moduleBuilder.DefineType(
+                $"Holder_{typeNo}",
+                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+            typeNo++;
+
+            return typeBuilder;
+        }
+    }
+
     public ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, MethodInfo mi, ColumnInfo[] columns)
     {
         var type = typeof(T);
@@ -60,111 +76,103 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
-        lock (sync)
+        var converters = new Dictionary<int, Func<object, object>>();
+        TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
+
+        // Define type
+        var typeBuilder = CreateNewTypeBuilder(type);
+
+        // Set base type
+        var baseType = typeof(ResultMapper<>).MakeGenericType(type);
+        typeBuilder.SetParent(baseType);
+
+        // Define fields
+        var fields = converters.ToDictionary(
+            static x => x.Key,
+            x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
+
+        // Define method
+        var methodBuilder = typeBuilder.DefineMethod(
+            nameof(ResultMapper<T>.Map),
+            MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            type,
+            [typeof(IDataRecord)]);
+
+        var ilGenerator = methodBuilder.GetILGenerator();
+
+        // Variables
+        var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
+        var ctorLocal = typeMap.Constructor is null ? ilGenerator.DeclareLocal(targetType) : null;
+        var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(TypeMapInfoHelper.EnumerateTypes(typeMap));
+
+        // --------------------------------------------------------------------------------
+        // Constructor
+        // --------------------------------------------------------------------------------
+
+        if (typeMap.Constructor is not null)
         {
-            PrepareAssembly(type);
-
-            var converters = new Dictionary<int, Func<object, object>>();
-            TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
-
-            // Define type
-            var typeBuilder = moduleBuilder.DefineType(
-                $"Holder_{typeNo}",
-                TypeAttributes.Public | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-            typeNo++;
-
-            // Set base type
-            var baseType = typeof(ResultMapper<>).MakeGenericType(type);
-            typeBuilder.SetParent(baseType);
-
-            // Define fields
-            var fields = converters.ToDictionary(
-                static x => x.Key,
-                x => typeBuilder.DefineField($"parser{x.Key}", typeof(Func<object, object>), FieldAttributes.Public));
-
-            // Define method
-            var methodBuilder = typeBuilder.DefineMethod(
-                nameof(ResultMapper<T>.Map),
-                MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
-                type,
-                [typeof(IDataRecord)]);
-
-            var ilGenerator = methodBuilder.GetILGenerator();
-
-            // Variables
-            var objectLocal = converters.Count > 0 ? ilGenerator.DeclareLocal(typeof(object)) : null;
-            var ctorLocal = typeMap.Constructor is null ? ilGenerator.DeclareLocal(targetType) : null;
-            var valueTypeLocals = ilGenerator.DeclareValueTypeLocals(TypeMapInfoHelper.EnumerateTypes(typeMap));
-
-            // --------------------------------------------------------------------------------
-            // Constructor
-            // --------------------------------------------------------------------------------
-
-            if (typeMap.Constructor is not null)
+            foreach (var parameterMap in typeMap.Constructor.Parameters)
             {
-                foreach (var parameterMap in typeMap.Constructor.Parameters)
-                {
-                    // Stack value
-                    EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(parameterMap.Index));
-                }
+                // Stack value
+                EmitStackColumnValue(ilGenerator, parameterMap.Index, parameterMap.Info.ParameterType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(parameterMap.Index));
+            }
 
-                // Class new
-                ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
+            // Class new
+            ilGenerator.Emit(OpCodes.Newobj, typeMap.Constructor.Info);
+        }
+        else
+        {
+            // Struct init
+            ilGenerator.EmitInitStruct(targetType, ctorLocal!);
+        }
+
+        // --------------------------------------------------------------------------------
+        // Property
+        // --------------------------------------------------------------------------------
+
+        foreach (var propertyMap in typeMap.Properties)
+        {
+            if (ctorLocal is not null)
+            {
+                ilGenerator.EmitLdloca(ctorLocal);
             }
             else
             {
-                // Struct init
-                ilGenerator.EmitInitStruct(targetType, ctorLocal!);
+                ilGenerator.Emit(OpCodes.Dup);
             }
 
-            // --------------------------------------------------------------------------------
-            // Property
-            // --------------------------------------------------------------------------------
+            // Stack value
+            EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(propertyMap.Index));
 
-            foreach (var propertyMap in typeMap.Properties)
-            {
-                if (ctorLocal is not null)
-                {
-                    ilGenerator.EmitLdloca(ctorLocal);
-                }
-                else
-                {
-                    ilGenerator.Emit(OpCodes.Dup);
-                }
-
-                // Stack value
-                EmitStackColumnValue(ilGenerator, propertyMap.Index, propertyMap.Info.PropertyType, objectLocal!, valueTypeLocals, fields.GetValueOrDefault(propertyMap.Index));
-
-                // Set
-                ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod!);
-            }
-
-            if (ctorLocal is not null)
-            {
-                ilGenerator.EmitLdloc(ctorLocal);
-            }
-
-            if (isNullableType)
-            {
-                ilGenerator.EmitValueToNullableType(type);
-            }
-
-            ilGenerator.Emit(OpCodes.Ret);
-
-            // Create instance
-            var typeInfo = typeBuilder.CreateTypeInfo();
-            var holderType = typeInfo.AsType();
-            var holder = (ResultMapper<T>)Activator.CreateInstance(holderType)!;
-
-            // Set field
-            foreach (var entry in converters)
-            {
-                var field = holderType.GetField($"parser{entry.Key}")!;
-                field.SetValue(holder, entry.Value);
-            }
-
-            return holder;
+            // Set
+            ilGenerator.EmitCallMethod(propertyMap.Info.SetMethod!);
         }
+
+        if (ctorLocal is not null)
+        {
+            ilGenerator.EmitLdloc(ctorLocal);
+        }
+
+        if (isNullableType)
+        {
+            ilGenerator.EmitValueToNullableType(type);
+        }
+
+        ilGenerator.Emit(OpCodes.Ret);
+
+        // Create instance
+        var typeInfo = typeBuilder.CreateTypeInfo();
+        var holderType = typeInfo.AsType();
+        var holder = (ResultMapper<T>)Activator.CreateInstance(holderType)!;
+
+        // Set field
+        foreach (var entry in converters)
+        {
+            var field = holderType.GetField($"parser{entry.Key}")!;
+            field.SetValue(holder, entry.Value);
+        }
+
+        return holder;
     }
 
     private static void EmitStackColumnValue(
