@@ -26,33 +26,28 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
     public bool IsMatch(Type type, MethodInfo mi) => true;
 
-    private void PrepareAssembly(Type type)
-    {
-        if (assemblyBuilder is null)
-        {
-            assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("ObjectResultMapperFactoryAssembly"),
-                AssemblyBuilderAccess.Run);
-            moduleBuilder = assemblyBuilder.DefineDynamicModule(
-                "ObjectResultMapperFactoryModule");
-        }
-
-        var assemblyName = type.Assembly.GetName().Name;
-        if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
-        {
-            assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
-                typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
-                [assemblyName]));
-
-            targetAssemblies.Add(assemblyName);
-        }
-    }
-
     private TypeBuilder DefineTypeBuilder(Type type)
     {
         lock (sync)
         {
-            PrepareAssembly(type);
+            if (assemblyBuilder is null)
+            {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                    new AssemblyName("ObjectResultMapperFactoryAssembly"),
+                    AssemblyBuilderAccess.Run);
+                moduleBuilder = assemblyBuilder.DefineDynamicModule(
+                    "ObjectResultMapperFactoryModule");
+            }
+
+            var assemblyName = type.Assembly.GetName().Name;
+            if ((assemblyName is not null) && !targetAssemblies.Contains(assemblyName))
+            {
+                assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(
+                    typeof(IgnoresAccessChecksToAttribute).GetConstructor([typeof(string)])!,
+                    [assemblyName]));
+
+                targetAssemblies.Add(assemblyName);
+            }
 
             // Define type
             var typeBuilder = moduleBuilder.DefineType(
