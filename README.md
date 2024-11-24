@@ -1,6 +1,6 @@
 # Smart.Data.Accessor .NET - data accessor generator library for .NET
 
-[![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor/)
+[![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor)
 
 ## What is this?
 
@@ -798,9 +798,9 @@ Support database specific UPSERT, SELECT FOR UPDATE, etc.
 
 | Package | Database   |
 |-|-|
-| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.SqlServer)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.SqlServer/) | SQL Server |
-| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.MySql)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.MySql/) | MySQL |
-| [![NuGet Badge](https://buildstats.info/nuget/Usa.Smart.Data.Accessor.Options.Postgres)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.Postgres/) | PostgreSQL |
+| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.SqlServer.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.SqlServer/) | SQL Server |
+| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.MySq.svgl)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.MySql/) | MySQL |
+| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.Postgres.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.Postgres/) | PostgreSQL |
 
 ## Special arguments
 

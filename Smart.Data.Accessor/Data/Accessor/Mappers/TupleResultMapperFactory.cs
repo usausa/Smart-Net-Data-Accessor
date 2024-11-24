@@ -13,7 +13,11 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();
 
+#if NET9_0_OR_GREATER
+    private readonly Lock sync = new();
+#else
     private readonly object sync = new();
+#endif
 
     private readonly HashSet<string> targetAssemblies = [];
 

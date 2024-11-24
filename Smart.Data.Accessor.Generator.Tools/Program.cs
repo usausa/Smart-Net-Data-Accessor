@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 
-public static class Program
+internal static class Program
 {
     private const string AssemblySource = "Assembly.g.cs";
 

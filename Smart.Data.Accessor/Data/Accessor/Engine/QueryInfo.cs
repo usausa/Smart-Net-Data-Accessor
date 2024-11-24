@@ -11,7 +11,11 @@ public sealed class QueryInfo<T>
 {
     private static readonly Node EmptyNode = new([], null!);
 
+#if NET9_0_OR_GREATER
+    private readonly Lock sync = new();
+#else
     private readonly object sync = new();
+#endif
 
     private readonly ExecuteEngine engine;
 
@@ -74,10 +78,12 @@ public sealed class QueryInfo<T>
                 }
 
                 // Double-checked locking
+#pragma warning disable CA1508
                 if (optimizedMapper is not null)
                 {
                     return optimizedMapper;
                 }
+#pragma warning restore CA1508
 
                 Interlocked.MemoryBarrier();
 

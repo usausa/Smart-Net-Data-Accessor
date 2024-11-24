@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net8.0-windows;net6.0</TargetFrameworks>
-    <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
-    <CodeAnalysisRuleSet>..\Smart.Data.Accessor.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net8.0-windows' or'$(TargetFramework)' == 'net6.0'">
     <OutputType>Exe</OutputType>
+    <TargetFrameworks>net9.0;net9.0-windows;net8.0;net8.0-windows</TargetFrameworks>
+    <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,11 +20,11 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net8.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows' or '$(TargetFramework)' == 'net8.0-windows'">
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" PrivateAssets="All" />
   </ItemGroup>
 
@@ -45,6 +42,20 @@
 
   <Target Name="PackToolsDependencies" BeforeTargets="GenerateNuspec">
     <ItemGroup>
+      <_PackageFiles Include="bin\Release\net9.0\**">
+        <PackagePath>tools\net9.0</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
+    <ItemGroup>
+      <_PackageFiles Include="bin\Release\net9.0-windows\**">
+        <PackagePath>tools\net9.0-windows</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
+    <ItemGroup>
       <_PackageFiles Include="bin\Release\net8.0\**">
         <PackagePath>tools\net8.0</PackagePath>
         <Visible>false</Visible>
@@ -54,13 +65,6 @@
     <ItemGroup>
       <_PackageFiles Include="bin\Release\net8.0-windows\**">
         <PackagePath>tools\net8.0-windows</PackagePath>
-        <Visible>false</Visible>
-        <BuildAction>Content</BuildAction>
-      </_PackageFiles>
-    </ItemGroup>
-    <ItemGroup>
-      <_PackageFiles Include="bin\Release\net6.0\**">
-        <PackagePath>tools\net6.0</PackagePath>
         <Visible>false</Visible>
         <BuildAction>Content</BuildAction>
       </_PackageFiles>
