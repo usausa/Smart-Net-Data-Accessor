@@ -42,14 +42,14 @@ public sealed class MySelectSingleTest
         var accessor = generator.Create<ISelectOtherAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 
@@ -98,9 +98,9 @@ public sealed class MySelectSingleTest
         var accessor = generator.Create<ISelectUpdateAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1 FOR UPDATE", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey WHERE Key1 = @p0 AND Key2 = @p1 FOR UPDATE", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 

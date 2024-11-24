@@ -39,7 +39,7 @@ app.MapControllerRoute(
 
 // Data initialize
 var dbProvider = app.Services.GetRequiredService<IDbProvider>();
-dbProvider.Using(con =>
+dbProvider.Using(static con =>
 {
     con.Execute("CREATE TABLE IF NOT EXISTS Data (Id int PRIMARY KEY, Name text, Type text)");
     con.Execute("DELETE FROM Data");

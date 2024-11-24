@@ -34,19 +34,19 @@ public sealed class PgSelectTest
         var accessor = generator.Create<ISelectOrderAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Name DESC", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Name DESC", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Name DESC", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Name DESC", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 
@@ -89,14 +89,14 @@ public sealed class PgSelectTest
         var accessor = generator.Create<ISelectOtherAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 
@@ -145,9 +145,9 @@ public sealed class PgSelectTest
         var accessor = generator.Create<ISelectPagingAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2 LIMIT @p0 OFFSET @p1", c.CommandText);
                 Assert.Equal(10, c.Parameters[0].Value);
@@ -179,9 +179,9 @@ public sealed class PgSelectTest
         var accessor = generator.Create<ISelectUpdateAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2 FOR UPDATE", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("SELECT * FROM MultiKey ORDER BY Key1, Key2 FOR UPDATE", c.CommandText);
             cmd.SetupResult(new MockDataReader(MultiKeyEntity.Columns, new List<object[]>()));
         });
 

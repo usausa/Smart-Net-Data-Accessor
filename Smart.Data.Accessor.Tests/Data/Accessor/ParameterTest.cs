@@ -54,9 +54,9 @@ public sealed class ParameterTest
         var accessor = generator.Create<IEnumAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
             };
@@ -83,9 +83,9 @@ public sealed class ParameterTest
         var accessor = generator.Create<IEnumAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.String, c.Parameters[0].DbType);
                 Assert.Equal(nameof(Value.One), c.Parameters[0].Value);
@@ -117,9 +117,9 @@ public sealed class ParameterTest
         var accessor = generator.Create<IAnsiStringAttributeAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.AnsiStringFixedLength, c.Parameters[0].DbType);
                 Assert.Equal(3, c.Parameters[0].Size);
@@ -148,9 +148,9 @@ public sealed class ParameterTest
         var accessor = generator.Create<IDbTypeAttributeAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.AnsiStringFixedLength, c.Parameters[0].DbType);
                 Assert.Equal(3, c.Parameters[0].Size);
@@ -208,9 +208,9 @@ public sealed class ParameterTest
         var accessor = generator.Create<ICustomParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.AnsiString, c.Parameters[0].DbType);
                 Assert.Equal("20001231", c.Parameters[0].Value);
@@ -256,15 +256,15 @@ public sealed class ParameterTest
         var accessor = generator.Create<IDateTimeKindTypeHandlerAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.DateTime, c.Parameters[0].DbType);
             };
             cmd.SetupResult(0);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
             cmd.SetupResult(new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Unspecified));
         });
@@ -375,35 +375,35 @@ public sealed class ParameterTest
         var con = new MockDbConnection();
 
         // IN
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
         accessor.ExecuteIn(con, "x");
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
+            cmd.Executing = static c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
             cmd.SetupResult(0);
         });
 
         accessor.ExecuteIn(con, null);
 
         // IN/OUT
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
         var value = "x";
         accessor.ExecuteInOut(con, ref value);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
+            cmd.Executing = static c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
             cmd.SetupResult(0);
         });
 
@@ -411,9 +411,9 @@ public sealed class ParameterTest
         accessor.ExecuteInOut(con, ref value);
 
         // Array
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(5, c.Parameters[0].Size);
                 Assert.Equal(DBNull.Value, c.Parameters[1].Value);
@@ -423,9 +423,9 @@ public sealed class ParameterTest
 
         accessor.ExecuteArray(con, [string.Empty, null]);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
@@ -435,9 +435,9 @@ public sealed class ParameterTest
         accessor.ExecuteArray(con, null);
 
         // List
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(5, c.Parameters[0].Size);
                 Assert.Equal(DBNull.Value, c.Parameters[1].Value);
@@ -447,9 +447,9 @@ public sealed class ParameterTest
 
         accessor.ExecuteList(con, [string.Empty, null]);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
@@ -501,35 +501,35 @@ public sealed class ParameterTest
         var con = new MockDbConnection();
 
         // IN
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
         accessor.ExecuteIn(con, "x");
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
+            cmd.Executing = static c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
             cmd.SetupResult(0);
         });
 
         accessor.ExecuteIn(con, null);
 
         // IN/OUT
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
         var value = "x";
         accessor.ExecuteInOut(con, ref value);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
+            cmd.Executing = static c => Assert.Equal(DBNull.Value, c.Parameters[0].Value);
             cmd.SetupResult(0);
         });
 
@@ -537,18 +537,18 @@ public sealed class ParameterTest
         accessor.ExecuteInOut(con, ref value);
 
         // OUT
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
         accessor.ExecuteOut(con, out _);
 
         // Array
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(5, c.Parameters[0].Size);
                 Assert.Equal(DBNull.Value, c.Parameters[1].Value);
@@ -558,9 +558,9 @@ public sealed class ParameterTest
 
         accessor.ExecuteArray(con, [string.Empty, null]);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
@@ -570,9 +570,9 @@ public sealed class ParameterTest
         accessor.ExecuteArray(con, null);
 
         // List
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(5, c.Parameters[0].Size);
                 Assert.Equal(DBNull.Value, c.Parameters[1].Value);
@@ -582,9 +582,9 @@ public sealed class ParameterTest
 
         accessor.ExecuteList(con, [string.Empty, null]);
 
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };

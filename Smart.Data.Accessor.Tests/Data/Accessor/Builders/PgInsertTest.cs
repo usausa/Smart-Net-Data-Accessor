@@ -27,9 +27,9 @@ public sealed class PgInsertTest
         var accessor = generator.Create<IInsertEntityAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -58,14 +58,14 @@ public sealed class PgInsertTest
         var accessor = generator.Create<IInsertParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1)", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -113,9 +113,9 @@ public sealed class PgInsertTest
         var accessor = generator.Create<IInsertIgnoreAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("INSERT INTO Data (Id, Name) VALUES (@p0, @p1) ON CONFLICT (Id) DO NOTHING", c.CommandText);
             cmd.SetupResult(0);
         });
 
@@ -141,9 +141,9 @@ public sealed class PgInsertTest
         var accessor = generator.Create<IInsertOrUpdateAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@p0, @p1, @p2, @p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @p2, Name = @p3", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("INSERT INTO MultiKey (Key1, Key2, Type, Name) VALUES (@p0, @p1, @p2, @p3) ON CONFLICT (Key1, Key2) DO UPDATE SET Type = @p2, Name = @p3", c.CommandText);
             cmd.SetupResult(0);
         });
 

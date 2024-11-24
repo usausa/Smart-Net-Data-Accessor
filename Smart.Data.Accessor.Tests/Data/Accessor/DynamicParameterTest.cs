@@ -33,18 +33,18 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<ISimpleAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
                 Assert.Equal(1, c.Parameters[0].Value);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
                 Assert.Equal(2, c.Parameters[0].Value);
@@ -77,26 +77,26 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<INullableAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.String, c.Parameters[0].DbType);
                 Assert.Equal("a", c.Parameters[0].Value);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DBNull.Value, c.Parameters[0].Value);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.String, c.Parameters[0].DbType);
                 Assert.Equal("b", c.Parameters[0].Value);
@@ -130,25 +130,25 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IArrayAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(2, c.Parameters.Count);
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
@@ -185,25 +185,25 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IListAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(0, c.Parameters.Count);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(2, c.Parameters.Count);
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
@@ -240,27 +240,27 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IMixedAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.String, c.Parameters[0].DbType);
                 Assert.Equal("a", c.Parameters[0].Value);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
                 Assert.Equal(1, c.Parameters[0].Value);
             };
             cmd.SetupResult(1);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.String, c.Parameters[0].DbType);
                 Assert.Equal("b", c.Parameters[0].Value);
@@ -306,9 +306,9 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IForEachAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(
                     "WHERE ((1 = 0) OR (Key1 = @dp0 AND Key2 = @dp1) OR (Key1 = @dp2 AND Key2 = @dp3) OR (Key1 = @dp4 AND Key2 = @dp5))",
@@ -380,9 +380,9 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IHandlerAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(5, c.Parameters[0].Size);
+            cmd.Executing = static c => Assert.Equal(5, c.Parameters[0].Size);
             cmd.SetupResult(0);
         });
 
@@ -422,9 +422,9 @@ public sealed class DynamicParameterTest
         var accessor = generator.Create<IListHandlerAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(5, c.Parameters[0].Size);
                 Assert.Equal(5, c.Parameters[1].Size);

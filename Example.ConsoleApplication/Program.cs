@@ -22,7 +22,7 @@ public static class Program
         }
 
         var engine = new ExecuteEngineConfig()
-            .ConfigureComponents(c =>
+            .ConfigureComponents(static c =>
             {
                 c.Add<IDbProvider>(new DelegateDbProvider(static () => new SqliteConnection(ConnectionString)));
             })

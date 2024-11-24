@@ -75,9 +75,9 @@ public sealed class ProcedureTest
         var accessor = generator.Create<IParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(13, c.Parameters.Count);
                 Assert.Equal(1, c.Parameters[nameof(Parameter.Value1)].Value);
@@ -153,9 +153,9 @@ public sealed class ProcedureTest
         var accessor = generator.Create<IDirectionParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal("1", c.Parameters[nameof(DirectionParameter.InParam)].Value);
@@ -200,9 +200,9 @@ public sealed class ProcedureTest
         var accessor = generator.Create<IDirectionArgumentAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal(1, c.Parameters["param1"].Value);
@@ -243,9 +243,9 @@ public sealed class ProcedureTest
         var accessor = generator.Create<IObjectProcedureAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal(1, c.Parameters["param1"].Value);

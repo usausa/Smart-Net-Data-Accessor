@@ -27,9 +27,9 @@ public sealed class SqlMergeTest
         var accessor = generator.Create<IMergeEntityAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(
+            cmd.Executing = static c => Assert.Equal(
                 "MERGE INTO MultiKey _T0 USING (SELECT @p0 AS Key1, @p1 AS Key2) AS _T1 ON (_T0.Key1 = _T1.Key1 AND _T0.Key2 = _T1.Key2) " +
                 "WHEN NOT MATCHED THEN INSERT (Key1, Key2, Type, Name) VALUES (@p0, @p1, @p2, @p3) " +
                 "WHEN MATCHED THEN UPDATE SET Type = @p2, Name = @p3",
@@ -62,18 +62,18 @@ public sealed class SqlMergeTest
         var accessor = generator.Create<IMergeParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(
+            cmd.Executing = static c => Assert.Equal(
                 "MERGE INTO Data _T0 USING (SELECT @p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
                 "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@p0, @p1) " +
                 "WHEN MATCHED THEN UPDATE SET Name = @p1",
                 c.CommandText);
             cmd.SetupResult(0);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal(
+            cmd.Executing = static c => Assert.Equal(
                 "MERGE INTO Data _T0 USING (SELECT @p0 AS Id) AS _T1 ON (_T0.Id = _T1.Id) " +
                 "WHEN NOT MATCHED THEN INSERT (Id, Name) VALUES (@p0, @p1) " +
                 "WHEN MATCHED THEN UPDATE SET Name = @p1",

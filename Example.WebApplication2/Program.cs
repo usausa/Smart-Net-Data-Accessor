@@ -24,7 +24,7 @@ builder.Services.AddSingleton<IDbProvider>(new DelegateDbProvider(static () => n
 builder.Services.AddDataAccessor();
 
 // Custom service provider
-builder.Host.ConfigureContainer<ResolverConfig>(config =>
+builder.Host.ConfigureContainer<ResolverConfig>(static config =>
 {
     config.UseDataAccessor();
     config
@@ -62,7 +62,7 @@ app.MapControllerRoute(
 var selector = app.Services.GetRequiredService<IDbProviderSelector>();
 
 var provider1 = selector.GetProvider(DataSource.Primary);
-provider1.Using(con =>
+provider1.Using(static con =>
 {
     con.Execute("CREATE TABLE IF NOT EXISTS Data (Id int PRIMARY KEY, Name text, Type text)");
     con.Execute("DELETE FROM Data");
@@ -72,7 +72,7 @@ provider1.Using(con =>
 });
 
 var provider2 = selector.GetProvider(DataSource.Secondary);
-provider2.Using(con =>
+provider2.Using(static con =>
 {
     con.Execute("CREATE TABLE IF NOT EXISTS Data (Id int PRIMARY KEY, Name text, Type text)");
     con.Execute("DELETE FROM Data");

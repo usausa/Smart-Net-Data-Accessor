@@ -71,7 +71,7 @@ public class AccessorBenchmark
                 new MockColumn(typeof(long), "Id"),
                 new MockColumn(typeof(string), "Name")
             ],
-            Enumerable.Range(1, 100).Select(x => new object[]
+            Enumerable.Range(1, 100).Select(static x => new object[]
             {
                 (long)x,
                 "test"
@@ -82,7 +82,7 @@ public class AccessorBenchmark
                 new MockColumn(typeof(long), "Id"),
                 new MockColumn(typeof(string), "Name")
             ],
-            Enumerable.Range(1, 1).Select(x => new object[]
+            Enumerable.Range(1, 1).Select(static x => new object[]
             {
                 (long)x,
                 "test"

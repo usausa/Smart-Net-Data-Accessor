@@ -34,9 +34,9 @@ public sealed class InjectTest
         var accessor = generator.Create<IInjectAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(DbType.Int32, c.Parameters[0].DbType);
                 Assert.Equal(1, c.Parameters[0].Value);

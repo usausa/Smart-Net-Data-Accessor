@@ -31,14 +31,14 @@ public sealed class TruncateTest
         var accessor = generator.Create<ITruncateAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("TRUNCATE TABLE Data", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("TRUNCATE TABLE Data", c.CommandText);
             cmd.SetupResult(0);
         });
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c => Assert.Equal("TRUNCATE TABLE Data", c.CommandText);
+            cmd.Executing = static c => Assert.Equal("TRUNCATE TABLE Data", c.CommandText);
             cmd.SetupResult(0);
         });
 

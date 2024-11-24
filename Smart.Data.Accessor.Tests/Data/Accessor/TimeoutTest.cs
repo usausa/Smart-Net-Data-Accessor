@@ -27,9 +27,9 @@ public sealed class TimeoutTest
         var accessor = generator.Create<ICommandTimeoutAttributeAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(123, c.CommandTimeout);
             };
@@ -56,9 +56,9 @@ public sealed class TimeoutTest
         var accessor = generator.Create<ITimeoutParameterAccessor>();
 
         var con = new MockDbConnection();
-        con.SetupCommand(cmd =>
+        con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal(123, c.CommandTimeout);
             };
