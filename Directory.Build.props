@@ -6,12 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <MSBuildWarningsAsMessages>SA0001</MSBuildWarningsAsMessages>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
     <NoWarn>EnableGenerateDocumentationFile</NoWarn>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -25,10 +22,6 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/usausa/Smart-Net-Data-Accessor</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' != 'net8.0'">
-    <NoWarn>$(NoWarn),CS8602</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
