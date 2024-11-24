@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageReference Include="Usa.Smart.Core" Version="2.4.0" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.7.1" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.8.0" />
   </ItemGroup>
 
 </Project>
