@@ -155,7 +155,7 @@ public sealed class ProcedureTest
         var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal("1", c.Parameters[nameof(DirectionParameter.InParam)].Value);
@@ -202,7 +202,7 @@ public sealed class ProcedureTest
         var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal(1, c.Parameters["param1"].Value);
@@ -245,7 +245,7 @@ public sealed class ProcedureTest
         var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = static c =>
             {
                 Assert.Equal("PROC", c.CommandText);
                 Assert.Equal(1, c.Parameters["param1"].Value);

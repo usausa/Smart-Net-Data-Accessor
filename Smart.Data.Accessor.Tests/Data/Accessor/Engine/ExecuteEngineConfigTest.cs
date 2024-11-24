@@ -13,7 +13,7 @@ public sealed class ExecuteEngineConfigTest
         config.SetServiceProvider(provider);
         Assert.Equal(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
 
-        config.ConfigureComponents(_ => { });
+        config.ConfigureComponents(static _ => { });
         Assert.NotEqual(provider, ((IExecuteEngineConfig)config).GetServiceProvider());
     }
 }

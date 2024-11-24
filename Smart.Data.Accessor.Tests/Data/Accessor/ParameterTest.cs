@@ -73,7 +73,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeHandlers(handlers =>
+                config.ConfigureTypeHandlers(static handlers =>
                 {
                     handlers[typeof(int)] = new ToStringTypeHandler();
                 });
@@ -239,14 +239,14 @@ public sealed class ParameterTest
     public void TestDateTimeKindTypeHandler()
     {
         var generator = new TestFactoryBuilder()
-            .SetSql(map =>
+            .SetSql(static map =>
             {
                 map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
                 map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
             })
             .Config(static config =>
             {
-                config.ConfigureTypeHandlers(handlers =>
+                config.ConfigureTypeHandlers(static handlers =>
                 {
                     handlers[typeof(DateTime)] = new DateTimeKindTypeHandler(DateTimeKind.Local);
                 });
@@ -290,14 +290,14 @@ public sealed class ParameterTest
     public void TestDateTimeTickTypeHandler()
     {
         var generator = new TestFactoryBuilder()
-            .SetSql(map =>
+            .SetSql(static map =>
             {
                 map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
                 map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
             })
             .Config(static config =>
             {
-                config.ConfigureTypeHandlers(handlers =>
+                config.ConfigureTypeHandlers(static handlers =>
                 {
                     handlers[typeof(DateTime)] = new DateTimeTickTypeHandler();
                 });
@@ -363,7 +363,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeHandlers(handlers =>
+                config.ConfigureTypeHandlers(static handlers =>
                 {
                     handlers[typeof(string)] = new DummyTypeHandler();
                 });
@@ -489,7 +489,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeHandlers(handlers =>
+                config.ConfigureTypeHandlers(static handlers =>
                 {
                     handlers[typeof(string)] = new DummyTypeHandler();
                 });
@@ -612,7 +612,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeMap(map => map.Clear());
+                config.ConfigureTypeMap(static map => map.Clear());
             })
             .Build();
 
@@ -633,7 +633,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeMap(map => map.Clear());
+                config.ConfigureTypeMap(static map => map.Clear());
             })
             .Build();
 
@@ -654,7 +654,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeMap(map => map.Clear());
+                config.ConfigureTypeMap(static map => map.Clear());
             })
             .Build();
 
@@ -675,7 +675,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeMap(map => map.Clear());
+                config.ConfigureTypeMap(static map => map.Clear());
             })
             .Build();
 
@@ -696,7 +696,7 @@ public sealed class ParameterTest
             .SetSql("/*@ value */")
             .Config(static config =>
             {
-                config.ConfigureTypeMap(map => map.Clear());
+                config.ConfigureTypeMap(static map => map.Clear());
             })
             .Build();
 
