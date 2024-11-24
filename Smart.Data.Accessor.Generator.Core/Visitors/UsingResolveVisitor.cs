@@ -8,9 +8,9 @@ internal sealed class UsingResolveVisitor : NodeVisitorBase
 
     private readonly HashSet<string> helpers = [];
 
-    public IEnumerable<string> Usings => usings.OrderBy(x => x);
+    public IEnumerable<string> Usings => usings.OrderBy(static x => x);
 
-    public IEnumerable<string> Helpers => helpers.OrderBy(x => x);
+    public IEnumerable<string> Helpers => helpers.OrderBy(static x => x);
 
     public override void Visit(UsingNode node)
     {

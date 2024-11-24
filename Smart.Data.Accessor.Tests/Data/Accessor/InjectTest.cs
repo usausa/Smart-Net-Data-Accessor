@@ -29,7 +29,7 @@ public sealed class InjectTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ counter.Next() */0, /*@ counter.Next() */0")
-            .Config(config => config.ConfigureComponents(c => c.Add<Counter>()))
+            .Config(config => config.ConfigureComponents(static c => c.Add<Counter>()))
             .Build();
         var accessor = generator.Create<IInjectAccessor>();
 

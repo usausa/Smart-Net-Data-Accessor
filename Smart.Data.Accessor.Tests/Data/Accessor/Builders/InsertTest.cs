@@ -246,7 +246,7 @@ public sealed class InsertTest
 
         var generator = new TestFactoryBuilder()
             .UseFileDatabase()
-            .ConfigureComponents(c => c.Add(new Counter()))
+            .ConfigureComponents(static c => c.Add(new Counter()))
             .Build();
         var accessor = generator.Create<IInsertCodeValueAccessor>();
 
@@ -284,7 +284,7 @@ public sealed class InsertTest
 
         var generator = new TestFactoryBuilder()
             .UseFileDatabase()
-            .ConfigureComponents(c => c.Add(new Counter()))
+            .ConfigureComponents(static c => c.Add(new Counter()))
             .Build();
         var accessor = generator.Create<IInsertAdditionalCodeValueAccessor>();
 

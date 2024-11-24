@@ -82,7 +82,7 @@ public static class Program
     {
         // Initialize
         var engine = new ExecuteEngineConfig()
-            .ConfigureComponents(c =>
+            .ConfigureComponents(static c =>
             {
                 c.Add<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
             })
@@ -858,13 +858,13 @@ ExecuteEngineConfig configuration.
 ```csharp
 // Default IDbProvider configuration
 var engine = new ExecuteEngineConfig()
-    .ConfigureComponents(c => c.Add<IDbProvider>(new DelegateDbProvider(() => new SqlConnection(ConnectionString))))
+    .ConfigureComponents(static c => c.Add<IDbProvider>(new DelegateDbProvider(() => new SqlConnection(ConnectionString))))
     .ToEngine();
 ```
 
 ```csharp
 // Use multiple provider
-config.ConfigureComponents(c =>
+config.ConfigureComponents(static c =>
 {
     var selector = new NamedDbProviderSelector();
     selector.AddProvider("Main", new DelegateDbProvider(() => new SqlConnection(MainConnectionString)));

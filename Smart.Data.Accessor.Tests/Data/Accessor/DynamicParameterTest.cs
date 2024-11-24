@@ -353,7 +353,7 @@ public sealed class DynamicParameterTest
     {
         public void SetValue(DbParameter parameter, object value) => parameter.Size = 5;
 
-        public Func<object, object> CreateParse(Type type) => x => x;
+        public Func<object, object> CreateParse(Type type) => static x => x;
     }
 
     [DataAccessor]
@@ -370,7 +370,7 @@ public sealed class DynamicParameterTest
             .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
             .Config(config =>
             {
-                config.ConfigureTypeHandlers(c =>
+                config.ConfigureTypeHandlers(static c =>
                 {
                     c[typeof(string)] = new DummyTypeHandler();
                 });
@@ -412,7 +412,7 @@ public sealed class DynamicParameterTest
             .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
             .Config(config =>
             {
-                config.ConfigureTypeHandlers(c =>
+                config.ConfigureTypeHandlers(static c =>
                 {
                     c[typeof(string)] = new DummyTypeHandler();
                 });

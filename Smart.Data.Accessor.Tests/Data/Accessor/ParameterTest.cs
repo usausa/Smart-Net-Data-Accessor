@@ -337,7 +337,7 @@ public sealed class ParameterTest
     {
         public void SetValue(DbParameter parameter, object value) => parameter.Size = 5;
 
-        public Func<object, object> CreateParse(Type type) => x => x;
+        public Func<object, object> CreateParse(Type type) => static x => x;
     }
 
     [DataAccessor]

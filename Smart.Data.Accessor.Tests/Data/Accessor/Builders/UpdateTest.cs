@@ -325,7 +325,7 @@ public sealed class UpdateTest
 
         var generator = new TestFactoryBuilder()
             .UseFileDatabase()
-            .ConfigureComponents(c => c.Add(new Counter()))
+            .ConfigureComponents(static c => c.Add(new Counter()))
             .Build();
         var accessor = generator.Create<IUpdateCodeValueAccessor>();
 
@@ -365,7 +365,7 @@ public sealed class UpdateTest
 
         var generator = new TestFactoryBuilder()
             .UseFileDatabase()
-            .ConfigureComponents(c => c.Add(new Counter()))
+            .ConfigureComponents(static c => c.Add(new Counter()))
             .Build();
         var accessor = generator.Create<IUpdateAdditionalCodeValueAccessor>();
 

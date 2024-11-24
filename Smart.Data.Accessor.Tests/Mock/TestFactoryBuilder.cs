@@ -19,7 +19,7 @@ public sealed class TestFactoryBuilder
 
     public TestFactoryBuilder UseFileDatabase()
     {
-        config.ConfigureComponents(c =>
+        config.ConfigureComponents(static c =>
         {
             c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateConnection));
         });
@@ -28,7 +28,7 @@ public sealed class TestFactoryBuilder
 
     public TestFactoryBuilder UseMultipleDatabase()
     {
-        config.ConfigureComponents(c =>
+        config.ConfigureComponents(static c =>
         {
             var selector = new NamedDbProviderSelector();
             selector.AddProvider(ProviderNames.Main, new DelegateDbProvider(TestDatabase.CreateConnection));
@@ -40,7 +40,7 @@ public sealed class TestFactoryBuilder
 
     public TestFactoryBuilder UseMemoryDatabase()
     {
-        config.ConfigureComponents(c =>
+        config.ConfigureComponents(static c =>
         {
             c.Add<IDbProvider>(new DelegateDbProvider(TestDatabase.CreateMemory));
         });

@@ -163,7 +163,7 @@ public sealed class ProcedureTest
 
                 c.Parameters[nameof(DirectionParameter.InOutParam)].Value = 3;
                 c.Parameters[nameof(DirectionParameter.OutParam)].Value = 4;
-                c.Parameters.OfType<MockDbParameter>().First(x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
+                c.Parameters.OfType<MockDbParameter>().First(static x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
             };
             cmd.SetupResult(100);
         });
@@ -210,7 +210,7 @@ public sealed class ProcedureTest
 
                 c.Parameters["param2"].Value = 3;
                 c.Parameters["param3"].Value = 4;
-                c.Parameters.OfType<MockDbParameter>().First(x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
+                c.Parameters.OfType<MockDbParameter>().First(static x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
             };
             cmd.SetupResult(100);
         });
@@ -253,7 +253,7 @@ public sealed class ProcedureTest
 
                 c.Parameters["param2"].Value = 3;
                 c.Parameters["param3"].Value = 4;
-                c.Parameters.OfType<MockDbParameter>().First(x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
+                c.Parameters.OfType<MockDbParameter>().First(static x => x.Direction == ParameterDirection.ReturnValue).Value = 5;
             };
             cmd.SetupResult(100);
         });
