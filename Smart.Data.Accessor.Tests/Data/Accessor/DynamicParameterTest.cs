@@ -368,7 +368,7 @@ public sealed class DynamicParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(static c =>
                 {
@@ -410,7 +410,7 @@ public sealed class DynamicParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(static c =>
                 {
@@ -456,7 +456,7 @@ public sealed class DynamicParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*% var id = value; */ WHERE Id = /*@ id */1")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })
@@ -479,7 +479,7 @@ public sealed class DynamicParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*% var ids = values; */ WHERE Id IN /*@ ids */(1)")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })

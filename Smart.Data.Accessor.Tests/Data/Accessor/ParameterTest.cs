@@ -71,7 +71,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(handlers =>
                 {
@@ -244,7 +244,7 @@ public sealed class ParameterTest
                 map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
                 map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
             })
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(handlers =>
                 {
@@ -295,7 +295,7 @@ public sealed class ParameterTest
                 map[nameof(IDateTimeKindTypeHandlerAccessor.Execute)] = "/*@ value */";
                 map[nameof(IDateTimeKindTypeHandlerAccessor.ExecuteScalar)] = string.Empty;
             })
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(handlers =>
                 {
@@ -361,7 +361,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(handlers =>
                 {
@@ -487,7 +487,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeHandlers(handlers =>
                 {
@@ -610,7 +610,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })
@@ -631,7 +631,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })
@@ -652,7 +652,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })
@@ -673,7 +673,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })
@@ -694,7 +694,7 @@ public sealed class ParameterTest
     {
         var generator = new TestFactoryBuilder()
             .SetSql("/*@ value */")
-            .Config(config =>
+            .Config(static config =>
             {
                 config.ConfigureTypeMap(map => map.Clear());
             })

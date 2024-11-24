@@ -45,7 +45,7 @@ public sealed class TestFactory
         AddReference(references, type.Assembly);
 
         var metadataReferences = references
-            .Select(x => MetadataReference.CreateFromFile(x.Location))
+            .Select(static x => MetadataReference.CreateFromFile(x.Location))
             .ToArray();
 
         var assemblyName = Path.GetRandomFileName();

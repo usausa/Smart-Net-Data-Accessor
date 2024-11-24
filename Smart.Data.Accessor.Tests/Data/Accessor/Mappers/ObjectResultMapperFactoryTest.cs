@@ -194,7 +194,7 @@ public sealed class ObjectResultMapperFactoryTest
                 1,
                 1
             },
-            Enumerable.Range(1, columns.Length).Select(_ => (object)DBNull.Value).ToArray()
+            Enumerable.Range(1, columns.Length).Select(static _ => (object)DBNull.Value).ToArray()
         };
 
         // Execute
