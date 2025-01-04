@@ -58,7 +58,7 @@ public struct StringBuffer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override readonly string ToString()
+    public readonly override string ToString()
     {
         return new(buffer, 0, Length);
     }
