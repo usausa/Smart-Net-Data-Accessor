@@ -5,6 +5,7 @@ using System.Data.Common;
 using Smart.Data.Accessor.Attributes;
 using Smart.Mock;
 
+#pragma warning disable xUnit1051
 public sealed class TransactionTest
 {
     [DataAccessor]

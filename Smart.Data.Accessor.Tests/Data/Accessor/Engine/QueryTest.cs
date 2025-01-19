@@ -7,6 +7,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Generator;
 using Smart.Mock;
 
+#pragma warning disable xUnit1051
 public sealed class QueryTest
 {
     //--------------------------------------------------------------------------------
