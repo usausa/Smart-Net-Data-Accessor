@@ -1,0 +1,36 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Analyzers.ruleset" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="Smart.Data.Accessor.sln.DotSettings" />
+    <File Path="test.runsettings" />
+  </Folder>
+  <Folder Name="/Library/">
+    <Project Path="Smart.Data.Accessor.Extensions.DependencyInjection/Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
+    <Project Path="Smart.Data.Accessor.Generator.Core/Smart.Data.Accessor.Generator.Core.csproj" />
+    <Project Path="Smart.Data.Accessor.Generator.Tools/Smart.Data.Accessor.Generator.Tools.csproj" />
+    <Project Path="Smart.Data.Accessor.Options.MySql/Smart.Data.Accessor.Options.MySql.csproj" />
+    <Project Path="Smart.Data.Accessor.Options.Postgres/Smart.Data.Accessor.Options.Postgres.csproj" />
+    <Project Path="Smart.Data.Accessor.Options.SqlServer/Smart.Data.Accessor.Options.SqlServer.csproj" />
+    <Project Path="Smart.Data.Accessor.Options/Smart.Data.Accessor.Options.csproj" />
+    <Project Path="Smart.Data.Accessor.Resolver/Smart.Data.Accessor.Resolver.csproj" />
+    <Project Path="Smart.Data.Accessor/Smart.Data.Accessor.csproj" />
+  </Folder>
+  <Folder Name="/Test/">
+    <Project Path="Smart.Data.Accessor.Tests/Smart.Data.Accessor.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Benchmark/">
+    <Project Path="Smart.Data.Accessor.Benchmark/Smart.Data.Accessor.Benchmark.csproj" />
+  </Folder>
+  <Folder Name="/Example/">
+    <Project Path="Example.ConsoleApplication/Example.ConsoleApplication.csproj" />
+    <Project Path="Example.WebApplication/Example.WebApplication.csproj" />
+    <Project Path="Example.WebApplication2/Example.WebApplication2.csproj" />
+  </Folder>
+</Solution>
