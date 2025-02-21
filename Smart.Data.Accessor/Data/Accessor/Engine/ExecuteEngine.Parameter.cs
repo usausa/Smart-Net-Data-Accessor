@@ -4,6 +4,7 @@ using System.Collections;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Helpers;
@@ -448,7 +449,7 @@ public sealed partial class ExecuteEngine
     {
         void Build(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object value)
         {
-            var values = (IList)value;
+            var values = Unsafe.As<IList>(value);
 
             sql.Append("(");
 
