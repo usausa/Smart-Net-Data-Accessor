@@ -3,7 +3,6 @@ namespace Smart.Data.Accessor.Engine;
 using System.Data;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using Smart.Data.Accessor.Mappers;
 
@@ -74,7 +73,9 @@ public sealed class QueryInfo<T>
                 var columns = new ColumnInfo[reader.FieldCount];
                 for (var i = 0; i < columns.Length; i++)
                 {
-                    columns[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
+                    ref var column = ref columns[i];
+                    column.Name = reader.GetName(i);
+                    column.Type = reader.GetFieldType(i);
                 }
 
                 // Double-checked locking
@@ -97,17 +98,18 @@ public sealed class QueryInfo<T>
             var fieldCount = reader.FieldCount;
             if ((ThreadLocalCache.ColumnInfoPool is null) || (ThreadLocalCache.ColumnInfoPool.Length < fieldCount))
             {
-                ThreadLocalCache.ColumnInfoPool = new ColumnInfo[fieldCount];
+                ThreadLocalCache.ColumnInfoPool = new ColumnInfo[fieldCount + 8];
             }
 
+            var columns = ThreadLocalCache.ColumnInfoPool;
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                ThreadLocalCache.ColumnInfoPool[i] = new ColumnInfo(reader.GetName(i), reader.GetFieldType(i));
+                ref var column = ref columns[i];
+                column.Name = reader.GetName(i);
+                column.Type = reader.GetFieldType(i);
             }
 
-            var columns = new Span<ColumnInfo>(ThreadLocalCache.ColumnInfoPool, 0, fieldCount);
-
-            var mapper = FindMapper(columns);
+            var mapper = FindMapper(ref columns, fieldCount);
             if (mapper is not null)
             {
                 return mapper;
@@ -116,7 +118,7 @@ public sealed class QueryInfo<T>
             lock (sync)
             {
                 // Double-checked locking
-                mapper = FindMapper(columns);
+                mapper = FindMapper(ref columns, fieldCount);
                 if (mapper is not null)
                 {
                     return mapper;
@@ -124,8 +126,8 @@ public sealed class QueryInfo<T>
 
                 Interlocked.MemoryBarrier();
 
-                var copyColumns = new ColumnInfo[columns.Length];
-                columns.CopyTo(new Span<ColumnInfo>(copyColumns));
+                var copyColumns = new ColumnInfo[fieldCount];
+                columns.AsSpan(0, fieldCount).CopyTo(new Span<ColumnInfo>(copyColumns));
 
                 mapper = engine.CreateResultMapper<T>(mi, copyColumns);
 
@@ -139,12 +141,12 @@ public sealed class QueryInfo<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ResultMapper<T>? FindMapper(Span<ColumnInfo> columns)
+    private ResultMapper<T>? FindMapper(ref ColumnInfo[] columns, int length)
     {
         var node = firstNode;
         do
         {
-            if (IsMatchColumn(node.Columns.AsSpan(), columns))
+            if (IsMatchColumn(ref node.Columns, ref columns, length))
             {
                 return node.Value;
             }
@@ -174,42 +176,33 @@ public sealed class QueryInfo<T>
         }
     }
 
-#pragma warning disable CA1307
-#pragma warning disable CA1309
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsMatchColumn(Span<ColumnInfo> columns1, Span<ColumnInfo> columns2)
+    private static bool IsMatchColumn(ref ColumnInfo[] columns1, ref ColumnInfo[] columns2, int length)
     {
-        var length = columns1.Length;
-        if (length != columns2.Length)
+        if (length != columns1.Length)
         {
             return false;
         }
 
-        ref var column1 = ref MemoryMarshal.GetReference(columns1);
-        ref var column2 = ref MemoryMarshal.GetReference(columns2);
-        do
+        for (var i = 0; i < length; i++)
         {
-            if (column1.Type != column2.Type || !String.Equals(column1.Name, column2.Name))
+            ref var column1 = ref columns1[i];
+            ref var column2 = ref columns2[i];
+
+            if ((column1.Type != column2.Type) || !String.Equals(column1.Name, column2.Name, StringComparison.Ordinal))
             {
                 return false;
             }
-
-            column1 = ref Unsafe.Add(ref column1, 1);
-            column2 = ref Unsafe.Add(ref column2, 1);
-
-            length--;
         }
-        while (length != 0);
 
         return true;
     }
-#pragma warning restore CA1309
-#pragma warning restore CA1307
 
+#pragma warning disable SA1214
 #pragma warning disable SA1401
     private sealed class Node
     {
-        public readonly ColumnInfo[] Columns;
+        public ColumnInfo[] Columns;
 
         public readonly ResultMapper<T> Value;
 
@@ -222,4 +215,5 @@ public sealed class QueryInfo<T>
         }
     }
 #pragma warning restore SA1401
+#pragma warning restore SA1214
 }

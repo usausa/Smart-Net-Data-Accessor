@@ -1,16 +1,12 @@
 namespace Smart.Data.Accessor.Engine;
 
+#pragma warning disable CA1051
 #pragma warning disable CA1815
-public readonly struct ColumnInfo
+public struct ColumnInfo
 {
-    public string Name { get; }
+    public string Name;
 
-    public Type Type { get; }
-
-    public ColumnInfo(string name, Type type)
-    {
-        Name = name;
-        Type = type;
-    }
+    public Type Type;
 }
 #pragma warning restore CA1815
+#pragma warning restore CA1051
