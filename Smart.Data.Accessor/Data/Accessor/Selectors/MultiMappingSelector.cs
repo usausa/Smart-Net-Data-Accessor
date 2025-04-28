@@ -23,7 +23,7 @@ public sealed class MultiMappingSelector : IMultiMappingSelector
             list.Add(new TypeMapInfo(type, ctor, properties));
 
             var maxIndex =
-                (ctor?.Parameters.Select(static x => x.Index) ?? Array.Empty<int>())
+                (ctor?.Parameters.Select(static x => x.Index) ?? [])
                 .Concat(properties.Select(static x => x.Index))
                 .DefaultIfEmpty(-1)
                 .Max();
