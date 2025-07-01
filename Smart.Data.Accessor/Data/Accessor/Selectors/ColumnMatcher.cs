@@ -23,7 +23,7 @@ public sealed class ColumnMatcher
     {
         var ctor = type.GetConstructors()
             .Select(MatchConstructor)
-            .ExcludeNull()
+            .WhereNotNull()
             .OrderByDescending(static x => x.Map.Parameters.Count)
             .ThenByDescending(static x => x.TypeMatch)
             .FirstOrDefault();
@@ -59,7 +59,7 @@ public sealed class ColumnMatcher
                 var column = FindMatchColumn(name);
                 return column is null ? null : new PropertyMapInfo(x, column.Index);
             })
-            .ExcludeNull()
+            .WhereNotNull()
             .OrderBy(static x => x.Index)
             .ToList();
     }
