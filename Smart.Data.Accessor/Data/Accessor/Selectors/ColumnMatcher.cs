@@ -1,6 +1,8 @@
 namespace Smart.Data.Accessor.Selectors;
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Configs;
@@ -64,11 +66,23 @@ public sealed class ColumnMatcher
             .ToList();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ColumnAndIndex? FindMatchColumn(string name)
     {
-        return columns.FirstOrDefault(x => String.Equals(x.Column.Name, name, StringComparison.OrdinalIgnoreCase));
+        var span = CollectionsMarshal.AsSpan(columns);
+        for (var i = 0; i < span.Length; i++)
+        {
+            var element = span[i];
+            if (String.Equals(element.Column.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return element;
+            }
+        }
+
+        return null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsTargetProperty(PropertyInfo pi)
     {
         return pi.CanWrite && (pi.GetCustomAttribute<IgnoreAttribute>() is null);
