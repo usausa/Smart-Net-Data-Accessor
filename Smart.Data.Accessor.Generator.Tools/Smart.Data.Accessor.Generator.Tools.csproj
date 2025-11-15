@@ -24,7 +24,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-windows')) == 'True'">
+  <ItemGroup Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-windows')) == 'true'">
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" PrivateAssets="All" />
   </ItemGroup>
 
