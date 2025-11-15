@@ -21,6 +21,12 @@
   <PropertyGroup Condition="$(TargetFramework.StartsWith('net9.0-windows')) == true">
     <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net9.0-windows\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
   </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net10.0')) == true">
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net10.0\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('net10.0-windows')) == true">
+    <SmartDataAccessorGenerator>$(MSBuildThisFileDirectory)..\tools\net10.0-windows\Smart.Data.Accessor.Generator.Tools.dll</SmartDataAccessorGenerator>
+  </PropertyGroup>
 
   <ItemGroup>
     <SqlFiles Include="**\*.sql" />

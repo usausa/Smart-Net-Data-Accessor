@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>Smart</RootNamespace>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
@@ -19,13 +19,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.10" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
-    <PackageReference Include="System.Linq.Async" Version="6.0.3" />
-    <PackageReference Include="Usa.Smart.Core" Version="2.4.6" />
-    <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.6.1" />
-    <PackageReference Include="Usa.Smart.Mock.Data" Version="2.5.0" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.5.0" />
+    <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.7.0" />
+    <PackageReference Include="Usa.Smart.Mock.Data" Version="2.6.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.0" />
   </ItemGroup>
 

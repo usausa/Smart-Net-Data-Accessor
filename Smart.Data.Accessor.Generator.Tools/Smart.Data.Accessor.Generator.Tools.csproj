@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net9.0;net9.0-windows;net8.0;net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net10.0;net10.0-windows;net9.0;net9.0-windows;net8.0;net8.0-windows</TargetFrameworks>
     <RootNamespace>Smart.Data.Accessor.Generator</RootNamespace>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -20,11 +20,11 @@
     <PackageTags>smart ado.net orm dao</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net8.0'">
+  <ItemGroup Condition="'($(TargetFramework)' == 'net10.0' or '$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net8.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows' or '$(TargetFramework)' == 'net8.0-windows'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows' or '$(TargetFramework)' == 'net9.0-windows' or '$(TargetFramework)' == 'net8.0-windows'">
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" PrivateAssets="All" />
   </ItemGroup>
 
@@ -41,6 +41,20 @@
   </ItemGroup>
 
   <Target Name="PackToolsDependencies" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_PackageFiles Include="bin\Release\net10.0\**">
+        <PackagePath>tools\net10.0</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
+    <ItemGroup>
+      <_PackageFiles Include="bin\Release\net10.0-windows\**">
+        <PackagePath>tools\net10.0-windows</PackagePath>
+        <Visible>false</Visible>
+        <BuildAction>Content</BuildAction>
+      </_PackageFiles>
+    </ItemGroup>
     <ItemGroup>
       <_PackageFiles Include="bin\Release\net9.0\**">
         <PackagePath>tools\net9.0</PackagePath>
