@@ -26,7 +26,7 @@ public static class ScriptHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNotEmpty(string? value)
     {
-        return (value is not null) && (value.Length > 0);
+        return !String.IsNullOrEmpty(value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
