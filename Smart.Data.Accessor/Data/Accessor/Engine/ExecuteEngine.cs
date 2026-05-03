@@ -11,6 +11,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Dialect;
 using Smart.Data.Accessor.Handlers;
 using Smart.Data.Accessor.Mappers;
+using Smart.Data.Accessor.Runtime;
 
 public sealed partial class ExecuteEngine : IEngineController, IResultMapperCreateContext
 {
@@ -151,7 +152,7 @@ public sealed partial class ExecuteEngine : IEngineController, IResultMapperCrea
                 return default!;
             }
 
-            return (T)handler(source);
+            return UnsafeCastHelper.UnsafeCast<T>(handler(source));
         }
 
         if (source is T value)

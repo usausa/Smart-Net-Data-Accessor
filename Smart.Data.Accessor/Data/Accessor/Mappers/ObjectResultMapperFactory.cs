@@ -96,6 +96,9 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             MethodAttributes.Public | MethodAttributes.ReuseSlot | MethodAttributes.Virtual | MethodAttributes.HideBySig,
             type,
             [typeof(IDataRecord)]);
+        methodBuilder.SetCustomAttribute(new CustomAttributeBuilder(
+            typeof(MethodImplAttribute).GetConstructor([typeof(MethodImplOptions)])!,
+            [MethodImplOptions.AggressiveOptimization]));
 
         var ilGenerator = methodBuilder.GetILGenerator();
 

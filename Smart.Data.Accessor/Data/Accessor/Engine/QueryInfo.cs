@@ -101,15 +101,16 @@ public sealed class QueryInfo<T>
                 ThreadLocalCache.ColumnInfoPool = new ColumnInfo[fieldCount + 8];
             }
 
-            var columns = ThreadLocalCache.ColumnInfoPool;
+            var columnInfoPool = ThreadLocalCache.ColumnInfoPool;
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                ref var column = ref columns[i];
+                ref var column = ref columnInfoPool[i];
                 column.Name = reader.GetName(i);
                 column.Type = reader.GetFieldType(i);
             }
 
-            var mapper = FindMapper(ref columns, fieldCount);
+            var columns = columnInfoPool.AsSpan(0, fieldCount);
+            var mapper = FindMapper(columns);
             if (mapper is not null)
             {
                 return mapper;
@@ -118,7 +119,7 @@ public sealed class QueryInfo<T>
             lock (sync)
             {
                 // Double-checked locking
-                mapper = FindMapper(ref columns, fieldCount);
+                mapper = FindMapper(columns);
                 if (mapper is not null)
                 {
                     return mapper;
@@ -127,7 +128,7 @@ public sealed class QueryInfo<T>
                 Interlocked.MemoryBarrier();
 
                 var copyColumns = new ColumnInfo[fieldCount];
-                columns.AsSpan(0, fieldCount).CopyTo(new Span<ColumnInfo>(copyColumns));
+                columns.CopyTo(new Span<ColumnInfo>(copyColumns));
 
                 mapper = engine.CreateResultMapper<T>(mi, copyColumns);
 
@@ -141,12 +142,12 @@ public sealed class QueryInfo<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ResultMapper<T>? FindMapper(ref ColumnInfo[] columns, int length)
+    private ResultMapper<T>? FindMapper(ReadOnlySpan<ColumnInfo> current)
     {
         var node = firstNode;
         do
         {
-            if (IsMatchColumn(ref node.Columns, ref columns, length))
+            if (IsMatchColumn(node.Columns, current))
             {
                 return node.Value;
             }
@@ -176,18 +177,18 @@ public sealed class QueryInfo<T>
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsMatchColumn(ref ColumnInfo[] columns1, ref ColumnInfo[] columns2, int length)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool IsMatchColumn(ReadOnlySpan<ColumnInfo> cached, ReadOnlySpan<ColumnInfo> current)
     {
-        if (length != columns1.Length)
+        if (cached.Length != current.Length)
         {
             return false;
         }
 
-        for (var i = 0; i < length; i++)
+        for (var i = 0; i < cached.Length; i++)
         {
-            ref var column1 = ref columns1[i];
-            ref var column2 = ref columns2[i];
+            ref readonly var column1 = ref cached[i];
+            ref readonly var column2 = ref current[i];
 
             if ((column1.Type != column2.Type) || !String.Equals(column1.Name, column2.Name, StringComparison.Ordinal))
             {
