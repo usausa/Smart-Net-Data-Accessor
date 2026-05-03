@@ -8,9 +8,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.7" />
     <PackageReference Include="Usa.Smart.Core" Version="2.7.0" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.10.1" />
-    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="2.10.1" />
-    <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="2.10.1" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.11.0" />
+    <PackageReference Include="Usa.Smart.Data.Accessor.Extensions.DependencyInjection" Version="2.11.0" />
+    <PackageReference Include="Usa.Smart.Data.Accessor.Resolver" Version="2.11.0" />
     <PackageReference Include="Usa.Smart.Data.Mapper" Version="2.8.0" />
     <PackageReference Include="Usa.Smart.Resolver" Version="2.9.0" />
     <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="2.9.0" />
