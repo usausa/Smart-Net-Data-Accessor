@@ -203,7 +203,7 @@ public sealed class QueryInfo<T>
 #pragma warning disable SA1401
     private sealed class Node
     {
-        public ColumnInfo[] Columns;
+        public readonly ColumnInfo[] Columns;
 
         public readonly ResultMapper<T> Value;
 
