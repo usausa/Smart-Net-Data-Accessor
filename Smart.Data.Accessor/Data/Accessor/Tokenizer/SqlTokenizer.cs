@@ -49,7 +49,8 @@ public sealed class SqlTokenizer
             end--;
         }
 
-        var list = new List<Token>();
+        var capacity = end - start + 1;
+        var list = capacity > 0 ? new List<Token>(capacity) : [];
         for (var i = start; i <= end; i++)
         {
             var token = source[i];
@@ -220,7 +221,7 @@ public sealed class SqlTokenizer
         }
         else if (source[current] == ',')
         {
-            // Open
+            // Comma
             AddToken(new Token(TokenType.Comma, ","));
             current += 1;
         }

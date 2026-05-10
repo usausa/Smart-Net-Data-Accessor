@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Engine;
 using System.Data;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Smart.Data.Accessor.Mappers;
 
@@ -70,14 +71,6 @@ public sealed class QueryInfo<T>
 
             lock (sync)
             {
-                var columns = new ColumnInfo[reader.FieldCount];
-                for (var i = 0; i < columns.Length; i++)
-                {
-                    ref var column = ref columns[i];
-                    column.Name = reader.GetName(i);
-                    column.Type = reader.GetFieldType(i);
-                }
-
                 // Double-checked locking
 #pragma warning disable CA1508
                 if (optimizedMapper is not null)
@@ -85,6 +78,14 @@ public sealed class QueryInfo<T>
                     return optimizedMapper;
                 }
 #pragma warning restore CA1508
+
+                var columns = new ColumnInfo[reader.FieldCount];
+                for (var i = 0; i < columns.Length; i++)
+                {
+                    ref var column = ref columns[i];
+                    column.Name = reader.GetName(i);
+                    column.Type = reader.GetFieldType(i);
+                }
 
                 Interlocked.MemoryBarrier();
 
@@ -141,6 +142,7 @@ public sealed class QueryInfo<T>
         }
     }
 
+    [SkipLocalsInit]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ResultMapper<T>? FindMapper(ReadOnlySpan<ColumnInfo> current)
     {
@@ -185,10 +187,12 @@ public sealed class QueryInfo<T>
             return false;
         }
 
+        ref var head1 = ref MemoryMarshal.GetReference(cached);
+        ref var head2 = ref MemoryMarshal.GetReference(current);
         for (var i = 0; i < cached.Length; i++)
         {
-            ref readonly var column1 = ref cached[i];
-            ref readonly var column2 = ref current[i];
+            ref readonly var column1 = ref Unsafe.Add(ref head1, i);
+            ref readonly var column2 = ref Unsafe.Add(ref head2, i);
 
             if ((column1.Type != column2.Type) || !String.Equals(column1.Name, column2.Name, StringComparison.Ordinal))
             {

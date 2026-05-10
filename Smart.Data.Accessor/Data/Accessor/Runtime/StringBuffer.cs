@@ -27,8 +27,17 @@ public struct StringBuffer
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Append<T>(T value)
+        where T : ISpanFormattable
     {
-        Append(value!.ToString().AsSpan());
+        Span<char> temp = stackalloc char[32];
+        if (value.TryFormat(temp, out var written, default, null))
+        {
+            Append(temp[..written]);
+        }
+        else
+        {
+            Append(value.ToString().AsSpan());
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
