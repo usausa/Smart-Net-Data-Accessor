@@ -41,8 +41,10 @@ public sealed partial class ExecuteEngine : IEngineController, IResultMapperCrea
         objectConverter = (IObjectConverter)ServiceProvider.GetService(typeof(IObjectConverter))!;
         emptyDialect = (IEmptyDialect)ServiceProvider.GetService(typeof(IEmptyDialect))!;
 
+#pragma warning disable IDE0028
         typeMap = new Dictionary<Type, DbType>(config.GetTypeMap());
         typeHandlers = new Dictionary<Type, ITypeHandler>(config.GetTypeHandlers());
+#pragma warning restore IDE0028
         resultMapperFactories = config.GetResultMapperFactories();
 
         parameterSubNames = Enumerable.Range(0, 256).Select(static x => $"_{x}").ToArray();

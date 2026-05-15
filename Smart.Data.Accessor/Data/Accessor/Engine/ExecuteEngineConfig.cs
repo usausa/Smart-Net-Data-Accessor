@@ -48,7 +48,9 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
 
     private ComponentConfig? components;
 
+#pragma warning disable IDE0028
     private Dictionary<Type, DbType> typeMap = new(DefaultTypeMap);
+#pragma warning restore IDE0028
 
     private Dictionary<Type, ITypeHandler> typeHandlers = [];
 
