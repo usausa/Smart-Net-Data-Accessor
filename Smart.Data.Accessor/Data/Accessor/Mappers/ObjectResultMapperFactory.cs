@@ -98,7 +98,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             [typeof(IDataRecord)]);
         methodBuilder.SetCustomAttribute(new CustomAttributeBuilder(
             typeof(MethodImplAttribute).GetConstructor([typeof(MethodImplOptions)])!,
-            [MethodImplOptions.AggressiveOptimization]));
+            [MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization]));
 
         var ilGenerator = methodBuilder.GetILGenerator();
 
