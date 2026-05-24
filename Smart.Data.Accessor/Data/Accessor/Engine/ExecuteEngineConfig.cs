@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Engine;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 
 using Smart.ComponentModel;
 using Smart.Converter;
@@ -37,6 +38,7 @@ public sealed class ExecuteEngineConfig : IExecuteEngineConfig
         { typeof(object), DbType.Object }
     };
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ObjectResultMapperFactory and TupleResultMapperFactory are intentionally included as default factories. Users can replace them with AOT-compatible alternatives.")]
     private static readonly List<IResultMapperFactory> DefaultResultMapperFactories =
     [
         new SingleResultMapperFactory(),

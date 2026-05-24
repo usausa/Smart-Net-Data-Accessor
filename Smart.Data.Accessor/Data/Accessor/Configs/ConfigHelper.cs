@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Configs;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Attributes;
@@ -10,6 +11,7 @@ public static class ConfigHelper
     // Naming
     //--------------------------------------------------------------------------------
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static Func<string, string>? GetNamingByMethod(MethodInfo mi)
     {
         return mi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
@@ -22,22 +24,26 @@ public static class ConfigHelper
         return pmi.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static Func<string, string>? GetNamingByType(Type type)
     {
         return type.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming() ??
                type.Assembly.GetCustomAttributes().OfType<NamingAttribute>().FirstOrDefault()?.GetNaming();
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static Func<string, string> GetMethodTypeNamingOrDefault(MethodInfo mi, Type type)
     {
         return GetNamingByMethod(mi) ?? GetNamingByType(type) ?? Naming.Default;
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static Func<string, string> GetMethodParameterNamingOrDefault(MethodInfo mi, ParameterInfo pmi)
     {
         return GetNamingByParameter(pmi) ?? GetNamingByMethod(mi) ?? Naming.Default;
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static Func<string, string> GetMethodParameterPropertyNamingOrDefault(MethodInfo mi, ParameterInfo pmi, PropertyInfo pi)
     {
         return GetNamingByParameter(pmi) ?? GetNamingByMethod(mi) ?? GetNamingByType(pi.DeclaringType!) ?? Naming.Default;
@@ -47,6 +53,7 @@ public static class ConfigHelper
     // Table
     //--------------------------------------------------------------------------------
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     private static string GetTableName(Type type, Func<string, string> naming)
     {
         var attr = type.GetCustomAttribute<NameAttribute>();
@@ -65,12 +72,14 @@ public static class ConfigHelper
         return naming(name);
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     public static string GetMethodTableName(MethodInfo mi, Type type)
     {
         var naming = GetMethodTypeNamingOrDefault(mi, type);
         return GetTableName(type, naming);
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     public static string GetMethodParameterTableName(MethodInfo mi, ParameterInfo pmi)
     {
         var naming = GetMethodParameterNamingOrDefault(mi, pmi);
@@ -81,6 +90,7 @@ public static class ConfigHelper
     // Column
     //--------------------------------------------------------------------------------
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     public static string GetMethodPropertyColumnName(MethodInfo mi, PropertyInfo pi)
     {
         var name = pi.GetCustomAttribute<NameAttribute>();
@@ -93,6 +103,7 @@ public static class ConfigHelper
         return naming(pi.Name);
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     public static string GetMethodParameterPropertyColumnName(MethodInfo mi, ParameterInfo pmi, PropertyInfo pi)
     {
         var name = pi.GetCustomAttribute<NameAttribute>();
@@ -105,6 +116,7 @@ public static class ConfigHelper
         return naming(pi.Name);
     }
 
+    [RequiresUnreferencedCode("ConfigHelper uses GetCustomAttributes and Assembly.GetCustomAttributes which may not work with trimming.")]
     public static string GetMethodParameterColumnName(MethodInfo mi, ParameterInfo pmi)
     {
         var name = pmi.GetCustomAttribute<NameAttribute>();

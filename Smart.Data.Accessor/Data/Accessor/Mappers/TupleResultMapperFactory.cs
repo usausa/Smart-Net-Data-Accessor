@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Mappers;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,8 @@ using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Selectors;
 using Smart.Reflection.Emit;
 
+[RequiresDynamicCode("TupleResultMapperFactory uses Reflection.Emit and is not AOT compatible. Use Source Generator instead.")]
+[RequiresUnreferencedCode("TupleResultMapperFactory uses reflection and may not work with trimming. Use Source Generator instead.")]
 public sealed class TupleResultMapperFactory : IResultMapperFactory
 {
     public static TupleResultMapperFactory Instance { get; } = new();

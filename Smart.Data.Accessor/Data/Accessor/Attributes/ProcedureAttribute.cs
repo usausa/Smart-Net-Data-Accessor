@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Attributes;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Builders.Helpers;
@@ -35,6 +36,7 @@ public sealed class ProcedureAttribute : MethodAttribute, IReturnValueBehavior
         ReturnValueAsResult = returnValueAsResult;
     }
 
+    [RequiresUnreferencedCode("GetNodes uses BuildHelper which uses reflection and may not work with trimming.")]
     public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
     {
         var nodes = new List<INode>

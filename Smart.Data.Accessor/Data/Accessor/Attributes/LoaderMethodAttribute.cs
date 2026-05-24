@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Attributes;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Generator;
@@ -14,6 +15,7 @@ public abstract class LoaderMethodAttribute : MethodAttribute
     {
     }
 
+    [RequiresUnreferencedCode("Required to match base class MethodAttribute.GetNodes contract.")]
     public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
     {
         var sql = loader.Load(mi);

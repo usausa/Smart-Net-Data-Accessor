@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Helpers;
 
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart;
@@ -34,6 +35,7 @@ public static class ParameterHelper
     // Parameter Type
     //--------------------------------------------------------------------------------
 
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "ParameterType and GetElementType() return types are checked for interfaces at runtime; trimming risk is acceptable here.")]
     public static bool IsNestedParameter(ParameterInfo pi)
     {
         if (pi.GetCustomAttribute<ParameterBuilderAttribute>() is not null)
@@ -45,7 +47,7 @@ public static class ParameterHelper
         return IsNestedType(type);
     }
 
-    public static bool IsNestedType(Type type)
+    public static bool IsNestedType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type)
     {
         if (type.IsNullableType())
         {
@@ -54,7 +56,7 @@ public static class ParameterHelper
 
         if (type.IsEnum)
         {
-            type = Enum.GetUnderlyingType(type);
+            return false;
         }
 
         if (type.IsPrimitive ||
@@ -85,12 +87,12 @@ public static class ParameterHelper
         return true;
     }
 
-    public static bool IsMultipleParameter(Type type)
+    public static bool IsMultipleParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type)
     {
         return (type != typeof(byte[])) && (type.IsArray || type.GetInterfaces().Prepend(type).Any(static t => t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(IList<>))));
     }
 
-    public static Type GetMultipleParameterElementType(Type type)
+    public static Type GetMultipleParameterElementType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type)
     {
         if (type.IsArray)
         {

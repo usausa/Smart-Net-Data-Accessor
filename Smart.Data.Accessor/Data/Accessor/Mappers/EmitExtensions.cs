@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Mappers;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -106,6 +107,8 @@ internal static class EmitExtensions
         ilGenerator.Emit(OpCodes.Call, ConvertFunc);                        // [Value(Converted)]
     }
 
+    [RequiresDynamicCode("EmitTypeConversionForType uses GetConstructor which requires dynamic code.")]
+    [RequiresUnreferencedCode("EmitTypeConversionForType uses GetConstructor which may not work with trimming.")]
     public static void EmitTypeConversionForType(this ILGenerator ilGenerator, Type type)
     {
         if (type.IsValueType)
@@ -129,6 +132,8 @@ internal static class EmitExtensions
         }
     }
 
+    [RequiresDynamicCode("EmitValueToNullableType uses GetConstructor which requires dynamic code.")]
+    [RequiresUnreferencedCode("EmitValueToNullableType uses GetConstructor which may not work with trimming.")]
     public static void EmitValueToNullableType(this ILGenerator ilGenerator, Type type)
     {
         var underlyingType = Nullable.GetUnderlyingType(type)!;

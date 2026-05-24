@@ -1,11 +1,13 @@
 namespace Smart.Data.Accessor.Selectors;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Engine;
 
 public sealed class MultiMappingSelector : IMultiMappingSelector
 {
+    [RequiresUnreferencedCode("MultiMappingSelector.Select uses reflection to resolve constructors and properties and may not work with trimming.")]
     public TypeMapInfo[]? Select(MethodInfo mi, Type[] types, ColumnInfo[] columns)
     {
         var list = new List<TypeMapInfo>();

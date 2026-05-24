@@ -38,6 +38,7 @@ public sealed class SelectSingleAttribute : MethodAttribute
         this.type = type;
     }
 
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("GetNodes uses BuildHelper which uses reflection and may not work with trimming.")]
     public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
     {
         var parameters = BuildHelper.GetParameters(mi);

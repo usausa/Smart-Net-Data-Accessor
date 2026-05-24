@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Builders.Helpers;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 
@@ -7,6 +8,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Configs;
 using Smart.Data.Accessor.Helpers;
 
+[RequiresUnreferencedCode("BuildHelper uses reflection to resolve type members and ConfigHelper which may not work with trimming.")]
 public static class BuildHelper
 {
     //--------------------------------------------------------------------------------

@@ -1,10 +1,13 @@
 namespace Smart.Data.Accessor;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Engine;
 using Smart.Data.Accessor.Helpers;
 
+[RequiresDynamicCode("DataAccessorFactory loads assemblies dynamically and is not AOT compatible.")]
+[RequiresUnreferencedCode("DataAccessorFactory resolves types by name and may not work with trimming.")]
 public sealed class DataAccessorFactory
 {
     private readonly ExecuteEngine engine;

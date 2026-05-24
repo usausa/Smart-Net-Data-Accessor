@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Selectors;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -21,7 +22,8 @@ public sealed class ColumnMatcher
         this.columns = columns.Select((x, i) => new ColumnAndIndex(x, i + offset)).ToList();
     }
 
-    public ConstructorMapInfo? ResolveConstructor(Type type)
+    [RequiresUnreferencedCode("ColumnMatcher uses ConfigHelper and reflection which may not work with trimming.")]
+    public ConstructorMapInfo? ResolveConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
     {
         var ctor = type.GetConstructors()
             .Select(MatchConstructor)
@@ -32,6 +34,7 @@ public sealed class ColumnMatcher
         return ctor?.Map;
     }
 
+    [RequiresUnreferencedCode("ColumnMatcher uses ConfigHelper and reflection which may not work with trimming.")]
     private ConstructorMatch? MatchConstructor(ConstructorInfo ci)
     {
         var parameters = new List<ParameterMapInfo>();
@@ -52,7 +55,8 @@ public sealed class ColumnMatcher
         return new ConstructorMatch(new ConstructorMapInfo(ci, parameters.OrderBy(static x => x.Index).ToList()), typeMatch);
     }
 
-    public IReadOnlyList<PropertyMapInfo> ResolveProperties(Type type)
+    [RequiresUnreferencedCode("ColumnMatcher uses ConfigHelper and reflection which may not work with trimming.")]
+    public IReadOnlyList<PropertyMapInfo> ResolveProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
     {
         return type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(IsTargetProperty)
             .Select(x =>

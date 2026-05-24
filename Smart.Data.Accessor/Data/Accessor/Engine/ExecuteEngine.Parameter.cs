@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Engine;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -369,6 +370,7 @@ public sealed partial class ExecuteEngine
             this.isMultiple = isMultiple;
         }
 
+        [RequiresUnreferencedCode("DynamicParameterSetup.Setup uses reflection internally and may not work with trimming.")]
         public void Setup(DbCommand cmd, ref StringBuffer sql, string prefix, string name, object? value)
         {
             if (value is null)
@@ -403,6 +405,7 @@ public sealed partial class ExecuteEngine
         }
     }
 
+    [RequiresUnreferencedCode("LookupDynamicParameterEntry uses reflection internally and may not work with trimming.")]
     private DynamicParameterEntry LookupDynamicParameterEntry(Type type)
     {
         if (!dynamicSetupCache.TryGetValue(type, out var entry))
@@ -413,6 +416,7 @@ public sealed partial class ExecuteEngine
         return entry;
     }
 
+    [RequiresUnreferencedCode("CreateDynamicParameterEntry uses reflection to look up internal methods and may not work with trimming.")]
     private DynamicParameterEntry CreateDynamicParameterEntry(Type type)
     {
         if (ParameterHelper.IsMultipleParameter(type))

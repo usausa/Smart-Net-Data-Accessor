@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Attributes;
 
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Generator;
@@ -17,6 +18,7 @@ public sealed class DirectSqlAttribute : MethodAttribute
         this.sql = sql;
     }
 
+    [RequiresUnreferencedCode("Required to match base class MethodAttribute.GetNodes contract.")]
     public override IReadOnlyList<INode> GetNodes(ISqlLoader loader, MethodInfo mi)
     {
         var tokenizer = new SqlTokenizer(sql);

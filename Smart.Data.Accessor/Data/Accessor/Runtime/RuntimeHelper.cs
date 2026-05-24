@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Runtime;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using Smart.Data.Accessor.Attributes;
@@ -11,7 +12,11 @@ public static class RuntimeHelper
     // Initialize
     //--------------------------------------------------------------------------------
 
-    public static MethodInfo GetInterfaceMethodByNo(Type type, Type interfaceType, int no)
+    [RequiresUnreferencedCode("RuntimeHelper uses reflection to resolve interface methods and may not work with trimming.")]
+    public static MethodInfo GetInterfaceMethodByNo(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type interfaceType,
+        int no)
     {
         var implementMethod = type.GetMethods().First(x => x.GetCustomAttribute<MethodNoAttribute>()!.No == no);
         var parameterTypes = implementMethod.GetParameters().Select(static x => x.ParameterType).ToArray();
@@ -32,7 +37,11 @@ public static class RuntimeHelper
         return selector.GetProvider(attribute.Parameter);
     }
 
-    private static ICustomAttributeProvider GetCustomAttributeProvider(MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    private static ICustomAttributeProvider GetCustomAttributeProvider(
+        MethodInfo method,
+        int parameterIndex,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType,
+        string? propertyName)
     {
         if (declaringType is not null)
         {
@@ -42,31 +51,31 @@ public static class RuntimeHelper
         return method.GetParameters()[parameterIndex];
     }
 
-    public static ExecuteEngine.ListParameterSetup CreateListParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    public static ExecuteEngine.ListParameterSetup CreateListParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType, string? propertyName)
     {
         var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
         return engine.CreateListParameterSetup(type, provider);
     }
 
-    public static ExecuteEngine.InParameterSetup CreateInParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    public static ExecuteEngine.InParameterSetup CreateInParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType, string? propertyName)
     {
         var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
         return engine.CreateInParameterSetup(type, provider);
     }
 
-    public static ExecuteEngine.InOutParameterSetup CreateInOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    public static ExecuteEngine.InOutParameterSetup CreateInOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType, string? propertyName)
     {
         var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
         return engine.CreateInOutParameterSetup(type, provider);
     }
 
-    public static ExecuteEngine.OutParameterSetup CreateOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    public static ExecuteEngine.OutParameterSetup CreateOutParameterSetup(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType, string? propertyName)
     {
         var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
         return engine.CreateOutParameterSetup(type, provider);
     }
 
-    public static Func<object, object>? CreateHandler(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, Type? declaringType, string? propertyName)
+    public static Func<object, object>? CreateHandler(ExecuteEngine engine, Type type, MethodInfo method, int parameterIndex, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type? declaringType, string? propertyName)
     {
         var provider = GetCustomAttributeProvider(method, parameterIndex, declaringType, propertyName);
         return engine.CreateHandler(type, provider);
