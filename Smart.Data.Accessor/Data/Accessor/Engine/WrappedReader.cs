@@ -56,8 +56,8 @@ public sealed class WrappedReader : IDataReader
 
     public double GetDouble(int i) => reader.GetDouble(i);
 
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2073", Justification = "GetFieldType delegates to DbDataReader which is trim-safe at runtime.")]
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2093", Justification = "IDataRecord.GetFieldType does not have DynamicallyAccessedMembers; mismatch is intentional.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2073", Justification = "GetFieldType delegates to DbDataReader which is trim-safe at runtime.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2093", Justification = "IDataRecord.GetFieldType does not have DynamicallyAccessedMembers; mismatch is intentional.")]
     public Type GetFieldType(int i) => reader.GetFieldType(i);
 
     public float GetFloat(int i) => reader.GetFloat(i);
