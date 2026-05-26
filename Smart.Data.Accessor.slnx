@@ -15,11 +15,16 @@
     <File Path="test.runsettings" />
   </Folder>
   <Folder Name="/Library/">
+    <Project Path="Smart.Data.Accessor/Smart.Data.Accessor.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders/Smart.Data.Accessor.Builders.csproj" />
+    <Project Path="Smart.Data.Accessor.Generator/Smart.Data.Accessor.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.Generator/Smart.Data.Accessor.Builders.Generator.csproj" />
   </Folder>
   <Folder Name="/Test/">
   </Folder>
   <Folder Name="/Benchmark/">
   </Folder>
   <Folder Name="/Example/">
+    <Project Path="Example.ConsoleApplication/Example.ConsoleApplication.csproj" />
   </Folder>
 </Solution>

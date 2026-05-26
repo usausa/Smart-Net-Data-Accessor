@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Smart.Data.Accessor</PackageId>
+    <Title>Smart.Data.Accessor</Title>
+    <Description>Source generator based data accessor (prototype).</Description>
+    <PackageTags>sourcegenerator;dataaccessor</PackageTags>
+  </PropertyGroup>
+
+</Project>
