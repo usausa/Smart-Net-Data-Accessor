@@ -19,6 +19,7 @@
     <Project Path="Smart.Data.Accessor.Builders/Smart.Data.Accessor.Builders.csproj" />
     <Project Path="Smart.Data.Accessor.Generator/Smart.Data.Accessor.Generator.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.Generator/Smart.Data.Accessor.Builders.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Extensions.DependencyInjection/Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
   </Folder>
   <Folder Name="/Test/">
   </Folder>

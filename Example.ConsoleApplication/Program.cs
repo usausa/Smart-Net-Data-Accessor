@@ -26,6 +26,30 @@ internal static class Program
             System.Console.WriteLine($"Id={item.Id}, Name={item.Name}, Type={item.Type}");
         }
 
-        return list.Count == 3 ? 0 : 1;
+        var type2 = accessor.QueryByType(2);
+        System.Console.WriteLine($"QueryByType(2) -> {type2.Count} row(s)");
+        foreach (var item in type2)
+        {
+            System.Console.WriteLine($"  Id={item.Id}, Name={item.Name}, Type={item.Type}");
+        }
+
+        // SelectBuilder
+        var selectAll = accessor.SelectAll();
+        System.Console.WriteLine($"SelectAll -> {selectAll.Count} row(s)");
+
+        // UpdateBuilder
+        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11 };
+        var updated = accessor.UpdateEntity(upd);
+        System.Console.WriteLine($"UpdateEntity -> {updated} row(s) updated");
+
+        // DeleteBuilder
+        var deleted = accessor.DeleteById(selectAll[2].Id);
+        System.Console.WriteLine($"DeleteById -> {deleted} row(s) deleted");
+
+        // CountBuilder + ExecuteScalar
+        var count = accessor.CountAll();
+        System.Console.WriteLine($"CountAll -> {count}");
+
+        return list.Count == 3 && type2.Count == 1 && updated == 1 && deleted == 1 && count == 2 ? 0 : 1;
     }
 }

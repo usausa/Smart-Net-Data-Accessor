@@ -1,12 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Smart.Data.Accessor.Builders</PackageId>
+    <Title>Smart.Data.Accessor.Builders</Title>
+    <Description>Builder attributes &amp; runtime helpers for Smart.Data.Accessor.</Description>
+    <PackageTags>sourcegenerator;dataaccessor;builders</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.Generator\Smart.Data.Accessor.Builders.Generator.csproj"
+                      PrivateAssets="all"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
   </ItemGroup>
 
+  <Target Name="_AddBuildersGeneratorToPackage" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="..\Smart.Data.Accessor.Builders.Generator\bin\$(Configuration)\netstandard2.0\Smart.Data.Accessor.Builders.Generator.dll"
+            Pack="true"
+            PackagePath="analyzers/dotnet/cs"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
+
 </Project>
+
