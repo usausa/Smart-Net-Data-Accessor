@@ -2,6 +2,13 @@ namespace Example.ConsoleApplication.Models;
 
 using Smart.Data.Accessor.Attributes;
 
+internal enum DataKind
+{
+    Unknown = 0,
+    Small = 1,
+    Large = 2,
+}
+
 internal sealed class DataEntity
 {
     [Key]
@@ -11,4 +18,12 @@ internal sealed class DataEntity
     public string Name { get; set; } = string.Empty;
 
     public int Type { get; set; }
+
+    public DataKind Kind { get; set; }
 }
+
+internal sealed record DataRecord(
+    long Id,
+    string Name,
+    [property: DbType<System.Data.DbType>(System.Data.DbType.Int32)] int Type,
+    DataKind Kind);

@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+    <NoWarn>$(NoWarn);NU5118;NU5129</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -11,12 +13,14 @@
     <Description>Source generator based data accessor (prototype).</Description>
     <PackageTags>sourcegenerator;dataaccessor</PackageTags>
     <IncludeBuildOutput>true</IncludeBuildOutput>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBuildOutputs</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <!--
-    Bundle the source generator alongside this runtime package so that
-    consuming projects automatically pick it up via PackageReference.
-  -->
+  <ItemGroup>
+    <PackageReference Include="SourceGenerateHelper" Version="1.9.0" GeneratePathProperty="true" PrivateAssets="all" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj"
                       PrivateAssets="all"
@@ -24,14 +28,12 @@
                       OutputItemType="Analyzer" />
   </ItemGroup>
 
-  <Target Name="_AddGeneratorToPackage" BeforeTargets="_GetPackageFiles">
+  <Target Name="PackBuildOutputs" DependsOnTargets="SatelliteDllsProjectOutputGroup;DebugSymbolsProjectOutputGroup">
     <ItemGroup>
-      <None Include="..\Smart.Data.Accessor.Generator\bin\$(Configuration)\netstandard2.0\Smart.Data.Accessor.Generator.dll"
-            Pack="true"
-            PackagePath="analyzers/dotnet/cs"
-            Visible="false" />
+      <TfmSpecificPackageFile Include="..\Smart.Data.Accessor.Generator\bin\$(Configuration)\netstandard2.0\Smart.Data.Accessor.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <TfmSpecificPackageFile Include="$(PKGSourceGenerateHelper)\lib\netstandard2.0\SourceGenerateHelper.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <TfmSpecificPackageFile Include="buildTransitive\Smart.Data.Accessor.targets" Pack="true" PackagePath="buildTransitive\Smart.Data.Accessor.targets" Visible="false" />
     </ItemGroup>
   </Target>
 
 </Project>
-

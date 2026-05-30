@@ -1,55 +1,186 @@
 namespace Example.ConsoleApplication;
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+
 using Example.ConsoleApplication.Accessor;
 using Example.ConsoleApplication.Models;
 
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+
+using Smart.Data.Accessor.Connection;
 
 internal static class Program
 {
     public static int Main()
     {
-        using var connection = new SqliteConnection("Data Source=:memory:");
+        var dbPath = Path.Combine(Path.GetTempPath(), $"smart-data-accessor-example-{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={dbPath}";
+
+        try
+        {
+            var failed = 0;
+            failed += RunPattern1(connectionString);
+            failed += RunPattern2(connectionString);
+            failed += RunPattern3(connectionString);
+            return failed == 0 ? 0 : 1;
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+            }
+        }
+    }
+
+    // Pattern 1: SingleConnectionFactory (legacy compatibility — wraps a caller-owned connection).
+    private static int RunPattern1(string connectionString)
+    {
+        Console.WriteLine("=== Pattern 1: SingleConnectionFactory ===");
+
+        using var connection = new SqliteConnection(connectionString);
         connection.Open();
 
-        var accessor = new ExampleAccessor(connection);
+        var accessor = new ExampleAccessor(new SingleConnectionFactory(connection));
 
         accessor.Create();
 
-        accessor.Insert(new DataEntity { Name = "Alice", Type = 1 });
-        accessor.Insert(new DataEntity { Name = "Bob", Type = 2 });
-        accessor.Insert(new DataEntity { Name = "Carol", Type = 3 });
+        accessor.Insert(new DataEntity { Name = "Alice", Type = 1, Kind = DataKind.Small });
+        accessor.Insert(new DataEntity { Name = "Bob", Type = 2, Kind = DataKind.Large });
+        accessor.Insert(new DataEntity { Name = "Carol", Type = 3, Kind = DataKind.Large });
 
         var list = accessor.QueryDataList();
         foreach (var item in list)
         {
-            System.Console.WriteLine($"Id={item.Id}, Name={item.Name}, Type={item.Type}");
+            Console.WriteLine($"  Id={item.Id}, Name={item.Name}, Type={item.Type}, Kind={item.Kind}");
         }
 
         var type2 = accessor.QueryByType(2);
-        System.Console.WriteLine($"QueryByType(2) -> {type2.Count} row(s)");
-        foreach (var item in type2)
+        Console.WriteLine($"QueryByType(2) -> {type2.Count} row(s)");
+
+        var byKind = accessor.QueryByKind(DataKind.Large);
+        Console.WriteLine($"QueryByKind(Large) -> {byKind.Count} row(s)");
+
+        var ids = new List<long>();
+        foreach (var item in list)
         {
-            System.Console.WriteLine($"  Id={item.Id}, Name={item.Name}, Type={item.Type}");
+            ids.Add(item.Id);
+        }
+        var byIds = accessor.QueryByIds(ids);
+        Console.WriteLine($"QueryByIds([{string.Join(",", ids)}]) -> {byIds.Count} row(s)  // IN expansion");
+
+        var emptyIds = accessor.QueryByIds(Array.Empty<long>());
+        Console.WriteLine($"QueryByIds([]) -> {emptyIds.Count} row(s)  // empty IN -> '(NULL)'");
+
+        var records = accessor.QueryAllAsRecord();
+        Console.WriteLine($"QueryAllAsRecord -> {records.Count} record(s)  // record primary ctor");
+
+        var readerRows = 0;
+        using (var reader = accessor.QueryReader())
+        {
+            while (reader.Read())
+            {
+                readerRows++;
+            }
+        }
+        Console.WriteLine($"QueryReader -> {readerRows} row(s)  // raw DbDataReader");
+
+        var selectAll = accessor.SelectAll();
+        Console.WriteLine($"SelectAll -> {selectAll.Count} row(s)");
+
+        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11, Kind = DataKind.Unknown };
+        var updated = accessor.UpdateEntity(upd);
+        Console.WriteLine($"UpdateEntity -> {updated} row(s) updated");
+
+        var deleted = accessor.DeleteById(selectAll[2].Id);
+        Console.WriteLine($"DeleteById -> {deleted} row(s) deleted");
+
+        var count = accessor.CountAll();
+        Console.WriteLine($"CountAll -> {count}");
+
+        Console.WriteLine();
+        var ok = list.Count == 3
+            && type2.Count == 1
+            && byKind.Count == 2
+            && byIds.Count == 3
+            && emptyIds.Count == 0
+            && records.Count == 3
+            && readerRows == 3
+            && updated == 1
+            && deleted == 1
+            && count == 2;
+        return ok ? 0 : 1;
+    }
+
+    // Pattern 2: caller-managed DbConnection / DbTransaction passed directly to methods.
+    private static int RunPattern2(string connectionString)
+    {
+        Console.WriteLine("=== Pattern 2: Direct DbConnection / DbTransaction args ===");
+
+        using var connection = new SqliteConnection(connectionString);
+        connection.Open();
+
+        var accessor = new ExampleAccessor(new SingleConnectionFactory(connection));
+
+        var all = accessor.QueryAllWithConnection(connection);
+        Console.WriteLine($"QueryAllWithConnection -> {all.Count} row(s)");
+
+        var beforeCount = accessor.CountAll();
+
+        accessor.InsertNameByConnection(connection, "DaveFromConn", 7);
+
+        using (var tx = connection.BeginTransaction())
+        {
+            accessor.InsertNameByTransaction(tx, "EveFromTx", 8);
+            tx.Commit();
         }
 
-        // SelectBuilder
-        var selectAll = accessor.SelectAll();
-        System.Console.WriteLine($"SelectAll -> {selectAll.Count} row(s)");
+        var afterCount = accessor.CountAll();
+        Console.WriteLine($"CountAll: {beforeCount} -> {afterCount}");
 
-        // UpdateBuilder
-        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11 };
-        var updated = accessor.UpdateEntity(upd);
-        System.Console.WriteLine($"UpdateEntity -> {updated} row(s) updated");
+        Console.WriteLine();
+        return afterCount == beforeCount + 2 ? 0 : 1;
+    }
 
-        // DeleteBuilder
-        var deleted = accessor.DeleteById(selectAll[2].Id);
-        System.Console.WriteLine($"DeleteById -> {deleted} row(s) deleted");
+    // Pattern 3: M.E.DI integration via AddDataAccessors() + [Inject] sample.
+    private static int RunPattern3(string connectionString)
+    {
+        Console.WriteLine("=== Pattern 3: Microsoft.Extensions.DependencyInjection ===");
 
-        // CountBuilder + ExecuteScalar
-        var count = accessor.CountAll();
-        System.Console.WriteLine($"CountAll -> {count}");
+        var counter = new ConsoleLogger();
 
-        return list.Count == 3 && type2.Count == 1 && updated == 1 && deleted == 1 && count == 2 ? 0 : 1;
+        var services = new ServiceCollection();
+        services.AddSingleton<IConnectionFactory>(_ => new DelegateConnectionFactory(_ => new SqliteConnection(connectionString)));
+        services.AddSingleton<IExampleLogger>(counter);
+        services.AddDataAccessors();
+
+        using var sp = services.BuildServiceProvider();
+
+        var accessor = sp.GetRequiredService<ExampleAccessor>();
+        var rows = accessor.SelectAll();
+        Console.WriteLine($"DI ExampleAccessor.SelectAll -> {rows.Count} row(s)");
+
+        var injectAccessor = sp.GetRequiredService<ExampleInjectAccessor>();
+        var logged = injectAccessor.CallLoggerAndCount("hello from DI");
+        var all = injectAccessor.QueryAll();
+        Console.WriteLine($"DI ExampleInjectAccessor.QueryAll -> {all.Count} row(s), logger={injectAccessor.GetLoggerTypeName()}, count={logged}");
+
+        Console.WriteLine();
+        return all.Count == rows.Count && logged == 1 ? 0 : 1;
+    }
+
+    private sealed class ConsoleLogger : IExampleLogger
+    {
+        public int Count { get; private set; }
+
+        public void Log(string message)
+        {
+            Count++;
+            Console.WriteLine($"  [Logger#{Count}] {message}");
+        }
     }
 }

@@ -21,7 +21,17 @@ internal sealed partial class ExampleAccessor
     public partial IReadOnlyList<DataEntity> QueryDataList();
 
     [Query]
-    public partial IReadOnlyList<DataEntity> QueryByType(int type);
+    public partial IReadOnlyList<DataEntity> QueryByType(
+        [DbType<System.Data.DbType>(System.Data.DbType.Int32)] int type);
+
+    [Query]
+    public partial IReadOnlyList<DataEntity> QueryAllWithConnection(DbConnection conn);
+
+    [Execute]
+    public partial int InsertNameByConnection(DbConnection conn, string name, int type);
+
+    [Execute]
+    public partial int InsertNameByTransaction(DbTransaction tx, string name, int type);
 
     [Query(Builder = nameof(BuildSelectAll))]
     public partial IReadOnlyList<DataEntity> SelectAll();
@@ -31,6 +41,21 @@ internal sealed partial class ExampleAccessor
 
     [Execute(Builder = nameof(BuildDelete))]
     public partial int DeleteById(long id);
+
+    [Query]
+    public partial IReadOnlyList<DataEntity> QueryByKind(DataKind kind);
+
+    [Query]
+    public partial IReadOnlyList<DataRecord> QueryAllAsRecord();
+
+    [Query]
+    public partial IReadOnlyList<DataEntity> QueryByIds(IEnumerable<long> ids);
+
+    [ExecuteReader]
+    public partial DbDataReader QueryReader();
+
+    [DirectSql]
+    public partial int ExecuteDirect(string sql, [Direction(System.Data.ParameterDirection.Output)] out int rows);
 
     [ExecuteScalar(Builder = nameof(BuildCount))]
     public partial long CountAll();

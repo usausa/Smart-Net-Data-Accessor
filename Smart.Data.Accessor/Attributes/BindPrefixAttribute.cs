@@ -2,15 +2,13 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System;
 
-// Marker for parameter prefix when binding object members (e.g. entity properties)
-// to SQL parameters.
-[AttributeUsage(AttributeTargets.Parameter)]
+[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class BindPrefixAttribute : Attribute
 {
-    public string Prefix { get; }
+    public char Marker { get; }
 
-    public BindPrefixAttribute(string prefix)
+    public BindPrefixAttribute(char marker)
     {
-        Prefix = prefix;
+        this.Marker = marker;
     }
 }

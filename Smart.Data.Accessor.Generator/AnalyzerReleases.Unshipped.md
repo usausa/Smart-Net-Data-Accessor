@@ -9,5 +9,33 @@ SDA0100 | Sql      | Error    | Failed to tokenize SQL
 SDA0101 | Sql      | Warning  | SQL is empty
 SDA0110 | Sql      | Warning  | SQL parameter does not match method parameters
 SDA0111 | Sql      | Info     | Method parameter is unused in SQL
-SDA0130 | Builder  | Warning  | Entity has no [Key] for Update/Delete builder
-SDA0131 | Builder  | Error    | Builder method requires entity parameter
+SDA0132 | Usage    | Error    | Duplicate [Name] on parameters or properties
+SDA0133 | Mapping  | Info     | Record entity is mapped via primary constructor
+SDA0134 | Usage    | Error    | [Execute] return type is not int/void/Task<int>/Task
+SDA0140 | Mapping  | Warning  | Non-nullable property may receive DB NULL
+SDA0141 | Mapping  | Error    | Property type not in [ConverterSupportedTypes]
+SDA0142 | Mapping  | Error    | Converter TClr does not match property type
+SDA0143 | Mapping  | Error    | Converter type does not implement IValueConverter<,>
+SDA0144 | Mapping  | Error    | Converter type missing static abstract implementation
+SDA0145 | Mapping  | Warning  | Multiple [TypeHandler] on same property
+SDA0146 | Mapping  | Error    | [ExecuteConfig] target is not an [AccessorProfile]
+SDA0147 | Mapping  | Error    | [AccessorProfile] class also has [ExecuteConfig] (circular)
+SDA0148 | Mapping  | Warning  | [TypeMap] DbType conflicts with [TypeHandler]
+SDA0149 | Mapping  | Warning  | Enum underlying type may not match DB column type
+SDA0150 | Builder  | Error    | Builder method referenced by [Execute(Builder=...)] not found
+SDA0170 | Usage    | Error    | [DataAccessor] class must not be nested
+SDA0171 | Usage    | Error    | [DataAccessor] class must not be generic
+SDA0173 | Usage    | Error    | SQL file name collision
+SDA0174 | Usage    | Error    | [DataAccessor(Dialect = typeof(X))] X does not implement IDialect
+SDA0181 | Usage    | Warning  | [Inject] Type may not resolve from IServiceProvider
+SDA0186 | Sql      | Error    | /*!helper */ type cannot be resolved
+SDA0187 | Sql      | Warning  | /*!using */ namespace cannot be resolved
+SDA0198 | Usage    | Warning  | IAsyncEnumerable method requires [EnumeratorCancellation] CancellationToken
+SDA0200 | Usage    | Error    | [Direction(ReturnValue)] not allowed on [DirectSql] parameter
+SDA0201 | Usage    | Error    | [Direction] not allowed on [DirectSql] command-text parameter
+SDA0203 | Usage    | Error    | Conflicting [DbType] / [DbType<TEnum>] on same parameter
+SDA0204 | Usage    | Warning  | [DbType<TEnum>] TEnum is not in the provider enum whitelist
+SDA0220 | Builder  | Error    | Builder method first argument must be ref BuilderContext
+SDA0221 | Builder  | Warning  | Builder method arguments do not match Execute method
+SDA0222 | Builder  | Error    | Builder method return type must be void
+SDA0223 | Builder  | Error    | Builder method must not be async

@@ -9,17 +9,21 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders\Smart.Data.Accessor.Builders.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.Generator\Smart.Data.Accessor.Builders.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="Accessor\Sql\*.sql" />
-  </ItemGroup>
+  <!-- spec §3.2 / Sprint F #41: pull `**\$(SmartDataAccessor_SqlFolder)\*.sql`
+       (default folder name `Sql`) into AdditionalFiles via the .targets that
+       Smart.Data.Accessor ships in buildTransitive/. Direct <Import> mirrors
+       what NuGet consumers get automatically. -->
+  <Import Project="..\Smart.Data.Accessor\buildTransitive\Smart.Data.Accessor.targets" />
 
 </Project>

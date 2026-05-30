@@ -14,28 +14,64 @@ using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.Generator.Sql;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
 
+using SourceGenerateHelper;
+
 [Generator]
 public sealed class DataAccessorGenerator : IIncrementalGenerator
 {
     private const string DataAccessorAttributeName = "Smart.Data.Accessor.Attributes.DataAccessorAttribute";
     private const string ExecuteAttributeName = "Smart.Data.Accessor.Attributes.ExecuteAttribute";
     private const string ExecuteScalarAttributeName = "Smart.Data.Accessor.Attributes.ExecuteScalarAttribute";
+    private const string ExecuteReaderAttributeName = "Smart.Data.Accessor.Attributes.ExecuteReaderAttribute";
+    private const string DirectSqlAttributeName = "Smart.Data.Accessor.Attributes.DirectSqlAttribute";
     private const string QueryAttributeName = "Smart.Data.Accessor.Attributes.QueryAttribute";
     private const string QueryFirstAttributeName = "Smart.Data.Accessor.Attributes.QueryFirstAttribute";
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
     private const string IgnoreAttributeName = "Smart.Data.Accessor.Attributes.IgnoreAttribute";
     private const string DbTypeAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
+    // spec §1.4 F15 / §5.3 / §5.3.1: Roslyn renders the generic original definition as
+    // "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>" via ToDisplayString().
+    private const string DbTypeGenericAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>";
     private const string SqlSizeAttributeName = "Smart.Data.Accessor.Attributes.SqlSizeAttribute";
     private const string AnsiStringAttributeName = "Smart.Data.Accessor.Attributes.AnsiStringAttribute";
     private const string CommandTimeoutAttributeName = "Smart.Data.Accessor.Attributes.CommandTimeoutAttribute";
     private const string TimeoutAttributeName = "Smart.Data.Accessor.Attributes.TimeoutAttribute";
+    private const string InjectAttributeName = "Smart.Data.Accessor.Attributes.InjectAttribute";
+    private const string ProviderAttributeName = "Smart.Data.Accessor.Attributes.ProviderAttribute";
+    private const string BindPrefixAttributeName = "Smart.Data.Accessor.Attributes.BindPrefixAttribute";
+    private const string MethodNameAttributeName = "Smart.Data.Accessor.Attributes.MethodNameAttribute";
+    private const string DirectionAttributeName = "Smart.Data.Accessor.Attributes.DirectionAttribute";
+    private const string ProcedureAttributeName = "Smart.Data.Accessor.Attributes.ProcedureAttribute";
+    private const char DefaultBindMarker = '@';
     private const string CancellationTokenTypeName = "System.Threading.CancellationToken";
+    private const string EnumeratorCancellationAttributeName = "System.Runtime.CompilerServices.EnumeratorCancellationAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // spec §3.2 / §3.2.1: SQL folder name is configurable per-project via
+        // <SmartDataAccessor_SqlFolder>. The .targets exposes it via
+        // CompilerVisibleProperty so the Generator can read it from
+        // AnalyzerConfigOptions. Default: "Sql".
+        var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (p, _) =>
+            p.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var v) &&
+                !string.IsNullOrWhiteSpace(v)
+                ? v
+                : "Sql");
+
         var sqlFiles = context.AdditionalTextsProvider
             .Where(static t => t.Path.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-            .Select(static (t, ct) => (Path: System.IO.Path.GetFileNameWithoutExtension(t.Path), Text: t.GetText(ct)?.ToString() ?? string.Empty))
+            .Select(static (t, ct) => (
+                FullPath: t.Path,
+                Path: System.IO.Path.GetFileNameWithoutExtension(t.Path),
+                Text: t.GetText(ct)?.ToString() ?? string.Empty))
+            .Combine(sqlFolder)
+            .Where(static pair =>
+            {
+                // spec §3.2.1: restrict to files whose parent directory name matches {SqlFolder}.
+                var parentDir = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(pair.Left.FullPath));
+                return string.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
+            })
+            .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
             .Collect();
 
         var classes = context.SyntaxProvider
@@ -55,7 +91,22 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         ImmutableArray<GeneratorAttributeSyntaxContext> classes,
         ImmutableArray<(string Path, string Text)> sqlFiles)
     {
-        var sqlMap = sqlFiles.ToDictionary(static x => x.Path, static x => x.Text, StringComparer.Ordinal);
+        // SDA0173: multiple .sql files resolving to the same {Class}.{Method} key collide.
+        var sqlMap = new Dictionary<string, string>(StringComparer.Ordinal);
+        var collidedKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var entry in sqlFiles)
+        {
+            if (sqlMap.ContainsKey(entry.Path))
+            {
+                collidedKeys.Add(entry.Path);
+            }
+            else
+            {
+                sqlMap[entry.Path] = entry.Text;
+            }
+        }
+
+        var registrations = new List<RegistryEntry>();
 
         foreach (var ctx in classes)
         {
@@ -71,7 +122,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var model = BuildAccessorModel(context, classSymbol, sqlMap);
+            if (classSymbol.ContainingType is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DataAccessorClassNested, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+                continue;
+            }
+
+            if (classSymbol.IsGenericType || classSymbol.TypeParameters.Length > 0)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DataAccessorClassGeneric, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+                continue;
+            }
+
+            var model = BuildAccessorModelLegacy(context, classSymbol, sqlMap, collidedKeys, ctx.SemanticModel.Compilation);
             if (model is null)
             {
                 continue;
@@ -81,24 +144,102 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace!.Replace('.', '_');
             var filename = $"{ns}_{model.ClassName}.g.cs";
             context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
+
+            var concreteFq = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var iface = classSymbol.Interfaces.FirstOrDefault();
+            var serviceFq = iface is not null
+                ? iface.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                : concreteFq;
+            registrations.Add(new RegistryEntry(
+                serviceFq,
+                concreteFq,
+                model.RequiresConnectionFactory,
+                model.Injects.Select(i => i.TypeFullName).ToArray()));
+        }
+
+        if (registrations.Count > 0)
+        {
+            var initializer = EmitRegistryInitializer(registrations);
+            context.AddSource("DataAccessorRegistryInitializer.g.cs", SourceText.From(initializer, Encoding.UTF8));
         }
     }
 
-    private static AccessorModel? BuildAccessorModel(
+    private static char? ResolveBindMarker(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attr in attributes)
+        {
+            if (attr.AttributeClass?.ToDisplayString() == BindPrefixAttributeName &&
+                attr.ConstructorArguments.Length > 0 &&
+                attr.ConstructorArguments[0].Value is char ch)
+            {
+                return ch;
+            }
+        }
+        return null;
+    }
+
+    private sealed record RegistryEntry(
+        string ServiceTypeFq,
+        string ConcreteTypeFq,
+        bool RequiresFactory,
+        IReadOnlyList<string> InjectTypeFqs);
+
+    private static string EmitRegistryInitializer(List<RegistryEntry> entries)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine("#pragma warning disable");
+        sb.AppendLine();
+        sb.AppendLine("internal static class DataAccessorRegistryInitializer");
+        sb.AppendLine("{");
+        sb.AppendLine("    [global::System.Runtime.CompilerServices.ModuleInitializer]");
+        sb.AppendLine("    internal static void Initialize()");
+        sb.AppendLine("    {");
+        foreach (var entry in entries)
+        {
+            var args = new List<string>();
+            if (entry.RequiresFactory)
+            {
+                args.Add("(global::Smart.Data.Accessor.Connection.IConnectionFactory)sp.GetService(typeof(global::Smart.Data.Accessor.Connection.IConnectionFactory))!");
+            }
+            foreach (var injectFq in entry.InjectTypeFqs)
+            {
+                args.Add($"({injectFq})sp.GetService(typeof({injectFq}))!");
+            }
+            sb.AppendLine($"        global::Smart.Data.Accessor.DataAccessorRegistry.Register<{entry.ServiceTypeFq}>(static sp => new {entry.ConcreteTypeFq}({string.Join(", ", args)}));");
+        }
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    private static AccessorModelLegacy? BuildAccessorModelLegacy(
         SourceProductionContext context,
         INamedTypeSymbol classSymbol,
-        Dictionary<string, string> sqlMap)
+        Dictionary<string, string> sqlMap,
+        HashSet<string> collidedKeys,
+        Compilation? compilation)
     {
-        var methods = new List<MethodModel>();
+        var assemblyMarker = classSymbol.ContainingAssembly is { } asm
+            ? ResolveBindMarker(asm.GetAttributes())
+            : null;
+        var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
+
+        var methods = new List<MethodModelLegacy>();
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
-            if (member.MethodKind != MethodKind.Ordinary || !member.IsPartialDefinition)
+            if (member.MethodKind != Microsoft.CodeAnalysis.MethodKind.Ordinary || !member.IsPartialDefinition)
             {
                 continue;
             }
 
             string? kind = null;
             string? builder = null;
+            string? sqlAlias = null;
+            string? procedureName = null;
+            var isDirectSql = false;
+            var isExecuteNonScalar = false;
             foreach (var attr in member.GetAttributes())
             {
                 var fullName = attr.AttributeClass?.ToDisplayString();
@@ -106,12 +247,42 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     kind = "Execute";
                     builder = ReadBuilderProperty(attr);
+                    isExecuteNonScalar = fullName == ExecuteAttributeName;
+                }
+                else if (fullName == ExecuteReaderAttributeName)
+                {
+                    kind = "ExecuteReader";
+                }
+                else if (fullName == DirectSqlAttributeName)
+                {
+                    isDirectSql = true;
                 }
                 else if (fullName == QueryAttributeName || fullName == QueryFirstAttributeName)
                 {
                     kind = "Query";
                     builder = ReadBuilderProperty(attr);
                 }
+                else if (fullName == MethodNameAttributeName &&
+                    attr.ConstructorArguments.Length > 0 &&
+                    attr.ConstructorArguments[0].Value is string aliasValue &&
+                    !string.IsNullOrEmpty(aliasValue))
+                {
+                    sqlAlias = aliasValue;
+                }
+                else if (fullName == ProcedureAttributeName &&
+                    attr.ConstructorArguments.Length > 0 &&
+                    attr.ConstructorArguments[0].Value is string procName)
+                {
+                    procedureName = procName;
+                    kind ??= "Execute";
+                }
+            }
+
+            // [DirectSql] short-circuits SQL file lookup; the first `string` parameter
+            // (after connection/transaction/CT) supplies cmd.CommandText at runtime.
+            if (isDirectSql)
+            {
+                kind = "DirectSql";
             }
 
             if (kind is null)
@@ -119,12 +290,53 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var sqlKey = $"{classSymbol.Name}.{member.Name}";
-            sqlMap.TryGetValue(sqlKey, out var sql);
-
-            if (sql is null && builder is null)
+            var sqlKey = $"{classSymbol.Name}.{sqlAlias ?? member.Name}";
+            if (collidedKeys.Contains(sqlKey))
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlNotFound, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
+                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlFileNameCollision, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
+                continue;
+            }
+            string? sql = null;
+            if (!isDirectSql)
+            {
+                sqlMap.TryGetValue(sqlKey, out sql);
+                if (sql is null && builder is null && procedureName is null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlNotFound, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
+                    continue;
+                }
+            }
+
+            // SDA0132: detect duplicate [Name("X")] on parameters (within this method).
+            var seenParamNames = new Dictionary<string, IParameterSymbol>(StringComparer.Ordinal);
+            var sawNameDuplicate = false;
+            foreach (var p in member.Parameters)
+            {
+                var nameAttr = p.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName);
+                if (nameAttr is null || nameAttr.ConstructorArguments.Length == 0)
+                {
+                    continue;
+                }
+                if (nameAttr.ConstructorArguments[0].Value is not string mappedName || string.IsNullOrEmpty(mappedName))
+                {
+                    continue;
+                }
+                if (seenParamNames.ContainsKey(mappedName))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.NameDuplicated,
+                        p.Locations.FirstOrDefault() ?? member.Locations.FirstOrDefault(),
+                        member.Name,
+                        mappedName));
+                    sawNameDuplicate = true;
+                }
+                else
+                {
+                    seenParamNames[mappedName] = p;
+                }
+            }
+            if (sawNameDuplicate)
+            {
                 continue;
             }
 
@@ -132,12 +344,59 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 string? dbTypeExpr = null;
                 int? size = null;
+                var direction = ParameterDirectionKindLegacy.Input;
+                string? providerParamTypeFqn = null;
+                string? providerPropertyName = null;
+                string? providerValueExpr = null;
+                var sawNonGenericDbType = false;
+                var sawGenericDbType = false;
                 foreach (var pa in p.GetAttributes())
                 {
-                    var an = pa.AttributeClass?.ToDisplayString();
+                    var attrClass = pa.AttributeClass;
+                    var an = attrClass?.ToDisplayString();
                     if (an == DbTypeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dt)
                     {
                         dbTypeExpr = $"(global::System.Data.DbType){dt}";
+                        sawNonGenericDbType = true;
+                    }
+                    else if (attrClass is not null && attrClass.IsGenericType &&
+                             attrClass.OriginalDefinition.ToDisplayString() == DbTypeGenericAttributeName &&
+                             attrClass.TypeArguments.Length > 0 &&
+                             pa.ConstructorArguments.Length > 0)
+                    {
+                        sawGenericDbType = true;
+                        var enumType = attrClass.TypeArguments[0];
+                        var enumFqn = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        var rawEnumFqn = enumType.ToDisplayString();
+                        var ctorVal = pa.ConstructorArguments[0].Value;
+                        if (ctorVal is not null && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
+                        {
+                            // Build the enum-value expression: `(global::Ns.Enum)42`.
+                            var rawVal = System.Convert.ToInt64(ctorVal, System.Globalization.CultureInfo.InvariantCulture)
+                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            var enumValueExpr = $"({enumFqn}){rawVal}";
+                            if (routeAsBclDbType)
+                            {
+                                // System.Data.DbType: route through the existing DbTypeExpr path,
+                                // equivalent to a non-generic [DbType(DbType)] attribute.
+                                dbTypeExpr = enumValueExpr;
+                            }
+                            else
+                            {
+                                providerParamTypeFqn = providerFqn;
+                                providerPropertyName = propName;
+                                providerValueExpr = enumValueExpr;
+                            }
+                        }
+                        else
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(
+                                Diagnostics.DbTypeProviderEnumNotWhitelisted,
+                                p.Locations.FirstOrDefault(),
+                                member.Name,
+                                p.Name,
+                                rawEnumFqn));
+                        }
                     }
                     else if (an == AnsiStringAttributeName)
                     {
@@ -147,15 +406,66 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         size = sz2;
                     }
+                    else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
+                    {
+                        direction = (System.Data.ParameterDirection)dirRaw switch
+                        {
+                            System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
+                            System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
+                            System.Data.ParameterDirection.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
+                            _ => ParameterDirectionKindLegacy.Input,
+                        };
+                    }
                 }
-                return new ParameterModel(
+                if (sawNonGenericDbType && sawGenericDbType)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DbTypeAttributeConflict,
+                        p.Locations.FirstOrDefault(),
+                        member.Name,
+                        p.Name));
+                }
+                var refKind = p.RefKind switch
+                {
+                    Microsoft.CodeAnalysis.RefKind.Out => RefKindLegacy.Out,
+                    Microsoft.CodeAnalysis.RefKind.Ref => RefKindLegacy.Ref,
+                    _ => RefKindLegacy.None,
+                };
+                var (enumUnderlyingFq, isNullableEnumParam) = ClassifyEnumParameter(p.Type);
+                return new ParameterModelLegacy(
                     p.Name,
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     p.NullableAnnotation == NullableAnnotation.Annotated,
                     p.Type.ToDisplayString() == CancellationTokenTypeName,
+                    IsDbConnectionType(p.Type),
+                    IsDbTransactionType(p.Type),
                     dbTypeExpr,
-                    size);
+                    size,
+                    direction,
+                    refKind,
+                    enumUnderlyingFq,
+                    isNullableEnumParam,
+                    providerParamTypeFqn,
+                    providerPropertyName,
+                    providerValueExpr);
             }).ToList();
+
+            // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
+            var connectionParam = parameters.FirstOrDefault(p => p.IsDbConnection);
+            var transactionParam = parameters.FirstOrDefault(p => p.IsDbTransaction);
+            ConnectionPatternLegacy connectionPattern;
+            if (transactionParam is not null)
+            {
+                connectionPattern = ConnectionPatternLegacy.TransactionArg;
+            }
+            else if (connectionParam is not null)
+            {
+                connectionPattern = ConnectionPatternLegacy.ConnectionArg;
+            }
+            else
+            {
+                connectionPattern = ConnectionPatternLegacy.None;
+            }
 
             // Method-level [CommandTimeout(N)] / [Timeout(N)]
             int? commandTimeout = null;
@@ -177,8 +487,36 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // SDA0134: [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
+            // (Does not apply to [ExecuteScalar], which supports arbitrary scalar T.)
+            if (kind == "Execute" && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.ExecuteReturnInvalid,
+                    member.Locations.FirstOrDefault(),
+                    member.Name,
+                    member.ReturnType.ToDisplayString()));
+                continue;
+            }
+
+            // §7.8.1 F13 / SDA0198: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
+            if (shape == ReturnShapeLegacy.AsyncEnumerable)
+            {
+                var ctParam = member.Parameters.FirstOrDefault(p => p.Type.ToDisplayString() == CancellationTokenTypeName);
+                var hasEnumeratorCancellation = ctParam is not null && ctParam.GetAttributes()
+                    .Any(a => a.AttributeClass?.ToDisplayString() == EnumeratorCancellationAttributeName);
+                if (!hasEnumeratorCancellation)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.AsyncEnumerableMissingEnumeratorCancellation,
+                        member.Locations.FirstOrDefault(),
+                        member.Name));
+                }
+            }
+
             // For Query kind, list/asyncenum must have a mappable element type.
-            IReadOnlyList<string>? columnAssignments = null;
+            IReadOnlyList<ColumnInfoLegacy>? queryColumns = null;
+            var useRecordPrimaryCtor = false;
             if (kind == "Query")
             {
                 var mapTarget = elementFq is not null ? entitySymbol : null;
@@ -187,17 +525,100 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                columnAssignments = BuildColumnAssignments(mapTarget);
+                var (cols, ctorPath) = BuildColumnInfos(mapTarget);
+                queryColumns = cols;
+                useRecordPrimaryCtor = ctorPath;
+                if (ctorPath)
+                {
+                    // spec §7.8 / §7.10.5: inform the user that the record primary ctor path was selected.
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.RecordPrimaryConstructorPath,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        mapTarget.Name));
+                }
             }
+
+            var methodMarker = ResolveBindMarker(member.GetAttributes()) ?? classMarker ?? DefaultBindMarker;
 
             // Tokenize & emit SQL when a literal SQL is provided (no Builder).
             string? sqlEmitCode = null;
-            if (sql is not null && builder is null)
+            IReadOnlyList<OutputBindingLegacy> outputBindings = Array.Empty<OutputBindingLegacy>();
+            IReadOnlyList<UsingDirectiveLegacy> methodUsings = Array.Empty<UsingDirectiveLegacy>();
+            string? directSqlParameterName = null;
+            if (isDirectSql)
             {
-                sqlEmitCode = BuildSqlEmitCode(context, member, parameters, sql);
+                // First `string` parameter (excluding conn/tx/CT) is the SQL source.
+                var sqlParam = parameters.FirstOrDefault(p =>
+                    !p.IsCancellationToken &&
+                    !p.IsDbConnection &&
+                    !p.IsDbTransaction &&
+                    p.TypeFullName == "string");
+                directSqlParameterName = sqlParam?.Name;
+
+                // X1 / spec §1.4 F14: [Direction] interop diagnostics on [DirectSql].
+                //  - SDA0201 Error: [Direction] on the SQL-source string parameter.
+                //  - SDA0200 Error: [Direction(ReturnValue)] on any parameter.
+                foreach (var ms in member.Parameters)
+                {
+                    var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
+                    if (pm is null || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
+                    {
+                        continue;
+                    }
+                    if (pm.Direction == ParameterDirectionKindLegacy.ReturnValue)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.DirectSqlReturnValueDirection,
+                            ms.Locations.FirstOrDefault(),
+                            member.Name,
+                            pm.Name));
+                    }
+                    else if (pm.Name == directSqlParameterName && pm.Direction != ParameterDirectionKindLegacy.Input)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.DirectSqlCommandTextDirection,
+                            ms.Locations.FirstOrDefault(),
+                            member.Name,
+                            pm.Name));
+                    }
+                }
+
+                // Output bindings for OUT / InOut parameters (skip the SQL source param and
+                // any erroneous ReturnValue assignments — those have already been reported).
+                outputBindings = parameters
+                    .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
+                    .Where(p => p.Name != directSqlParameterName)
+                    .Where(p => p.Direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
+                    .Select(p => new OutputBindingLegacy(
+                        p.Name,
+                        $"__op_{p.Name}",
+                        p.Direction))
+                    .ToList();
+            }
+            else if (sql is not null && builder is null)
+            {
+                (sqlEmitCode, outputBindings, methodUsings) = BuildSqlEmitCode(context, member, parameters, sql, methodMarker, compilation);
+            }
+            else if (procedureName is not null)
+            {
+                // Procedure: bindings are derived from method parameters with non-Input Direction.
+                outputBindings = parameters
+                    .Where(p => p.Direction != ParameterDirectionKindLegacy.Input)
+                    .Select(p => new OutputBindingLegacy(
+                        p.Name,
+                        $"__op_{p.Name}",
+                        p.Direction))
+                    .ToList();
             }
 
-            methods.Add(new MethodModel(
+            // §6.5 / SDA0150 / SDA0220-0223: Builder pass-through validation.
+            if (builder is not null)
+            {
+                ValidateBuilderMethod(context, classSymbol, member, builder, parameters);
+            }
+
+            methods.Add(new MethodModelLegacy(
                 member.Name,
                 kind,
                 member.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -209,8 +630,18 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 builder,
                 sql,
                 sqlEmitCode,
-                columnAssignments,
-                commandTimeout));
+                queryColumns,
+                commandTimeout,
+                connectionPattern,
+                connectionParam?.Name,
+                transactionParam?.Name,
+                methodMarker,
+                sqlAlias,
+                outputBindings,
+                procedureName,
+                directSqlParameterName,
+                useRecordPrimaryCtor,
+                methodUsings));
         }
 
         if (methods.Count == 0)
@@ -222,33 +653,212 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             ? string.Empty
             : classSymbol.ContainingNamespace.ToDisplayString();
 
-        // Read [DataAccessor(Dialect = typeof(XxxDialect))].
-        string? dialectFq = null;
+        // Read class-level attributes: [Inject(...)], [Provider("...")], [DataAccessor(Dialect = ...)].
+        // [DataAccessor(Dialect = ...)] emit-side is consumed only by Builders.Generator (spec §4.2);
+        // here we validate that the referenced type implements IDialect (SDA0174).
+        string? providerName = null;
+        var injects = new List<InjectModelLegacy>();
+        var dialectInterface = compilation?.GetTypeByMetadataName("Smart.Data.Accessor.Dialect.IDialect");
         foreach (var attr in classSymbol.GetAttributes())
         {
-            if (attr.AttributeClass?.ToDisplayString() != DataAccessorAttributeName)
+            var attrName = attr.AttributeClass?.ToDisplayString();
+            if (attrName == InjectAttributeName &&
+                attr.ConstructorArguments.Length >= 2 &&
+                attr.ConstructorArguments[0].Value is INamedTypeSymbol injectType &&
+                attr.ConstructorArguments[1].Value is string injectName &&
+                !string.IsNullOrEmpty(injectName))
             {
-                continue;
-            }
-            foreach (var kv in attr.NamedArguments)
-            {
-                if (kv.Key == "Dialect" && kv.Value.Value is INamedTypeSymbol t)
+                if (!IsLikelyResolvableInjectType(injectType))
                 {
-                    dialectFq = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.InjectTypeNotResolvable,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name,
+                        injectType.ToDisplayString(),
+                        injectName));
+                }
+
+                injects.Add(new InjectModelLegacy(
+                    injectType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    injectName));
+            }
+            else if (attrName == ProviderAttributeName &&
+                attr.ConstructorArguments.Length >= 1 &&
+                attr.ConstructorArguments[0].Value is string pName)
+            {
+                providerName = pName;
+            }
+            else if (attrName == DataAccessorAttributeName && dialectInterface is not null)
+            {
+                foreach (var named in attr.NamedArguments)
+                {
+                    if (named.Key == "Dialect" && named.Value.Value is INamedTypeSymbol dialectType)
+                    {
+                        if (!ImplementsInterface(dialectType, dialectInterface))
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(
+                                Diagnostics.DialectNotIDialect,
+                                classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                                classSymbol.Name,
+                                dialectType.ToDisplayString()));
+                        }
+                    }
                 }
             }
         }
 
-        return new AccessorModel(
+        var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
+
+        return new AccessorModelLegacy(
             ns,
             classSymbol.Name,
             AccessibilityText(classSymbol.DeclaredAccessibility),
-            "global::System.Data.Common.DbConnection",
-            dialectFq,
+            providerName,
+            requiresFactory,
+            injects,
             methods);
     }
 
-    private static ReturnShape? ClassifyReturn(
+    private static bool IsDbConnectionType(ITypeSymbol type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (current.ToDisplayString() == "System.Data.Common.DbConnection")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsValidExecuteReturn(ReturnShapeLegacy shape, ITypeSymbol returnType) => shape switch
+    {
+        ReturnShapeLegacy.Void or ReturnShapeLegacy.Task or ReturnShapeLegacy.ValueTask => true,
+        ReturnShapeLegacy.Scalar => returnType.SpecialType == SpecialType.System_Int32,
+        ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
+            returnType is INamedTypeSymbol named &&
+            named.TypeArguments.Length == 1 &&
+            named.TypeArguments[0].SpecialType == SpecialType.System_Int32,
+        _ => false,
+    };
+
+    private static bool ImplementsInterface(INamedTypeSymbol type, INamedTypeSymbol iface)
+    {
+        foreach (var i in type.AllInterfaces)
+        {
+            if (SymbolEqualityComparer.Default.Equals(i, iface))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
+    {
+        // SDA0181: warn for value types or unconstructed open generics, since
+        // IServiceProvider.GetService typically returns null for these.
+        if (type.IsValueType)
+        {
+            return false;
+        }
+        if (type.IsUnboundGenericType || type.TypeParameters.Length > type.TypeArguments.Length)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private static bool IsReaderType(ITypeSymbol type)
+    {
+        var fq = type.ToDisplayString();
+        if (fq == "System.Data.Common.DbDataReader" || fq == "System.Data.IDataReader")
+        {
+            return true;
+        }
+        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        {
+            if (current.ToDisplayString() == "System.Data.Common.DbDataReader")
+            {
+                return true;
+            }
+        }
+        foreach (var iface in type.AllInterfaces)
+        {
+            if (iface.ToDisplayString() == "System.Data.IDataReader")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsDbTransactionType(ITypeSymbol type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (current.ToDisplayString() == "System.Data.Common.DbTransaction")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// spec §1.4 F15 / §5.3.1: provider enum whitelist. Returns <c>true</c> with the
+    /// matching provider <c>DbParameter</c> derived type and its native DbType property name
+    /// for whitelisted enum types. The BCL <c>System.Data.DbType</c> sets
+    /// <paramref name="routeAsBclDbType"/> to <c>true</c> so the caller routes it through
+    /// the existing <c>DbTypeExpr</c> emission path instead of emitting a provider cast.
+    /// </summary>
+    private static bool TryGetProviderDbTypeMapping(
+        string enumFullyQualifiedName,
+        out string providerParameterTypeFullName,
+        out string providerPropertyName,
+        out bool routeAsBclDbType)
+    {
+        switch (enumFullyQualifiedName)
+        {
+            case "System.Data.DbType":
+                providerParameterTypeFullName = "global::System.Data.Common.DbParameter";
+                providerPropertyName = "DbType";
+                routeAsBclDbType = true;
+                return true;
+            case "System.Data.SqlDbType":
+                providerParameterTypeFullName = "global::Microsoft.Data.SqlClient.SqlParameter";
+                providerPropertyName = "SqlDbType";
+                routeAsBclDbType = false;
+                return true;
+            case "MySql.Data.MySqlClient.MySqlDbType":
+                providerParameterTypeFullName = "global::MySql.Data.MySqlClient.MySqlParameter";
+                providerPropertyName = "MySqlDbType";
+                routeAsBclDbType = false;
+                return true;
+            case "MySqlConnector.MySqlDbType":
+                providerParameterTypeFullName = "global::MySqlConnector.MySqlParameter";
+                providerPropertyName = "MySqlDbType";
+                routeAsBclDbType = false;
+                return true;
+            case "NpgsqlTypes.NpgsqlDbType":
+                providerParameterTypeFullName = "global::Npgsql.NpgsqlParameter";
+                providerPropertyName = "NpgsqlDbType";
+                routeAsBclDbType = false;
+                return true;
+            case "Oracle.ManagedDataAccess.Client.OracleDbType":
+                providerParameterTypeFullName = "global::Oracle.ManagedDataAccess.Client.OracleParameter";
+                providerPropertyName = "OracleDbType";
+                routeAsBclDbType = false;
+                return true;
+            default:
+                providerParameterTypeFullName = string.Empty;
+                providerPropertyName = string.Empty;
+                routeAsBclDbType = false;
+                return false;
+        }
+    }
+
+    private static ReturnShapeLegacy? ClassifyReturn(
         ITypeSymbol returnType,
         out string? scalarFq,
         out string? elementFq,
@@ -260,7 +870,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         if (returnType.SpecialType == SpecialType.System_Void)
         {
-            return ReturnShape.Void;
+            return ReturnShapeLegacy.Void;
+        }
+
+        // §1.4.4: T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / anonymous types
+        // are permanently retired as return types (SDA0004).
+        if (IsDisallowedReturnType(returnType))
+        {
+            return null;
+        }
+
+        if (IsReaderType(returnType))
+        {
+            scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return ReturnShapeLegacy.Reader;
         }
 
         if (returnType is INamedTypeSymbol named)
@@ -270,11 +893,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // Task / ValueTask (non-generic)
             if (fq == "System.Threading.Tasks.Task")
             {
-                return ReturnShape.Task;
+                return ReturnShapeLegacy.Task;
             }
             if (fq == "System.Threading.Tasks.ValueTask")
             {
-                return ReturnShape.ValueTask;
+                return ReturnShapeLegacy.ValueTask;
             }
 
             if (named.IsGenericType)
@@ -283,42 +906,98 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
                 if (fq is "System.Threading.Tasks.Task<TResult>" or "System.Threading.Tasks.Task<T>")
                 {
+                    if (IsDisallowedReturnType(arg))
+                    {
+                        return null;
+                    }
+                    if (IsReaderType(arg))
+                    {
+                        scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        return ReturnShapeLegacy.TaskReader;
+                    }
                     if (IsListLike(arg, out elementFq, out elementSymbol))
                     {
-                        return ReturnShape.TaskList;
+                        return ReturnShapeLegacy.TaskList;
                     }
                     scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
                     elementFq = scalarFq;
-                    return ReturnShape.TaskScalar;
+                    return ReturnShapeLegacy.TaskScalar;
                 }
                 if (fq is "System.Threading.Tasks.ValueTask<TResult>" or "System.Threading.Tasks.ValueTask<T>")
                 {
+                    if (IsDisallowedReturnType(arg))
+                    {
+                        return null;
+                    }
+                    if (IsReaderType(arg))
+                    {
+                        scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        return ReturnShapeLegacy.ValueTaskReader;
+                    }
                     if (IsListLike(arg, out elementFq, out elementSymbol))
                     {
-                        return ReturnShape.TaskList;
+                        return ReturnShapeLegacy.TaskList;
                     }
                     scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
                     elementFq = scalarFq;
-                    return ReturnShape.ValueTaskScalar;
+                    return ReturnShapeLegacy.ValueTaskScalar;
                 }
                 if (fq == "System.Collections.Generic.IAsyncEnumerable<T>")
                 {
                     elementFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
-                    return ReturnShape.AsyncEnumerable;
+                    return ReturnShapeLegacy.AsyncEnumerable;
+                }
+                // §7.8.1: IEnumerable<T> is an iterator (Generator emits yield return directly).
+                if (fq == "System.Collections.Generic.IEnumerable<T>")
+                {
+                    elementFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    elementSymbol = arg as INamedTypeSymbol;
+                    return elementSymbol is not null ? ReturnShapeLegacy.IteratorEnumerable : null;
                 }
                 if (IsListLike(returnType, out elementFq, out elementSymbol))
                 {
-                    return ReturnShape.List;
+                    return ReturnShapeLegacy.List;
                 }
             }
         }
 
         // Plain scalar (int, string, etc.)
         scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        return ReturnShape.Scalar;
+        return ReturnShapeLegacy.Scalar;
+    }
+
+    // §1.4.4 / §7.8.1: types permanently retired as return types.
+    private static bool IsDisallowedReturnType(ITypeSymbol type)
+    {
+        if (type is IArrayTypeSymbol)
+        {
+            return true;
+        }
+        if (type.IsAnonymousType)
+        {
+            return true;
+        }
+        if (type is INamedTypeSymbol named && named.IsGenericType)
+        {
+            var fq = named.ConstructedFrom.ToDisplayString();
+            if (fq is "System.Memory<T>"
+                or "System.ReadOnlyMemory<T>"
+                or "System.Collections.Immutable.ImmutableArray<T>"
+                or "System.Collections.Generic.HashSet<T>")
+            {
+                return true;
+            }
+            // Tuple / ValueTuple are arity-suffixed (`System.Tuple<T1>`, `System.ValueTuple<T1, T2>`, ...).
+            if (fq.StartsWith("System.Tuple<", StringComparison.Ordinal)
+                || fq.StartsWith("System.ValueTuple<", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static bool IsListLike(ITypeSymbol type, out string? elementFq, out INamedTypeSymbol? elementSymbol)
@@ -330,10 +1009,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return false;
         }
         var fq = named.ConstructedFrom.ToDisplayString();
+        // §7.8.1: BufferList shape — List<T> / IList<T> / IReadOnlyList<T>.
+        // IEnumerable<T> is handled separately as IteratorEnumerable.
         if (fq is "System.Collections.Generic.List<T>"
             or "System.Collections.Generic.IList<T>"
             or "System.Collections.Generic.IReadOnlyList<T>"
-            or "System.Collections.Generic.IEnumerable<T>"
             or "System.Collections.Generic.IReadOnlyCollection<T>"
             or "System.Collections.Generic.ICollection<T>")
         {
@@ -345,9 +1025,38 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static List<string> BuildColumnAssignments(INamedTypeSymbol entity)
+    private static (List<ColumnInfoLegacy> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(INamedTypeSymbol entity)
     {
-        var assignments = new List<string>();
+        // spec §7.8 / §7.10.5: record with a primary constructor binds via positional
+        // ctor invocation (`new T(name: ..., ...)`). The ordinal cache and column reads
+        // are built from the primary ctor parameter list (in declaration order);
+        // `[property: Name(...)]` and `[property: Ignore]` flow through the synthesized
+        // property's attribute list.
+        if (entity.IsRecord && TryGetRecordPrimaryConstructor(entity, out var primaryCtor))
+        {
+            var ctorInfos = new List<ColumnInfoLegacy>();
+            foreach (var param in primaryCtor.Parameters)
+            {
+                var prop = entity.GetMembers(param.Name).OfType<IPropertySymbol>().FirstOrDefault();
+                if (prop is null)
+                {
+                    continue;
+                }
+                if (prop.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+                {
+                    continue;
+                }
+                var column = prop.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
+                    ?.ConstructorArguments.FirstOrDefault().Value as string ?? param.Name;
+                var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(param.Type);
+                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast));
+            }
+            return (ctorInfos, true);
+        }
+
+        var infos = new List<ColumnInfoLegacy>();
         foreach (var prop in entity.GetMembers().OfType<IPropertySymbol>())
         {
             if (prop.DeclaredAccessibility != Accessibility.Public || prop.IsStatic || prop.SetMethod is null)
@@ -364,9 +1073,150 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
                 ?.ConstructorArguments.FirstOrDefault().Value as string ?? name;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            assignments.Add($"            {name} = global::Smart.Data.Accessor.Engine.ExecuteEngine.GetValue<{typeName}>(reader, reader.GetOrdinal(\"{column}\")),");
+            var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(prop.Type);
+            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast));
         }
-        return assignments;
+        return (infos, false);
+    }
+
+    /// <summary>
+    /// Locates the primary constructor of a record by checking whether any of the
+    /// instance ctor's DeclaringSyntaxReferences points to a <c>RecordDeclarationSyntax</c>
+    /// (i.e., the ctor is synthesized from the positional record declaration itself, not
+    /// from a separate <c>ConstructorDeclarationSyntax</c>).
+    /// </summary>
+    private static bool TryGetRecordPrimaryConstructor(INamedTypeSymbol entity, out IMethodSymbol primaryCtor)
+    {
+        foreach (var ctor in entity.InstanceConstructors)
+        {
+            if (ctor.Parameters.IsDefaultOrEmpty)
+            {
+                continue;
+            }
+            foreach (var declRef in ctor.DeclaringSyntaxReferences)
+            {
+                if (declRef.GetSyntax() is RecordDeclarationSyntax)
+                {
+                    primaryCtor = ctor;
+                    return true;
+                }
+            }
+        }
+        primaryCtor = null!;
+        return false;
+    }
+
+    /// <summary>
+    /// Maps a CLR property type to its concrete <c>DbDataReader.GetXxx</c> method, or returns
+    /// <c>null</c> when no built-in fast path exists (in which case the emit falls back to
+    /// <c>ExecuteEngine.GetValue&lt;T&gt;</c>). Unwraps <c>Nullable&lt;T&gt;</c>; the underlying type
+    /// drives the dispatch. For Enum types, returns the underlying primitive's <c>GetXxx</c> method
+    /// plus the enum's FQN so the caller can emit an explicit cast (spec §7.9 / §7.10.3).
+    /// </summary>
+    private static (string? TypedReader, bool IsValueType, bool IsNullable, string? EnumCastFullName) ClassifyColumnType(ITypeSymbol propertyType)
+    {
+        var isNullable = propertyType.NullableAnnotation == NullableAnnotation.Annotated;
+        var underlying = propertyType;
+        if (propertyType is INamedTypeSymbol nt && nt.IsGenericType &&
+            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
+        {
+            underlying = nt.TypeArguments[0];
+            isNullable = true;
+        }
+
+        var isValueType = underlying.IsValueType;
+
+        // Enum: read underlying primitive then cast back to the enum FQN (spec §7.9 / §7.10.3).
+        if (underlying is INamedTypeSymbol enumSym && enumSym.TypeKind == TypeKind.Enum)
+        {
+            var underlyingTyped = enumSym.EnumUnderlyingType?.SpecialType switch
+            {
+                SpecialType.System_Byte => "GetByte",
+                SpecialType.System_SByte => null, // DbDataReader has no GetSByte; fall back to GetValue.
+                SpecialType.System_Int16 => "GetInt16",
+                SpecialType.System_UInt16 => null, // GetValue fallback
+                SpecialType.System_Int32 => "GetInt32",
+                SpecialType.System_UInt32 => null,
+                SpecialType.System_Int64 => "GetInt64",
+                SpecialType.System_UInt64 => null,
+                _ => null,
+            };
+            if (underlyingTyped is null)
+            {
+                return (null, isValueType, isNullable, null);
+            }
+            var enumFqn = enumSym.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return (underlyingTyped, isValueType, isNullable, enumFqn);
+        }
+
+        var typed = underlying.SpecialType switch
+        {
+            SpecialType.System_Boolean => "GetBoolean",
+            SpecialType.System_Byte => "GetByte",
+            SpecialType.System_Int16 => "GetInt16",
+            SpecialType.System_Int32 => "GetInt32",
+            SpecialType.System_Int64 => "GetInt64",
+            SpecialType.System_Single => "GetFloat",
+            SpecialType.System_Double => "GetDouble",
+            SpecialType.System_Decimal => "GetDecimal",
+            SpecialType.System_String => "GetString",
+            SpecialType.System_DateTime => "GetDateTime",
+            _ => null,
+        };
+
+        if (typed is null && underlying.ToDisplayString() == "System.Guid")
+        {
+            typed = "GetGuid";
+        }
+
+        return (typed, isValueType, isNullable, null);
+    }
+
+    /// <summary>
+    /// Inspects a method parameter type for spec §7.9 enum-default handling. Returns the FQN of
+    /// the enum's underlying primitive (used for an explicit cast at the AddInParameter call) and a
+    /// flag indicating whether the parameter is <c>Nullable&lt;TEnum&gt;</c>. Returns <c>(null, false)</c>
+    /// for non-enum parameters.
+    /// </summary>
+    /// <summary>
+    /// Builds the value expression passed to <c>AddInParameter</c>/<c>AddInOutParameter</c>. For
+    /// enum parameters this emits an explicit cast to the underlying primitive (or its
+    /// <c>Nullable&lt;T&gt;</c> for <c>TEnum?</c>) so the runtime <c>Convert.ChangeType</c> in
+    /// <c>AssignValue</c> is avoided (spec §7.9).
+    /// </summary>
+    private static string BuildParameterValueExpr(ParameterModelLegacy p)
+    {
+        if (p.EnumUnderlyingFullName is null)
+        {
+            return p.Name;
+        }
+        return p.IsNullableEnum
+            ? $"({p.EnumUnderlyingFullName}?){p.Name}"
+            : $"({p.EnumUnderlyingFullName}){p.Name}";
+    }
+
+    private static (string? UnderlyingFullName, bool IsNullableEnum) ClassifyEnumParameter(ITypeSymbol parameterType)
+    {
+        INamedTypeSymbol? enumSym = null;
+        var isNullableEnum = false;
+        if (parameterType is INamedTypeSymbol nt && nt.IsGenericType &&
+            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T &&
+            nt.TypeArguments[0] is INamedTypeSymbol inner && inner.TypeKind == TypeKind.Enum)
+        {
+            enumSym = inner;
+            isNullableEnum = true;
+        }
+        else if (parameterType is INamedTypeSymbol named && named.TypeKind == TypeKind.Enum)
+        {
+            enumSym = named;
+        }
+
+        if (enumSym?.EnumUnderlyingType is null)
+        {
+            return (null, false);
+        }
+
+        return (enumSym.EnumUnderlyingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), isNullableEnum);
     }
 
     private static string? ReadBuilderProperty(AttributeData attr)
@@ -379,6 +1229,69 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
         }
         return null;
+    }
+
+    private const string BuilderContextFullName = "Smart.Data.Accessor.Builders.BuilderContext";
+
+    private static void ValidateBuilderMethod(
+        SourceProductionContext context,
+        INamedTypeSymbol classSymbol,
+        IMethodSymbol executeMethod,
+        string builderName,
+        IReadOnlyList<ParameterModelLegacy> executeParameters)
+    {
+        var location = executeMethod.Locations.FirstOrDefault();
+
+        var builderMethod = classSymbol.GetMembers(builderName)
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m.MethodKind == Microsoft.CodeAnalysis.MethodKind.Ordinary);
+        if (builderMethod is null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BuilderMethodNotFound, location, executeMethod.Name, builderName));
+            return;
+        }
+
+        var builderLocation = builderMethod.Locations.FirstOrDefault() ?? location;
+
+        if (builderMethod.IsAsync)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BuilderIsAsync, builderLocation, executeMethod.Name, builderName));
+        }
+
+        if (!builderMethod.ReturnsVoid)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BuilderReturnInvalid, builderLocation, executeMethod.Name, builderName));
+        }
+
+        if (builderMethod.Parameters.Length < 1 ||
+            builderMethod.Parameters[0].RefKind != RefKind.Ref ||
+            builderMethod.Parameters[0].Type.ToDisplayString() != BuilderContextFullName)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BuilderFirstArgInvalid, builderLocation, executeMethod.Name, builderName));
+            return;
+        }
+
+        var executeArgs = executeParameters.Where(p => !p.IsCancellationToken).ToList();
+        var builderTail = builderMethod.Parameters.Skip(1).ToList();
+        var matches = builderTail.Count == executeArgs.Count;
+        if (matches)
+        {
+            for (var i = 0; i < executeArgs.Count; i++)
+            {
+                var ea = executeArgs[i];
+                var ba = builderTail[i];
+                if (ba.Name != ea.Name ||
+                    ba.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != ea.TypeFullName)
+                {
+                    matches = false;
+                    break;
+                }
+            }
+        }
+        if (!matches)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.BuilderArgMismatch, builderLocation, executeMethod.Name, builderName));
+        }
     }
 
     private static string AccessibilityText(Accessibility a) => a switch
@@ -396,13 +1309,34 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Emit
     //--------------------------------------------------------------------------------
 
-    private static string Emit(AccessorModel model)
+    private static string Emit(AccessorModelLegacy model)
     {
         var sb = new StringBuilder();
         sb.AppendLine("// <auto-generated/>");
         sb.AppendLine("#nullable enable");
         sb.AppendLine("#pragma warning disable");
         sb.AppendLine();
+
+        // spec §1.4 F12 / §6.3: aggregate /*!helper */ / /*!using */ across all methods,
+        // dedupe by (IsStatic, Name), and emit before the namespace declaration.
+        // `using static` directives come after plain `using` to match conventional ordering.
+        var aggregated = model.Methods
+            .SelectMany(m => m.Usings)
+            .Distinct()
+            .OrderBy(u => u.IsStatic ? 1 : 0)
+            .ThenBy(u => u.Name, StringComparer.Ordinal)
+            .ToList();
+        if (aggregated.Count > 0)
+        {
+            foreach (var u in aggregated)
+            {
+                sb.AppendLine(u.IsStatic
+                    ? $"using static {u.Name};"
+                    : $"using {u.Name};");
+            }
+            sb.AppendLine();
+        }
+
         if (!string.IsNullOrEmpty(model.Namespace))
         {
             sb.AppendLine($"namespace {model.Namespace};");
@@ -410,31 +1344,92 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
         sb.AppendLine($"{model.Accessibility} partial class {model.ClassName}");
         sb.AppendLine("{");
-        sb.AppendLine($"    private readonly {model.ConnectionFieldType} connection;");
-        sb.AppendLine();
-        sb.AppendLine($"    public {model.ClassName}({model.ConnectionFieldType} connection)");
-        sb.AppendLine("    {");
-        sb.AppendLine("        this.connection = connection;");
-        sb.AppendLine("    }");
+        EmitConstructor(sb, model);
 
         foreach (var m in model.Methods)
         {
             sb.AppendLine();
-            EmitMethod(sb, m, model.DialectTypeFullName);
+            EmitMethod(sb, m, model.ProviderName);
         }
 
         sb.AppendLine("}");
         return sb.ToString();
     }
 
-    private static bool IsAsyncShape(ReturnShape s) =>
-        s is ReturnShape.Task or ReturnShape.TaskScalar or ReturnShape.TaskList
-          or ReturnShape.ValueTask or ReturnShape.ValueTaskScalar or ReturnShape.AsyncEnumerable;
-
-    private static void EmitMethod(StringBuilder sb, MethodModel m, string? dialectFq)
+    private static void EmitConstructor(StringBuilder sb, AccessorModelLegacy model)
     {
-        var paramList = string.Join(", ", m.Parameters.Select(p => $"{p.TypeFullName} {p.Name}"));
-        var asyncKw = IsAsyncShape(m.ReturnShape) ? "async " : string.Empty;
+        var hasFactory = model.RequiresConnectionFactory;
+        var hasInjects = model.Injects.Count > 0;
+
+        if (!hasFactory && !hasInjects)
+        {
+            sb.AppendLine("    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+            sb.AppendLine($"    internal {model.ClassName}()");
+            sb.AppendLine("    {");
+            sb.AppendLine("    }");
+            return;
+        }
+
+        if (hasFactory)
+        {
+            sb.AppendLine("    private readonly global::Smart.Data.Accessor.Connection.IConnectionFactory factory;");
+        }
+        foreach (var inject in model.Injects)
+        {
+            sb.AppendLine($"    private readonly {inject.TypeFullName} {inject.Name};");
+        }
+        sb.AppendLine();
+
+        var ctorParams = new List<string>();
+        if (hasFactory)
+        {
+            ctorParams.Add("global::Smart.Data.Accessor.Connection.IConnectionFactory factory");
+        }
+        foreach (var inject in model.Injects)
+        {
+            ctorParams.Add($"{inject.TypeFullName} {inject.Name}");
+        }
+
+        sb.AppendLine("    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+        sb.AppendLine($"    internal {model.ClassName}({string.Join(", ", ctorParams)})");
+        sb.AppendLine("    {");
+        if (hasFactory)
+        {
+            sb.AppendLine("        this.factory = factory;");
+        }
+        foreach (var inject in model.Injects)
+        {
+            sb.AppendLine($"        this.{inject.Name} = {inject.Name};");
+        }
+        sb.AppendLine("    }");
+    }
+
+    private static bool IsAsyncShape(ReturnShapeLegacy s) =>
+        s is ReturnShapeLegacy.Task or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.TaskList
+          or ReturnShapeLegacy.ValueTask or ReturnShapeLegacy.ValueTaskScalar or ReturnShapeLegacy.AsyncEnumerable
+          or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+
+    private static bool IsReaderShape(ReturnShapeLegacy s) =>
+        s is ReturnShapeLegacy.Reader or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+
+    private static void EmitMethod(StringBuilder sb, MethodModelLegacy m, string? providerName)
+    {
+        // Per-method OrdinalCache struct (spec §7.10.4). Cached once per query, reused per row.
+        EmitOrdinalCacheStruct(sb, m);
+
+        var paramList = string.Join(", ", m.Parameters.Select(p =>
+        {
+            var modifier = p.RefKind switch
+            {
+                RefKindLegacy.Out => "out ",
+                RefKindLegacy.Ref => "ref ",
+                _ => string.Empty,
+            };
+            return $"{modifier}{p.TypeFullName} {p.Name}";
+        }));
+        var isAsync = IsAsyncShape(m.ReturnShapeLegacy);
+        var isReader = IsReaderShape(m.ReturnShapeLegacy);
+        var asyncKw = isAsync ? "async " : string.Empty;
         sb.AppendLine($"    {m.Accessibility} {asyncKw}partial {m.ReturnTypeFullName} {m.Name}({paramList})");
         sb.AppendLine("    {");
 
@@ -442,34 +1437,132 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var ct = m.Parameters.FirstOrDefault(p => p.IsCancellationToken);
         var ctExpr = ct?.Name ?? "default";
 
-        sb.AppendLine("        using var cmd = this.connection.CreateCommand();");
+        // For reader shapes (ExecuteReader), cmd and (Pattern B) connection ownership
+        // is transferred to WrappedReader, so we avoid `using` and add catch/dispose for safety.
+        var cmdKeyword = isReader ? "var" : "using var";
+        var ownsConnectionForReader = isReader && m.ConnectionPattern == ConnectionPatternLegacy.None;
+
+        // Pattern A / Pattern B connection acquisition.
+        string commandSource;
+        switch (m.ConnectionPattern)
+        {
+            case ConnectionPatternLegacy.ConnectionArg:
+            {
+                var connName = m.ConnectionParameterName!;
+                if (isReader)
+                {
+                    sb.AppendLine($"        var __wasClosed = ({connName}.State == global::System.Data.ConnectionState.Closed);");
+                    if (isAsync)
+                    {
+                        sb.AppendLine($"        if (__wasClosed) await {connName}.OpenAsync({ctExpr}).ConfigureAwait(false);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"        if (__wasClosed) {connName}.Open();");
+                    }
+                }
+                else if (isAsync)
+                {
+                    sb.AppendLine($"        if ({connName}.State == global::System.Data.ConnectionState.Closed) await {connName}.OpenAsync({ctExpr}).ConfigureAwait(false);");
+                }
+                else
+                {
+                    sb.AppendLine($"        if ({connName}.State == global::System.Data.ConnectionState.Closed) {connName}.Open();");
+                }
+                sb.AppendLine($"        {cmdKeyword} cmd = {connName}.CreateCommand();");
+                commandSource = connName;
+                break;
+            }
+            case ConnectionPatternLegacy.TransactionArg:
+            {
+                var txName = m.TransactionParameterName!;
+                var connExpr = $"{txName}.Connection!";
+                if (isReader)
+                {
+                    sb.AppendLine($"        var __wasClosed = ({connExpr}.State == global::System.Data.ConnectionState.Closed);");
+                    if (isAsync)
+                    {
+                        sb.AppendLine($"        if (__wasClosed) await {connExpr}.OpenAsync({ctExpr}).ConfigureAwait(false);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"        if (__wasClosed) {connExpr}.Open();");
+                    }
+                }
+                else if (isAsync)
+                {
+                    sb.AppendLine($"        if ({connExpr}.State == global::System.Data.ConnectionState.Closed) await {connExpr}.OpenAsync({ctExpr}).ConfigureAwait(false);");
+                }
+                else
+                {
+                    sb.AppendLine($"        if ({connExpr}.State == global::System.Data.ConnectionState.Closed) {connExpr}.Open();");
+                }
+                sb.AppendLine($"        {cmdKeyword} cmd = {connExpr}.CreateCommand();");
+                sb.AppendLine($"        cmd.Transaction = {txName};");
+                commandSource = connExpr;
+                break;
+            }
+            default:
+            {
+                var providerExpr = providerName is null ? "null" : $"\"{providerName.Replace("\"", "\\\"")}\"";
+                var connKeyword = isReader ? "var" : "using var";
+                sb.AppendLine($"        {connKeyword} connection = this.factory.Create({providerExpr});");
+                if (isAsync)
+                {
+                    sb.AppendLine($"        await connection.OpenAsync({ctExpr}).ConfigureAwait(false);");
+                }
+                else
+                {
+                    sb.AppendLine("        connection.Open();");
+                }
+                sb.AppendLine($"        {cmdKeyword} cmd = connection.CreateCommand();");
+                commandSource = "connection";
+                break;
+            }
+        }
+        _ = commandSource;
+
+        if (isReader)
+        {
+            // Reader shapes: wrap from cmd usage through WrappedReader return in try/catch
+            // so cmd (and connection for Pattern B) is disposed if anything throws before
+            // ownership transfers to WrappedReader.
+            sb.AppendLine("        try");
+            sb.AppendLine("        {");
+        }
+
         if (m.CommandTimeoutSeconds is { } cts)
         {
             sb.AppendLine($"        cmd.CommandTimeout = {cts};");
         }
 
-        var dialectArg = dialectFq is null ? string.Empty : $", {dialectFq}.Instance";
-
         // SQL / parameter setup
-        if (m.BuilderMethodName is not null)
+        if (m.MethodKind == "DirectSql")
         {
-            sb.AppendLine("        var __sb = global::Smart.Data.Accessor.Engine.StringBuilderPool.Rent();");
-            sb.AppendLine($"        var ctx = new global::Smart.Data.Accessor.Builders.BuilderContext(__sb, cmd{dialectArg});");
-            sb.AppendLine("        try");
-            sb.AppendLine("        {");
+            EmitDirectSqlSetup(sb, m);
+        }
+        else if (m.ProcedureName is not null)
+        {
+            EmitProcedureSetup(sb, m);
+        }
+        else if (m.BuilderMethodName is not null)
+        {
+            sb.AppendLine("        var ctx = new global::Smart.Data.Accessor.Builders.BuilderContext(cmd);");
             var nonCtArgs = m.Parameters.Where(p => !p.IsCancellationToken).Select(p => p.Name);
             var args = string.Join(", ", new[] { "ref ctx" }.Concat(nonCtArgs));
-            // Note: BuilderContext is ref struct; pass by ref.
-            sb.AppendLine($"            {m.BuilderMethodName}({args});");
-            sb.AppendLine("            cmd.CommandText = ctx.ToCommandText();");
-            sb.AppendLine("        }");
-            sb.AppendLine("        finally");
-            sb.AppendLine("        {");
-            sb.AppendLine("            ctx.Dispose();");
-            sb.AppendLine("        }");
+            sb.AppendLine($"        {m.BuilderMethodName}({args});");
         }
         else
         {
+            // Pre-declare OUT / InOut / ReturnValue parameter handles so they remain accessible
+            // after the SQL-building try/finally block.
+            foreach (var binding in m.OutputBindings)
+            {
+                sb.Append("        global::System.Data.Common.DbParameter ")
+                    .Append(binding.HandleName)
+                    .AppendLine(" = null!;");
+            }
+
             // Tokenized 2-way SQL → emit StringBuilder build code.
             sb.AppendLine("        var __sb = global::Smart.Data.Accessor.Engine.StringBuilderPool.Rent();");
             sb.AppendLine("        try");
@@ -488,45 +1581,376 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         EmitInvocation(sb, m, ctExpr);
 
+        if (isReader)
+        {
+            sb.AppendLine("        }");
+            sb.AppendLine("        catch");
+            sb.AppendLine("        {");
+            if (isAsync)
+            {
+                sb.AppendLine("            await cmd.DisposeAsync().ConfigureAwait(false);");
+                if (ownsConnectionForReader)
+                {
+                    sb.AppendLine("            await connection.DisposeAsync().ConfigureAwait(false);");
+                }
+            }
+            else
+            {
+                sb.AppendLine("            cmd.Dispose();");
+                if (ownsConnectionForReader)
+                {
+                    sb.AppendLine("            connection.Dispose();");
+                }
+            }
+            sb.AppendLine("            throw;");
+            sb.AppendLine("        }");
+        }
+
         sb.AppendLine("    }");
     }
 
-    private static void EmitInvocation(StringBuilder sb, MethodModel m, string ctExpr)
+    private static void EmitDirectSqlSetup(StringBuilder sb, MethodModelLegacy m)
     {
-        if (m.MethodKind == "Execute")
+        if (m.DirectSqlParameterName is null)
         {
-            switch (m.ReturnShape)
+            sb.AppendLine("        // [DirectSql] could not locate a string parameter to use as SQL source.");
+            return;
+        }
+
+        sb.AppendLine($"        cmd.CommandText = {m.DirectSqlParameterName};");
+
+        // X1 / spec §1.4 F14: pre-declare OUT / InOut handles so EmitOutputWriteback can
+        // read them after the execute call.
+        foreach (var binding in m.OutputBindings)
+        {
+            sb.Append("        global::System.Data.Common.DbParameter ")
+                .Append(binding.HandleName)
+                .AppendLine(" = null!;");
+        }
+
+        foreach (var p in m.Parameters)
+        {
+            if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
             {
-                case ReturnShape.Void:
-                    sb.AppendLine("        global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);");
+                continue;
+            }
+            if (p.Name == m.DirectSqlParameterName)
+            {
+                continue;
+            }
+
+            var paramName = m.BindMarker + p.Name;
+            var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
+            var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
+            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+            var hasProvider = p.ProviderParameterTypeFullName is not null;
+
+            switch (p.Direction)
+            {
+                case ParameterDirectionKindLegacy.Output:
+                    sb.Append("        __op_")
+                        .Append(p.Name)
+                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
+                        .Append(paramName)
+                        .Append("\", ")
+                        .Append(dbTypeExprOrDefault)
+                        .Append(sizeArg)
+                        .AppendLine(");");
+                    EmitProviderDbTypeAssignment(sb, p, $"__op_{p.Name}");
                     break;
-                case ReturnShape.Scalar:
+                case ParameterDirectionKindLegacy.InputOutput:
+                    sb.Append("        __op_")
+                        .Append(p.Name)
+                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
+                        .Append(paramName)
+                        .Append("\", ")
+                        .Append(BuildParameterValueExpr(p))
+                        .Append(", ")
+                        .Append(dbTypeExprOrDefault)
+                        .Append(sizeArg)
+                        .AppendLine(");");
+                    EmitProviderDbTypeAssignment(sb, p, $"__op_{p.Name}");
+                    break;
+                case ParameterDirectionKindLegacy.ReturnValue:
+                    // SDA0200 already reported in BuildAccessorModelLegacy; skip emission.
+                    break;
+                default:
+                    if (hasProvider)
+                    {
+                        var providerSizeArg = p.Size is { } iSz
+                            ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                            : string.Empty;
+                        sb.Append("        ((")
+                            .Append(p.ProviderParameterTypeFullName)
+                            .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(paramName)
+                            .Append("\", ")
+                            .Append(BuildParameterValueExpr(p))
+                            .Append(providerSizeArg)
+                            .Append(")).")
+                            .Append(p.ProviderPropertyName)
+                            .Append(" = ")
+                            .Append(p.ProviderValueExpr)
+                            .AppendLine(";");
+                    }
+                    else
+                    {
+                        sb.Append("        global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(paramName)
+                            .Append("\", ")
+                            .Append(BuildParameterValueExpr(p))
+                            .Append(dbTypeArg)
+                            .Append(sizeArg)
+                            .AppendLine(");");
+                    }
+                    break;
+            }
+        }
+    }
+
+    private static void EmitProviderDbTypeAssignment(StringBuilder sb, ParameterModelLegacy p, string handleName)
+    {
+        if (p.ProviderParameterTypeFullName is null || p.ProviderPropertyName is null || p.ProviderValueExpr is null)
+        {
+            return;
+        }
+        sb.Append("        ((")
+            .Append(p.ProviderParameterTypeFullName)
+            .Append(')')
+            .Append(handleName)
+            .Append(").")
+            .Append(p.ProviderPropertyName)
+            .Append(" = ")
+            .Append(p.ProviderValueExpr)
+            .AppendLine(";");
+    }
+
+    private static void EmitProcedureSetup(StringBuilder sb, MethodModelLegacy m)
+    {
+        var procName = m.ProcedureName!.Replace("\"", "\\\"");
+        sb.AppendLine("        cmd.CommandType = global::System.Data.CommandType.StoredProcedure;");
+        sb.AppendLine($"        cmd.CommandText = \"{procName}\";");
+
+        // Pre-declare OUT / InOut / ReturnValue parameter handles so they are accessible after Execute.
+        foreach (var binding in m.OutputBindings)
+        {
+            sb.Append("        global::System.Data.Common.DbParameter ")
+                .Append(binding.HandleName)
+                .AppendLine(" = null!;");
+        }
+
+        // Emit Add*Parameter for each method parameter, using BindMarker + parameter name.
+        foreach (var p in m.Parameters)
+        {
+            if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
+            {
+                continue;
+            }
+
+            var paramName = m.BindMarker + p.Name;
+            var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
+            var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
+            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+            var hasProvider = p.ProviderParameterTypeFullName is not null;
+
+            switch (p.Direction)
+            {
+                case ParameterDirectionKindLegacy.Output:
+                    sb.Append("        __op_")
+                        .Append(p.Name)
+                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
+                        .Append(paramName)
+                        .Append("\", ")
+                        .Append(dbTypeExprOrDefault)
+                        .Append(sizeArg)
+                        .AppendLine(");");
+                    EmitProviderDbTypeAssignment(sb, p, $"__op_{p.Name}");
+                    break;
+                case ParameterDirectionKindLegacy.InputOutput:
+                    sb.Append("        __op_")
+                        .Append(p.Name)
+                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
+                        .Append(paramName)
+                        .Append("\", ")
+                        .Append(BuildParameterValueExpr(p))
+                        .Append(", ")
+                        .Append(dbTypeExprOrDefault)
+                        .Append(sizeArg)
+                        .AppendLine(");");
+                    EmitProviderDbTypeAssignment(sb, p, $"__op_{p.Name}");
+                    break;
+                case ParameterDirectionKindLegacy.ReturnValue:
+                    sb.Append("        __op_")
+                        .Append(p.Name)
+                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"")
+                        .Append(paramName)
+                        .Append("\", ")
+                        .Append(dbTypeExprOrDefault)
+                        .AppendLine(");");
+                    EmitProviderDbTypeAssignment(sb, p, $"__op_{p.Name}");
+                    break;
+                default:
+                    if (hasProvider)
+                    {
+                        var providerSizeArg = p.Size is { } iSz
+                            ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                            : string.Empty;
+                        sb.Append("        ((")
+                            .Append(p.ProviderParameterTypeFullName)
+                            .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(paramName)
+                            .Append("\", ")
+                            .Append(BuildParameterValueExpr(p))
+                            .Append(providerSizeArg)
+                            .Append(")).")
+                            .Append(p.ProviderPropertyName)
+                            .Append(" = ")
+                            .Append(p.ProviderValueExpr)
+                            .AppendLine(";");
+                    }
+                    else
+                    {
+                        sb.Append("        global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(paramName)
+                            .Append("\", ")
+                            .Append(BuildParameterValueExpr(p))
+                            .Append(dbTypeArg)
+                            .Append(sizeArg)
+                            .AppendLine(");");
+                    }
+                    break;
+            }
+        }
+    }
+
+    private static void EmitOutputWriteback(StringBuilder sb, MethodModelLegacy m)
+    {
+        foreach (var binding in m.OutputBindings)
+        {
+            var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
+            if (param is null || param.RefKind == RefKindLegacy.None)
+            {
+                continue;
+            }
+            sb.Append("        ")
+                .Append(binding.ParameterName)
+                .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.GetOutputValue<")
+                .Append(param.TypeFullName)
+                .Append(">(")
+                .Append(binding.HandleName)
+                .AppendLine(")!;");
+        }
+    }
+
+    private static void EmitReaderInvocation(StringBuilder sb, MethodModelLegacy m, string ctExpr)
+    {
+        var ownsConnection = m.ConnectionPattern == ConnectionPatternLegacy.None;
+        var isAsync = m.ReturnShapeLegacy is ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+        var behaviorArg = ownsConnection
+            ? string.Empty
+            : "__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default";
+
+        if (isAsync)
+        {
+            var asyncArgs = ownsConnection
+                ? ctExpr
+                : behaviorArg + ", " + ctExpr;
+            sb.AppendLine($"        var __reader = await cmd.ExecuteReaderAsync({asyncArgs}).ConfigureAwait(false);");
+            sb.AppendLine(ownsConnection
+                ? "        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, __reader, connection);"
+                : "        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, __reader);");
+        }
+        else
+        {
+            sb.AppendLine(ownsConnection
+                ? "        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader(), connection);"
+                : $"        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader({behaviorArg}));");
+        }
+    }
+
+    private static void EmitInvocation(StringBuilder sb, MethodModelLegacy m, string ctExpr)
+    {
+        var hasOutputs = m.OutputBindings.Count > 0;
+
+        if (m.MethodKind == "ExecuteReader" || IsReaderShape(m.ReturnShapeLegacy))
+        {
+            EmitReaderInvocation(sb, m, ctExpr);
+            return;
+        }
+
+        if (m.MethodKind == "Execute" || m.MethodKind == "DirectSql")
+        {
+            switch (m.ReturnShapeLegacy)
+            {
+                case ReturnShapeLegacy.Void:
+                    sb.AppendLine("        global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);");
+                    EmitOutputWriteback(sb, m);
+                    break;
+                case ReturnShapeLegacy.Scalar:
                     // int Execute / scalar
                     if (m.ScalarTypeFullName == "int")
                     {
-                        sb.AppendLine("        return global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);");
+                        if (hasOutputs)
+                        {
+                            sb.AppendLine("        var __result = global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);");
+                            EmitOutputWriteback(sb, m);
+                            sb.AppendLine("        return __result;");
+                        }
+                        else
+                        {
+                            sb.AppendLine("        return global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);");
+                        }
                     }
                     else
                     {
-                        sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalar<{m.ScalarTypeFullName}>(cmd)!;");
+                        if (hasOutputs)
+                        {
+                            sb.AppendLine($"        var __result = global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalar<{m.ScalarTypeFullName}>(cmd);");
+                            EmitOutputWriteback(sb, m);
+                            sb.AppendLine("        return __result!;");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalar<{m.ScalarTypeFullName}>(cmd)!;");
+                        }
                     }
                     break;
-                case ReturnShape.Task:
+                case ReturnShapeLegacy.Task:
                     sb.AppendLine($"        await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, {ctExpr}).ConfigureAwait(false);");
+                    EmitOutputWriteback(sb, m);
                     break;
-                case ReturnShape.TaskScalar:
-                case ReturnShape.ValueTaskScalar:
+                case ReturnShapeLegacy.TaskScalar:
+                case ReturnShapeLegacy.ValueTaskScalar:
                     if (m.ScalarTypeFullName == "int")
                     {
-                        sb.AppendLine($"        return await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, {ctExpr}).ConfigureAwait(false);");
+                        if (hasOutputs)
+                        {
+                            sb.AppendLine($"        var __result = await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, {ctExpr}).ConfigureAwait(false);");
+                            EmitOutputWriteback(sb, m);
+                            sb.AppendLine("        return __result;");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"        return await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, {ctExpr}).ConfigureAwait(false);");
+                        }
                     }
                     else
                     {
-                        sb.AppendLine($"        return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalarAsync<{m.ScalarTypeFullName}>(cmd, {ctExpr}).ConfigureAwait(false))!;");
+                        if (hasOutputs)
+                        {
+                            sb.AppendLine($"        var __result = await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalarAsync<{m.ScalarTypeFullName}>(cmd, {ctExpr}).ConfigureAwait(false);");
+                            EmitOutputWriteback(sb, m);
+                            sb.AppendLine("        return __result!;");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"        return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalarAsync<{m.ScalarTypeFullName}>(cmd, {ctExpr}).ConfigureAwait(false))!;");
+                        }
                     }
                     break;
-                case ReturnShape.ValueTask:
+                case ReturnShapeLegacy.ValueTask:
                     sb.AppendLine($"        await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, {ctExpr}).ConfigureAwait(false);");
+                    EmitOutputWriteback(sb, m);
                     break;
                 default:
                     sb.AppendLine("        // unsupported Execute shape");
@@ -535,30 +1959,60 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return;
         }
 
-        // Query
+        // Query (spec §7.10.4 OrdinalCache + §16.3 type-specific reader methods).
+        var ordStruct = OrdinalStructName(m);
+        var ordFactory = BuildOrdFactoryLambda(m);
         var mapLambda = BuildMapLambda(m);
-        switch (m.ReturnShape)
+        switch (m.ReturnShapeLegacy)
         {
-            case ReturnShape.List:
-                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBuffer<{m.ElementTypeFullName}>(cmd, {mapLambda});");
+            case ReturnShapeLegacy.List:
+                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBuffer<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda});");
                 break;
-            case ReturnShape.TaskList:
-                sb.AppendLine($"        return await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBufferAsync<{m.ElementTypeFullName}>(cmd, {mapLambda}, {ctExpr}).ConfigureAwait(false);");
+            case ReturnShapeLegacy.TaskList:
+                sb.AppendLine($"        return await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBufferAsync<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda}, {ctExpr}).ConfigureAwait(false);");
                 break;
-            case ReturnShape.AsyncEnumerable:
-                // Forward to engine iterator; user must add [EnumeratorCancellation] on their CT param.
-                sb.AppendLine($"        await foreach (var __item in global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryAsync<{m.ElementTypeFullName}>(cmd, {mapLambda}, {ctExpr}).ConfigureAwait(false))");
+            case ReturnShapeLegacy.IteratorEnumerable:
+            {
+                // §7.8.1 F13: Generator emits the iteration loop directly (no QueryBuffer).
+                // OrdinalCache is captured once after the first row arrives.
+                var body = BuildEntityCreationBody(m, "__reader", "__o");
+                sb.AppendLine("        using var __reader = cmd.ExecuteReader();");
+                sb.AppendLine("        if (__reader.Read())");
                 sb.AppendLine("        {");
-                sb.AppendLine("            yield return __item;");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine("            do");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                yield return {body};");
+                sb.AppendLine("            }");
+                sb.AppendLine("            while (__reader.Read());");
                 sb.AppendLine("        }");
                 break;
-            case ReturnShape.Scalar:
-                // QueryFirst-style: return single mapped item
-                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefault<{m.ElementTypeFullName}>(cmd, {mapLambda})!;");
+            }
+            case ReturnShapeLegacy.AsyncEnumerable:
+            {
+                // §7.8.1 F13: Generator emits `await foreach` + `yield return` directly.
+                // The user's CancellationToken parameter must be annotated [EnumeratorCancellation]
+                // (SDA0198 warns when missing).
+                var body = BuildEntityCreationBody(m, "__reader", "__o");
+                sb.AppendLine($"        using var __reader = await cmd.ExecuteReaderAsync({ctExpr}).ConfigureAwait(false);");
+                sb.AppendLine($"        if (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine("            do");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                yield return {body};");
+                sb.AppendLine("            }");
+                sb.AppendLine($"            while (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false));");
+                sb.AppendLine("        }");
                 break;
-            case ReturnShape.TaskScalar:
-            case ReturnShape.ValueTaskScalar:
-                sb.AppendLine($"        return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefaultAsync<{m.ElementTypeFullName}>(cmd, {mapLambda}, {ctExpr}).ConfigureAwait(false))!;");
+            }
+            case ReturnShapeLegacy.Scalar:
+                // QueryFirst-style: return single mapped item
+                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefault<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda})!;");
+                break;
+            case ReturnShapeLegacy.TaskScalar:
+            case ReturnShapeLegacy.ValueTaskScalar:
+                sb.AppendLine($"        return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefaultAsync<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda}, {ctExpr}).ConfigureAwait(false))!;");
                 break;
             default:
                 sb.AppendLine("        // unsupported Query shape");
@@ -566,47 +2020,118 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static string BuildMapLambda(MethodModel m)
+    // Emit either `new T { Prop = ..., ... }` (class/POCO) or `new T(name: ..., ...)`
+    // (record primary ctor, spec §7.10.5). Ordinals come from the supplied OrdinalCache
+    // variable; column reads use type-specific reader methods (spec §16.3). Reused by both
+    // the lambda emit (BuildMapLambda) and the inline iterator emit
+    // (IteratorEnumerable / AsyncEnumerable).
+    private static string BuildEntityCreationBody(MethodModelLegacy m, string readerVar, string ordVar)
     {
         var sb = new StringBuilder();
-        sb.Append($"static reader => new {m.ElementTypeFullName} {{ ");
-        if (m.QueryColumnAssignments is not null)
+        var useCtor = m.UseRecordPrimaryConstructor;
+        sb.Append("new ").Append(m.ElementTypeFullName).Append(useCtor ? "(" : " { ");
+        if (m.QueryColumns is not null)
         {
-            // strip leading indentation / commas-newlines; reuse the same expressions.
             var first = true;
-            foreach (var raw in m.QueryColumnAssignments)
+            foreach (var col in m.QueryColumns)
             {
-                var trimmed = raw.TrimStart();
-                if (trimmed.EndsWith(",", StringComparison.Ordinal))
-                {
-                    trimmed = trimmed[..^1];
-                }
                 if (!first)
                 {
                     sb.Append(", ");
                 }
                 first = false;
-                sb.Append(trimmed);
+                sb.Append(col.PropertyName).Append(useCtor ? ": " : " = ");
+                if (col.TypedReaderMethod is not null)
+                {
+                    // spec §7.10.1: non-nullable property receiving DB NULL falls through as default! (SDA0140).
+                    sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
+                      .Append(" ? default! : ");
+                    if (col.EnumCastTypeFullName is not null)
+                    {
+                        // spec §7.9 / §7.10.3: Enum is read as its underlying primitive then cast back.
+                        sb.Append('(').Append(col.EnumCastTypeFullName).Append(')');
+                    }
+                    sb.Append(readerVar).Append('.').Append(col.TypedReaderMethod).Append('(').Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                }
+                else
+                {
+                    sb.Append("global::Smart.Data.Accessor.Engine.ExecuteEngine.GetValue<")
+                      .Append(col.TypeFullName)
+                      .Append(">(").Append(readerVar).Append(", ").Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                }
             }
         }
-        sb.Append(" }");
+        sb.Append(useCtor ? ")" : " }");
         return sb.ToString();
     }
+
+    private static string OrdinalStructName(MethodModelLegacy m) => "__" + m.Name + "Ordinals";
+
+    private static string BuildMapLambda(MethodModelLegacy m) =>
+        "static (reader, __o) => " + BuildEntityCreationBody(m, "reader", "__o");
+
+    private static string BuildOrdFactoryLambda(MethodModelLegacy m) =>
+        "static reader => " + OrdinalStructName(m) + ".From(reader)";
+
+    private static void EmitOrdinalCacheStruct(StringBuilder sb, MethodModelLegacy m)
+    {
+        if (m.QueryColumns is null || m.QueryColumns.Count == 0)
+        {
+            return;
+        }
+
+        var name = OrdinalStructName(m);
+        sb.AppendLine($"    private readonly struct {name}");
+        sb.AppendLine("    {");
+        foreach (var col in m.QueryColumns)
+        {
+            sb.AppendLine($"        public readonly int {col.PropertyName};");
+        }
+        sb.AppendLine();
+        var ctorParams = string.Join(", ", m.QueryColumns.Select(c => "int " + LowerFirst(c.PropertyName)));
+        sb.AppendLine($"        private {name}({ctorParams})");
+        sb.AppendLine("        {");
+        foreach (var col in m.QueryColumns)
+        {
+            sb.AppendLine($"            {col.PropertyName} = {LowerFirst(col.PropertyName)};");
+        }
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
+        sb.AppendLine($"        public static {name} From(global::System.Data.Common.DbDataReader reader)");
+        sb.Append($"            => new(");
+        for (var i = 0; i < m.QueryColumns.Count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(", ");
+            }
+            var col = m.QueryColumns[i];
+            sb.Append("reader.GetOrdinal(\"").Append(col.ColumnName).Append("\")");
+        }
+        sb.AppendLine(");");
+        sb.AppendLine("    }");
+    }
+
+    private static string LowerFirst(string s) =>
+        string.IsNullOrEmpty(s) || char.IsLower(s[0]) ? s : char.ToLowerInvariant(s[0]) + s[1..];
 
     //--------------------------------------------------------------------------------
     // 2-way SQL tokenization + emit (Phase 2 §3.1)
     //--------------------------------------------------------------------------------
 
-    private static string BuildSqlEmitCode(
+    private static (string Code, IReadOnlyList<OutputBindingLegacy> OutputBindings, IReadOnlyList<UsingDirectiveLegacy> Usings) BuildSqlEmitCode(
         SourceProductionContext context,
         IMethodSymbol member,
-        IReadOnlyList<ParameterModel> parameters,
-        string sql)
+        IReadOnlyList<ParameterModelLegacy> parameters,
+        string sql,
+        char bindMarker,
+        Compilation? compilation)
     {
         if (string.IsNullOrWhiteSpace(sql))
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlEmpty, member.Locations.FirstOrDefault(), member.Name));
-            return string.Empty;
+            return (string.Empty, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
         }
 
         IReadOnlyList<INode> nodes;
@@ -621,19 +2146,83 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         catch (SqlTokenizerException ex)
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlTokenizeFailed, member.Locations.FirstOrDefault(), member.Name, ex.Message));
-            return string.Empty;
+            return (string.Empty, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+        }
+
+        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas
+        // (UsingNodes are aggregated at file-header emission, not per-method output).
+        // Validation against the current Compilation produces SDA0186 / SDA0187.
+        var usings = new List<UsingDirectiveLegacy>();
+        foreach (var node in nodes)
+        {
+            if (node is not UsingNode un)
+            {
+                continue;
+            }
+            if (compilation is not null)
+            {
+                if (un.IsStatic)
+                {
+                    if (compilation.GetTypeByMetadataName(un.Name) is null)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.HelperTypeNotFound,
+                            member.Locations.FirstOrDefault(),
+                            member.Name,
+                            un.Name));
+                        continue;
+                    }
+                }
+                else if (!NamespaceExists(compilation, un.Name))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.UsingNamespaceNotFound,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        un.Name));
+                }
+            }
+            usings.Add(new UsingDirectiveLegacy(un.IsStatic, un.Name));
         }
 
         var known = new HashSet<string>(parameters.Where(p => !p.IsCancellationToken).Select(p => p.Name), StringComparer.Ordinal);
         var paramMap = parameters.ToDictionary(p => p.Name, p => p, StringComparer.Ordinal);
-        var result = NodeEmitter.Emit(nodes, known, name =>
-        {
-            if (paramMap.TryGetValue(name, out var pm) && (pm.DbTypeExpr is not null || pm.Size is not null))
+        var result = NodeEmitter.Emit(
+            nodes,
+            known,
+            name =>
             {
-                return new NodeEmitter.ParameterAttributes { DbTypeExpr = pm.DbTypeExpr, Size = pm.Size };
-            }
-            return null;
-        });
+                if (!paramMap.TryGetValue(name, out var pm))
+                {
+                    return null;
+                }
+                var dirKind = pm.Direction switch
+                {
+                    ParameterDirectionKindLegacy.Output => NodeEmitter.Direction.Output,
+                    ParameterDirectionKindLegacy.InputOutput => NodeEmitter.Direction.InputOutput,
+                    ParameterDirectionKindLegacy.ReturnValue => NodeEmitter.Direction.ReturnValue,
+                    _ => NodeEmitter.Direction.Input,
+                };
+                if (pm.DbTypeExpr is null && pm.Size is null &&
+                    dirKind == NodeEmitter.Direction.Input && pm.EnumUnderlyingFullName is null &&
+                    pm.ProviderParameterTypeFullName is null)
+                {
+                    return null;
+                }
+                return new NodeEmitter.ParameterAttributes
+                {
+                    DbTypeExpr = pm.DbTypeExpr,
+                    Size = pm.Size,
+                    Direction = dirKind,
+                    OutputHandleName = dirKind == NodeEmitter.Direction.Input ? null : $"__op_{pm.Name}",
+                    EnumUnderlyingFullName = pm.EnumUnderlyingFullName,
+                    IsNullableEnum = pm.IsNullableEnum,
+                    ProviderParameterTypeFullName = pm.ProviderParameterTypeFullName,
+                    ProviderPropertyName = pm.ProviderPropertyName,
+                    ProviderValueExpr = pm.ProviderValueExpr,
+                };
+            },
+            bindMarker);
 
         foreach (var u in result.UndefinedParameters.Distinct(StringComparer.Ordinal))
         {
@@ -676,7 +2265,26 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
         }
 
-        return result.Code;
+        var bindings = result.OutputBindings
+            .Select(static b => new OutputBindingLegacy(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
+            .ToList();
+        return (result.Code, bindings, usings);
+    }
+
+    private static bool NamespaceExists(Compilation compilation, string name)
+    {
+        var parts = name.Split('.');
+        var ns = compilation.GlobalNamespace;
+        foreach (var part in parts)
+        {
+            var next = ns.GetNamespaceMembers().FirstOrDefault(n => n.Name == part);
+            if (next is null)
+            {
+                return false;
+            }
+            ns = next;
+        }
+        return true;
     }
 
     private static string ExtractRoot(string name)
@@ -684,4 +2292,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var dot = name.IndexOf('.');
         return dot < 0 ? name : name[..dot];
     }
+
+    private static ParameterDirectionKindLegacy ToLegacyDirection(NodeEmitter.Direction d) => d switch
+    {
+        NodeEmitter.Direction.Output => ParameterDirectionKindLegacy.Output,
+        NodeEmitter.Direction.InputOutput => ParameterDirectionKindLegacy.InputOutput,
+        NodeEmitter.Direction.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
+        _ => ParameterDirectionKindLegacy.Input,
+    };
 }

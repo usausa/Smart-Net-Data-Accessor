@@ -14,32 +14,72 @@ internal static class NodeEmitter
 
         public bool RequiresIEnumerable { get; }
 
-        public EmitResult(string code, IReadOnlyList<string> undefined, bool requiresIEnumerable)
+        public IReadOnlyList<OutputBinding> OutputBindings { get; }
+
+        public EmitResult(string code, IReadOnlyList<string> undefined, bool requiresIEnumerable, IReadOnlyList<OutputBinding> outputBindings)
         {
             Code = code;
             UndefinedParameters = undefined;
             RequiresIEnumerable = requiresIEnumerable;
+            OutputBindings = outputBindings;
         }
     }
+
+    /// <summary>Output / InOut / ReturnValue binding captured during emission.
+    /// The Generator pre-declares the handle variable before the SQL build try-block
+    /// and uses it after Execute to write the parameter value back to out/ref args.</summary>
+    public sealed record OutputBinding(string ParameterName, string HandleName, Direction Direction);
 
     /// <summary>Per-parameter attribute metadata gathered from method parameters.</summary>
     public sealed class ParameterAttributes
     {
         public string? DbTypeExpr { get; init; }   // e.g. "global::System.Data.DbType.AnsiString" or null
         public int? Size { get; init; }
+        public Direction Direction { get; init; } = Direction.Input;
+        public string? OutputHandleName { get; init; }   // optional local variable name to capture DbParameter handle
+
+        /// <summary>FQN of the enum's underlying primitive when this parameter is an enum (or
+        /// <c>Nullable&lt;enum&gt;</c>); used to emit an explicit cast so <c>AssignValue</c>'s
+        /// runtime <c>Convert.ChangeType</c> is bypassed (spec §7.9). Only applied when the
+        /// SQL marker references the bare parameter name (no member access path).</summary>
+        public string? EnumUnderlyingFullName { get; init; }
+
+        public bool IsNullableEnum { get; init; }
+
+        // spec §1.4 F15 / §5.3.1: provider-specific DbType assignment emitted after the
+        // AddInParameter/AddOutParameter/AddInOutParameter call.
+        public string? ProviderParameterTypeFullName { get; init; }
+        public string? ProviderPropertyName { get; init; }
+        public string? ProviderValueExpr { get; init; }
+    }
+
+    public enum Direction
+    {
+        Input,
+        Output,
+        InputOutput,
+        ReturnValue,
     }
 
     public static EmitResult Emit(IReadOnlyList<INode> nodes, ISet<string> knownParameters)
-        => Emit(nodes, knownParameters, _ => null);
+        => Emit(nodes, knownParameters, _ => null, '@');
 
     public static EmitResult Emit(
         IReadOnlyList<INode> nodes,
         ISet<string> knownParameters,
         Func<string, ParameterAttributes?> attrLookup)
+        => Emit(nodes, knownParameters, attrLookup, '@');
+
+    public static EmitResult Emit(
+        IReadOnlyList<INode> nodes,
+        ISet<string> knownParameters,
+        Func<string, ParameterAttributes?> attrLookup,
+        char bindMarker)
     {
         var sb = new StringBuilder();
         var undefined = new List<string>();
         var requiresIEnumerable = false;
+        var outputBindings = new List<OutputBinding>();
         var counter = 0;
 
         foreach (var node in nodes)
@@ -60,30 +100,121 @@ internal static class NodeEmitter
                     {
                         undefined.Add(p.Name);
                     }
-                    var pname = "@p" + counter++;
+                    var pname = bindMarker + "p" + counter++;
                     var attrs = attrLookup(root);
                     var dbTypeArg = attrs?.DbTypeExpr is { } dt ? ", " + dt : string.Empty;
                     var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+                    var direction = attrs?.Direction ?? Direction.Input;
+                    // Apply the spec §7.9 enum-cast only when the SQL token is the bare parameter
+                    // (no member access) — for `entity.X` the leaf type is unknown to this layer.
+                    var valueExpr = p.Name;
+                    if (!p.Name.Contains('.') && attrs?.EnumUnderlyingFullName is { } enumUnderlying)
+                    {
+                        valueExpr = attrs.IsNullableEnum
+                            ? $"({enumUnderlying}?){p.Name}"
+                            : $"({enumUnderlying}){p.Name}";
+                    }
+                    var hasProvider = attrs?.ProviderParameterTypeFullName is not null
+                        && attrs.ProviderPropertyName is not null
+                        && attrs.ProviderValueExpr is not null;
                     if (p.IsMultiple)
                     {
                         requiresIEnumerable = true;
                         sb.Append("            __sb.Append(global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameters(cmd, \"")
                             .Append(pname)
-                            .Append("\", (global::System.Collections.IEnumerable)")
+                            .Append("\", ")
                             .Append(p.Name)
                             .Append(dbTypeArg)
                             .AppendLine("));");
                     }
-                    else
+                    else if (direction == Direction.Input)
                     {
                         sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
-                        sb.Append("            global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
-                            .Append(pname)
-                            .Append("\", ")
-                            .Append(p.Name)
-                            .Append(dbTypeArg)
-                            .Append(sizeArg)
-                            .AppendLine(");");
+                        if (hasProvider)
+                        {
+                            // Skip the positional DbType? slot — provider-specific assignment
+                            // will set the native typed property. Use named arg for size to
+                            // keep the call unambiguous.
+                            var providerSizeArg = attrs?.Size is { } pSz
+                                ? ", size: " + pSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                : string.Empty;
+                            sb.Append("            ((")
+                                .Append(attrs!.ProviderParameterTypeFullName)
+                                .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                                .Append(pname)
+                                .Append("\", ")
+                                .Append(valueExpr)
+                                .Append(providerSizeArg)
+                                .Append(")).")
+                                .Append(attrs.ProviderPropertyName)
+                                .Append(" = ")
+                                .Append(attrs.ProviderValueExpr)
+                                .AppendLine(";");
+                        }
+                        else
+                        {
+                            sb.Append("            global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                                .Append(pname)
+                                .Append("\", ")
+                                .Append(valueExpr)
+                                .Append(dbTypeArg)
+                                .Append(sizeArg)
+                                .AppendLine(");");
+                        }
+                    }
+                    else
+                    {
+                        // OUT / InOut / ReturnValue — DbType is required.
+                        var dbTypeExpr = attrs?.DbTypeExpr ?? "global::System.Data.DbType.Object";
+                        var handle = attrs?.OutputHandleName ?? $"__op_{p.Name}";
+                        outputBindings.Add(new OutputBinding(p.Name, handle, direction));
+                        sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
+                        switch (direction)
+                        {
+                            case Direction.Output:
+                                sb.Append("            ")
+                                    .Append(handle)
+                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
+                                    .Append(pname)
+                                    .Append("\", ")
+                                    .Append(dbTypeExpr)
+                                    .Append(sizeArg)
+                                    .AppendLine(");");
+                                break;
+                            case Direction.InputOutput:
+                                sb.Append("            ")
+                                    .Append(handle)
+                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
+                                    .Append(pname)
+                                    .Append("\", ")
+                                    .Append(valueExpr)
+                                    .Append(", ")
+                                    .Append(dbTypeExpr)
+                                    .Append(sizeArg)
+                                    .AppendLine(");");
+                                break;
+                            case Direction.ReturnValue:
+                                sb.Append("            ")
+                                    .Append(handle)
+                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"")
+                                    .Append(pname)
+                                    .Append("\", ")
+                                    .Append(dbTypeExpr)
+                                    .AppendLine(");");
+                                break;
+                        }
+                        if (hasProvider && direction is Direction.Output or Direction.InputOutput)
+                        {
+                            sb.Append("            ((")
+                                .Append(attrs!.ProviderParameterTypeFullName)
+                                .Append(')')
+                                .Append(handle)
+                                .Append(").")
+                                .Append(attrs.ProviderPropertyName)
+                                .Append(" = ")
+                                .Append(attrs.ProviderValueExpr)
+                                .AppendLine(";");
+                        }
                     }
                     break;
                 }
@@ -98,13 +229,15 @@ internal static class NodeEmitter
                     sb.Append("            ").AppendLine(c.Code);
                     break;
 
-                // UsingNode is currently ignored (helpers/usings are not emitted in Phase 2 prototype).
+                // UsingNode is consumed by DataAccessorGenerator at the AccessorModel
+                // level (aggregated and emitted as file-header `using` directives, spec
+                // §1.4 F12 / §6.3). Skip it here to avoid duplicating in the method body.
                 default:
                     break;
             }
         }
 
-        return new EmitResult(sb.ToString(), undefined, requiresIEnumerable);
+        return new EmitResult(sb.ToString(), undefined, requiresIEnumerable, outputBindings);
     }
 
     private static string ExtractRoot(string name)

@@ -2,9 +2,18 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System;
 
-// Marks an accessor constructor parameter for DI-style injection
-// (not bound to SQL). Used by upcoming DI extension.
-[AttributeUsage(AttributeTargets.Parameter)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class InjectAttribute : Attribute
 {
+    public Type Type { get; }
+
+    public string Name { get; }
+
+    public InjectAttribute(Type type, string name)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        this.Type = type;
+        this.Name = name;
+    }
 }

@@ -2,10 +2,11 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System;
 
-// Direct SQL injection — caller supplies the SQL string via a string parameter.
-// The generator will bind cmd.CommandText to that parameter at runtime.
+// Direct SQL injection: the first `string` parameter is bound to cmd.CommandText
+// at runtime; remaining parameters are bound as normal SQL parameters.
+// Set SuppressWarning = true to silence the SDA0127 SQL Injection advisory.
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class DirectSqlAttribute : Attribute
 {
-    public string? SqlParameter { get; set; }
+    public bool SuppressWarning { get; set; }
 }

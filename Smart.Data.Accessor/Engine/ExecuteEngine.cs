@@ -81,6 +81,22 @@ public static class ExecuteEngine
         return list;
     }
 
+    public static List<T> QueryBuffer<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map)
+    {
+        using var reader = cmd.ExecuteReader();
+        var list = new List<T>();
+        if (reader.Read())
+        {
+            var ord = ordFactory(reader);
+            do
+            {
+                list.Add(map(reader, ord));
+            }
+            while (reader.Read());
+        }
+        return list;
+    }
+
     public static async Task<List<T>> QueryBufferAsync<T>(DbCommand cmd, Func<DbDataReader, T> map, CancellationToken cancel = default)
     {
         using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
@@ -88,6 +104,22 @@ public static class ExecuteEngine
         while (await reader.ReadAsync(cancel).ConfigureAwait(false))
         {
             list.Add(map(reader));
+        }
+        return list;
+    }
+
+    public static async Task<List<T>> QueryBufferAsync<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map, CancellationToken cancel = default)
+    {
+        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
+        var list = new List<T>();
+        if (await reader.ReadAsync(cancel).ConfigureAwait(false))
+        {
+            var ord = ordFactory(reader);
+            do
+            {
+                list.Add(map(reader, ord));
+            }
+            while (await reader.ReadAsync(cancel).ConfigureAwait(false));
         }
         return list;
     }
@@ -118,12 +150,34 @@ public static class ExecuteEngine
         return default;
     }
 
+    public static T? QueryFirstOrDefault<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map)
+    {
+        using var reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            var ord = ordFactory(reader);
+            return map(reader, ord);
+        }
+        return default;
+    }
+
     public static async Task<T?> QueryFirstOrDefaultAsync<T>(DbCommand cmd, Func<DbDataReader, T> map, CancellationToken cancel = default)
     {
         using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
         if (await reader.ReadAsync(cancel).ConfigureAwait(false))
         {
             return map(reader);
+        }
+        return default;
+    }
+
+    public static async Task<T?> QueryFirstOrDefaultAsync<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map, CancellationToken cancel = default)
+    {
+        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
+        if (await reader.ReadAsync(cancel).ConfigureAwait(false))
+        {
+            var ord = ordFactory(reader);
+            return map(reader, ord);
         }
         return default;
     }
@@ -143,11 +197,25 @@ public static class ExecuteEngine
     }
 
     /// <summary>
-    /// Expands an <see cref="IEnumerable"/> into multiple positional parameters (for SQL IN clauses).
-    /// Returns the parenthesised, comma-separated parameter-marker string (e.g. "(@p_0,@p_1)").
-    /// If <paramref name="values"/> is empty, returns "(NULL)" so the resulting SQL stays valid.
+    /// Generic input-parameter helper. Avoids the enumerator-boxing that the non-generic overload
+    /// pays when iterating value-typed collections (e.g. <c>List&lt;int&gt;</c> uses its struct enumerator).
     /// </summary>
-    public static string AddInParameters(DbCommand cmd, string namePrefix, IEnumerable? values, DbType? type = null)
+    public static DbParameter AddInParameter<T>(DbCommand cmd, string name, T value, DbType? type = null, int? size = null)
+    {
+        var p = cmd.CreateParameter();
+        p.ParameterName = name;
+        p.Direction = ParameterDirection.Input;
+        AssignValue(p, value, type, size);
+        cmd.Parameters.Add(p);
+        return p;
+    }
+
+    /// <summary>
+    /// Expands a generic <see cref="IEnumerable{T}"/> into multiple positional parameters (for SQL IN clauses).
+    /// Returns the parenthesised, comma-separated parameter-marker string (e.g. <c>"(@p_0,@p_1)"</c>).
+    /// If <paramref name="values"/> is null or empty, returns <c>"(NULL)"</c> so the resulting SQL stays valid.
+    /// </summary>
+    public static string AddInParameters<T>(DbCommand cmd, string namePrefix, IEnumerable<T>? values, DbType? type = null)
     {
         if (values is null)
         {
@@ -203,6 +271,35 @@ public static class ExecuteEngine
         p.Value = value ?? DBNull.Value;
         cmd.Parameters.Add(p);
         return p;
+    }
+
+    public static DbParameter AddReturnValueParameter(DbCommand cmd, string name, DbType type)
+    {
+        var p = cmd.CreateParameter();
+        p.ParameterName = name;
+        p.Direction = ParameterDirection.ReturnValue;
+        p.DbType = type;
+        cmd.Parameters.Add(p);
+        return p;
+    }
+
+    public static T? GetOutputValue<T>(DbParameter parameter)
+    {
+        var raw = parameter.Value;
+        if (raw is null || raw is DBNull)
+        {
+            return default;
+        }
+        if (raw is T typed)
+        {
+            return typed;
+        }
+        var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (target.IsEnum)
+        {
+            return (T)Enum.ToObject(target, raw);
+        }
+        return (T)Convert.ChangeType(raw, target, CultureInfo.InvariantCulture);
     }
 
     private static void AssignValue(DbParameter p, object? value, DbType? type, int? size)

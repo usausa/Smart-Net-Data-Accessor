@@ -2,9 +2,14 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System;
 
-// Stored procedure marker. CommandType is set to StoredProcedure by the generator.
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class ProcedureAttribute : Attribute
 {
-    public string? Name { get; set; }
+    public string Name { get; }
+
+    public ProcedureAttribute(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        this.Name = name;
+    }
 }
