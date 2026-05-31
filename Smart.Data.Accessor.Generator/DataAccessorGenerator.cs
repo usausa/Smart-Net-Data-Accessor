@@ -42,6 +42,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private const string MethodNameAttributeName = "Smart.Data.Accessor.Attributes.MethodNameAttribute";
     private const string DirectionAttributeName = "Smart.Data.Accessor.Attributes.DirectionAttribute";
     private const string ProcedureAttributeName = "Smart.Data.Accessor.Attributes.ProcedureAttribute";
+    private const string ExecuteConfigAttributeName = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
+    private const string AccessorProfileAttributeName = "Smart.Data.Accessor.Attributes.AccessorProfileAttribute";
     private const char DefaultBindMarker = '@';
     private const string CancellationTokenTypeName = "System.Threading.CancellationToken";
     private const string EnumeratorCancellationAttributeName = "System.Runtime.CompilerServices.EnumeratorCancellationAttribute";
@@ -227,10 +229,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
 
         var methods = new List<MethodModelLegacy>();
+        var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
             if (member.MethodKind != Microsoft.CodeAnalysis.MethodKind.Ordinary || !member.IsPartialDefinition)
             {
+                continue;
+            }
+
+            // SDA0172: user-written partial implementation already exists for this declaration.
+            if (member.PartialImplementationPart is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.PartialMethodAlreadyImplemented,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
                 continue;
             }
 
@@ -268,6 +281,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     !string.IsNullOrEmpty(aliasValue))
                 {
                     sqlAlias = aliasValue;
+                    // SDA0185: [MethodName("X")] is duplicated within the same class.
+                    if (seenMethodNames.ContainsKey(aliasValue))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.MethodNameDuplicated,
+                            member.Locations.FirstOrDefault(),
+                            classSymbol.Name,
+                            aliasValue));
+                    }
+                    else
+                    {
+                        seenMethodNames[aliasValue] = member.Name;
+                    }
                 }
                 else if (fullName == ProcedureAttributeName &&
                     attr.ConstructorArguments.Length > 0 &&
@@ -275,6 +301,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     procedureName = procName;
                     kind ??= "Execute";
+                    // SDA0192: [Procedure("")] empty stored procedure name -> warning.
+                    if (string.IsNullOrEmpty(procName))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.ProcedureNameEmpty,
+                            member.Locations.FirstOrDefault(),
+                            member.Name));
+                    }
                 }
             }
 
@@ -297,12 +331,60 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
             string? sql = null;
-            if (!isDirectSql)
+            if (isDirectSql)
+            {
+                // SDA0129: [DirectSql] method must not have a corresponding SQL file.
+                if (sqlMap.ContainsKey(sqlKey))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DirectSqlHasSqlFile,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        sqlKey + ".sql"));
+                    continue;
+                }
+
+                // SDA0128: first parameter (after conn/tx/CT) must be `string`.
+                var firstUsable = member.Parameters.FirstOrDefault(p =>
+                    p.Type.ToDisplayString() != CancellationTokenTypeName &&
+                    !IsDbConnectionType(p.Type) &&
+                    !IsDbTransactionType(p.Type));
+                if (firstUsable is null ||
+                    firstUsable.Type.SpecialType != SpecialType.System_String)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DirectSqlFirstParamNotString,
+                        member.Locations.FirstOrDefault(),
+                        member.Name));
+                    continue;
+                }
+            }
+            else
             {
                 sqlMap.TryGetValue(sqlKey, out sql);
                 if (sql is null && builder is null && procedureName is null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlNotFound, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
+                    continue;
+                }
+                // SDA0152: both SQL file and Builder are present -> ambiguous.
+                if (sql is not null && builder is not null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.BuilderAndSqlBothPresent,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        sqlKey + ".sql"));
+                    continue;
+                }
+                // SDA0190: [Procedure] + SQL file both exist -> ambiguous.
+                if (procedureName is not null && sql is not null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ProcedureHasSqlFile,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        sqlKey + ".sql"));
                     continue;
                 }
             }
@@ -499,6 +581,24 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // SDA0193 Error / SDA0194 Info: [ExecuteReader] return shape validation (spec §1.4 F3 / §11.3.2).
+            if (kind == "ExecuteReader")
+            {
+                if (!IsReaderShape(shape.Value))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ExecuteReaderInvalidReturn,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        member.ReturnType.ToDisplayString()));
+                    continue;
+                }
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.ExecuteReaderRequiresUsing,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
+            }
+
             // §7.8.1 F13 / SDA0198: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
             if (shape == ReturnShapeLegacy.AsyncEnumerable)
             {
@@ -546,6 +646,72 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             IReadOnlyList<OutputBindingLegacy> outputBindings = Array.Empty<OutputBindingLegacy>();
             IReadOnlyList<UsingDirectiveLegacy> methodUsings = Array.Empty<UsingDirectiveLegacy>();
             string? directSqlParameterName = null;
+
+            // SDA0191: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3.2).
+            if (procedureName is not null && IsAsyncShape(shape.Value))
+            {
+                foreach (var ms in member.Parameters)
+                {
+                    if (ms.RefKind is Microsoft.CodeAnalysis.RefKind.Out or Microsoft.CodeAnalysis.RefKind.Ref)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.AsyncProcedureRefParam,
+                            ms.Locations.FirstOrDefault(),
+                            member.Name,
+                            ms.Name));
+                    }
+                }
+            }
+
+            // SDA0195 / SDA0197: [Direction] consistency checks (spec §1.4 F4 / §11.3.2).
+            //  - SDA0195: [Direction] vs. RefKind mismatch.
+            //  - SDA0197: [Direction] used on method kinds other than [Procedure] / [Execute] / [DirectSql].
+            var directionAllowedKind = kind == "Execute" || kind == "DirectSql";
+            foreach (var ms in member.Parameters)
+            {
+                var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
+                if (pm is null || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
+                {
+                    continue;
+                }
+                if (pm.Direction == ParameterDirectionKindLegacy.Input)
+                {
+                    continue;
+                }
+                if (!directionAllowedKind)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DirectionOnUnsupportedMethod,
+                        ms.Locations.FirstOrDefault(),
+                        member.Name,
+                        pm.Name));
+                    continue;
+                }
+                var refKindOk = pm.Direction switch
+                {
+                    ParameterDirectionKindLegacy.Output => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
+                    ParameterDirectionKindLegacy.InputOutput => pm.RefKind == RefKindLegacy.Ref,
+                    ParameterDirectionKindLegacy.ReturnValue => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
+                    _ => true,
+                };
+                if (!refKindOk)
+                {
+                    var refKindName = pm.RefKind switch
+                    {
+                        RefKindLegacy.Out => "out",
+                        RefKindLegacy.Ref => "ref",
+                        _ => "(none)",
+                    };
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DirectionRefKindMismatch,
+                        ms.Locations.FirstOrDefault(),
+                        member.Name,
+                        pm.Name,
+                        pm.Direction.ToString(),
+                        refKindName));
+                }
+            }
+
             if (isDirectSql)
             {
                 // First `string` parameter (excluding conn/tx/CT) is the SQL source.
@@ -658,6 +824,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // here we validate that the referenced type implements IDialect (SDA0174).
         string? providerName = null;
         var injects = new List<InjectModelLegacy>();
+        var seenInjectNames = new HashSet<string>(StringComparer.Ordinal);
         var dialectInterface = compilation?.GetTypeByMetadataName("Smart.Data.Accessor.Dialect.IDialect");
         foreach (var attr in classSymbol.GetAttributes())
         {
@@ -668,6 +835,29 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 attr.ConstructorArguments[1].Value is string injectName &&
                 !string.IsNullOrEmpty(injectName))
             {
+                // SDA0180: duplicate [Inject] Name within the same class.
+                if (!seenInjectNames.Add(injectName))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.InjectNameDuplicated,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name,
+                        injectName));
+                    continue;
+                }
+
+                // SDA0188: [Inject] Name collides with an existing field/property in the (partial) class
+                // or with the reserved factory ctor parameter.
+                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName == "factory")
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.InjectNameConflictsWithMember,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name,
+                        injectName));
+                    continue;
+                }
+
                 if (!IsLikelyResolvableInjectType(injectType))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
@@ -687,6 +877,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 attr.ConstructorArguments[0].Value is string pName)
             {
                 providerName = pName;
+                // SDA0183: [Provider("")] empty name -> warning.
+                if (string.IsNullOrEmpty(pName))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ProviderNameEmpty,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name));
+                }
             }
             else if (attrName == DataAccessorAttributeName && dialectInterface is not null)
             {
@@ -705,9 +903,44 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     }
                 }
             }
+            else if (attrName == ExecuteConfigAttributeName &&
+                attr.ConstructorArguments.Length >= 1 &&
+                attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType)
+            {
+                // SDA0146: target type must carry [AccessorProfile].
+                var profileAttrs = profileType.GetAttributes();
+                var hasProfile = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == AccessorProfileAttributeName);
+                if (!hasProfile)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ExecuteConfigProfileInvalid,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name,
+                        profileType.ToDisplayString()));
+                }
+                // SDA0147: the profile itself must not have [ExecuteConfig] (would be circular).
+                var profileHasConfig = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName);
+                if (profileHasConfig)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ProfileCircularReference,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        profileType.Name));
+                }
+            }
         }
 
         var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
+
+        // SDA0184: [Provider] is set but no Pattern B method consumes IConnectionFactory.Create(name).
+        if (providerName is not null && methods.Count > 0 && !requiresFactory)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.ProviderOnPatternAOnlyAccessor,
+                classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                classSymbol.Name,
+                providerName));
+        }
 
         return new AccessorModelLegacy(
             ns,
@@ -747,6 +980,22 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         foreach (var i in type.AllInterfaces)
         {
             if (SymbolEqualityComparer.Default.Equals(i, iface))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool HasUserDeclaredFieldOrProperty(INamedTypeSymbol classSymbol, string name)
+    {
+        foreach (var member in classSymbol.GetMembers(name))
+        {
+            if (member.IsImplicitlyDeclared)
+            {
+                continue;
+            }
+            if (member is IFieldSymbol or IPropertySymbol)
             {
                 return true;
             }
@@ -2135,6 +2384,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
 
         IReadOnlyList<INode> nodes;
+        IReadOnlyList<string> unknownPragmas;
         try
         {
             var tokenizer = new SqlTokenizer(sql);
@@ -2142,11 +2392,31 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var normalized = SqlTokenNormalizer.Normalize(tokens);
             var builder = new NodeBuilder(normalized);
             nodes = builder.Build();
+            unknownPragmas = builder.UnknownPragmas;
         }
         catch (SqlTokenizerException ex)
         {
-            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlTokenizeFailed, member.Locations.FirstOrDefault(), member.Name, ex.Message));
+            var descriptor = ex.Kind switch
+            {
+                SqlTokenizerErrorKind.CommentNotClosed => Diagnostics.SqlCommentNotClosed,
+                SqlTokenizerErrorKind.QuoteNotClosed => Diagnostics.SqlQuoteNotClosed,
+                _ => Diagnostics.SqlTokenizeFailed,
+            };
+            object[] args = ex.Kind == SqlTokenizerErrorKind.Unknown
+                ? [member.Name, ex.Message]
+                : [member.Name];
+            context.ReportDiagnostic(Diagnostic.Create(descriptor, member.Locations.FirstOrDefault(), args));
             return (string.Empty, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+        }
+
+        // SDA0104: report any unknown pragmas '/*!xxx */' that survived parsing.
+        foreach (var pragmaName in unknownPragmas)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.SqlUnknownPragma,
+                member.Locations.FirstOrDefault(),
+                member.Name,
+                pragmaName));
         }
 
         // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas
@@ -2229,6 +2499,49 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UndefinedSqlParameter, member.Locations.FirstOrDefault(), member.Name, u));
         }
 
+        // SDA0112: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
+        var reportedProperty = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in nodes)
+        {
+            if (node is not ParameterNode pn)
+            {
+                continue;
+            }
+            var dot = pn.Name.IndexOf('.');
+            if (dot < 0)
+            {
+                continue;
+            }
+            var root = pn.Name[..dot];
+            var rest = pn.Name[(dot + 1)..];
+            var paramSymbol = member.Parameters.FirstOrDefault(p => string.Equals(p.Name, root, StringComparison.Ordinal));
+            if (paramSymbol is null)
+            {
+                continue; // SDA0110 already reported this root mismatch.
+            }
+            // Strip any nested dotted suffix; only validate the first hop.
+            var firstHop = rest;
+            var nextDot = rest.IndexOf('.');
+            if (nextDot >= 0)
+            {
+                firstHop = rest[..nextDot];
+            }
+            if (!HasPublicMember(paramSymbol.Type, firstHop))
+            {
+                var key = root + "." + firstHop;
+                if (reportedProperty.Add(key))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.SqlPropertyNotFound,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        root,
+                        firstHop,
+                        paramSymbol.Type.ToDisplayString()));
+                }
+            }
+        }
+
         // SDA0111: method parameter not referenced in SQL (Info only).
         var referenced = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
@@ -2291,6 +2604,35 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     {
         var dot = name.IndexOf('.');
         return dot < 0 ? name : name[..dot];
+    }
+
+    private static bool HasPublicMember(ITypeSymbol type, string name)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers(name))
+            {
+                if (member.DeclaredAccessibility != Accessibility.Public)
+                {
+                    continue;
+                }
+                if (member is IPropertySymbol or IFieldSymbol)
+                {
+                    return true;
+                }
+            }
+        }
+        foreach (var iface in type.AllInterfaces)
+        {
+            foreach (var member in iface.GetMembers(name))
+            {
+                if (member is IPropertySymbol)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static ParameterDirectionKindLegacy ToLegacyDirection(NodeEmitter.Direction d) => d switch

@@ -1,0 +1,1 @@
+SELECT Id FROM BenchData ORDER BY Id

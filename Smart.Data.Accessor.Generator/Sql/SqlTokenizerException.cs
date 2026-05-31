@@ -1,8 +1,17 @@
 namespace Smart.Data.Accessor.Generator.Sql;
 
+public enum SqlTokenizerErrorKind
+{
+    Unknown,
+    CommentNotClosed,
+    QuoteNotClosed,
+}
+
 [Serializable]
 public sealed class SqlTokenizerException : Exception
 {
+    public SqlTokenizerErrorKind Kind { get; }
+
     public SqlTokenizerException()
     {
     }
@@ -10,6 +19,12 @@ public sealed class SqlTokenizerException : Exception
     public SqlTokenizerException(string message)
         : base(message)
     {
+    }
+
+    public SqlTokenizerException(SqlTokenizerErrorKind kind, string message)
+        : base(message)
+    {
+        Kind = kind;
     }
 
     public SqlTokenizerException(string message, Exception innerException)

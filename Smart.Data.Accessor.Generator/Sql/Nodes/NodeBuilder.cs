@@ -12,6 +12,8 @@ public sealed class NodeBuilder
 
     private readonly List<INode> bodyNodes = [];
 
+    private readonly List<string> unknownPragmas = [];
+
     private readonly StringBuilder sql = new();
 
     private int current;
@@ -20,6 +22,8 @@ public sealed class NodeBuilder
     {
         this.tokens = tokens;
     }
+
+    public IReadOnlyList<string> UnknownPragmas => unknownPragmas;
 
     private Token? NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;
 
@@ -85,11 +89,22 @@ public sealed class NodeBuilder
         if (value.StartsWith("!helper", StringComparison.Ordinal))
         {
             AddPragmaNode(new UsingNode(true, value[7..].Trim()));
+            return;
         }
 
         if (value.StartsWith("!using", StringComparison.Ordinal))
         {
             AddPragmaNode(new UsingNode(false, value[6..].Trim()));
+            return;
+        }
+
+        // SDA0104: unknown pragma '/*!xxx */'
+        if (value.StartsWith("!", StringComparison.Ordinal))
+        {
+            var pragmaToken = value[1..];
+            var spaceIndex = pragmaToken.IndexOf(' ');
+            unknownPragmas.Add(spaceIndex >= 0 ? pragmaToken[..spaceIndex] : pragmaToken);
+            return;
         }
 
         // Code

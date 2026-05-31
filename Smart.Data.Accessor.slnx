@@ -24,6 +24,7 @@
   <Folder Name="/Test/">
   </Folder>
   <Folder Name="/Benchmark/">
+    <Project Path="Smart.Data.Accessor.Benchmark/Smart.Data.Accessor.Benchmark.csproj" />
   </Folder>
   <Folder Name="/Example/">
     <Project Path="Example.ConsoleApplication/Example.ConsoleApplication.csproj" />

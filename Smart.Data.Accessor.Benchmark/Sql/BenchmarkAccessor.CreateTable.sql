@@ -1,0 +1,12 @@
+CREATE TABLE BenchData (
+    Id INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL,
+    Age INTEGER NOT NULL,
+    Score REAL NOT NULL,
+    Active INTEGER NOT NULL,
+    Status INTEGER NOT NULL,
+    Description TEXT NOT NULL,
+    Category INTEGER NOT NULL,
+    Tag TEXT NOT NULL,
+    Weight REAL NOT NULL
+)
