@@ -3,16 +3,18 @@ namespace Smart.Data.Accessor.Benchmark;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
 
-using Microsoft.Data.Sqlite;
+using Dapper;
 
-using Smart.Data.Accessor.Connection;
+using Smart.Mock.Data;
 
 [SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet requires benchmark configuration types to be public.")]
 public class BenchmarkConfig : ManualConfig
@@ -20,52 +22,99 @@ public class BenchmarkConfig : ManualConfig
     public BenchmarkConfig()
     {
         AddExporter(MarkdownExporter.GitHub);
-        AddDiagnoser(MemoryDiagnoser.Default);
-        AddJob(Job.ShortRun);
+        AddColumn(
+            StatisticColumn.Mean,
+            StatisticColumn.Min,
+            StatisticColumn.Max,
+            StatisticColumn.P90,
+            StatisticColumn.Error,
+            StatisticColumn.StdDev);
+        AddDiagnoser(
+            MemoryDiagnoser.Default,
+            new DisassemblyDiagnoser(new DisassemblyDiagnoserConfig(
+                maxDepth: 3,
+                printSource: true,
+                printInstructionAddresses: true,
+                exportDiff: true)));
+        AddJob(Job.MediumRun);
     }
 }
 
 [Config(typeof(BenchmarkConfig))]
-[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Connection is disposed in [GlobalCleanup]; BenchmarkDotNet manages benchmark instance lifecycle.")]
+[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Mock connections are disposed in [GlobalCleanup]; BenchmarkDotNet manages benchmark instance lifecycle.")]
 [SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet requires benchmark classes to be public.")]
 public class QueryBenchmark
 {
     private const int RowCount = 100;
 
-    private const string ConnectionString = "Data Source=file:bench-mem-db?mode=memory&cache=shared";
+    private MockRepeatDbConnection mockInt = default!;
+    private MockRepeatDbConnection mockWide = default!;
+    private MockRepeatDbConnection mockEnum = default!;
 
-    private SqliteConnection connection = default!;
     private BenchmarkAccessor accessor = default!;
 
     [GlobalSetup]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "MockDataReader ownership is transferred to MockRepeatDbConnection; readers are disposed transitively when the mock connections are disposed in [GlobalCleanup].")]
     public void Setup()
     {
-        connection = new SqliteConnection(ConnectionString);
-        connection.Open();
+        mockInt = new MockRepeatDbConnection(new MockDataReader(
+            [
+                new MockColumn(typeof(long), "Id"),
+            ],
+            Enumerable.Range(1, RowCount).Select(static x => new object[]
+            {
+                (long)x,
+            })));
 
-        accessor = new BenchmarkAccessor(new SharedSqliteConnectionFactory(ConnectionString));
-        accessor.CreateTable();
+        mockWide = new MockRepeatDbConnection(new MockDataReader(
+            [
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(int), "Age"),
+                new MockColumn(typeof(double), "Score"),
+                new MockColumn(typeof(bool), "Active"),
+                new MockColumn(typeof(int), "Status"),
+                new MockColumn(typeof(string), "Description"),
+                new MockColumn(typeof(int), "Category"),
+                new MockColumn(typeof(string), "Tag"),
+                new MockColumn(typeof(double), "Weight"),
+            ],
+            Enumerable.Range(1, RowCount).Select(static x => new object[]
+            {
+                (long)x,
+                $"Name-{x}",
+                x % 80,
+                x * 1.5,
+                (x % 2) == 0,
+                x % 4,
+                $"Description-{x}",
+                x % 8,
+                $"Tag-{x}",
+                x * 0.25,
+            })));
 
-        for (var i = 1; i <= RowCount; i++)
-        {
-            accessor.InsertRow(
-                id: i,
-                name: $"Name-{i}",
-                age: i % 80,
-                score: i * 1.5,
-                active: (i % 2) == 0,
-                status: i % 4,
-                description: $"Description-{i}",
-                category: i % 8,
-                tag: $"Tag-{i}",
-                weight: i * 0.25);
-        }
+        mockEnum = new MockRepeatDbConnection(new MockDataReader(
+            [
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(int), "Status"),
+            ],
+            Enumerable.Range(1, RowCount).Select(static x => new object[]
+            {
+                (long)x,
+                $"Name-{x}",
+                x % 4,
+            })));
+
+        accessor = new BenchmarkAccessor();
     }
 
     [GlobalCleanup]
     public void Cleanup()
     {
-        connection.Dispose();
+        mockInt.Dispose();
+        mockWide.Dispose();
+        mockEnum.Dispose();
     }
 
     // -----------------------------------------------------------------
@@ -73,78 +122,101 @@ public class QueryBenchmark
     // -----------------------------------------------------------------
 
     [Benchmark(Description = "Case1: Generator (1-col int)")]
-    public IReadOnlyList<BenchIntRow> Case1Generator() => accessor.QueryInt();
+    public IReadOnlyList<BenchIntRow> Case1Generator() => accessor.QueryInt(mockInt);
 
     [Benchmark(Description = "Case1: Manual ADO.NET (1-col int)")]
     public List<BenchIntRow> Case1Manual()
     {
         var list = new List<BenchIntRow>();
-        using var cmd = connection.CreateCommand();
+        using var cmd = mockInt.CreateCommand();
         cmd.CommandText = "SELECT Id FROM BenchData ORDER BY Id";
         using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        var ordId = reader.GetOrdinal("Id");
         while (reader.Read())
         {
-            list.Add(new BenchIntRow { Id = reader.GetInt64(0) });
+            list.Add(new BenchIntRow { Id = reader.GetInt64(ordId) });
         }
         return list;
     }
+
+    [Benchmark(Description = "Case1: Dapper (1-col int)")]
+    public List<BenchIntRow> Case1Dapper() => mockInt.Query<BenchIntRow>("SELECT Id FROM BenchData ORDER BY Id").AsList();
 
     // -----------------------------------------------------------------
     // Case 2: 10-column mixed SELECT
     // -----------------------------------------------------------------
 
     [Benchmark(Description = "Case2: Generator (10-col mixed)")]
-    public IReadOnlyList<BenchWideRow> Case2Generator() => accessor.QueryWide();
+    public IReadOnlyList<BenchWideRow> Case2Generator() => accessor.QueryWide(mockWide);
 
     [Benchmark(Description = "Case2: Manual ADO.NET (10-col mixed)")]
     public List<BenchWideRow> Case2Manual()
     {
         var list = new List<BenchWideRow>();
-        using var cmd = connection.CreateCommand();
+        using var cmd = mockWide.CreateCommand();
         cmd.CommandText = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData ORDER BY Id";
         using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        var ordId = reader.GetOrdinal("Id");
+        var ordName = reader.GetOrdinal("Name");
+        var ordAge = reader.GetOrdinal("Age");
+        var ordScore = reader.GetOrdinal("Score");
+        var ordActive = reader.GetOrdinal("Active");
+        var ordStatus = reader.GetOrdinal("Status");
+        var ordDescription = reader.GetOrdinal("Description");
+        var ordCategory = reader.GetOrdinal("Category");
+        var ordTag = reader.GetOrdinal("Tag");
+        var ordWeight = reader.GetOrdinal("Weight");
         while (reader.Read())
         {
             list.Add(new BenchWideRow
             {
-                Id = reader.GetInt64(0),
-                Name = reader.GetString(1),
-                Age = reader.GetInt32(2),
-                Score = reader.GetDouble(3),
-                Active = reader.GetInt32(4) != 0,
-                Status = reader.GetInt32(5),
-                Description = reader.GetString(6),
-                Category = reader.GetInt32(7),
-                Tag = reader.GetString(8),
-                Weight = reader.GetDouble(9),
+                Id = reader.GetInt64(ordId),
+                Name = reader.GetString(ordName),
+                Age = reader.GetInt32(ordAge),
+                Score = reader.GetDouble(ordScore),
+                Active = reader.GetBoolean(ordActive),
+                Status = reader.GetInt32(ordStatus),
+                Description = reader.GetString(ordDescription),
+                Category = reader.GetInt32(ordCategory),
+                Tag = reader.GetString(ordTag),
+                Weight = reader.GetDouble(ordWeight),
             });
         }
         return list;
     }
+
+    [Benchmark(Description = "Case2: Dapper (10-col mixed)")]
+    public List<BenchWideRow> Case2Dapper() => mockWide.Query<BenchWideRow>("SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData ORDER BY Id").AsList();
 
     // -----------------------------------------------------------------
     // Case 3: SELECT containing enum column
     // -----------------------------------------------------------------
 
     [Benchmark(Description = "Case3: Generator (enum)")]
-    public IReadOnlyList<BenchEnumRow> Case3Generator() => accessor.QueryWithEnum();
+    public IReadOnlyList<BenchEnumRow> Case3Generator() => accessor.QueryWithEnum(mockEnum);
 
     [Benchmark(Description = "Case3: Manual ADO.NET (enum)")]
     public List<BenchEnumRow> Case3Manual()
     {
         var list = new List<BenchEnumRow>();
-        using var cmd = connection.CreateCommand();
+        using var cmd = mockEnum.CreateCommand();
         cmd.CommandText = "SELECT Id, Name, Status FROM BenchData ORDER BY Id";
         using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        var ordId = reader.GetOrdinal("Id");
+        var ordName = reader.GetOrdinal("Name");
+        var ordStatus = reader.GetOrdinal("Status");
         while (reader.Read())
         {
             list.Add(new BenchEnumRow
             {
-                Id = reader.GetInt64(0),
-                Name = reader.GetString(1),
-                Status = (BenchStatus)reader.GetInt32(2),
+                Id = reader.GetInt64(ordId),
+                Name = reader.GetString(ordName),
+                Status = (BenchStatus)reader.GetInt32(ordStatus),
             });
         }
         return list;
     }
+
+    [Benchmark(Description = "Case3: Dapper (enum)")]
+    public List<BenchEnumRow> Case3Dapper() => mockEnum.Query<BenchEnumRow>("SELECT Id, Name, Status FROM BenchData ORDER BY Id").AsList();
 }

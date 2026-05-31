@@ -10,15 +10,38 @@ internal static class NodeEmitter
     {
         public string Code { get; }
 
+        /// <summary>
+        /// Non-null when the SQL has no dynamic branches (no CodeNode / RawSqlNode and
+        /// no multi-value /*@ list */ parameter). In that case the literal SQL text is
+        /// pre-built at code-gen time and emitted as `cmd.CommandText = "..."`,
+        /// bypassing <c>StringBuilderPool.Rent</c> / <c>Return</c> at runtime.
+        /// </summary>
+        public string? StaticSqlText { get; }
+
+        /// <summary>
+        /// Parameter setup code (AddInParameter / AddOutParameter etc.) used when
+        /// <see cref="StaticSqlText"/> is non-null. Indented with 8 spaces so it can be
+        /// emitted directly at method-body level (no enclosing try block).
+        /// </summary>
+        public string StaticParameterCode { get; }
+
         public IReadOnlyList<string> UndefinedParameters { get; }
 
         public bool RequiresIEnumerable { get; }
 
         public IReadOnlyList<OutputBinding> OutputBindings { get; }
 
-        public EmitResult(string code, IReadOnlyList<string> undefined, bool requiresIEnumerable, IReadOnlyList<OutputBinding> outputBindings)
+        public EmitResult(
+            string code,
+            string? staticSqlText,
+            string staticParameterCode,
+            IReadOnlyList<string> undefined,
+            bool requiresIEnumerable,
+            IReadOnlyList<OutputBinding> outputBindings)
         {
             Code = code;
+            StaticSqlText = staticSqlText;
+            StaticParameterCode = staticParameterCode;
             UndefinedParameters = undefined;
             RequiresIEnumerable = requiresIEnumerable;
             OutputBindings = outputBindings;
@@ -77,10 +100,22 @@ internal static class NodeEmitter
         char bindMarker)
     {
         var sb = new StringBuilder();
+        var sbStaticParam = new StringBuilder();
+        var staticSql = new StringBuilder();
+        var hasDynamicSql = false;
         var undefined = new List<string>();
         var requiresIEnumerable = false;
         var outputBindings = new List<OutputBinding>();
         var counter = 0;
+
+        // Emit a parameter-binding line into both buffers with the appropriate indent
+        // (12 spaces inside the StringBuilderPool try-block, 8 spaces at method-body
+        // level when the static SQL fast path is used).
+        void EmitParamLine(string line)
+        {
+            sb.Append("            ").AppendLine(line);
+            sbStaticParam.Append("        ").AppendLine(line);
+        }
 
         foreach (var node in nodes)
         {
@@ -90,6 +125,7 @@ internal static class NodeEmitter
                     if (!string.IsNullOrEmpty(s.Sql))
                     {
                         sb.Append("            __sb.Append(\"").Append(Escape(s.Sql)).AppendLine("\");");
+                        staticSql.Append(s.Sql);
                     }
                     break;
 
@@ -119,6 +155,9 @@ internal static class NodeEmitter
                         && attrs.ProviderValueExpr is not null;
                     if (p.IsMultiple)
                     {
+                        // /*@ list */ expands to a comma-separated placeholder list whose
+                        // arity depends on the IEnumerable count -> SQL text is dynamic.
+                        hasDynamicSql = true;
                         requiresIEnumerable = true;
                         sb.Append("            __sb.Append(global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameters(cmd, \"")
                             .Append(pname)
@@ -130,6 +169,7 @@ internal static class NodeEmitter
                     else if (direction == Direction.Input)
                     {
                         sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
+                        staticSql.Append(pname);
                         if (hasProvider)
                         {
                             // Skip the positional DbType? slot — provider-specific assignment
@@ -138,28 +178,13 @@ internal static class NodeEmitter
                             var providerSizeArg = attrs?.Size is { } pSz
                                 ? ", size: " + pSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
                                 : string.Empty;
-                            sb.Append("            ((")
-                                .Append(attrs!.ProviderParameterTypeFullName)
-                                .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
-                                .Append(pname)
-                                .Append("\", ")
-                                .Append(valueExpr)
-                                .Append(providerSizeArg)
-                                .Append(")).")
-                                .Append(attrs.ProviderPropertyName)
-                                .Append(" = ")
-                                .Append(attrs.ProviderValueExpr)
-                                .AppendLine(";");
+                            EmitParamLine(
+                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
                         }
                         else
                         {
-                            sb.Append("            global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
-                                .Append(pname)
-                                .Append("\", ")
-                                .Append(valueExpr)
-                                .Append(dbTypeArg)
-                                .Append(sizeArg)
-                                .AppendLine(");");
+                            EmitParamLine(
+                                $"global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
                         }
                     }
                     else
@@ -169,63 +194,40 @@ internal static class NodeEmitter
                         var handle = attrs?.OutputHandleName ?? $"__op_{p.Name}";
                         outputBindings.Add(new OutputBinding(p.Name, handle, direction));
                         sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
+                        staticSql.Append(pname);
                         switch (direction)
                         {
                             case Direction.Output:
-                                sb.Append("            ")
-                                    .Append(handle)
-                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
-                                    .Append(pname)
-                                    .Append("\", ")
-                                    .Append(dbTypeExpr)
-                                    .Append(sizeArg)
-                                    .AppendLine(");");
+                                EmitParamLine(
+                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"{pname}\", {dbTypeExpr}{sizeArg});");
                                 break;
                             case Direction.InputOutput:
-                                sb.Append("            ")
-                                    .Append(handle)
-                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
-                                    .Append(pname)
-                                    .Append("\", ")
-                                    .Append(valueExpr)
-                                    .Append(", ")
-                                    .Append(dbTypeExpr)
-                                    .Append(sizeArg)
-                                    .AppendLine(");");
+                                EmitParamLine(
+                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"{pname}\", {valueExpr}, {dbTypeExpr}{sizeArg});");
                                 break;
                             case Direction.ReturnValue:
-                                sb.Append("            ")
-                                    .Append(handle)
-                                    .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"")
-                                    .Append(pname)
-                                    .Append("\", ")
-                                    .Append(dbTypeExpr)
-                                    .AppendLine(");");
+                                EmitParamLine(
+                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"{pname}\", {dbTypeExpr});");
                                 break;
                         }
                         if (hasProvider && direction is Direction.Output or Direction.InputOutput)
                         {
-                            sb.Append("            ((")
-                                .Append(attrs!.ProviderParameterTypeFullName)
-                                .Append(')')
-                                .Append(handle)
-                                .Append(").")
-                                .Append(attrs.ProviderPropertyName)
-                                .Append(" = ")
-                                .Append(attrs.ProviderValueExpr)
-                                .AppendLine(";");
+                            EmitParamLine(
+                                $"(({attrs!.ProviderParameterTypeFullName}){handle}).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
                         }
                     }
                     break;
                 }
 
                 case RawSqlNode r:
+                    hasDynamicSql = true;
                     sb.Append("            __sb.Append((")
                         .Append(r.Source)
                         .AppendLine(")?.ToString() ?? string.Empty);");
                     break;
 
                 case CodeNode c:
+                    hasDynamicSql = true;
                     sb.Append("            ").AppendLine(c.Code);
                     break;
 
@@ -237,7 +239,13 @@ internal static class NodeEmitter
             }
         }
 
-        return new EmitResult(sb.ToString(), undefined, requiresIEnumerable, outputBindings);
+        return new EmitResult(
+            sb.ToString(),
+            hasDynamicSql ? null : staticSql.ToString(),
+            hasDynamicSql ? string.Empty : sbStaticParam.ToString(),
+            undefined,
+            requiresIEnumerable,
+            outputBindings);
     }
 
     private static string ExtractRoot(string name)

@@ -82,7 +82,10 @@ internal sealed record ColumnInfoLegacy(
     string? TypedReaderMethod,
     bool IsValueType,
     bool IsNullable,
-    string? EnumCastTypeFullName);
+    string? EnumCastTypeFullName,
+    // Opt-in via [NotNullColumn]: Generator skips IsDBNull and calls Get{Type}() directly.
+    // The provider throws InvalidCastException if the column is actually DB NULL.
+    bool SkipNullCheck = false);
 
 // spec §1.4 F12 / §6.3: /*!helper Foo.Bar */ → using static Foo.Bar;
 // /*!using Foo */ → using Foo; Aggregated per-Accessor at file header emission.
@@ -102,6 +105,10 @@ internal sealed record MethodModelLegacy(
     string? BuilderMethodName,
     string? EmbeddedSql,
     string? SqlEmitCode,
+    // Non-null when SQL has no dynamic branches: literal SQL text and parameter setup
+    // code (8-space indented) that bypass StringBuilderPool.
+    string? StaticSqlText,
+    string? StaticParameterCode,
     IReadOnlyList<ColumnInfoLegacy>? QueryColumns,
     int? CommandTimeoutSeconds,
     ConnectionPatternLegacy ConnectionPattern,

@@ -28,6 +28,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private const string QueryFirstAttributeName = "Smart.Data.Accessor.Attributes.QueryFirstAttribute";
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
     private const string IgnoreAttributeName = "Smart.Data.Accessor.Attributes.IgnoreAttribute";
+    private const string NotNullColumnAttributeName = "Smart.Data.Accessor.Attributes.NotNullColumnAttribute";
     private const string DbTypeAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
     // spec §1.4 F15 / §5.3 / §5.3.1: Roslyn renders the generic original definition as
     // "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>" via ToDisplayString().
@@ -643,6 +644,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
             // Tokenize & emit SQL when a literal SQL is provided (no Builder).
             string? sqlEmitCode = null;
+            string? staticSqlText = null;
+            string? staticParameterCode = null;
             IReadOnlyList<OutputBindingLegacy> outputBindings = Array.Empty<OutputBindingLegacy>();
             IReadOnlyList<UsingDirectiveLegacy> methodUsings = Array.Empty<UsingDirectiveLegacy>();
             string? directSqlParameterName = null;
@@ -764,7 +767,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             else if (sql is not null && builder is null)
             {
-                (sqlEmitCode, outputBindings, methodUsings) = BuildSqlEmitCode(context, member, parameters, sql, methodMarker, compilation);
+                (sqlEmitCode, staticSqlText, staticParameterCode, outputBindings, methodUsings) = BuildSqlEmitCode(context, member, parameters, sql, methodMarker, compilation);
             }
             else if (procedureName is not null)
             {
@@ -796,6 +799,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 builder,
                 sql,
                 sqlEmitCode,
+                staticSqlText,
+                staticParameterCode,
                 queryColumns,
                 commandTimeout,
                 connectionPattern,
@@ -1291,16 +1296,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     continue;
                 }
-                if (prop.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+                var propAttrs = prop.GetAttributes();
+                if (propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
                 {
                     continue;
                 }
-                var column = prop.GetAttributes()
+                var column = propAttrs
                     .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
                     ?.ConstructorArguments.FirstOrDefault().Value as string ?? param.Name;
                 var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(param.Type);
-                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast));
+                var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
+                    || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
+                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck));
             }
             return (ctorInfos, true);
         }
@@ -1312,18 +1320,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 continue;
             }
+            var propAttrs = prop.GetAttributes();
             // [Ignore] now means exclude everywhere (phase 2 §2.3).
-            if (prop.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+            if (propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
             {
                 continue;
             }
             var name = prop.Name;
-            var column = prop.GetAttributes()
+            var column = propAttrs
                 .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
                 ?.ConstructorArguments.FirstOrDefault().Value as string ?? name;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(prop.Type);
-            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast));
+            var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
+            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck));
         }
         return (infos, false);
     }
@@ -1812,20 +1822,35 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     .AppendLine(" = null!;");
             }
 
-            // Tokenized 2-way SQL → emit StringBuilder build code.
-            sb.AppendLine("        var __sb = global::Smart.Data.Accessor.Engine.StringBuilderPool.Rent();");
-            sb.AppendLine("        try");
-            sb.AppendLine("        {");
-            if (!string.IsNullOrEmpty(m.SqlEmitCode))
+            if (m.StaticSqlText is not null)
             {
-                sb.Append(m.SqlEmitCode);
+                // Static SQL fast path: no dynamic branches → emit literal CommandText
+                // and parameter setup without StringBuilderPool / try-finally.
+                sb.Append("        cmd.CommandText = \"")
+                    .Append(EscapeCSharpString(m.StaticSqlText))
+                    .AppendLine("\";");
+                if (!string.IsNullOrEmpty(m.StaticParameterCode))
+                {
+                    sb.Append(m.StaticParameterCode);
+                }
             }
-            sb.AppendLine("            cmd.CommandText = __sb.ToString();");
-            sb.AppendLine("        }");
-            sb.AppendLine("        finally");
-            sb.AppendLine("        {");
-            sb.AppendLine("            global::Smart.Data.Accessor.Engine.StringBuilderPool.Return(__sb);");
-            sb.AppendLine("        }");
+            else
+            {
+                // Tokenized 2-way SQL → emit StringBuilder build code.
+                sb.AppendLine("        var __sb = global::Smart.Data.Accessor.Engine.StringBuilderPool.Rent();");
+                sb.AppendLine("        try");
+                sb.AppendLine("        {");
+                if (!string.IsNullOrEmpty(m.SqlEmitCode))
+                {
+                    sb.Append(m.SqlEmitCode);
+                }
+                sb.AppendLine("            cmd.CommandText = __sb.ToString();");
+                sb.AppendLine("        }");
+                sb.AppendLine("        finally");
+                sb.AppendLine("        {");
+                sb.AppendLine("            global::Smart.Data.Accessor.Engine.StringBuilderPool.Return(__sb);");
+                sb.AppendLine("        }");
+            }
         }
 
         EmitInvocation(sb, m, ctExpr);
@@ -2112,7 +2137,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         else
         {
             sb.AppendLine(ownsConnection
-                ? "        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader(), connection);"
+                ? "        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess), connection);"
                 : $"        return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader({behaviorArg}));");
         }
     }
@@ -2209,59 +2234,88 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
 
         // Query (spec §7.10.4 OrdinalCache + §16.3 type-specific reader methods).
+        // Generator inlines the read loop directly (no ExecuteEngine.QueryBuffer / QueryFirstOrDefault
+        // call) so the JIT can specialise the row materialisation and avoid per-row delegate dispatch.
         var ordStruct = OrdinalStructName(m);
-        var ordFactory = BuildOrdFactoryLambda(m);
-        var mapLambda = BuildMapLambda(m);
+        var entityBody = BuildEntityCreationBody(m, "__reader", "__o");
         switch (m.ReturnShapeLegacy)
         {
             case ReturnShapeLegacy.List:
-                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBuffer<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda});");
-                break;
-            case ReturnShapeLegacy.TaskList:
-                sb.AppendLine($"        return await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryBufferAsync<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda}, {ctExpr}).ConfigureAwait(false);");
-                break;
-            case ReturnShapeLegacy.IteratorEnumerable:
-            {
-                // §7.8.1 F13: Generator emits the iteration loop directly (no QueryBuffer).
-                // OrdinalCache is captured once after the first row arrives.
-                var body = BuildEntityCreationBody(m, "__reader", "__o");
-                sb.AppendLine("        using var __reader = cmd.ExecuteReader();");
+                sb.AppendLine("        using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);");
+                sb.AppendLine($"        var __list = new global::System.Collections.Generic.List<{m.ElementTypeFullName}>();");
                 sb.AppendLine("        if (__reader.Read())");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
                 sb.AppendLine("            do");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                yield return {body};");
+                sb.AppendLine($"                __list.Add({entityBody});");
                 sb.AppendLine("            }");
                 sb.AppendLine("            while (__reader.Read());");
                 sb.AppendLine("        }");
+                sb.AppendLine("        return __list;");
                 break;
-            }
-            case ReturnShapeLegacy.AsyncEnumerable:
-            {
-                // §7.8.1 F13: Generator emits `await foreach` + `yield return` directly.
-                // The user's CancellationToken parameter must be annotated [EnumeratorCancellation]
-                // (SDA0198 warns when missing).
-                var body = BuildEntityCreationBody(m, "__reader", "__o");
-                sb.AppendLine($"        using var __reader = await cmd.ExecuteReaderAsync({ctExpr}).ConfigureAwait(false);");
+            case ReturnShapeLegacy.TaskList:
+                sb.AppendLine($"        using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, {ctExpr}).ConfigureAwait(false);");
+                sb.AppendLine($"        var __list = new global::System.Collections.Generic.List<{m.ElementTypeFullName}>();");
                 sb.AppendLine($"        if (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false))");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
                 sb.AppendLine("            do");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                yield return {body};");
+                sb.AppendLine($"                __list.Add({entityBody});");
+                sb.AppendLine("            }");
+                sb.AppendLine($"            while (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false));");
+                sb.AppendLine("        }");
+                sb.AppendLine("        return __list;");
+                break;
+            case ReturnShapeLegacy.IteratorEnumerable:
+                // §7.8.1 F13: emit a per-row `yield return` (no buffered list).
+                // OrdinalCache is captured once after the first row arrives.
+                sb.AppendLine("        using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);");
+                sb.AppendLine("        if (__reader.Read())");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine("            do");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                yield return {entityBody};");
+                sb.AppendLine("            }");
+                sb.AppendLine("            while (__reader.Read());");
+                sb.AppendLine("        }");
+                break;
+            case ReturnShapeLegacy.AsyncEnumerable:
+                // §7.8.1 F13: emit `await ReadAsync` + `yield return` directly.
+                // The user's CancellationToken parameter must be annotated [EnumeratorCancellation]
+                // (SDA0198 warns when missing).
+                sb.AppendLine($"        using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, {ctExpr}).ConfigureAwait(false);");
+                sb.AppendLine($"        if (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine("            do");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                yield return {entityBody};");
                 sb.AppendLine("            }");
                 sb.AppendLine($"            while (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false));");
                 sb.AppendLine("        }");
                 break;
-            }
             case ReturnShapeLegacy.Scalar:
-                // QueryFirst-style: return single mapped item
-                sb.AppendLine($"        return global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefault<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda})!;");
+                // QueryFirst-style: return single mapped item, or default! when the reader is empty.
+                sb.AppendLine("        using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);");
+                sb.AppendLine("        if (__reader.Read())");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine($"            return {entityBody};");
+                sb.AppendLine("        }");
+                sb.AppendLine("        return default!;");
                 break;
             case ReturnShapeLegacy.TaskScalar:
             case ReturnShapeLegacy.ValueTaskScalar:
-                sb.AppendLine($"        return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.QueryFirstOrDefaultAsync<{m.ElementTypeFullName}, {ordStruct}>(cmd, {ordFactory}, {mapLambda}, {ctExpr}).ConfigureAwait(false))!;");
+                sb.AppendLine($"        using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, {ctExpr}).ConfigureAwait(false);");
+                sb.AppendLine($"        if (await __reader.ReadAsync({ctExpr}).ConfigureAwait(false))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var __o = {ordStruct}.From(__reader);");
+                sb.AppendLine($"            return {entityBody};");
+                sb.AppendLine("        }");
+                sb.AppendLine("        return default!;");
                 break;
             default:
                 sb.AppendLine("        // unsupported Query shape");
@@ -2271,9 +2325,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     // Emit either `new T { Prop = ..., ... }` (class/POCO) or `new T(name: ..., ...)`
     // (record primary ctor, spec §7.10.5). Ordinals come from the supplied OrdinalCache
-    // variable; column reads use type-specific reader methods (spec §16.3). Reused by both
-    // the lambda emit (BuildMapLambda) and the inline iterator emit
-    // (IteratorEnumerable / AsyncEnumerable).
+    // variable; column reads use type-specific reader methods (spec §16.3).
     private static string BuildEntityCreationBody(MethodModelLegacy m, string readerVar, string ordVar)
     {
         var sb = new StringBuilder();
@@ -2292,9 +2344,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 sb.Append(col.PropertyName).Append(useCtor ? ": " : " = ");
                 if (col.TypedReaderMethod is not null)
                 {
-                    // spec §7.10.1: non-nullable property receiving DB NULL falls through as default! (SDA0140).
-                    sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
-                      .Append(" ? default! : ");
+                    if (!col.SkipNullCheck)
+                    {
+                        // spec §7.10.1: non-nullable property receiving DB NULL falls through as default! (SDA0140).
+                        // [NotNullColumn] opts out of this check; provider throws InvalidCastException on actual NULL.
+                        sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
+                          .Append(" ? default! : ");
+                    }
                     if (col.EnumCastTypeFullName is not null)
                     {
                         // spec §7.9 / §7.10.3: Enum is read as its underlying primitive then cast back.
@@ -2315,12 +2371,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private static string OrdinalStructName(MethodModelLegacy m) => "__" + m.Name + "Ordinals";
-
-    private static string BuildMapLambda(MethodModelLegacy m) =>
-        "static (reader, __o) => " + BuildEntityCreationBody(m, "reader", "__o");
-
-    private static string BuildOrdFactoryLambda(MethodModelLegacy m) =>
-        "static reader => " + OrdinalStructName(m) + ".From(reader)";
 
     private static void EmitOrdinalCacheStruct(StringBuilder sb, MethodModelLegacy m)
     {
@@ -2369,7 +2419,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // 2-way SQL tokenization + emit (Phase 2 §3.1)
     //--------------------------------------------------------------------------------
 
-    private static (string Code, IReadOnlyList<OutputBindingLegacy> OutputBindings, IReadOnlyList<UsingDirectiveLegacy> Usings) BuildSqlEmitCode(
+    private static (string Code, string? StaticSqlText, string? StaticParameterCode, IReadOnlyList<OutputBindingLegacy> OutputBindings, IReadOnlyList<UsingDirectiveLegacy> Usings) BuildSqlEmitCode(
         SourceProductionContext context,
         IMethodSymbol member,
         IReadOnlyList<ParameterModelLegacy> parameters,
@@ -2380,7 +2430,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         if (string.IsNullOrWhiteSpace(sql))
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlEmpty, member.Locations.FirstOrDefault(), member.Name));
-            return (string.Empty, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+            return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
         }
 
         IReadOnlyList<INode> nodes;
@@ -2406,7 +2456,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ? [member.Name, ex.Message]
                 : [member.Name];
             context.ReportDiagnostic(Diagnostic.Create(descriptor, member.Locations.FirstOrDefault(), args));
-            return (string.Empty, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+            return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
         }
 
         // SDA0104: report any unknown pragmas '/*!xxx */' that survived parsing.
@@ -2581,7 +2631,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var bindings = result.OutputBindings
             .Select(static b => new OutputBindingLegacy(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
             .ToList();
-        return (result.Code, bindings, usings);
+        return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
     }
 
     private static bool NamespaceExists(Compilation compilation, string name)
@@ -2605,6 +2655,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var dot = name.IndexOf('.');
         return dot < 0 ? name : name[..dot];
     }
+
+    private static string EscapeCSharpString(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     private static bool HasPublicMember(ITypeSymbol type, string name)
     {
