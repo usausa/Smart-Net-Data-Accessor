@@ -8,6 +8,11 @@ internal static class NodeEmitter
 {
     public sealed class EmitResult
     {
+        /// <summary>
+        /// SQL build code lines (StringBuilderPool path), one statement per line, with no
+        /// leading indentation. The caller indents each line via SourceBuilder at its
+        /// current IndentLevel.
+        /// </summary>
         public string Code { get; }
 
         /// <summary>
@@ -19,9 +24,8 @@ internal static class NodeEmitter
         public string? StaticSqlText { get; }
 
         /// <summary>
-        /// Parameter setup code (AddInParameter / AddOutParameter etc.) used when
-        /// <see cref="StaticSqlText"/> is non-null. Indented with 8 spaces so it can be
-        /// emitted directly at method-body level (no enclosing try block).
+        /// Parameter setup code lines used when <see cref="StaticSqlText"/> is non-null.
+        /// One statement per line, with no leading indentation; caller controls indent.
         /// </summary>
         public string StaticParameterCode { get; }
 
@@ -108,13 +112,12 @@ internal static class NodeEmitter
         var outputBindings = new List<OutputBinding>();
         var counter = 0;
 
-        // Emit a parameter-binding line into both buffers with the appropriate indent
-        // (12 spaces inside the StringBuilderPool try-block, 8 spaces at method-body
-        // level when the static SQL fast path is used).
+        // Emit a parameter-binding line into both buffers. The output is indent-less;
+        // the caller indents each line via SourceBuilder at the appropriate IndentLevel.
         void EmitParamLine(string line)
         {
-            sb.Append("            ").AppendLine(line);
-            sbStaticParam.Append("        ").AppendLine(line);
+            sb.Append(line).Append('\n');
+            sbStaticParam.Append(line).Append('\n');
         }
 
         foreach (var node in nodes)
@@ -124,7 +127,7 @@ internal static class NodeEmitter
                 case SqlNode s:
                     if (!string.IsNullOrEmpty(s.Sql))
                     {
-                        sb.Append("            __sb.Append(\"").Append(Escape(s.Sql)).AppendLine("\");");
+                        sb.Append("__sb.Append(\"").Append(Escape(s.Sql)).Append("\");\n");
                         staticSql.Append(s.Sql);
                     }
                     break;
@@ -159,16 +162,16 @@ internal static class NodeEmitter
                         // arity depends on the IEnumerable count -> SQL text is dynamic.
                         hasDynamicSql = true;
                         requiresIEnumerable = true;
-                        sb.Append("            __sb.Append(global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameters(cmd, \"")
+                        sb.Append("__sb.Append(global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameters(cmd, \"")
                             .Append(pname)
                             .Append("\", ")
                             .Append(p.Name)
                             .Append(dbTypeArg)
-                            .AppendLine("));");
+                            .Append("));\n");
                     }
                     else if (direction == Direction.Input)
                     {
-                        sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
+                        sb.Append("__sb.Append(\"").Append(pname).Append("\");\n");
                         staticSql.Append(pname);
                         if (hasProvider)
                         {
@@ -193,7 +196,7 @@ internal static class NodeEmitter
                         var dbTypeExpr = attrs?.DbTypeExpr ?? "global::System.Data.DbType.Object";
                         var handle = attrs?.OutputHandleName ?? $"__op_{p.Name}";
                         outputBindings.Add(new OutputBinding(p.Name, handle, direction));
-                        sb.Append("            __sb.Append(\"").Append(pname).AppendLine("\");");
+                        sb.Append("__sb.Append(\"").Append(pname).Append("\");\n");
                         staticSql.Append(pname);
                         switch (direction)
                         {
@@ -221,14 +224,14 @@ internal static class NodeEmitter
 
                 case RawSqlNode r:
                     hasDynamicSql = true;
-                    sb.Append("            __sb.Append((")
+                    sb.Append("__sb.Append((")
                         .Append(r.Source)
-                        .AppendLine(")?.ToString() ?? string.Empty);");
+                        .Append(")?.ToString() ?? string.Empty);\n");
                     break;
 
                 case CodeNode c:
                     hasDynamicSql = true;
-                    sb.Append("            ").AppendLine(c.Code);
+                    sb.Append(c.Code).Append('\n');
                     break;
 
                 // UsingNode is consumed by DataAccessorGenerator at the AccessorModel
