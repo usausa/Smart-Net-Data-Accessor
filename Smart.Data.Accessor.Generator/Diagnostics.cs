@@ -118,6 +118,26 @@ internal static class Diagnostics
     // ------------------------------------------------------------------
     // Mapping diagnostics (SDA0140-0149).
     //
+    // TODO (spec §11.3.1, implementation-plan §Sprint 6.2):
+    //   The descriptors below are declared so the IDs stay reserved and
+    //   AnalyzerReleases tracks them, but the corresponding `ReportDiagnostic`
+    //   call sites in DataAccessorGenerator / Builders.Generator are NOT YET
+    //   wired up. The validation logic must be implemented before these
+    //   diagnostics actually fire:
+    //
+    //     SDA0140 NonNullableDbNull               — needs property-nullability + DB NULL flow analysis
+    //     SDA0141 ConverterTypeNotSupported       — needs [ConverterSupportedTypes] whitelist check
+    //     SDA0142 ConverterTClrMismatch           — needs `IValueConverter<TDb, TClr>` TClr vs property type
+    //     SDA0143 ConverterNotIValueConverter     — needs converter type implements IValueConverter<,>
+    //     SDA0144 ConverterStaticAbstractMissing  — needs static-abstract method resolution (Spike done)
+    //     SDA0145 TypeHandlerDuplicated           — needs multi-[TypeHandler<>] detection per property
+    //     SDA0149 EnumUnderlyingMismatch          — needs enum-underlying vs column type check
+    //
+    //   Already wired:
+    //     SDA0146 ExecuteConfigProfileInvalid     ← DataAccessorGenerator.cs
+    //     SDA0147 ProfileCircularReference        ← DataAccessorGenerator.cs
+    //     SDA0148 TypeMapTypeHandlerConflict      ← Builders.Generator/Mapping.cs
+    //
     // Spike result (spec §15 #7):
     //   Roslyn surfaces `static abstract` interface members as
     //   `IMethodSymbol.IsAbstract == true && IsStatic == true`.
