@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Generator;
+namespace Smart.Data.Accessor.Builders.Generator.Engine;
 
 using System.Collections.Generic;
 
@@ -8,8 +8,7 @@ using SourceGenerateHelper;
 
 /// <summary>
 /// Resolves <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeMap]</c> for Builder parameter emission
-/// (spec §7.4 / §7.12). <see cref="QueryBuilderGenerator"/> dispatches through this helper so the
-/// conversion logic stays in one place.
+/// (spec §7.4 / §7.12). Shared source (linked into each builder generator assembly).
 /// </summary>
 internal static class MappingResolver
 {
@@ -17,11 +16,6 @@ internal static class MappingResolver
     private const string TypeHandlerNonGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute";
     private const string TypeMapAttributeFq = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
 
-    /// <summary>
-    /// Resolves the converter type referenced by any <c>[TypeHandler&lt;&gt;]</c> attribute (or
-    /// a derived marker attribute that ultimately inherits from <c>TypeHandlerAttribute&lt;&gt;</c>,
-    /// spec §7.4.1) on the given property. Returns <c>null</c> when no handler is in effect.
-    /// </summary>
     public static INamedTypeSymbol? ResolveTypeHandler(IPropertySymbol prop)
     {
         foreach (var attr in prop.GetAttributes())
@@ -48,10 +42,6 @@ internal static class MappingResolver
         return null;
     }
 
-    /// <summary>
-    /// Reads all class-level <c>[TypeMap(typeof(T), DbType, Size = N)]</c> attributes on the
-    /// container into a CLR-type ⇒ map info dictionary (spec §7.12.1).
-    /// </summary>
     public static Dictionary<ITypeSymbol, TypeMapInfo> ReadTypeMaps(INamedTypeSymbol container)
     {
         var map = new Dictionary<ITypeSymbol, TypeMapInfo>(SymbolEqualityComparer.Default);
@@ -86,10 +76,6 @@ internal static class MappingResolver
         return map;
     }
 
-    /// <summary>
-    /// True if any <c>[TypeMap]</c> entry matches the property type (or its <c>Nullable&lt;T&gt;</c>
-    /// underlying type). Used for SDA0148 conflict detection.
-    /// </summary>
     public static bool HasTypeMapFor(ITypeSymbol propertyType, Dictionary<ITypeSymbol, TypeMapInfo> typeMaps)
     {
         if (typeMaps.ContainsKey(propertyType))
@@ -104,10 +90,6 @@ internal static class MappingResolver
         return false;
     }
 
-    /// <summary>
-    /// Looks up the <see cref="TypeMapInfo"/> entry for the property type, falling back to its
-    /// <c>Nullable&lt;T&gt;</c> underlying type.
-    /// </summary>
     public static bool TryGetTypeMap(
         ITypeSymbol propertyType,
         Dictionary<ITypeSymbol, TypeMapInfo> typeMaps,
@@ -131,17 +113,11 @@ internal static class MappingResolver
 internal readonly record struct TypeMapInfo(string DbTypeExpr, int? Size);
 
 /// <summary>
-/// Emits the <c>CreateParameter</c> block used by InsertBuilder / EntityBuilder Update / Delete /
-/// SelectSingle paths. Centralised so all parameter bindings honour <c>[TypeHandler]</c> /
-/// <c>[TypeMap]</c> uniformly (spec §7.4 / §7.12 / Sprint 6.4).
+/// Emits the parameter binding block honouring <c>[TypeHandler]</c> / <c>[TypeMap]</c>.
+/// Shared source (linked into each builder generator assembly).
 /// </summary>
 internal static class ParameterEmitter
 {
-    /// <summary>
-    /// Emit a single parameter binding line for an entity property.
-    /// Dispatches <c>[TypeHandler]</c> first, falls back to <c>[TypeMap]</c>, then plain assignment.
-    /// The line is written at <paramref name="builder"/>'s current IndentLevel.
-    /// </summary>
     public static void EmitEntityPropertyParameter(
         SourceBuilder builder,
         string paramMarkerName,
@@ -157,7 +133,7 @@ internal static class ParameterEmitter
         {
             // SDA0148: TypeHandler wins, but warn so the user knows the [TypeMap] is dead-letter.
             context.ReportDiagnostic(Diagnostic.Create(
-                Diagnostics.TypeMapTypeHandlerConflict,
+                BuilderDiagnostics.TypeMapTypeHandlerConflict,
                 reportLocation,
                 container.Name,
                 property.Type.ToDisplayString(),
@@ -180,11 +156,6 @@ internal static class ParameterEmitter
         builder.Append(" cmd.Parameters.Add(p); }").NewLine();
     }
 
-    /// <summary>
-    /// Emit a parameter binding line for a method-level parameter (e.g. <c>DeleteById(long id)</c>).
-    /// Method parameters do not carry <c>[TypeHandler]</c> in the current scope; only <c>[TypeMap]</c>
-    /// for the parameter's CLR type applies.
-    /// </summary>
     public static void EmitMethodParameterBinding(
         SourceBuilder builder,
         string paramMarkerName,
@@ -203,7 +174,6 @@ internal static class ParameterEmitter
     {
         var handlerFq = handler.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-        // Nullable<T> → split on HasValue so the converter receives the underlying T.
         if (propertyType is INamedTypeSymbol nt && nt.IsGenericType &&
             nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
         {
@@ -213,7 +183,6 @@ internal static class ParameterEmitter
             return;
         }
 
-        // Non-nullable value type — converter is always invoked, no DBNull path.
         if (propertyType.IsValueType)
         {
             builder.Append("p.Value = (object)")
@@ -221,7 +190,6 @@ internal static class ParameterEmitter
             return;
         }
 
-        // Reference type — null check at the property level.
         builder.Append("p.Value = ")
             .Append(valueExpr).Append(" is null ? global::System.DBNull.Value : (object)")
             .Append(handlerFq).Append(".ToDb(").Append(valueExpr).Append(");");
@@ -246,7 +214,6 @@ internal static class ParameterEmitter
             return;
         }
 
-        // spec §7.9: Enum default = cast to underlying primitive to avoid runtime Convert.ChangeType.
         if (TryGetEnumUnderlying(propertyType, out var underlyingFq, out var isNullableEnum))
         {
             if (isNullableEnum)

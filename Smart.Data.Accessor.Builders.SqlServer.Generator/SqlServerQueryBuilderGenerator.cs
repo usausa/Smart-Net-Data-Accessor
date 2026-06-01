@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Generator;
+namespace Smart.Data.Accessor.Builders.SqlServer.Generator;
 
 using System.Linq;
 
@@ -8,17 +8,14 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
 /// <summary>
-/// Default (ANSI) QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
-/// carrying the core <c>[Insert]</c>/<c>[Update]</c>/<c>[Delete]</c>/<c>[Count]</c>/<c>[Select]</c>/
-/// <c>[SelectSingle]</c>/<c>[Truncate]</c> attributes. All emit logic lives in the shared
-/// <see cref="QueryBuilderEngine"/>; this class only wires the attribute set + the ANSI dialect.
-/// Provider-specific generators (SqlServer / MySql / Postgres) follow the same pattern with their
-/// own dialect (Phase 7).
+/// SQL Server QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
+/// carrying the <c>[SqlServerInsert]</c>/…/<c>[SqlServerTruncate]</c> attributes, using bracket
+/// quoting and OFFSET/FETCH paging. All emit logic is the shared <see cref="QueryBuilderEngine"/>.
 /// </summary>
 [Generator]
-public sealed class QueryBuilderGenerator : IIncrementalGenerator
+public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Builders.";
+    private const string Ns = "Smart.Data.Accessor.Builders.SqlServer.SqlServer";
 
     private static readonly (string Attribute, QueryBuilderEngine.BuilderKind Kind)[] Targets =
     [
@@ -31,7 +28,7 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
         (Ns + "TruncateAttribute", QueryBuilderEngine.BuilderKind.Truncate),
     ];
 
-    private static readonly SqlDialect Dialect = new AnsiSqlDialect();
+    private static readonly SqlDialect Dialect = new SqlServerDialect();
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

@@ -1,8 +1,10 @@
-namespace Smart.Data.Accessor.Builders.Generator;
+namespace Smart.Data.Accessor.Builders.Generator.Engine;
 
 using Microsoft.CodeAnalysis;
 
-internal static class Diagnostics
+// Shared QueryBuilder diagnostic descriptors (linked into each builder generator assembly).
+// IDs are stable across providers; each generator assembly tracks them in its AnalyzerReleases.
+internal static class BuilderDiagnostics
 {
     public static readonly DiagnosticDescriptor InvalidContainer = new(
         id: "SDB0002",

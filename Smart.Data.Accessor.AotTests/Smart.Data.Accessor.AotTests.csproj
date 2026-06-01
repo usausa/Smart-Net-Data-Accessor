@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Smart.Data.Accessor.AotTests</RootNamespace>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Run the trim/AOT/single-file analyzers during a plain `dotnet build` (not just publish),
+         so AOT warnings surface in CI without the native toolchain. -->
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Resolver\Smart.Data.Accessor.Resolver.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- AOT note: `dotnet publish -r <rid>` emits IL2104/IL3053 for the third-party Smart.Resolver
+       assembly (the container is not AOT-annotated). This project's own code is AOT-warning-free.
+       The D-3 (Resolver) path is still runtime-safe under NativeAOT because UseDataAccessors() binds
+       accessors via explicit ToMethod/ToConstant factories (no reflective activation) — verified by
+       the native smoke. D-1 (built-in) and D-2 (M.E.DI) are fully AOT-clean. The warnings are NOT
+       suppressed (left visible by policy). -->
+
+  <!-- spec §3.2: pull **\Sql\*.sql into AdditionalFiles so the generator resolves SQL by filename. -->
+  <Import Project="..\Smart.Data.Accessor\buildTransitive\Smart.Data.Accessor.targets" />
+
+</Project>

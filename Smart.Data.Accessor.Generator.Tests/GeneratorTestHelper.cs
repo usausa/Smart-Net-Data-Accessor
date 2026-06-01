@@ -67,7 +67,14 @@ internal static class GeneratorTestHelper
             .ToImmutableArray();
 
         var driver = CSharpGeneratorDriver.Create(
-            generators: [new DataAccessorGenerator().AsSourceGenerator(), new QueryBuilderGenerator().AsSourceGenerator()],
+            generators:
+            [
+                new DataAccessorGenerator().AsSourceGenerator(),
+                new QueryBuilderGenerator().AsSourceGenerator(),
+                new global::Smart.Data.Accessor.Builders.SqlServer.Generator.SqlServerQueryBuilderGenerator().AsSourceGenerator(),
+                new global::Smart.Data.Accessor.Builders.MySql.Generator.MySqlQueryBuilderGenerator().AsSourceGenerator(),
+                new global::Smart.Data.Accessor.Builders.Postgres.Generator.PostgresQueryBuilderGenerator().AsSourceGenerator()
+            ],
             additionalTexts: additionalTexts,
             parseOptions: parseOptions);
 

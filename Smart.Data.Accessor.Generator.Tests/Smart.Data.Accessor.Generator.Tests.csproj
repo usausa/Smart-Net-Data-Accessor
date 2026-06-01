@@ -32,6 +32,13 @@
          the in-memory test compilations reference. -->
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders\Smart.Data.Accessor.Builders.csproj" />
+    <!-- Phase 7: per-provider builder generators + their attribute assemblies, loaded by the harness. -->
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.SqlServer\Smart.Data.Accessor.Builders.SqlServer.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.SqlServer.Generator\Smart.Data.Accessor.Builders.SqlServer.Generator.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.MySql\Smart.Data.Accessor.Builders.MySql.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.MySql.Generator\Smart.Data.Accessor.Builders.MySql.Generator.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.Postgres\Smart.Data.Accessor.Builders.Postgres.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Builders.Postgres.Generator\Smart.Data.Accessor.Builders.Postgres.Generator.csproj" />
   </ItemGroup>
 
 </Project>
