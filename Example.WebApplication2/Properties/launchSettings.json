@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Example.WebApplication2": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:38430;http://localhost:38431"
+    }
+  }
+}

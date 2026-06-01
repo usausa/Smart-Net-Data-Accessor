@@ -31,5 +31,7 @@
   </Folder>
   <Folder Name="/Example/">
     <Project Path="Example.ConsoleApplication/Example.ConsoleApplication.csproj" />
+    <Project Path="Example.WebApplication/Example.WebApplication.csproj" />
+    <Project Path="Example.WebApplication2/Example.WebApplication2.csproj" />
   </Folder>
 </Solution>
