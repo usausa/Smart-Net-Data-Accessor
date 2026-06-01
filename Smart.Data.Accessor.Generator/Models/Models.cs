@@ -85,7 +85,18 @@ internal sealed record ColumnInfoLegacy(
     string? EnumCastTypeFullName,
     // Opt-in via [NotNullColumn]: Generator skips IsDBNull and calls Get{Type}() directly.
     // The provider throws InvalidCastException if the column is actually DB NULL.
-    bool SkipNullCheck = false);
+    bool SkipNullCheck = false,
+    // spec §7.4 / §7.10: non-null when the property carries a valid [TypeHandler<>]; the mapping
+    // reads TDb from the reader and calls TConverter.FromDb(...) to produce the property value.
+    ConverterReadBinding? Converter = null);
+
+// spec §7.4 / §7.10: reader-side converter binding for a mapped column. The DB value is read as
+// TDb (via the typed reader method, or ExecuteHelper.GetValue<TDb> when none exists) then passed
+// to TConverter.FromDb to produce the CLR property value.
+internal sealed record ConverterReadBinding(
+    string ConverterTypeFullName,
+    string DbTypeFullName,
+    string? DbTypedReaderMethod);
 
 // spec §1.4 F12 / §6.3: /*!helper Foo.Bar */ → using static Foo.Bar;
 // /*!using Foo */ → using Foo; Aggregated per-Accessor at file header emission.

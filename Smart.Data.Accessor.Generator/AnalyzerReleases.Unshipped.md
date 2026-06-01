@@ -18,7 +18,7 @@ SDA0129 | Usage    | Error    | [DirectSql] method must not have a corresponding
 SDA0132 | Usage    | Error    | Duplicate [Name] on parameters or properties
 SDA0133 | Mapping  | Info     | Record entity is mapped via primary constructor
 SDA0134 | Usage    | Error    | [Execute] return type is not int/void/Task<int>/Task
-SDA0140 | Mapping  | Warning  | Non-nullable property may receive DB NULL
+SDA0140 | Mapping  | Info     | Non-nullable reference property may receive DB NULL
 SDA0141 | Mapping  | Error    | Property type not in [ConverterSupportedTypes]
 SDA0142 | Mapping  | Error    | Converter TClr does not match property type
 SDA0143 | Mapping  | Error    | Converter type does not implement IValueConverter<,>
@@ -26,8 +26,6 @@ SDA0144 | Mapping  | Error    | Converter type missing static abstract implement
 SDA0145 | Mapping  | Warning  | Multiple [TypeHandler] on same property
 SDA0146 | Mapping  | Error    | [ExecuteConfig] target is not an [AccessorProfile]
 SDA0147 | Mapping  | Error    | [AccessorProfile] class also has [ExecuteConfig] (circular)
-SDA0148 | Mapping  | Warning  | [TypeMap] DbType conflicts with [TypeHandler]
-SDA0149 | Mapping  | Warning  | Enum underlying type may not match DB column type
 SDA0152 | Builder  | Error    | Both SQL file and a QueryBuilder attribute are present (ambiguous)
 SDA0170 | Usage    | Error    | [DataAccessor] class must not be nested
 SDA0171 | Usage    | Error    | [DataAccessor] class must not be generic

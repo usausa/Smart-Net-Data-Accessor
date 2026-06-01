@@ -662,7 +662,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                var (cols, ctorPath) = BuildColumnInfos(mapTarget);
+                var (cols, ctorPath) = BuildColumnInfos(context, member, mapTarget);
                 queryColumns = cols;
                 useRecordPrimaryCtor = ctorPath;
                 if (ctorPath)
@@ -1289,8 +1289,41 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static (List<ColumnInfoLegacy> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(INamedTypeSymbol entity)
+    private static (List<ColumnInfoLegacy> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(
+        SourceProductionContext context, IMethodSymbol method, INamedTypeSymbol entity)
     {
+        // spec §7.4 / §7.10: resolve+validate a property's [TypeHandler<>] and, on success, build
+        // the reader-side binding (TDb read method + converter FQN). Returns null when absent/invalid.
+        ConverterReadBinding? ResolveConverterBinding(ISymbol member, ITypeSymbol type)
+        {
+            var conv = ConverterResolver.Resolve(context, method, member, type);
+            if (conv is null)
+            {
+                return null;
+            }
+            var (tdbReader, _, _, _) = ClassifyColumnType(conv.DbType);
+            return new ConverterReadBinding(
+                conv.ConverterTypeFullName,
+                conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                tdbReader);
+        }
+
+        // SDA0140 (Info): a non-nullable reference-type column read as DB NULL falls through as
+        // default! (i.e. null), an NRT hole. [NotNullColumn] opts out; converter-bound and value-type
+        // columns are excluded (a value-type default is benign).
+        void CheckNonNullableDbNull(ITypeSymbol type, string propName, bool skipNullCheck, ConverterReadBinding? converter)
+        {
+            if (converter is null && !skipNullCheck &&
+                type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.NotAnnotated)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.NonNullableDbNull,
+                    method.Locations.FirstOrDefault(),
+                    method.Name,
+                    propName));
+            }
+        }
+
         // spec §7.8 / §7.10.5: record with a primary constructor binds via positional
         // ctor invocation (`new T(name: ..., ...)`). The ordinal cache and column reads
         // are built from the primary ctor parameter list (in declaration order);
@@ -1318,7 +1351,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
                     || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
-                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck));
+                var converter = ResolveConverterBinding(prop, param.Type);
+                CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
+                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter));
             }
             return (ctorInfos, true);
         }
@@ -1343,7 +1378,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(prop.Type);
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
-            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck));
+            var converter = ResolveConverterBinding(prop, prop.Type);
+            CheckNonNullableDbNull(prop.Type, name, skipNullCheck, converter);
+            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter));
         }
         return (infos, false);
     }
@@ -2316,7 +2353,29 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
                 first = false;
                 sb.Append(col.PropertyName).Append(useCtor ? ": " : " = ");
-                if (col.TypedReaderMethod is not null)
+                if (col.Converter is { } conv)
+                {
+                    // spec §7.4 / §7.10: read TDb then convert via TConverter.FromDb. The DB NULL
+                    // guard mirrors the typed-reader path ([NotNullColumn] opts out).
+                    if (!col.SkipNullCheck)
+                    {
+                        sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
+                          .Append(" ? default! : ");
+                    }
+                    sb.Append(conv.ConverterTypeFullName).Append(".FromDb(");
+                    if (conv.DbTypedReaderMethod is not null)
+                    {
+                        sb.Append(readerVar).Append('.').Append(conv.DbTypedReaderMethod).Append('(').Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                    }
+                    else
+                    {
+                        sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
+                          .Append(conv.DbTypeFullName)
+                          .Append(">(").Append(readerVar).Append(", ").Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                    }
+                    sb.Append(')');
+                }
+                else if (col.TypedReaderMethod is not null)
                 {
                     if (!col.SkipNullCheck)
                     {

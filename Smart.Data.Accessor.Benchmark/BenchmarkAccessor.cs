@@ -18,4 +18,7 @@ public sealed partial class BenchmarkAccessor
 
     [Query]
     public partial IReadOnlyList<BenchEnumRow> QueryWithEnum(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<BenchTicksRow> QueryTicks(DbConnection con);
 }

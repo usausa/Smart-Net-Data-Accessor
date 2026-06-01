@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.Benchmark;
 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
@@ -50,6 +51,7 @@ public class QueryBenchmark
     private MockRepeatDbConnection mockInt = default!;
     private MockRepeatDbConnection mockWide = default!;
     private MockRepeatDbConnection mockEnum = default!;
+    private MockRepeatDbConnection mockTicks = default!;
 
     private BenchmarkAccessor accessor = default!;
 
@@ -106,6 +108,18 @@ public class QueryBenchmark
                 x % 4,
             })));
 
+        var baseTicks = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        mockTicks = new MockRepeatDbConnection(new MockDataReader(
+            [
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(long), "Created"),
+            ],
+            Enumerable.Range(1, RowCount).Select(x => new object[]
+            {
+                (long)x,
+                baseTicks + (x * TimeSpan.TicksPerSecond),
+            })));
+
         accessor = new BenchmarkAccessor();
     }
 
@@ -115,6 +129,7 @@ public class QueryBenchmark
         mockInt.Dispose();
         mockWide.Dispose();
         mockEnum.Dispose();
+        mockTicks.Dispose();
     }
 
     // -----------------------------------------------------------------
@@ -219,4 +234,31 @@ public class QueryBenchmark
 
     [Benchmark(Description = "Case3: Dapper (enum)")]
     public List<BenchEnumRow> Case3Dapper() => mockEnum.Query<BenchEnumRow>("SELECT Id, Name, Status FROM BenchData ORDER BY Id").AsList();
+
+    // -----------------------------------------------------------------
+    // Case 4: [TypeHandler<>] column (DateTime stored as Int64 ticks)
+    // -----------------------------------------------------------------
+
+    [Benchmark(Description = "Case4: Generator (TypeHandler)")]
+    public IReadOnlyList<BenchTicksRow> Case4Generator() => accessor.QueryTicks(mockTicks);
+
+    [Benchmark(Description = "Case4: Manual ADO.NET (TypeHandler)")]
+    public List<BenchTicksRow> Case4Manual()
+    {
+        var list = new List<BenchTicksRow>();
+        using var cmd = mockTicks.CreateCommand();
+        cmd.CommandText = "SELECT Id, Created FROM BenchData ORDER BY Id";
+        using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        var ordId = reader.GetOrdinal("Id");
+        var ordCreated = reader.GetOrdinal("Created");
+        while (reader.Read())
+        {
+            list.Add(new BenchTicksRow
+            {
+                Id = reader.GetInt64(ordId),
+                Created = new DateTime(reader.GetInt64(ordCreated), DateTimeKind.Utc),
+            });
+        }
+        return list;
+    }
 }

@@ -111,4 +111,44 @@ public sealed class GeneratedCodeTests
         Assert.Contains("__sb.Append((order)?.ToString() ?? string.Empty);", text, System.StringComparison.Ordinal);
         Assert.Contains("StringBuilderPool.Rent()", text, System.StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TypeHandlerColumnReadsViaFromDb()
+    {
+        // Reader side: a [TypeHandler<>] column reads TDb (long → GetInt64) then converts via
+        // TConverter.FromDb. The non-nullable value-type column keeps the IsDBNull guard.
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+            using Smart.Data.Accessor.Converters;
+
+            internal sealed class TicksConverter : IValueConverter<long, DateTime>
+            {
+                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
+                public static long ToDb(DateTime v) => v.Ticks;
+            }
+
+            internal sealed class Entity
+            {
+                public long Id { get; set; }
+
+                [TypeHandler(typeof(TicksConverter))]
+                public DateTime Created { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Entity> Query();
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(source, ("Accessor.Query", "select Id, Created from T"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("global::TicksConverter.FromDb(__reader.GetInt64(__o.Created))", text, System.StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(__o.Created) ? default! : global::TicksConverter.FromDb(", text, System.StringComparison.Ordinal);
+    }
 }

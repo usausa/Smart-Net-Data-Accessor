@@ -118,39 +118,38 @@ internal static class Diagnostics
     // ------------------------------------------------------------------
     // Mapping diagnostics (SDA0140-0149).
     //
-    // TODO (spec §11.3.1, implementation-plan §Sprint 6.2):
-    //   The descriptors below are declared so the IDs stay reserved and
-    //   AnalyzerReleases tracks them, but the corresponding `ReportDiagnostic`
-    //   call sites in DataAccessorGenerator / Builders.Generator are NOT YET
-    //   wired up. The validation logic must be implemented before these
-    //   diagnostics actually fire:
+    // Mapping / converter validation (spec §7.4 / §7.10) is wired by ConverterResolver,
+    // invoked from DataAccessorGenerator.BuildColumnInfos:
     //
-    //     SDA0140 NonNullableDbNull               — needs property-nullability + DB NULL flow analysis
-    //     SDA0141 ConverterTypeNotSupported       — needs [ConverterSupportedTypes] whitelist check
-    //     SDA0142 ConverterTClrMismatch           — needs `IValueConverter<TDb, TClr>` TClr vs property type
-    //     SDA0143 ConverterNotIValueConverter     — needs converter type implements IValueConverter<,>
-    //     SDA0144 ConverterStaticAbstractMissing  — needs static-abstract method resolution (Spike done)
-    //     SDA0145 TypeHandlerDuplicated           — needs multi-[TypeHandler<>] detection per property
-    //     SDA0149 EnumUnderlyingMismatch          — needs enum-underlying vs column type check
-    //
-    //   Already wired:
+    //     SDA0140 NonNullableDbNull               ← DataAccessorGenerator.cs (Info; non-nullable ref column)
+    //     SDA0141 ConverterTypeNotSupported       ← ConverterResolver.cs
+    //     SDA0142 ConverterTClrMismatch           ← ConverterResolver.cs
+    //     SDA0143 ConverterNotIValueConverter     ← ConverterResolver.cs
+    //     SDA0144 ConverterStaticAbstractMissing  ← ConverterResolver.cs
+    //     SDA0145 TypeHandlerDuplicated           ← ConverterResolver.cs
     //     SDA0146 ExecuteConfigProfileInvalid     ← DataAccessorGenerator.cs
     //     SDA0147 ProfileCircularReference        ← DataAccessorGenerator.cs
-    //     SDA0148 TypeMapTypeHandlerConflict      ← Builders.Generator/Mapping.cs
+    //
+    //   SDA0148 TypeMapTypeHandlerConflict is owned by Builders.Generator/Mapping.cs;
+    //   the core's duplicate descriptor was removed. SDA0149 EnumUnderlyingMismatch was
+    //   retired — the DB column type is unavailable at generation time, so the
+    //   enum-underlying-vs-column check cannot be performed.
     //
     // Spike result (spec §15 #7):
     //   Roslyn surfaces `static abstract` interface members as
-    //   `IMethodSymbol.IsAbstract == true && IsStatic == true`.
-    //   Implementations are discovered by walking the implementing type's
-    //   members and matching by signature. This is the SDA0144 prerequisite.
+    //   `IMethodSymbol.IsAbstract == true && IsStatic == true`. SDA0144 instead checks
+    //   that the converter exposes accessible static FromDb/ToDb (implicit interface
+    //   implementation) so the generated `TConverter.FromDb(...)` call binds.
     // ------------------------------------------------------------------
 
     public static readonly DiagnosticDescriptor NonNullableDbNull = new(
         id: "SDA0140",
         title: "Non-nullable property may receive DB NULL",
-        messageFormat: "Property '{1}' on method=[{0}] is non-nullable; DB NULL will fall through as default! (spec §7.10.1)",
+        messageFormat: "Property '{1}' on method=[{0}] is a non-nullable reference type; DB NULL will fall through as default! (null) (spec §7.10.1)",
         category: "Mapping",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        // Info: advisory only. As a warning it would fire on nearly every non-nullable
+        // reference-type column and conflict with the project's zero-warning policy.
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ConverterTypeNotSupported = new(
@@ -207,22 +206,6 @@ internal static class Diagnostics
         messageFormat: "Profile class=[{0}] has [ExecuteConfig], creating a circular reference",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor TypeMapTypeHandlerConflict = new(
-        id: "SDA0148",
-        title: "[TypeMap] DbType conflicts with [TypeHandler]",
-        messageFormat: "[TypeMap] for type '{1}' on class=[{0}] declares a DbType that conflicts with the [TypeHandler<>] inferred from TDb; [TypeHandler] takes precedence",
-        category: "Mapping",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor EnumUnderlyingMismatch = new(
-        id: "SDA0149",
-        title: "Enum underlying type may not match DB column type",
-        messageFormat: "Property '{1}' on method=[{0}] is an enum whose underlying type may not match the DB column",
-        category: "Mapping",
-        defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
     // ------------------------------------------------------------------
