@@ -1376,7 +1376,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     /// <summary>
     /// Maps a CLR property type to its concrete <c>DbDataReader.GetXxx</c> method, or returns
     /// <c>null</c> when no built-in fast path exists (in which case the emit falls back to
-    /// <c>ExecuteEngine.GetValue&lt;T&gt;</c>). Unwraps <c>Nullable&lt;T&gt;</c>; the underlying type
+    /// <c>ExecuteHelper.GetValue&lt;T&gt;</c>). Unwraps <c>Nullable&lt;T&gt;</c>; the underlying type
     /// drives the dispatch. For Enum types, returns the underlying primitive's <c>GetXxx</c> method
     /// plus the enum's FQN so the caller can emit an explicit cast (spec §7.9 / §7.10.3).
     /// </summary>
@@ -1877,7 +1877,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             else
             {
                 // Tokenized 2-way SQL → emit StringBuilder build code.
-                builder.Indent().Append("var __sb = global::Smart.Data.Accessor.Engine.StringBuilderPool.Rent();").NewLine();
+                builder.Indent().Append("var __sb = global::Smart.Data.Accessor.Helpers.StringBuilderPool.Rent();").NewLine();
                 builder.Indent().Append("try").NewLine();
                 builder.BeginScope();
                 if (!string.IsNullOrEmpty(m.SqlEmitCode))
@@ -1888,7 +1888,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 builder.EndScope();
                 builder.Indent().Append("finally").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("global::Smart.Data.Accessor.Engine.StringBuilderPool.Return(__sb);").NewLine();
+                builder.Indent().Append("global::Smart.Data.Accessor.Helpers.StringBuilderPool.Return(__sb);").NewLine();
                 builder.EndScope();
             }
         }
@@ -1962,14 +1962,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 case ParameterDirectionKindLegacy.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
-                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
                 case ParameterDirectionKindLegacy.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
-                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
@@ -1985,14 +1985,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                             : string.Empty;
                         builder.Indent()
                             .Append("((").Append(p.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
                             .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p)).Append(providerSizeArg)
                             .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
                     }
                     else
                     {
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
                             .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
                             .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
                     }
@@ -2043,14 +2043,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 case ParameterDirectionKindLegacy.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
-                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"")
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
                 case ParameterDirectionKindLegacy.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
-                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"")
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
@@ -2058,7 +2058,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 case ParameterDirectionKindLegacy.ReturnValue:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
-                        .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"")
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
@@ -2070,14 +2070,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                             : string.Empty;
                         builder.Indent()
                             .Append("((").Append(p.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
                             .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p)).Append(providerSizeArg)
                             .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
                     }
                     else
                     {
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"")
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
                             .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
                             .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
                     }
@@ -2097,7 +2097,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             builder.Indent()
                 .Append(binding.ParameterName)
-                .Append(" = global::Smart.Data.Accessor.Engine.ExecuteEngine.GetOutputValue<")
+                .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
                 .Append(param.TypeFullName).Append(">(").Append(binding.HandleName).Append(")!;").NewLine();
         }
     }
@@ -2117,16 +2117,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 : behaviorArg + ", " + ctExpr;
             builder.Indent().Append("var __reader = await cmd.ExecuteReaderAsync(").Append(asyncArgs).Append(").ConfigureAwait(false);").NewLine();
             builder.Indent().Append(ownsConnection
-                ? "return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, __reader, connection);"
-                : "return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, __reader);").NewLine();
+                ? "return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, __reader, connection);"
+                : "return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, __reader);").NewLine();
         }
         else if (ownsConnection)
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess), connection);").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess), connection);").NewLine();
         }
         else
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Engine.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("));").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("));").NewLine();
         }
     }
 
@@ -2145,7 +2145,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             switch (m.ReturnShapeLegacy)
             {
                 case ReturnShapeLegacy.Void:
-                    builder.Indent().Append("global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);").NewLine();
+                    builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
                 case ReturnShapeLegacy.Scalar:
@@ -2154,31 +2154,31 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);").NewLine();
+                            builder.Indent().Append("var __result = cmd.ExecuteNonQuery();").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return global::Smart.Data.Accessor.Engine.ExecuteEngine.Execute(cmd);").NewLine();
+                            builder.Indent().Append("return cmd.ExecuteNonQuery();").NewLine();
                         }
                     }
                     else
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd);").NewLine();
+                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd.ExecuteScalar());").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd)!;").NewLine();
+                            builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd.ExecuteScalar())!;").NewLine();
                         }
                     }
                     break;
                 case ReturnShapeLegacy.Task:
-                    builder.Indent().Append("await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
                 case ReturnShapeLegacy.TaskScalar:
@@ -2187,31 +2187,31 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("var __result = await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("return await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                         }
                     }
                     else
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalarAsync<").Append(m.ScalarTypeFullName!).Append(">(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(await cmd.ExecuteScalarAsync(").Append(ctExpr).Append(").ConfigureAwait(false));").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return (await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteScalarAsync<").Append(m.ScalarTypeFullName!).Append(">(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false))!;").NewLine();
+                            builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(await cmd.ExecuteScalarAsync(").Append(ctExpr).Append(").ConfigureAwait(false))!;").NewLine();
                         }
                     }
                     break;
                 case ReturnShapeLegacy.ValueTask:
-                    builder.Indent().Append("await global::Smart.Data.Accessor.Engine.ExecuteEngine.ExecuteAsync(cmd, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
                 default:
@@ -2222,7 +2222,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
 
         // Query (spec §7.10.4 OrdinalCache + §16.3 type-specific reader methods).
-        // Generator inlines the read loop directly (no ExecuteEngine.QueryBuffer / QueryFirstOrDefault
+        // Generator inlines the read loop directly (no ExecuteHelper.QueryBuffer / QueryFirstOrDefault
         // call) so the JIT can specialise the row materialisation and avoid per-row delegate dispatch.
         var ordStruct = OrdinalStructName(m);
         var entityBody = BuildEntityCreationBody(m, "__reader", "__o");
@@ -2348,7 +2348,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    sb.Append("global::Smart.Data.Accessor.Engine.ExecuteEngine.GetValue<")
+                    sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
                       .Append(col.TypeFullName)
                       .Append(">(").Append(readerVar).Append(", ").Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
                 }

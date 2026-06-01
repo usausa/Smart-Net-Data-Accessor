@@ -73,7 +73,7 @@ internal sealed record OutputBindingLegacy(
 /// <param name="TypedReaderMethod">
 /// Concrete <see cref="System.Data.Common.DbDataReader"/> getter (<c>GetInt64</c>, <c>GetString</c>, ...).
 /// <c>null</c> when no built-in fast path applies; the emit then falls back to
-/// <c>ExecuteEngine.GetValue&lt;T&gt;</c>.
+/// <c>ExecuteHelper.GetValue&lt;T&gt;</c>.
 /// </param>
 internal sealed record ColumnInfoLegacy(
     string PropertyName,

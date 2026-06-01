@@ -162,7 +162,7 @@ internal static class NodeEmitter
                         // arity depends on the IEnumerable count -> SQL text is dynamic.
                         hasDynamicSql = true;
                         requiresIEnumerable = true;
-                        sb.Append("__sb.Append(global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameters(cmd, \"")
+                        sb.Append("__sb.Append(global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(cmd, \"")
                             .Append(pname)
                             .Append("\", ")
                             .Append(p.Name)
@@ -182,12 +182,12 @@ internal static class NodeEmitter
                                 ? ", size: " + pSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
                                 : string.Empty;
                             EmitParamLine(
-                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
+                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
                         }
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInParameter(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
                         }
                     }
                     else
@@ -202,15 +202,15 @@ internal static class NodeEmitter
                         {
                             case Direction.Output:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddOutParameter(cmd, \"{pname}\", {dbTypeExpr}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"{pname}\", {dbTypeExpr}{sizeArg});");
                                 break;
                             case Direction.InputOutput:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddInOutParameter(cmd, \"{pname}\", {valueExpr}, {dbTypeExpr}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"{pname}\", {valueExpr}, {dbTypeExpr}{sizeArg});");
                                 break;
                             case Direction.ReturnValue:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Engine.ExecuteEngine.AddReturnValueParameter(cmd, \"{pname}\", {dbTypeExpr});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"{pname}\", {dbTypeExpr});");
                                 break;
                         }
                         if (hasProvider && direction is Direction.Output or Direction.InputOutput)

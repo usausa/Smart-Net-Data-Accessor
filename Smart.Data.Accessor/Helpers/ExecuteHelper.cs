@@ -1,54 +1,31 @@
-namespace Smart.Data.Accessor.Engine;
+namespace Smart.Data.Accessor.Helpers;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 /// <summary>
-/// Static execution helpers used by generated accessor code.
+/// Static helpers used by Source-Generator-emitted accessor code.
 /// </summary>
 /// <remarks>
-/// Replaces the prototype <c>SimpleExecuteEngine</c>. See <c>__docs/phase2-spec.md</c> §2.1.
-/// All members are intentionally static / allocation-light so generated code can call them
-/// without per-method state.
+/// All members are <c>static</c>, allocation-light, and marked
+/// <c>[MethodImpl(MethodImplOptions.AggressiveInlining)]</c> so the JIT can fold them
+/// into the caller. Methods whose body would just be a single ADO.NET call
+/// (<c>cmd.ExecuteNonQuery()</c> / <c>cmd.ExecuteScalar()</c> / their async siblings)
+/// are emitted inline by the Source Generator — only logic that actually deserves
+/// centralisation (scalar/output conversion, parameter binding) lives here.
 /// </remarks>
-public static class ExecuteEngine
+public static class ExecuteHelper
 {
     //--------------------------------------------------------------------------------
-    // Execute
+    // Scalar value coercion (DBNull → default(T), enum, Convert.ChangeType)
     //--------------------------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Execute(DbCommand cmd) => cmd.ExecuteNonQuery();
-
-    public static async Task<int> ExecuteAsync(DbCommand cmd, CancellationToken cancel = default)
-    {
-        return await cmd.ExecuteNonQueryAsync(cancel).ConfigureAwait(false);
-    }
-
-    //--------------------------------------------------------------------------------
-    // ExecuteScalar
-    //--------------------------------------------------------------------------------
-
-    public static T? ExecuteScalar<T>(DbCommand cmd)
-    {
-        var raw = cmd.ExecuteScalar();
-        return ConvertScalar<T>(raw);
-    }
-
-    public static async Task<T?> ExecuteScalarAsync<T>(DbCommand cmd, CancellationToken cancel = default)
-    {
-        var raw = await cmd.ExecuteScalarAsync(cancel).ConfigureAwait(false);
-        return ConvertScalar<T>(raw);
-    }
-
-    private static T? ConvertScalar<T>(object? raw)
+    public static T? ConvertScalar<T>(object? raw)
     {
         if (raw is null || raw is DBNull)
         {
@@ -67,125 +44,10 @@ public static class ExecuteEngine
     }
 
     //--------------------------------------------------------------------------------
-    // Query (buffered)
-    //--------------------------------------------------------------------------------
-
-    public static List<T> QueryBuffer<T>(DbCommand cmd, Func<DbDataReader, T> map)
-    {
-        using var reader = cmd.ExecuteReader();
-        var list = new List<T>();
-        while (reader.Read())
-        {
-            list.Add(map(reader));
-        }
-        return list;
-    }
-
-    public static List<T> QueryBuffer<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map)
-    {
-        using var reader = cmd.ExecuteReader();
-        var list = new List<T>();
-        if (reader.Read())
-        {
-            var ord = ordFactory(reader);
-            do
-            {
-                list.Add(map(reader, ord));
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    public static async Task<List<T>> QueryBufferAsync<T>(DbCommand cmd, Func<DbDataReader, T> map, CancellationToken cancel = default)
-    {
-        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
-        var list = new List<T>();
-        while (await reader.ReadAsync(cancel).ConfigureAwait(false))
-        {
-            list.Add(map(reader));
-        }
-        return list;
-    }
-
-    public static async Task<List<T>> QueryBufferAsync<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map, CancellationToken cancel = default)
-    {
-        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
-        var list = new List<T>();
-        if (await reader.ReadAsync(cancel).ConfigureAwait(false))
-        {
-            var ord = ordFactory(reader);
-            do
-            {
-                list.Add(map(reader, ord));
-            }
-            while (await reader.ReadAsync(cancel).ConfigureAwait(false));
-        }
-        return list;
-    }
-
-    public static async IAsyncEnumerable<T> QueryAsync<T>(
-        DbCommand cmd,
-        Func<DbDataReader, T> map,
-        [EnumeratorCancellation] CancellationToken cancel = default)
-    {
-        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancel).ConfigureAwait(false))
-        {
-            yield return map(reader);
-        }
-    }
-
-    //--------------------------------------------------------------------------------
-    // QueryFirst
-    //--------------------------------------------------------------------------------
-
-    public static T? QueryFirstOrDefault<T>(DbCommand cmd, Func<DbDataReader, T> map)
-    {
-        using var reader = cmd.ExecuteReader();
-        if (reader.Read())
-        {
-            return map(reader);
-        }
-        return default;
-    }
-
-    public static T? QueryFirstOrDefault<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map)
-    {
-        using var reader = cmd.ExecuteReader();
-        if (reader.Read())
-        {
-            var ord = ordFactory(reader);
-            return map(reader, ord);
-        }
-        return default;
-    }
-
-    public static async Task<T?> QueryFirstOrDefaultAsync<T>(DbCommand cmd, Func<DbDataReader, T> map, CancellationToken cancel = default)
-    {
-        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
-        if (await reader.ReadAsync(cancel).ConfigureAwait(false))
-        {
-            return map(reader);
-        }
-        return default;
-    }
-
-    public static async Task<T?> QueryFirstOrDefaultAsync<T, TOrd>(DbCommand cmd, Func<DbDataReader, TOrd> ordFactory, Func<DbDataReader, TOrd, T> map, CancellationToken cancel = default)
-    {
-        using var reader = await cmd.ExecuteReaderAsync(cancel).ConfigureAwait(false);
-        if (await reader.ReadAsync(cancel).ConfigureAwait(false))
-        {
-            var ord = ordFactory(reader);
-            return map(reader, ord);
-        }
-        return default;
-    }
-
-    //--------------------------------------------------------------------------------
     // Parameter helpers
     //--------------------------------------------------------------------------------
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter(DbCommand cmd, string name, object? value, DbType? type = null, int? size = null)
     {
         var p = cmd.CreateParameter();
@@ -200,6 +62,7 @@ public static class ExecuteEngine
     /// Generic input-parameter helper. Avoids the enumerator-boxing that the non-generic overload
     /// pays when iterating value-typed collections (e.g. <c>List&lt;int&gt;</c> uses its struct enumerator).
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter<T>(DbCommand cmd, string name, T value, DbType? type = null, int? size = null)
     {
         var p = cmd.CreateParameter();
@@ -244,6 +107,7 @@ public static class ExecuteEngine
         return sb.ToString();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddOutParameter(DbCommand cmd, string name, DbType type, int? size = null)
     {
         var p = cmd.CreateParameter();
@@ -258,6 +122,7 @@ public static class ExecuteEngine
         return p;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInOutParameter(DbCommand cmd, string name, object? value, DbType type, int? size = null)
     {
         var p = cmd.CreateParameter();
@@ -273,6 +138,7 @@ public static class ExecuteEngine
         return p;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddReturnValueParameter(DbCommand cmd, string name, DbType type)
     {
         var p = cmd.CreateParameter();
@@ -283,6 +149,7 @@ public static class ExecuteEngine
         return p;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T? GetOutputValue<T>(DbParameter parameter)
     {
         var raw = parameter.Value;
@@ -302,6 +169,7 @@ public static class ExecuteEngine
         return (T)Convert.ChangeType(raw, target, CultureInfo.InvariantCulture);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AssignValue(DbParameter p, object? value, DbType? type, int? size)
     {
         if (value is null)
@@ -337,9 +205,10 @@ public static class ExecuteEngine
     }
 
     //--------------------------------------------------------------------------------
-    // Reader value helpers
+    // Reader value helpers (fallback for columns lacking a typed Get{Type} reader method)
     //--------------------------------------------------------------------------------
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T GetValue<T>(DbDataReader reader, int ordinal)
     {
         if (reader.IsDBNull(ordinal))
