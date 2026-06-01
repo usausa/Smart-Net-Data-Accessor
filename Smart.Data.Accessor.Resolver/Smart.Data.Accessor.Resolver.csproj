@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Smart.Data.Accessor.Resolver</PackageId>
+    <Title>Smart.Data.Accessor.Resolver</Title>
+    <Description>Smart.Resolver (Usa.Smart.Resolver) integration for the Smart.Data.Accessor source generator runtime.</Description>
+    <PackageTags>sourcegenerator;dataaccessor;di;ioc;resolver</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Usa.Smart.Resolver" Version="2.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+  </ItemGroup>
+
+</Project>
