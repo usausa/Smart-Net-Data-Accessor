@@ -34,7 +34,6 @@ SDA0170 | Usage    | Error    | [DataAccessor] class must not be nested
 SDA0171 | Usage    | Error    | [DataAccessor] class must not be generic
 SDA0172 | Usage    | Error    | Partial method implementation already exists
 SDA0173 | Usage    | Error    | SQL file name collision
-SDA0174 | Usage    | Error    | [DataAccessor(Dialect = typeof(X))] X does not implement IDialect
 SDA0180 | Usage    | Error    | [Inject] Name is duplicated within the class
 SDA0181 | Usage    | Warning  | [Inject] Type may not resolve from IServiceProvider
 SDA0183 | Usage    | Warning  | [Provider] name is empty

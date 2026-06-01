@@ -832,13 +832,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             ? string.Empty
             : classSymbol.ContainingNamespace.ToDisplayString();
 
-        // Read class-level attributes: [Inject(...)], [Provider("...")], [DataAccessor(Dialect = ...)].
-        // [DataAccessor(Dialect = ...)] emit-side is consumed only by Builders.Generator (spec §4.2);
-        // here we validate that the referenced type implements IDialect (SDA0174).
+        // Read class-level attributes: [Inject(...)], [Provider("...")], [ExecuteConfig(...)].
         string? providerName = null;
         var injects = new List<InjectModelLegacy>();
         var seenInjectNames = new HashSet<string>(StringComparer.Ordinal);
-        var dialectInterface = compilation?.GetTypeByMetadataName("Smart.Data.Accessor.Dialect.IDialect");
         foreach (var attr in classSymbol.GetAttributes())
         {
             var attrName = attr.AttributeClass?.ToDisplayString();
@@ -897,23 +894,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         Diagnostics.ProviderNameEmpty,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name));
-                }
-            }
-            else if (attrName == DataAccessorAttributeName && dialectInterface is not null)
-            {
-                foreach (var named in attr.NamedArguments)
-                {
-                    if (named.Key == "Dialect" && named.Value.Value is INamedTypeSymbol dialectType)
-                    {
-                        if (!ImplementsInterface(dialectType, dialectInterface))
-                        {
-                            context.ReportDiagnostic(Diagnostic.Create(
-                                Diagnostics.DialectNotIDialect,
-                                classSymbol.Locations.FirstOrDefault() ?? Location.None,
-                                classSymbol.Name,
-                                dialectType.ToDisplayString()));
-                        }
-                    }
                 }
             }
             else if (attrName == ExecuteConfigAttributeName &&
@@ -987,18 +967,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             named.TypeArguments[0].SpecialType == SpecialType.System_Int32,
         _ => false,
     };
-
-    private static bool ImplementsInterface(INamedTypeSymbol type, INamedTypeSymbol iface)
-    {
-        foreach (var i in type.AllInterfaces)
-        {
-            if (SymbolEqualityComparer.Default.Equals(i, iface))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static bool HasUserDeclaredFieldOrProperty(INamedTypeSymbol classSymbol, string name)
     {

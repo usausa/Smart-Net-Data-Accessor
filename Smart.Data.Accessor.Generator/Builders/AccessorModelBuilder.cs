@@ -42,7 +42,6 @@ internal static class AccessorModelBuilder
         return new AccessorModel(
             string.Empty,
             string.Empty,
-            string.Empty,
             null,
             null,
             null,

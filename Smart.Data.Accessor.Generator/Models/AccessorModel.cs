@@ -6,7 +6,6 @@ using SourceGenerateHelper;
 internal sealed record AccessorModel(
     string FullyQualifiedName,
     string Namespace,
-    string DialectTypeFullName,
     string? ProviderName,
     char? ClassBindPrefixOverride,
     char? AssemblyBindPrefixOverride,

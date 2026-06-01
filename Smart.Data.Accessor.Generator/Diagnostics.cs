@@ -309,14 +309,6 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DialectNotIDialect = new(
-        id: "SDA0174",
-        title: "[DataAccessor(Dialect = typeof(X))] X does not implement IDialect",
-        messageFormat: "Class=[{0}]: Dialect target type '{1}' does not implement Smart.Data.Accessor.Dialect.IDialect (spec §11.5)",
-        category: "Usage",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     // ------------------------------------------------------------------
     // Empty-string attribute warnings (SDA0183 / SDA0192, spec §1.4 F2 / F7 / §11.5).
     // ------------------------------------------------------------------
