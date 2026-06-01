@@ -14,7 +14,8 @@ internal sealed partial class ExampleAccessor
     [Execute]
     public partial int Create();
 
-    [Execute(Builder = nameof(BuildInsert))]
+    [Insert(typeof(DataEntity), Table = "Data")]
+    [Execute]
     public partial int Insert(DataEntity entity);
 
     [Query]
@@ -33,13 +34,16 @@ internal sealed partial class ExampleAccessor
     [Execute]
     public partial int InsertNameByTransaction(DbTransaction tx, string name, int type);
 
-    [Query(Builder = nameof(BuildSelectAll))]
+    [Select(typeof(DataEntity), Table = "Data")]
+    [Query]
     public partial IReadOnlyList<DataEntity> SelectAll();
 
-    [Execute(Builder = nameof(BuildUpdate))]
+    [Update(typeof(DataEntity), Table = "Data")]
+    [Execute]
     public partial int UpdateEntity(DataEntity entity);
 
-    [Execute(Builder = nameof(BuildDelete))]
+    [Delete(typeof(DataEntity), Table = "Data")]
+    [Execute]
     public partial int DeleteById(long id);
 
     [Query]
@@ -57,21 +61,7 @@ internal sealed partial class ExampleAccessor
     [DirectSql]
     public partial int ExecuteDirect(string sql, [Direction(System.Data.ParameterDirection.Output)] out int rows);
 
-    [ExecuteScalar(Builder = nameof(BuildCount))]
+    [Count(typeof(DataEntity), Table = "Data")]
+    [ExecuteScalar]
     public partial long CountAll();
-
-    [InsertBuilder(typeof(DataEntity), Table = "Data")]
-    private static partial void BuildInsert(ref BuilderContext ctx, DataEntity entity);
-
-    [SelectBuilder(typeof(DataEntity), Table = "Data")]
-    private static partial void BuildSelectAll(ref BuilderContext ctx);
-
-    [UpdateBuilder(typeof(DataEntity), Table = "Data")]
-    private static partial void BuildUpdate(ref BuilderContext ctx, DataEntity entity);
-
-    [DeleteBuilder(typeof(DataEntity), Table = "Data")]
-    private static partial void BuildDelete(ref BuilderContext ctx, long id);
-
-    [CountBuilder(typeof(DataEntity), Table = "Data")]
-    private static partial void BuildCount(ref BuilderContext ctx);
 }

@@ -28,8 +28,7 @@ SDA0146 | Mapping  | Error    | [ExecuteConfig] target is not an [AccessorProfil
 SDA0147 | Mapping  | Error    | [AccessorProfile] class also has [ExecuteConfig] (circular)
 SDA0148 | Mapping  | Warning  | [TypeMap] DbType conflicts with [TypeHandler]
 SDA0149 | Mapping  | Warning  | Enum underlying type may not match DB column type
-SDA0150 | Builder  | Error    | Builder method referenced by [Execute(Builder=...)] not found
-SDA0152 | Builder  | Error    | Both SQL file and Builder are present (ambiguous)
+SDA0152 | Builder  | Error    | Both SQL file and a QueryBuilder attribute are present (ambiguous)
 SDA0170 | Usage    | Error    | [DataAccessor] class must not be nested
 SDA0171 | Usage    | Error    | [DataAccessor] class must not be generic
 SDA0172 | Usage    | Error    | Partial method implementation already exists
@@ -54,7 +53,3 @@ SDA0200 | Usage    | Error    | [Direction(ReturnValue)] not allowed on [DirectS
 SDA0201 | Usage    | Error    | [Direction] not allowed on [DirectSql] command-text parameter
 SDA0203 | Usage    | Error    | Conflicting [DbType] / [DbType<TEnum>] on same parameter
 SDA0204 | Usage    | Warning  | [DbType<TEnum>] TEnum is not in the provider enum whitelist
-SDA0220 | Builder  | Error    | Builder method first argument must be ref BuilderContext
-SDA0221 | Builder  | Warning  | Builder method arguments do not match Execute method
-SDA0222 | Builder  | Error    | Builder method return type must be void
-SDA0223 | Builder  | Error    | Builder method must not be async

@@ -226,48 +226,15 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ------------------------------------------------------------------
-    // [Execute(Builder = ...)] pass-through diagnostics (SDA0150 / SDA0220-0223).
+    // Retired Builder pass-through diagnostics (SDA0150 / SDA0220-0223).
+    //
+    // The QueryBuilder attribute design (design doc §6.1) removed the user-declared
+    // partial Builder method; the `{Method}__QueryBuilder` helper is fully generated
+    // by Builders.Generator, so there is nothing to validate. These IDs are retired
+    // and not re-used:
+    //   SDA0150 BuilderMethodNotFound, SDA0220 BuilderFirstArgInvalid,
+    //   SDA0221 BuilderArgMismatch, SDA0222 BuilderReturnInvalid, SDA0223 BuilderIsAsync
     // ------------------------------------------------------------------
-
-    public static readonly DiagnosticDescriptor BuilderMethodNotFound = new(
-        id: "SDA0150",
-        title: "Builder method not found",
-        messageFormat: "Builder method '{1}' referenced by [Execute(Builder = nameof({1}))] / [Query(Builder = nameof({1}))] was not found on method=[{0}]",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor BuilderFirstArgInvalid = new(
-        id: "SDA0220",
-        title: "Builder first argument must be ref BuilderContext",
-        messageFormat: "Builder method '{1}' referenced by method=[{0}] must declare its first parameter as 'ref BuilderContext'",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor BuilderArgMismatch = new(
-        id: "SDA0221",
-        title: "Builder argument list does not match Execute method",
-        messageFormat: "Builder method '{1}' arguments (from index 1) do not match Execute method=[{0}] parameter list (type, order, or name)",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor BuilderReturnInvalid = new(
-        id: "SDA0222",
-        title: "Builder return type must be void",
-        messageFormat: "Builder method '{1}' referenced by method=[{0}] must return void",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor BuilderIsAsync = new(
-        id: "SDA0223",
-        title: "Builder method must not be async",
-        messageFormat: "Builder method '{1}' referenced by method=[{0}] must not be declared async (ref struct cannot live across await)",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
 
     // ------------------------------------------------------------------
     // Iterator / async-iterator diagnostics (SDA0198 series).
@@ -287,8 +254,8 @@ internal static class Diagnostics
 
     public static readonly DiagnosticDescriptor BuilderAndSqlBothPresent = new(
         id: "SDA0152",
-        title: "Both SQL file and Builder are present",
-        messageFormat: "Method=[{0}]: both a SQL file '{1}' and a Builder reference are present; resolution is ambiguous (spec §11.4)",
+        title: "Both SQL file and a QueryBuilder attribute are present",
+        messageFormat: "Method=[{0}]: both a SQL file '{1}' and a QueryBuilder attribute ([Insert]/[Update]/…) are present; resolution is ambiguous (spec §11.4)",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

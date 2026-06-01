@@ -15,33 +15,41 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor InvalidContainer = new(
         id: "SDB0002",
         title: "Invalid container class",
-        messageFormat: "InsertBuilder method must be in a partial class, class=[{0}]",
+        messageFormat: "A QueryBuilder attribute ([Insert]/[Update]/…) must be on a method in a partial class, class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InvalidSignature = new(
-        id: "SDB0003",
-        title: "Invalid builder signature",
-        messageFormat: "InsertBuilder method must accept (BuilderContext, TEntity), method=[{0}]",
-        category: "Usage",
+    public static readonly DiagnosticDescriptor MissingTable = new(
+        id: "SDB0004",
+        title: "QueryBuilder attribute needs an entity type or a table name",
+        messageFormat: "Method=[{0}]: the QueryBuilder attribute specifies neither an entity type ([Insert(typeof(T))]) nor a table name ([Insert(Table = \"...\")])",
+        category: "Builder",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SelectColumnsUnresolvable = new(
+        id: "SDB0005",
+        title: "Select/SelectSingle columns cannot be determined",
+        messageFormat: "Method=[{0}]: [Select]/[SelectSingle] needs an entity type to determine the column list; specify [Select(typeof(T))]",
+        category: "Builder",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor QueryBuilderDuplicated = new(
+        id: "SDB0006",
+        title: "Multiple QueryBuilder attributes on one method",
+        messageFormat: "Method=[{0}]: more than one QueryBuilder attribute ([Insert]/[Update]/…) is present; only one is allowed",
+        category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor NoKeyForBuilder = new(
         id: "SDA0130",
-        title: "Entity has no [Key] for Update/Delete builder",
-        messageFormat: "Entity '{0}' has no property marked [Key]; Update/Delete builder cannot emit a WHERE clause for method=[{1}]",
+        title: "Entity has no [Key] for Update/Delete/SelectSingle builder",
+        messageFormat: "Entity '{0}' has no property marked [Key]; Update/Delete/SelectSingle builder cannot emit a WHERE clause for method=[{1}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor BuilderRequiresEntityParameter = new(
-        id: "SDA0131",
-        title: "Builder method requires entity parameter",
-        messageFormat: "Builder method=[{0}] requires an entity parameter after `ref BuilderContext`",
-        category: "Builder",
-        defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor TypeMapTypeHandlerConflict = new(

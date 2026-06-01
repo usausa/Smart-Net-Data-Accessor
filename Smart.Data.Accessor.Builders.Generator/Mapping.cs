@@ -8,9 +8,8 @@ using SourceGenerateHelper;
 
 /// <summary>
 /// Resolves <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeMap]</c> for Builder parameter emission
-/// (spec §7.4 / §7.12). Both the <see cref="InsertBuilderGenerator"/> and
-/// <see cref="EntityBuilderGenerator"/> dispatch through this helper so the conversion logic stays
-/// in one place.
+/// (spec §7.4 / §7.12). <see cref="QueryBuilderGenerator"/> dispatches through this helper so the
+/// conversion logic stays in one place.
 /// </summary>
 internal static class MappingResolver
 {

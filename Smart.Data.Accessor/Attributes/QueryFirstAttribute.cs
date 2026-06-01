@@ -6,5 +6,4 @@ using System;
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class QueryFirstAttribute : Attribute
 {
-    public string? Builder { get; set; }
 }

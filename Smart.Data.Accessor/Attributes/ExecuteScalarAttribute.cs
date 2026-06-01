@@ -8,6 +8,4 @@ using System;
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class ExecuteScalarAttribute : Attribute
 {
-    /// <summary>Name of a sibling builder method to construct the SQL.</summary>
-    public string? Builder { get; set; }
 }
