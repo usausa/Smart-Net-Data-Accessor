@@ -46,7 +46,7 @@ internal static class AccessorModelBuilder
             null,
             null,
             new EquatableArray<InjectModel>([inject]),
-            false,
+            RequiresDbProvider: false,
             new EquatableArray<MethodModel>([method]),
             new EquatableArray<TypeMapModel>([typeMap]),
             new EquatableArray<TypeHandlerModel>([typeHandler]));

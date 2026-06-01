@@ -10,7 +10,7 @@ internal sealed record AccessorModel(
     char? ClassBindPrefixOverride,
     char? AssemblyBindPrefixOverride,
     EquatableArray<InjectModel> Injects,
-    bool RequiresConnectionFactory,
+    bool RequiresDbProvider,
     EquatableArray<MethodModel> Methods,
     EquatableArray<TypeMapModel> TypeMaps,
     EquatableArray<TypeHandlerModel> ClassTypeHandlers);

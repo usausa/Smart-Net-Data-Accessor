@@ -56,7 +56,7 @@ internal enum ReturnShapeLegacy
 
 internal enum ConnectionPatternLegacy
 {
-    None,            // Pattern B: no DbConnection / DbTransaction arg → factory.Create(...)
+    None,            // Pattern B: no DbConnection / DbTransaction arg → IDbProvider.CreateConnection() or IDbProviderSelector.GetProvider(name).CreateConnection()
     ConnectionArg,   // Pattern A: DbConnection arg
     TransactionArg,  // Pattern A: DbTransaction arg (also brings connection)
 }

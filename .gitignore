@@ -429,3 +429,4 @@ desktop.ini
 __*
 *.db
 tools/
+*/Generated/*

@@ -10,7 +10,7 @@ using Example.ConsoleApplication.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
-using Smart.Data.Accessor.Connection;
+using Smart.Data;
 
 internal static class Program
 {
@@ -37,15 +37,13 @@ internal static class Program
         }
     }
 
-    // Pattern 1: SingleConnectionFactory (legacy compatibility — wraps a caller-owned connection).
+    // Pattern 1: DelegateDbProvider (single source, fresh connection per accessor call).
     private static int RunPattern1(string connectionString)
     {
-        Console.WriteLine("=== Pattern 1: SingleConnectionFactory ===");
+        Console.WriteLine("=== Pattern 1: DelegateDbProvider ===");
 
-        using var connection = new SqliteConnection(connectionString);
-        connection.Open();
-
-        var accessor = new ExampleAccessor(new SingleConnectionFactory(connection));
+        var accessor = new ExampleAccessor(
+            new DelegateDbProvider(() => new SqliteConnection(connectionString)));
 
         accessor.Create();
 
@@ -124,7 +122,8 @@ internal static class Program
         using var connection = new SqliteConnection(connectionString);
         connection.Open();
 
-        var accessor = new ExampleAccessor(new SingleConnectionFactory(connection));
+        var accessor = new ExampleAccessor(
+            new DelegateDbProvider(() => new SqliteConnection(connectionString)));
 
         var all = accessor.QueryAllWithConnection(connection);
         Console.WriteLine($"QueryAllWithConnection -> {all.Count} row(s)");
@@ -154,7 +153,7 @@ internal static class Program
         var counter = new ConsoleLogger();
 
         var services = new ServiceCollection();
-        services.AddSingleton<IConnectionFactory>(_ => new DelegateConnectionFactory(_ => new SqliteConnection(connectionString)));
+        services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection(connectionString)));
         services.AddSingleton<IExampleLogger>(counter);
         services.AddDataAccessors();
 

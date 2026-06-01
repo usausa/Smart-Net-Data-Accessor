@@ -3,16 +3,18 @@ namespace Microsoft.Extensions.DependencyInjection;
 #pragma warning restore IDE0130
 
 using System;
-using System.Data.Common;
-
-using Microsoft.Extensions.Configuration;
 
 using Smart.Data.Accessor;
-using Smart.Data.Accessor.Connection;
-using Smart.Data.Accessor.Extensions.DependencyInjection;
 
 public static class DataAccessorServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers every accessor class discovered by the source generator (via
+    /// <see cref="DataAccessorRegistry"/>) as a singleton in the M.E.DI container.
+    /// The accessor's constructor parameters (<see cref="global::Smart.Data.IDbProvider"/>
+    /// or <see cref="global::Smart.Data.IDbProviderSelector"/>, plus any
+    /// <c>[Inject]</c>-injected services) are resolved from the container at activation time.
+    /// </summary>
     public static IServiceCollection AddDataAccessors(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -20,20 +22,6 @@ public static class DataAccessorServiceCollectionExtensions
         {
             services.AddSingleton(serviceType, sp => DataAccessorRegistry.Create(serviceType, sp));
         }
-        return services;
-    }
-
-    public static IServiceCollection AddDataAccessorConfigurationConnectionFactory(
-        this IServiceCollection services,
-        Func<string, DbConnection> dbConnectionFactory)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(dbConnectionFactory);
-        services.AddSingleton<IConnectionFactory>(sp =>
-        {
-            var configuration = sp.GetRequiredService<IConfiguration>();
-            return new ConfigurationConnectionFactory(configuration, dbConnectionFactory);
-        });
         return services;
     }
 }

@@ -336,7 +336,7 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor ProviderNameEmpty = new(
         id: "SDA0183",
         title: "[Provider] name is empty",
-        messageFormat: "Class=[{0}]: [Provider(\"\")] has an empty name; IConnectionFactory.Create(name) will receive an empty string (spec §1.4 F7)",
+        messageFormat: "Class=[{0}]: [Provider(\"\")] has an empty name; IDbProviderSelector.GetProvider will receive an empty string (spec §1.4 F7)",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -496,7 +496,7 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor ProviderOnPatternAOnlyAccessor = new(
         id: "SDA0184",
         title: "[Provider] has no effect on Pattern A only accessor",
-        messageFormat: "Class=[{0}]: [Provider(\"{1}\")] is set but the accessor has no Pattern B methods; the name will never be passed to IConnectionFactory.Create (spec §1.4 F7)",
+        messageFormat: "Class=[{0}]: [Provider(\"{1}\")] is set but the accessor has no Pattern B methods; the name will never be passed to IDbProviderSelector.GetProvider (spec §1.4 F7)",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);

@@ -157,6 +157,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 serviceFq,
                 concreteFq,
                 model.RequiresConnectionFactory,
+                model.ProviderName is not null,
                 model.Injects.Select(i => i.TypeFullName).ToArray()));
         }
 
@@ -184,7 +185,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private sealed record RegistryEntry(
         string ServiceTypeFq,
         string ConcreteTypeFq,
-        bool RequiresFactory,
+        bool RequiresProvider,
+        bool MultiProvider,
         IReadOnlyList<string> InjectTypeFqs);
 
     private static string EmitRegistryInitializer(List<RegistryEntry> entries)
@@ -202,9 +204,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         foreach (var entry in entries)
         {
             var args = new List<string>();
-            if (entry.RequiresFactory)
+            if (entry.RequiresProvider)
             {
-                args.Add("(global::Smart.Data.Accessor.Connection.IConnectionFactory)sp.GetService(typeof(global::Smart.Data.Accessor.Connection.IConnectionFactory))!");
+                var providerFq = entry.MultiProvider
+                    ? "global::Smart.Data.IDbProviderSelector"
+                    : "global::Smart.Data.IDbProvider";
+                args.Add($"({providerFq})sp.GetService(typeof({providerFq}))!");
             }
             foreach (var injectFq in entry.InjectTypeFqs)
             {
@@ -857,8 +862,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
 
                 // SDA0188: [Inject] Name collides with an existing field/property in the (partial) class
-                // or with the reserved factory ctor parameter.
-                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName == "factory")
+                // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
+                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName is "dbProvider" or "providerSelector")
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         Diagnostics.InjectNameConflictsWithMember,
@@ -925,7 +930,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
 
-        // SDA0184: [Provider] is set but no Pattern B method consumes IConnectionFactory.Create(name).
+        // SDA0184: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
         if (providerName is not null && methods.Count > 0 && !requiresFactory)
         {
             context.ReportDiagnostic(Diagnostic.Create(
@@ -1595,10 +1600,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitConstructor(SourceBuilder builder, AccessorModelLegacy model)
     {
-        var hasFactory = model.RequiresConnectionFactory;
+        var hasProvider = model.RequiresConnectionFactory;
+        var multiProvider = model.ProviderName is not null;
         var hasInjects = model.Injects.Count > 0;
 
-        if (!hasFactory && !hasInjects)
+        if (!hasProvider && !hasInjects)
         {
             builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
             builder.Indent().Append("internal ").Append(model.ClassName).Append("()").NewLine();
@@ -1607,9 +1613,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return;
         }
 
-        if (hasFactory)
+        // Pattern B injection — depends on [Provider]:
+        //   no  [Provider] → IDbProvider           (single source, calls dbProvider.CreateConnection())
+        //   has [Provider] → IDbProviderSelector   (multi-source, calls providerSelector.GetProvider("name").CreateConnection())
+        if (hasProvider)
         {
-            builder.Indent().Append("private readonly global::Smart.Data.Accessor.Connection.IConnectionFactory factory;").NewLine();
+            if (multiProvider)
+            {
+                builder.Indent().Append("private readonly global::Smart.Data.IDbProviderSelector providerSelector;").NewLine();
+            }
+            else
+            {
+                builder.Indent().Append("private readonly global::Smart.Data.IDbProvider dbProvider;").NewLine();
+            }
         }
         foreach (var inject in model.Injects)
         {
@@ -1618,9 +1634,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.NewLine();
 
         var ctorParams = new List<string>();
-        if (hasFactory)
+        if (hasProvider)
         {
-            ctorParams.Add("global::Smart.Data.Accessor.Connection.IConnectionFactory factory");
+            ctorParams.Add(multiProvider
+                ? "global::Smart.Data.IDbProviderSelector providerSelector"
+                : "global::Smart.Data.IDbProvider dbProvider");
         }
         foreach (var inject in model.Injects)
         {
@@ -1630,9 +1648,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
         builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(string.Join(", ", ctorParams)).Append(")").NewLine();
         builder.BeginScope();
-        if (hasFactory)
+        if (hasProvider)
         {
-            builder.Indent().Append("this.factory = factory;").NewLine();
+            builder.Indent().Append(multiProvider
+                ? "this.providerSelector = providerSelector;"
+                : "this.dbProvider = dbProvider;").NewLine();
         }
         foreach (var inject in model.Injects)
         {
@@ -1775,9 +1795,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             default:
             {
-                var providerExpr = providerName is null ? "null" : $"\"{providerName.Replace("\"", "\\\"")}\"";
+                // Pattern B: connection comes from the injected provider.
+                //   no  [Provider] → `this.dbProvider.CreateConnection()`
+                //   has [Provider] → `this.providerSelector.GetProvider("name").CreateConnection()`
+                var providerCallExpr = providerName is null
+                    ? "this.dbProvider.CreateConnection()"
+                    : $"this.providerSelector.GetProvider(\"{providerName.Replace("\"", "\\\"")}\").CreateConnection()";
                 var connKeyword = isReader ? "var" : "using var";
-                builder.Indent().Append(connKeyword).Append(" connection = this.factory.Create(").Append(providerExpr).Append(");").NewLine();
+                builder.Indent().Append(connKeyword).Append(" connection = ").Append(providerCallExpr).Append(";").NewLine();
                 if (isAsync)
                 {
                     builder.Indent().Append("await connection.OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();

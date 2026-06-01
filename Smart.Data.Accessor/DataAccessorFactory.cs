@@ -3,19 +3,22 @@ namespace Smart.Data.Accessor;
 using System;
 using System.Collections.Generic;
 
-using Smart.Data.Accessor.Connection;
+using Smart.Data;
 
 public sealed class DataAccessorFactory : IServiceProvider
 {
-    private readonly IConnectionFactory connectionFactory;
+    private readonly IDbProvider? dbProvider;
+    private readonly IDbProviderSelector? providerSelector;
     private readonly Dictionary<Type, object> singletons;
     private readonly Dictionary<Type, object> accessorCache = [];
 
     internal DataAccessorFactory(
-        IConnectionFactory connectionFactory,
+        IDbProvider? dbProvider,
+        IDbProviderSelector? providerSelector,
         Dictionary<Type, object> singletons)
     {
-        this.connectionFactory = connectionFactory;
+        this.dbProvider = dbProvider;
+        this.providerSelector = providerSelector;
         this.singletons = singletons;
     }
 
@@ -32,9 +35,13 @@ public sealed class DataAccessorFactory : IServiceProvider
 
     public object? GetService(Type serviceType)
     {
-        if (serviceType == typeof(IConnectionFactory))
+        if (serviceType == typeof(IDbProvider))
         {
-            return connectionFactory;
+            return dbProvider;
+        }
+        if (serviceType == typeof(IDbProviderSelector))
+        {
+            return providerSelector;
         }
         return singletons.TryGetValue(serviceType, out var v) ? v : null;
     }
