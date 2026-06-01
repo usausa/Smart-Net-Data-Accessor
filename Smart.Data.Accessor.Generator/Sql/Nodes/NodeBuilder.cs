@@ -70,6 +70,10 @@ public sealed class NodeBuilder
                 case TokenType.CloseParenthesis:
                     sql.Append(token.Value.Trim());
                     break;
+                case TokenType.Hint:
+                    // Query hint flows straight into the output SQL with no whitespace side-effects.
+                    sql.Append("/*+ ").Append(token.Value).Append(" */");
+                    break;
                 case TokenType.Comment:
                     ParseComment(token.Value.Trim());
                     break;
@@ -79,8 +83,41 @@ public sealed class NodeBuilder
         }
 
         Flush();
+        TrimBodyEdges();
 
         return pragmaNodes.Concat(bodyNodes).ToList();
+    }
+
+    // Trim leading/trailing whitespace at the body SQL boundary so a pragma at the
+    // start or end of the source (which is hoisted to a `using` directive) doesn't
+    // leave a stray space in CommandText.
+    private void TrimBodyEdges()
+    {
+        if (bodyNodes.Count > 0 && bodyNodes[0] is SqlNode first)
+        {
+            var trimmed = first.Sql.TrimStart();
+            if (trimmed.Length == 0)
+            {
+                bodyNodes.RemoveAt(0);
+            }
+            else if (trimmed.Length != first.Sql.Length)
+            {
+                bodyNodes[0] = new SqlNode(trimmed);
+            }
+        }
+
+        if (bodyNodes.Count > 0 && bodyNodes[^1] is SqlNode last)
+        {
+            var trimmed = last.Sql.TrimEnd();
+            if (trimmed.Length == 0)
+            {
+                bodyNodes.RemoveAt(bodyNodes.Count - 1);
+            }
+            else if (trimmed.Length != last.Sql.Length)
+            {
+                bodyNodes[^1] = new SqlNode(trimmed);
+            }
+        }
     }
 
     private void ParseComment(string value)

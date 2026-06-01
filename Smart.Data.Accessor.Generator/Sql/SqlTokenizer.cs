@@ -144,7 +144,11 @@ public sealed class SqlTokenizer
         }
         else if ((source[current] == '/') && (source[current + 1] == '*'))
         {
-            // Block comment
+            // Block comment — classify by first non-whitespace marker inside the body:
+            //   '+'                        → query hint, emit Token(Hint, body) inline
+            //   '!' / '@' / '#' / '%'      → 2-way SQL directive, emit Token(Comment, ...)
+            //   anything else (incl. empty) → plain comment, drop the token but set `blank`
+            //                                so adjacent SQL tokens still get separated.
             current += 2;
 
             var start = current;
@@ -152,10 +156,31 @@ public sealed class SqlTokenizer
             {
                 if ((source[current] == '*') && (source[current + 1] == '/'))
                 {
-                    AddToken(new Token(TokenType.Comment, source[start..current].Trim()));
-
+                    var raw = source[start..current];
                     current += 2;
 
+                    var trimmed = raw.Trim();
+                    if (trimmed.Length == 0)
+                    {
+                        blank = true;
+                        return;
+                    }
+
+                    var marker = trimmed[0];
+                    if (marker == '+')
+                    {
+                        AddToken(new Token(TokenType.Hint, trimmed[1..].Trim()));
+                        return;
+                    }
+
+                    if (marker is '!' or '@' or '#' or '%')
+                    {
+                        AddToken(new Token(TokenType.Comment, trimmed));
+                        return;
+                    }
+
+                    // Plain comment: skip the comment, but ensure surrounding tokens stay separated.
+                    blank = true;
                     return;
                 }
 
