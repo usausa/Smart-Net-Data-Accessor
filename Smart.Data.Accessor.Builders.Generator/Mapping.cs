@@ -1,9 +1,10 @@
 namespace Smart.Data.Accessor.Builders.Generator;
 
 using System.Collections.Generic;
-using System.Text;
 
 using Microsoft.CodeAnalysis;
+
+using SourceGenerateHelper;
 
 /// <summary>
 /// Resolves <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeMap]</c> for Builder parameter emission
@@ -140,9 +141,10 @@ internal static class ParameterEmitter
     /// <summary>
     /// Emit a single parameter binding line for an entity property.
     /// Dispatches <c>[TypeHandler]</c> first, falls back to <c>[TypeMap]</c>, then plain assignment.
+    /// The line is written at <paramref name="builder"/>'s current IndentLevel.
     /// </summary>
     public static void EmitEntityPropertyParameter(
-        StringBuilder sb,
+        SourceBuilder builder,
         string paramMarkerName,
         string valueExpression,
         IPropertySymbol property,
@@ -163,20 +165,20 @@ internal static class ParameterEmitter
                 property.Name));
         }
 
-        sb.Append("        { var p = cmd.CreateParameter(); p.ParameterName = \"")
-            .Append(paramMarkerName)
-            .Append("\"; ");
+        builder.Indent()
+            .Append("{ var p = cmd.CreateParameter(); p.ParameterName = \"")
+            .Append(paramMarkerName).Append("\"; ");
 
         if (handler is not null)
         {
-            AppendHandlerValue(sb, valueExpression, property.Type, handler);
+            AppendHandlerValue(builder, valueExpression, property.Type, handler);
         }
         else
         {
-            AppendDefaultValue(sb, valueExpression, property.Type, typeMaps);
+            AppendDefaultValue(builder, valueExpression, property.Type, typeMaps);
         }
 
-        sb.AppendLine(" cmd.Parameters.Add(p); }");
+        builder.Append(" cmd.Parameters.Add(p); }").NewLine();
     }
 
     /// <summary>
@@ -185,20 +187,20 @@ internal static class ParameterEmitter
     /// for the parameter's CLR type applies.
     /// </summary>
     public static void EmitMethodParameterBinding(
-        StringBuilder sb,
+        SourceBuilder builder,
         string paramMarkerName,
         string valueExpression,
         ITypeSymbol parameterType,
         Dictionary<ITypeSymbol, TypeMapInfo> typeMaps)
     {
-        sb.Append("        { var p = cmd.CreateParameter(); p.ParameterName = \"")
-            .Append(paramMarkerName)
-            .Append("\"; ");
-        AppendDefaultValue(sb, valueExpression, parameterType, typeMaps);
-        sb.AppendLine(" cmd.Parameters.Add(p); }");
+        builder.Indent()
+            .Append("{ var p = cmd.CreateParameter(); p.ParameterName = \"")
+            .Append(paramMarkerName).Append("\"; ");
+        AppendDefaultValue(builder, valueExpression, parameterType, typeMaps);
+        builder.Append(" cmd.Parameters.Add(p); }").NewLine();
     }
 
-    private static void AppendHandlerValue(StringBuilder sb, string valueExpr, ITypeSymbol propertyType, INamedTypeSymbol handler)
+    private static void AppendHandlerValue(SourceBuilder builder, string valueExpr, ITypeSymbol propertyType, INamedTypeSymbol handler)
     {
         var handlerFq = handler.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
@@ -206,7 +208,7 @@ internal static class ParameterEmitter
         if (propertyType is INamedTypeSymbol nt && nt.IsGenericType &&
             nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
         {
-            sb.Append("p.Value = ")
+            builder.Append("p.Value = ")
                 .Append(valueExpr).Append(".HasValue ? (object)")
                 .Append(handlerFq).Append(".ToDb(").Append(valueExpr).Append(".Value) : global::System.DBNull.Value;");
             return;
@@ -215,33 +217,33 @@ internal static class ParameterEmitter
         // Non-nullable value type — converter is always invoked, no DBNull path.
         if (propertyType.IsValueType)
         {
-            sb.Append("p.Value = (object)")
+            builder.Append("p.Value = (object)")
                 .Append(handlerFq).Append(".ToDb(").Append(valueExpr).Append(");");
             return;
         }
 
         // Reference type — null check at the property level.
-        sb.Append("p.Value = ")
+        builder.Append("p.Value = ")
             .Append(valueExpr).Append(" is null ? global::System.DBNull.Value : (object)")
             .Append(handlerFq).Append(".ToDb(").Append(valueExpr).Append(");");
     }
 
     private static void AppendDefaultValue(
-        StringBuilder sb,
+        SourceBuilder builder,
         string valueExpr,
         ITypeSymbol propertyType,
         Dictionary<ITypeSymbol, TypeMapInfo> typeMaps)
     {
         if (MappingResolver.TryGetTypeMap(propertyType, typeMaps, out var info))
         {
-            sb.Append("p.DbType = ").Append(info.DbTypeExpr).Append("; ");
+            builder.Append("p.DbType = ").Append(info.DbTypeExpr).Append("; ");
             if (info.Size is { } sz)
             {
-                sb.Append("p.Size = ")
+                builder.Append("p.Size = ")
                   .Append(sz.ToString(System.Globalization.CultureInfo.InvariantCulture))
                   .Append("; ");
             }
-            sb.Append("p.Value = (object?)").Append(valueExpr).Append(" ?? global::System.DBNull.Value;");
+            builder.Append("p.Value = (object?)").Append(valueExpr).Append(" ?? global::System.DBNull.Value;");
             return;
         }
 
@@ -250,17 +252,17 @@ internal static class ParameterEmitter
         {
             if (isNullableEnum)
             {
-                sb.Append("p.Value = ").Append(valueExpr).Append(".HasValue ? (object)(")
-                  .Append(underlyingFq).Append(')').Append(valueExpr).Append(".Value : global::System.DBNull.Value;");
+                builder.Append("p.Value = ").Append(valueExpr).Append(".HasValue ? (object)(")
+                  .Append(underlyingFq).Append(")").Append(valueExpr).Append(".Value : global::System.DBNull.Value;");
             }
             else
             {
-                sb.Append("p.Value = (object)(").Append(underlyingFq).Append(')').Append(valueExpr).Append(';');
+                builder.Append("p.Value = (object)(").Append(underlyingFq).Append(")").Append(valueExpr).Append(";");
             }
             return;
         }
 
-        sb.Append("p.Value = (object?)").Append(valueExpr).Append(" ?? global::System.DBNull.Value;");
+        builder.Append("p.Value = (object?)").Append(valueExpr).Append(" ?? global::System.DBNull.Value;");
     }
 
     private static bool TryGetEnumUnderlying(ITypeSymbol propertyType, out string underlyingFullyQualified, out bool isNullable)
