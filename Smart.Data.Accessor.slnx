@@ -23,6 +23,7 @@
   </Folder>
   <Folder Name="/Test/">
     <Project Path="Smart.Data.Accessor.Generator.Tests/Smart.Data.Accessor.Generator.Tests.csproj" />
+    <Project Path="Smart.Data.Accessor.Tests/Smart.Data.Accessor.Tests.csproj" />
   </Folder>
   <Folder Name="/Benchmark/">
     <Project Path="Smart.Data.Accessor.Benchmark/Smart.Data.Accessor.Benchmark.csproj" />

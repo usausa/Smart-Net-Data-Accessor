@@ -1203,8 +1203,17 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
         }
 
-        // Plain scalar (int, string, etc.)
+        // Plain scalar (int, string, etc.) or a single mapped entity (QueryFirst → T / T?).
+        // For a non-primitive named type, mirror the Task<T> branch so a sync single-POCO
+        // Query resolves its element symbol (the emit side already supports
+        // ReturnShapeLegacy.Scalar for Query). Primitive scalars (SpecialType set) keep
+        // elementSymbol null so [ExecuteScalar]/scalar paths are unaffected.
         scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (returnType.SpecialType == SpecialType.None && returnType is INamedTypeSymbol scalarNamed)
+        {
+            elementSymbol = scalarNamed;
+            elementFq = scalarFq;
+        }
         return ReturnShapeLegacy.Scalar;
     }
 
