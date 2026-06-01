@@ -4,14 +4,6 @@ using Microsoft.CodeAnalysis;
 
 internal static class Diagnostics
 {
-    public static readonly DiagnosticDescriptor InvalidMethod = new(
-        id: "SDB0001",
-        title: "Invalid builder method",
-        messageFormat: "InsertBuilder method must be a partial declaration, method=[{0}]",
-        category: "Usage",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     public static readonly DiagnosticDescriptor InvalidContainer = new(
         id: "SDB0002",
         title: "Invalid container class",

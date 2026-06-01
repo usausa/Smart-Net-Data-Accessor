@@ -15,4 +15,5 @@ SDB0006 | Builder  | Error    | Multiple QueryBuilder attributes on one method
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|------
+SDB0001 | Usage    | Error    | Invalid Builder method (user-declared builder method removed by QueryBuilder attribute design)
 SDB0003 | Usage    | Error    | Invalid Builder signature (user-declared builder method removed by QueryBuilder attribute design)

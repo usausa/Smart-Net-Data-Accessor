@@ -248,8 +248,24 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
-            if (member.MethodKind != Microsoft.CodeAnalysis.MethodKind.Ordinary || !member.IsPartialDefinition)
+            if (member.MethodKind != Microsoft.CodeAnalysis.MethodKind.Ordinary)
             {
+                continue;
+            }
+
+            if (!member.IsPartialDefinition)
+            {
+                // SDA0002: a method that carries a data-method attribute ([Execute] / [Query] /
+                // [ExecuteScalar] / [ExecuteReader] / [DirectSql] / [Procedure]) must be declared
+                // `partial` so the Generator can supply the implementation. Plain helper methods
+                // without such an attribute are intentionally ignored.
+                if (HasDataMethodAttribute(member))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.InvalidMethod,
+                        member.Locations.FirstOrDefault(),
+                        member.Name));
+                }
                 continue;
             }
 
@@ -1470,6 +1486,26 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
 
         return (enumSym.EnumUnderlyingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), isNullableEnum);
+    }
+
+    // SDA0002: the attributes that establish a method as a generated data method. A non-partial
+    // method carrying one of these is a user error (must be `partial`).
+    private static bool HasDataMethodAttribute(IMethodSymbol method)
+    {
+        foreach (var attr in method.GetAttributes())
+        {
+            var name = attr.AttributeClass?.ToDisplayString();
+            if (name is ExecuteAttributeName or ExecuteScalarAttributeName or ExecuteReaderAttributeName
+                or QueryAttributeName or QueryFirstAttributeName or DirectSqlAttributeName or ProcedureAttributeName)
+            {
+                return true;
+            }
+            if (IsQueryBuilderAttribute(attr.AttributeClass))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Design doc §4.5: a method carries a QueryBuilder-derived attribute ([Insert]/[Update]/…)
