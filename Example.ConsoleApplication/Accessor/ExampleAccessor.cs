@@ -64,4 +64,17 @@ internal sealed partial class ExampleAccessor
     [Count(typeof(DataEntity), Table = "Data")]
     [ExecuteScalar]
     public partial long CountAll();
+
+    // Custom [TypeHandler] sample (F6): EventEntity.OccurredAt is a DateTime stored as Int64 ticks.
+    [Execute]
+    public partial int CreateEvents();
+
+    // Builder INSERT (entity mode) — OccurredAt is written via DateTimeToTicksConverter.ToDb.
+    [Insert(typeof(EventEntity), Table = "Events")]
+    [Execute]
+    public partial int InsertEvent(EventEntity entity);
+
+    // OccurredAt is read back via DateTimeToTicksConverter.FromDb.
+    [Query]
+    public partial IReadOnlyList<EventEntity> QueryEvents();
 }

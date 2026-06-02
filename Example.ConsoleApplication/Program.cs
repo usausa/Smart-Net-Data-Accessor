@@ -25,6 +25,7 @@ internal static class Program
             failed += RunPattern1(connectionString);
             failed += RunPattern2(connectionString);
             failed += RunPattern3(connectionString);
+            failed += RunConverterSample(connectionString);
             return failed == 0 ? 0 : 1;
         }
         finally
@@ -170,6 +171,29 @@ internal static class Program
 
         Console.WriteLine();
         return all.Count == rows.Count && logged == 1 ? 0 : 1;
+    }
+
+    // Custom [TypeHandler] sample (F6): a DateTime property stored as Int64 ticks, verified round-trip.
+    private static int RunConverterSample(string connectionString)
+    {
+        Console.WriteLine("=== Custom TypeHandler: DateTime <-> Int64 ticks ===");
+
+        var accessor = new ExampleAccessor(
+            new DelegateDbProvider(() => new SqliteConnection(connectionString)));
+
+        accessor.CreateEvents();
+
+        var occurred = new DateTime(2026, 6, 2, 8, 30, 0, DateTimeKind.Utc);
+        accessor.InsertEvent(new EventEntity { OccurredAt = occurred });
+
+        var events = accessor.QueryEvents();
+        var roundTripped = events.Count == 1
+            && events[0].OccurredAt == occurred
+            && events[0].OccurredAt.Kind == DateTimeKind.Utc;
+        Console.WriteLine($"InsertEvent/QueryEvents -> {events.Count} row(s), OccurredAt={events[0].OccurredAt:O} (ToDb/FromDb round-trip {(roundTripped ? "OK" : "FAIL")})");
+
+        Console.WriteLine();
+        return roundTripped ? 0 : 1;
     }
 
     private sealed class ConsoleLogger : IExampleLogger

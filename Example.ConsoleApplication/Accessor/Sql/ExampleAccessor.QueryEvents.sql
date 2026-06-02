@@ -1,0 +1,1 @@
+SELECT Id, OccurredAt FROM Events ORDER BY Id
