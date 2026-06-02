@@ -17,7 +17,7 @@ public sealed class ScopedConverterTest
 
     private static MockDataReader TimestampReader() =>
         new(
-            new[] { new MockColumn(typeof(long), "Id"), new MockColumn(typeof(long), "CreatedAt") },
+            [new MockColumn(typeof(long), "Id"), new MockColumn(typeof(long), "CreatedAt")],
             new List<object[]> { new object[] { 7L, Expected.Ticks } });
 
     [Fact]

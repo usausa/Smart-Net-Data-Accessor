@@ -111,6 +111,7 @@ internal static class QueryBuilderEngine
         }
 
         var typeMaps = MappingResolver.ReadTypeMaps(container);
+        var profile = MappingResolver.ResolveProfile(container);
 
         builder.Indent().Append(AccessibilityText(container.DeclaredAccessibility)).Append(" partial class ").Append(container.Name).NewLine();
         builder.BeginScope();
@@ -123,7 +124,7 @@ internal static class QueryBuilderEngine
                 builder.NewLine();
             }
             first = false;
-            EmitMethod(context, builder, container, method, attr, syntax, kind, typeMaps, dialect);
+            EmitMethod(context, builder, container, method, attr, syntax, kind, typeMaps, profile, dialect);
         }
 
         builder.EndScope();
@@ -139,6 +140,7 @@ internal static class QueryBuilderEngine
         MethodDeclarationSyntax syntax,
         BuilderKind kind,
         Dictionary<ITypeSymbol, TypeMapInfo> typeMaps,
+        INamedTypeSymbol? profile,
         SqlDialect dialect)
     {
         var location = syntax.Identifier.GetLocation();
@@ -195,10 +197,10 @@ internal static class QueryBuilderEngine
         switch (kind)
         {
             case BuilderKind.Insert:
-                EmitInsert(context, builder, container, location, tableName, columns, entityParam, bindParams, typeMaps, dialect);
+                EmitInsert(context, builder, container, method, profile, location, tableName, columns, entityParam, bindParams, typeMaps, dialect);
                 break;
             case BuilderKind.Update:
-                EmitUpdate(context, builder, container, method, location, entityType, tableName, columns, entityParam, typeMaps, dialect);
+                EmitUpdate(context, builder, container, method, profile, location, entityType, tableName, columns, entityParam, typeMaps, dialect);
                 break;
             case BuilderKind.Delete:
                 EmitDelete(context, builder, method, location, entityType, tableName, columns, bindParams, typeMaps, dialect);
@@ -224,6 +226,8 @@ internal static class QueryBuilderEngine
         SourceProductionContext context,
         SourceBuilder builder,
         INamedTypeSymbol container,
+        IMethodSymbol method,
+        INamedTypeSymbol? profile,
         Location location,
         string tableName,
         List<EntityColumn>? columns,
@@ -242,7 +246,7 @@ internal static class QueryBuilderEngine
             foreach (var c in cols)
             {
                 ParameterEmitter.EmitEntityPropertyParameter(
-                    builder, Marker + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, context, location);
+                    builder, Marker + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, method, profile, context, location);
             }
         }
         else
@@ -263,6 +267,7 @@ internal static class QueryBuilderEngine
         SourceBuilder builder,
         INamedTypeSymbol container,
         IMethodSymbol method,
+        INamedTypeSymbol? profile,
         Location location,
         INamedTypeSymbol? entityType,
         string tableName,
@@ -313,12 +318,12 @@ internal static class QueryBuilderEngine
         foreach (var c in settable)
         {
             ParameterEmitter.EmitEntityPropertyParameter(
-                builder, Marker + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, context, location);
+                builder, Marker + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, method, profile, context, location);
         }
         foreach (var c in keys)
         {
             ParameterEmitter.EmitEntityPropertyParameter(
-                builder, Marker + "k_" + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, context, location);
+                builder, Marker + "k_" + c.PropertyName, $"{entityParam.Name}.{c.PropertyName}", c.Symbol, typeMaps, container, method, profile, context, location);
         }
     }
 
