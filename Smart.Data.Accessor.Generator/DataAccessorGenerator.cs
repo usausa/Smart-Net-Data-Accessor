@@ -147,7 +147,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
 
             var source = Emit(model);
-            var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace!.Replace('.', '_');
+            var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
             var filename = $"{ns}_{model.ClassName}.g.cs";
             context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
 
@@ -637,7 +637,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                             System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
                             System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
                             System.Data.ParameterDirection.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
-                            _ => ParameterDirectionKindLegacy.Input,
+                            _ => ParameterDirectionKindLegacy.Input
                         };
                     }
                 }
@@ -662,7 +662,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     Microsoft.CodeAnalysis.RefKind.Out => RefKindLegacy.Out,
                     Microsoft.CodeAnalysis.RefKind.Ref => RefKindLegacy.Ref,
-                    _ => RefKindLegacy.None,
+                    _ => RefKindLegacy.None
                 };
                 var (enumUnderlyingFq, isNullableEnumParam) = ClassifyEnumParameter(p.Type);
 
@@ -701,7 +701,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     p.RefKind == Microsoft.CodeAnalysis.RefKind.None &&
                     IsPocoParameter(p.Type))
                 {
-                    pocoProperties = BuildPocoProperties((INamedTypeSymbol)p.Type, p.Name);
+                    pocoProperties = BuildPocoProperties(context, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
                 }
 
                 return new ParameterModelLegacy(
@@ -897,7 +897,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     ParameterDirectionKindLegacy.Output => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
                     ParameterDirectionKindLegacy.InputOutput => pm.RefKind == RefKindLegacy.Ref,
-                    _ => true,
+                    _ => true
                 };
                 if (!refKindOk)
                 {
@@ -905,7 +905,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         RefKindLegacy.Out => "out",
                         RefKindLegacy.Ref => "ref",
-                        _ => "(none)",
+                        _ => "(none)"
                     };
                     context.ReportDiagnostic(Diagnostic.Create(
                         Diagnostics.DirectionRefKindMismatch,
@@ -991,7 +991,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ReturnShapeLegacy.Scalar => member.ReturnType,
                 ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
                     (member.ReturnType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault(),
-                _ => null,
+                _ => null
             };
             if (scalarSymbol is not null)
             {
@@ -1206,7 +1206,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             returnType is INamedTypeSymbol named &&
             named.TypeArguments.Length == 1 &&
             named.TypeArguments[0].SpecialType == SpecialType.System_Int32,
-        _ => false,
+        _ => false
     };
 
     private static bool HasUserDeclaredFieldOrProperty(INamedTypeSymbol classSymbol, string name)
@@ -1693,7 +1693,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 SpecialType.System_UInt32 => null,
                 SpecialType.System_Int64 => "GetInt64",
                 SpecialType.System_UInt64 => null,
-                _ => null,
+                _ => null
             };
             if (underlyingTyped is null)
             {
@@ -1715,7 +1715,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             SpecialType.System_Decimal => "GetDecimal",
             SpecialType.System_String => "GetString",
             SpecialType.System_DateTime => "GetDateTime",
-            _ => null,
+            _ => null
         };
 
         if (typed is null && underlying.ToDisplayString() == "System.Guid")
@@ -1820,13 +1820,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 "System.DateTimeOffset" => "global::System.Data.DbType.DateTimeOffset",
                 "System.TimeSpan" => "global::System.Data.DbType.Time",
                 "byte[]" => "global::System.Data.DbType.Binary",
-                _ => null,
-            },
+                _ => null
+            }
         };
     }
 
-    private static List<PocoBindProperty> BuildPocoProperties(INamedTypeSymbol pocoType, string argName)
+    private static List<PocoBindProperty> BuildPocoProperties(
+        SourceProductionContext context,
+        IMethodSymbol method,
+        INamedTypeSymbol classSymbol,
+        INamedTypeSymbol? profileSymbol,
+        INamedTypeSymbol pocoType,
+        string argName)
     {
+        var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
         var list = new List<PocoBindProperty>();
         foreach (var prop in pocoType.GetMembers().OfType<IPropertySymbol>())
         {
@@ -1868,15 +1875,32 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
                         System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
-                        _ => ParameterDirectionKindLegacy.Input,
+                        _ => ParameterDirectionKindLegacy.Input
                     };
                 }
             }
 
-            // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr).
+            // spec §7.4 / §7.7: a [TypeHandler<>] on the property (or method/class/profile scope)
+            // converts the value: input via ToDb, OUT read as TDb then FromDb. The DB parameter's
+            // DbType is then governed by TDb, not the CLR property type.
+            string? converterFqn = null;
+            string? converterDbTypeFqn = null;
+            ITypeSymbol? converterDbType = null;
+            var converterNullable = false;
+            if (ConverterResolver.Resolve(context, method, prop.Name, prop.GetAttributes(), prop.Type, scope) is { } conv)
+            {
+                converterFqn = conv.ConverterTypeFullName;
+                converterDbType = conv.DbType;
+                converterDbTypeFqn = conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                converterNullable = prop.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
+                    pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
+            }
+
+            // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is
+            // inferred from TDb (the DB-side type), otherwise from the CLR property type.
             if (dbTypeExpr is null && direction != ParameterDirectionKindLegacy.Input)
             {
-                dbTypeExpr = InferDbTypeExpr(prop.Type);
+                dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
 
             var (enumUnderlyingFq, isNullableEnumProp) = ClassifyEnumParameter(prop.Type);
@@ -1889,7 +1913,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 size,
                 enumUnderlyingFq,
                 isNullableEnumProp,
-                $"__op_{argName}_{prop.Name}"));
+                $"__op_{argName}_{prop.Name}",
+                converterFqn,
+                converterDbTypeFqn,
+                converterNullable));
         }
         return list;
     }
@@ -1906,13 +1933,22 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     pp.HandleName,
                     pp.Direction,
                     $"{p.Name}.{pp.PropertyName}",
-                    pp.TypeFullName)));
+                    // With a converter the OUT value is read as TDb (then FromDb); otherwise as TClr.
+                    pp.ConverterTypeFullName is null ? pp.TypeFullName : pp.ConverterDbTypeFullName!,
+                    pp.ConverterTypeFullName)));
 
     // spec §5.6: the input value expression for a POCO property — {argName}.{property}, with the
     // §7.9 enum-underlying cast when the property is an enum.
     private static string BuildPocoValueExpr(string argName, PocoBindProperty pp)
     {
         var access = argName + "." + pp.PropertyName;
+        // spec §7.4 / §7.7: a converter writes the input via TConverter.ToDb (priority over enum cast).
+        if (pp.ConverterTypeFullName is { } converter)
+        {
+            return pp.ConverterValueIsNullable
+                ? $"({access}.HasValue ? (object?){converter}.ToDb({access}.Value) : null)"
+                : $"{converter}.ToDb({access})";
+        }
         if (pp.EnumUnderlyingFullName is null)
         {
             return access;
@@ -2030,7 +2066,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         Accessibility.Protected => "protected",
         Accessibility.ProtectedOrInternal => "protected internal",
         Accessibility.ProtectedAndInternal => "private protected",
-        _ => "internal",
+        _ => "internal"
     };
 
     //--------------------------------------------------------------------------------
@@ -2069,7 +2105,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         if (!string.IsNullOrEmpty(model.Namespace))
         {
-            builder.Namespace(model.Namespace!);
+            builder.Namespace(model.Namespace);
             builder.NewLine();
         }
         builder.Indent().Append(model.Accessibility).Append(" partial class ").Append(model.ClassName).NewLine();
@@ -2200,7 +2236,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 RefKindLegacy.Out => "out ",
                 RefKindLegacy.Ref => "ref ",
-                _ => string.Empty,
+                _ => string.Empty
             };
             return $"{modifier}{p.TypeFullName} {p.Name}";
         }));
@@ -2602,12 +2638,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         foreach (var binding in m.OutputBindings)
         {
             // spec §5.6: POCO-argument output property → write the value back into {arg}.{property}.
+            // spec §7.4 / §7.7: with a converter, read the OUT value as TDb then TConverter.FromDb.
             if (binding.WritebackTarget is { } target)
             {
-                builder.Indent()
-                    .Append(target)
-                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
-                    .Append(binding.WritebackTypeFullName!).Append(">(").Append(binding.HandleName).Append(")!;").NewLine();
+                builder.Indent().Append(target).Append(" = ");
+                if (binding.ConverterTypeFullName is { } conv)
+                {
+                    builder.Append(conv).Append(".FromDb(global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
+                        .Append(binding.WritebackTypeFullName!).Append(">(").Append(binding.HandleName).Append(")!)");
+                }
+                else
+                {
+                    builder.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
+                        .Append(binding.WritebackTypeFullName!).Append(">(").Append(binding.HandleName).Append(")!");
+                }
+                builder.Append(";").NewLine();
                 continue;
             }
 
@@ -3000,7 +3045,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 SqlTokenizerErrorKind.CommentNotClosed => Diagnostics.SqlCommentNotClosed,
                 SqlTokenizerErrorKind.QuoteNotClosed => Diagnostics.SqlQuoteNotClosed,
-                _ => Diagnostics.SqlTokenizeFailed,
+                _ => Diagnostics.SqlTokenizeFailed
             };
             object[] args = ex.Kind == SqlTokenizerErrorKind.Unknown
                 ? [member.Name, ex.Message]
@@ -3086,7 +3131,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     ParameterDirectionKindLegacy.Output => NodeEmitter.Direction.Output,
                     ParameterDirectionKindLegacy.InputOutput => NodeEmitter.Direction.InputOutput,
                     ParameterDirectionKindLegacy.ReturnValue => NodeEmitter.Direction.ReturnValue,
-                    _ => NodeEmitter.Direction.Input,
+                    _ => NodeEmitter.Direction.Input
                 };
                 if (pm.DbTypeExpr is null && pm.Size is null &&
                     dirKind == NodeEmitter.Direction.Input && pm.EnumUnderlyingFullName is null &&
@@ -3106,7 +3151,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     ProviderPropertyName = pm.ProviderPropertyName,
                     ProviderValueExpr = pm.ProviderValueExpr,
                     ConverterTypeFullName = pm.ConverterTypeFullName,
-                    ConverterValueIsNullable = pm.ConverterValueIsNullable,
+                    ConverterValueIsNullable = pm.ConverterValueIsNullable
                 };
             },
             bindMarker);
@@ -3259,6 +3304,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         NodeEmitter.Direction.Output => ParameterDirectionKindLegacy.Output,
         NodeEmitter.Direction.InputOutput => ParameterDirectionKindLegacy.InputOutput,
         NodeEmitter.Direction.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
-        _ => ParameterDirectionKindLegacy.Input,
+        _ => ParameterDirectionKindLegacy.Input
     };
 }
