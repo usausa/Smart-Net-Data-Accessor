@@ -52,7 +52,7 @@ SDA0197 | Usage    | Error    | [Direction] used on unsupported method kind
 SDA0186 | Sql      | Error    | /*!helper */ type cannot be resolved
 SDA0187 | Sql      | Warning  | /*!using */ namespace cannot be resolved
 SDA0198 | Usage    | Warning  | IAsyncEnumerable method requires [EnumeratorCancellation] CancellationToken
-SDA0200 | Usage    | Error    | [Direction(ReturnValue)] not allowed on [DirectSql] parameter
+SDA0200 | Usage    | Error    | [Direction(ReturnValue)] is not supported
 SDA0201 | Usage    | Error    | [Direction] not allowed on [DirectSql] command-text parameter
 SDA0203 | Usage    | Error    | Conflicting [DbType] / [DbType<TEnum>] on same parameter
 SDA0204 | Usage    | Warning  | [DbType<TEnum>] TEnum is not in the provider enum whitelist

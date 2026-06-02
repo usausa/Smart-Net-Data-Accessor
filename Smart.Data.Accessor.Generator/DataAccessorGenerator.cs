@@ -649,6 +649,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         member.Name,
                         p.Name));
                 }
+
+                // spec §5.6: OUT / InputOutput parameters need a concrete DbType (else sql_variant).
+                // Infer from the CLR type when no explicit [DbType] / provider DbType is present.
+                if (dbTypeExpr is null && providerParamTypeFqn is null &&
+                    direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
+                {
+                    dbTypeExpr = InferDbTypeExpr(p.Type);
+                }
+
                 var refKind = p.RefKind switch
                 {
                     Microsoft.CodeAnalysis.RefKind.Out => RefKindLegacy.Out,
@@ -684,6 +693,17 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     size ??= typeMap.Size;
                 }
 
+                // spec §5.6: a POCO argument on a [Procedure]/[DirectSql] method expands into one
+                // parameter per public property (the argument itself is not bound). 2-way SQL methods
+                // reference POCO members via /*@ arg.Prop */ instead, so expansion is limited here.
+                IReadOnlyList<PocoBindProperty>? pocoProperties = null;
+                if ((procedureName is not null || isDirectSql) &&
+                    p.RefKind == Microsoft.CodeAnalysis.RefKind.None &&
+                    IsPocoParameter(p.Type))
+                {
+                    pocoProperties = BuildPocoProperties((INamedTypeSymbol)p.Type, p.Name);
+                }
+
                 return new ParameterModelLegacy(
                     p.Name,
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -701,7 +721,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     providerPropertyName,
                     providerValueExpr,
                     converterFqn,
-                    converterNullableValue);
+                    converterNullableValue,
+                    pocoProperties);
             }).ToList();
 
             // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
@@ -861,11 +882,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         pm.Name));
                     continue;
                 }
+                if (pm.Direction == ParameterDirectionKindLegacy.ReturnValue)
+                {
+                    // spec §5.6: [Direction(ReturnValue)] is retired; the stored-procedure RETURN value
+                    // maps to the method's scalar return value instead.
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ReturnValueDirectionNotAllowed,
+                        ms.Locations.FirstOrDefault(),
+                        member.Name,
+                        pm.Name));
+                    continue;
+                }
                 var refKindOk = pm.Direction switch
                 {
                     ParameterDirectionKindLegacy.Output => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
                     ParameterDirectionKindLegacy.InputOutput => pm.RefKind == RefKindLegacy.Ref,
-                    ParameterDirectionKindLegacy.ReturnValue => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
                     _ => true,
                 };
                 if (!refKindOk)
@@ -896,9 +927,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     p.TypeFullName == "string");
                 directSqlParameterName = sqlParam?.Name;
 
-                // X1 / spec §1.4 F14: [Direction] interop diagnostics on [DirectSql].
-                //  - SDA0201 Error: [Direction] on the SQL-source string parameter.
-                //  - SDA0200 Error: [Direction(ReturnValue)] on any parameter.
+                // spec §1.4 F14: SDA0201 — [Direction] on the SQL-source string parameter is invalid.
+                // ([Direction(ReturnValue)] anywhere is reported generally above, SDA0200 / §5.6.)
                 foreach (var ms in member.Parameters)
                 {
                     var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
@@ -906,15 +936,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         continue;
                     }
-                    if (pm.Direction == ParameterDirectionKindLegacy.ReturnValue)
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(
-                            Diagnostics.DirectSqlReturnValueDirection,
-                            ms.Locations.FirstOrDefault(),
-                            member.Name,
-                            pm.Name));
-                    }
-                    else if (pm.Name == directSqlParameterName && pm.Direction != ParameterDirectionKindLegacy.Input)
+                    if (pm.Name == directSqlParameterName && pm.Direction != ParameterDirectionKindLegacy.Input)
                     {
                         context.ReportDiagnostic(Diagnostic.Create(
                             Diagnostics.DirectSqlCommandTextDirection,
@@ -926,14 +948,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
                 // Output bindings for OUT / InOut parameters (skip the SQL source param and
                 // any erroneous ReturnValue assignments — those have already been reported).
+                // POCO-argument output properties (spec §5.6) are added via PocoOutputBindings.
                 outputBindings = parameters
-                    .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
+                    .Where(p => p.PocoProperties is null && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
                     .Where(p => p.Direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
                     .Select(p => new OutputBindingLegacy(
                         p.Name,
                         $"__op_{p.Name}",
                         p.Direction))
+                    .Concat(PocoOutputBindings(parameters))
                     .ToList();
             }
             else if (sql is not null && builder is null)
@@ -942,13 +966,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             else if (procedureName is not null)
             {
-                // Procedure: bindings are derived from method parameters with non-Input Direction.
+                // Procedure: bindings are derived from method parameters with non-Input Direction,
+                // plus POCO-argument output properties (spec §5.6).
                 outputBindings = parameters
-                    .Where(p => p.Direction != ParameterDirectionKindLegacy.Input)
+                    .Where(p => p.PocoProperties is null && p.Direction != ParameterDirectionKindLegacy.Input)
                     .Select(p => new OutputBindingLegacy(
                         p.Name,
                         $"__op_{p.Name}",
                         p.Direction))
+                    .Concat(PocoOutputBindings(parameters))
                     .ToList();
             }
 
@@ -977,6 +1003,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
             }
 
+            // spec §5.6: a [Procedure] with a scalar return maps the stored-procedure RETURN value to
+            // the method's return value (via an auto-added ReturnValue parameter).
+            var mapsProcedureReturnValue = procedureName is not null &&
+                shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar;
+
             methods.Add(new MethodModelLegacy(
                 member.Name,
                 kind,
@@ -1004,7 +1035,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 useRecordPrimaryCtor,
                 methodUsings,
                 scalarConverterFqn,
-                scalarConverterDbType));
+                scalarConverterDbType,
+                mapsProcedureReturnValue));
         }
 
         if (methods.Count == 0)
@@ -1726,6 +1758,199 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             : $"({p.EnumUnderlyingFullName}){p.Name}";
     }
 
+    // spec §5.6: a parameter is a POCO argument (expanded into one DB parameter per public property)
+    // when its type is a user-defined class/record/struct — not a BCL scalar, enum, array, or
+    // connection/transaction/cancellation token.
+    private static bool IsPocoParameter(ITypeSymbol type)
+    {
+        if (type is not INamedTypeSymbol nt || nt.TypeKind is not (TypeKind.Class or TypeKind.Struct))
+        {
+            return false;
+        }
+        if (nt.SpecialType != SpecialType.None)
+        {
+            return false;   // string / decimal / DateTime / primitives / object
+        }
+        if (IsDbConnectionType(nt) || IsDbTransactionType(nt) || nt.ToDisplayString() == CancellationTokenTypeName)
+        {
+            return false;
+        }
+        var ns = nt.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        if (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal))
+        {
+            return false;   // Guid / DateTimeOffset / TimeSpan / Nullable<T> など BCL の値型
+        }
+        return nt.GetMembers().OfType<IPropertySymbol>()
+            .Any(static p => p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic && p.GetMethod is not null);
+    }
+
+    // spec §5.6: expand a POCO argument's public properties into bind metadata. Default Input;
+    // [Direction(Output/InputOutput)] makes a property an output. [Name]/[DbType]/[SqlSize]/[AnsiString]
+    // honoured per property. [Ignore] excludes. ([Direction(ReturnValue)] is retired → treated as Input.)
+    // spec §5.6: OUT / InputOutput parameters need a concrete DbType — SQL Server otherwise creates a
+    // sql_variant parameter that cannot implicitly convert to the procedure's typed OUT parameter.
+    // Infers a DbType expression from the CLR type (Nullable<T> / enum unwrapped); null when unknown.
+    private static string? InferDbTypeExpr(ITypeSymbol type)
+    {
+        var t = UnwrapNullableSymbol(type);
+        if (t.TypeKind == TypeKind.Enum && t is INamedTypeSymbol en && en.EnumUnderlyingType is { } ut)
+        {
+            t = ut;
+        }
+        return t.SpecialType switch
+        {
+            SpecialType.System_Boolean => "global::System.Data.DbType.Boolean",
+            SpecialType.System_Byte => "global::System.Data.DbType.Byte",
+            SpecialType.System_SByte => "global::System.Data.DbType.SByte",
+            SpecialType.System_Int16 => "global::System.Data.DbType.Int16",
+            SpecialType.System_UInt16 => "global::System.Data.DbType.UInt16",
+            SpecialType.System_Int32 => "global::System.Data.DbType.Int32",
+            SpecialType.System_UInt32 => "global::System.Data.DbType.UInt32",
+            SpecialType.System_Int64 => "global::System.Data.DbType.Int64",
+            SpecialType.System_UInt64 => "global::System.Data.DbType.UInt64",
+            SpecialType.System_Single => "global::System.Data.DbType.Single",
+            SpecialType.System_Double => "global::System.Data.DbType.Double",
+            SpecialType.System_Decimal => "global::System.Data.DbType.Decimal",
+            SpecialType.System_String => "global::System.Data.DbType.String",
+            SpecialType.System_DateTime => "global::System.Data.DbType.DateTime",
+            SpecialType.System_Char => "global::System.Data.DbType.StringFixedLength",
+            _ => t.ToDisplayString() switch
+            {
+                "System.Guid" => "global::System.Data.DbType.Guid",
+                "System.DateTimeOffset" => "global::System.Data.DbType.DateTimeOffset",
+                "System.TimeSpan" => "global::System.Data.DbType.Time",
+                "byte[]" => "global::System.Data.DbType.Binary",
+                _ => null,
+            },
+        };
+    }
+
+    private static List<PocoBindProperty> BuildPocoProperties(INamedTypeSymbol pocoType, string argName)
+    {
+        var list = new List<PocoBindProperty>();
+        foreach (var prop in pocoType.GetMembers().OfType<IPropertySymbol>())
+        {
+            if (prop.DeclaredAccessibility != Accessibility.Public || prop.IsStatic || prop.GetMethod is null)
+            {
+                continue;
+            }
+            if (prop.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+            {
+                continue;
+            }
+
+            string? dbTypeExpr = null;
+            int? size = null;
+            var direction = ParameterDirectionKindLegacy.Input;
+            string? paramName = null;
+            foreach (var pa in prop.GetAttributes())
+            {
+                var an = pa.AttributeClass?.ToDisplayString();
+                if (an == NameAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is string nm && !string.IsNullOrEmpty(nm))
+                {
+                    paramName = nm;
+                }
+                else if (an == DbTypeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dt)
+                {
+                    dbTypeExpr = $"(global::System.Data.DbType){dt}";
+                }
+                else if (an == AnsiStringAttributeName)
+                {
+                    dbTypeExpr ??= "global::System.Data.DbType.AnsiString";
+                }
+                else if (an == SqlSizeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int sz)
+                {
+                    size = sz;
+                }
+                else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
+                {
+                    direction = (System.Data.ParameterDirection)dirRaw switch
+                    {
+                        System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
+                        System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
+                        _ => ParameterDirectionKindLegacy.Input,
+                    };
+                }
+            }
+
+            // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr).
+            if (dbTypeExpr is null && direction != ParameterDirectionKindLegacy.Input)
+            {
+                dbTypeExpr = InferDbTypeExpr(prop.Type);
+            }
+
+            var (enumUnderlyingFq, isNullableEnumProp) = ClassifyEnumParameter(prop.Type);
+            list.Add(new PocoBindProperty(
+                prop.Name,
+                paramName ?? prop.Name,
+                prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                direction,
+                dbTypeExpr,
+                size,
+                enumUnderlyingFq,
+                isNullableEnumProp,
+                $"__op_{argName}_{prop.Name}"));
+        }
+        return list;
+    }
+
+    // spec §5.6: the OUT/InputOutput bindings contributed by POCO arguments (writeback target =
+    // {argName}.{property}).
+    private static IEnumerable<OutputBindingLegacy> PocoOutputBindings(IReadOnlyList<ParameterModelLegacy> parameters) =>
+        parameters
+            .Where(static p => p.PocoProperties is not null)
+            .SelectMany(static p => p.PocoProperties!
+                .Where(static pp => pp.Direction != ParameterDirectionKindLegacy.Input)
+                .Select(pp => new OutputBindingLegacy(
+                    pp.ParamName,
+                    pp.HandleName,
+                    pp.Direction,
+                    $"{p.Name}.{pp.PropertyName}",
+                    pp.TypeFullName)));
+
+    // spec §5.6: the input value expression for a POCO property — {argName}.{property}, with the
+    // §7.9 enum-underlying cast when the property is an enum.
+    private static string BuildPocoValueExpr(string argName, PocoBindProperty pp)
+    {
+        var access = argName + "." + pp.PropertyName;
+        if (pp.EnumUnderlyingFullName is null)
+        {
+            return access;
+        }
+        return pp.IsNullableEnum
+            ? $"({pp.EnumUnderlyingFullName}?){access}"
+            : $"({pp.EnumUnderlyingFullName}){access}";
+    }
+
+    // spec §5.6: emit Add*Parameter for one expanded POCO property (procedure / DirectSql setup).
+    private static void EmitPocoPropertyParameter(SourceBuilder builder, char bindMarker, string argName, PocoBindProperty pp)
+    {
+        var paramName = bindMarker + pp.ParamName;
+        var valueExpr = BuildPocoValueExpr(argName, pp);
+        var dbTypeArg = pp.DbTypeExpr is not null ? ", " + pp.DbTypeExpr : string.Empty;
+        var dbTypeExprOrDefault = pp.DbTypeExpr ?? "global::System.Data.DbType.Object";
+        var sizeArg = pp.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+
+        switch (pp.Direction)
+        {
+            case ParameterDirectionKindLegacy.Output:
+                builder.Indent().Append(pp.HandleName)
+                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
+                    .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                break;
+            case ParameterDirectionKindLegacy.InputOutput:
+                builder.Indent().Append(pp.HandleName)
+                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
+                    .Append(paramName).Append("\", ").Append(valueExpr).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                break;
+            default:
+                builder.Indent()
+                    .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
+                    .Append(paramName).Append("\", ").Append(valueExpr).Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
+                break;
+        }
+    }
+
     // spec §7.4 / §7.7: builds the scalar read expression for an [ExecuteScalar] method.
     // Without a converter: ConvertScalar<TClr>(executeCall). With one: read the DB value as TDb and
     // convert via TConverter.FromDb (the [return:] / method / class / profile scope chain).
@@ -2211,6 +2436,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 continue;
             }
+            if (p.PocoProperties is { } pocoProps)
+            {
+                // spec §5.6: expand the POCO argument into one parameter per property.
+                foreach (var pp in pocoProps)
+                {
+                    EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
+                }
+                continue;
+            }
 
             var paramName = m.BindMarker + p.Name;
             var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
@@ -2292,6 +2526,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 continue;
             }
+            if (p.PocoProperties is { } pocoProps)
+            {
+                // spec §5.6: expand the POCO argument into one parameter per property.
+                foreach (var pp in pocoProps)
+                {
+                    EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
+                }
+                continue;
+            }
 
             var paramName = m.BindMarker + p.Name;
             var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
@@ -2345,12 +2588,29 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     break;
             }
         }
+
+        if (m.MapsProcedureReturnValue)
+        {
+            // spec §5.6: capture the stored-procedure RETURN value (mapped to the method return value).
+            builder.Indent().Append("var __returnValue = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
+                .Append(m.BindMarker).Append("__ReturnValue\", global::System.Data.DbType.Int32);").NewLine();
+        }
     }
 
     private static void EmitOutputWriteback(SourceBuilder builder, MethodModelLegacy m)
     {
         foreach (var binding in m.OutputBindings)
         {
+            // spec §5.6: POCO-argument output property → write the value back into {arg}.{property}.
+            if (binding.WritebackTarget is { } target)
+            {
+                builder.Indent()
+                    .Append(target)
+                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
+                    .Append(binding.WritebackTypeFullName!).Append(">(").Append(binding.HandleName).Append(")!;").NewLine();
+                continue;
+            }
+
             var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
             if (param is null || param.RefKind == RefKindLegacy.None)
             {
@@ -2410,6 +2670,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     EmitOutputWriteback(builder, m);
                     break;
                 case ReturnShapeLegacy.Scalar:
+                    if (m.MapsProcedureReturnValue)
+                    {
+                        // spec §5.6: stored-procedure RETURN value → method return value.
+                        builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
+                        EmitOutputWriteback(builder, m);
+                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(m.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
+                        break;
+                    }
                     // int Execute / scalar
                     if (m.ScalarTypeFullName == "int")
                     {
@@ -2444,6 +2712,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     break;
                 case ReturnShapeLegacy.TaskScalar:
                 case ReturnShapeLegacy.ValueTaskScalar:
+                    if (m.MapsProcedureReturnValue)
+                    {
+                        // spec §5.6: stored-procedure RETURN value → method return value.
+                        builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                        EmitOutputWriteback(builder, m);
+                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(m.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
+                        break;
+                    }
                     if (m.ScalarTypeFullName == "int")
                     {
                         if (hasOutputs)

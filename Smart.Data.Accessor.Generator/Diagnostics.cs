@@ -443,10 +443,10 @@ internal static class Diagnostics
     // X1: [DirectSql] + [Direction] interop diagnostics (SDA0200-0201, spec §1.4 F14 / §5.2 / §5.3).
     // ------------------------------------------------------------------
 
-    public static readonly DiagnosticDescriptor DirectSqlReturnValueDirection = new(
+    public static readonly DiagnosticDescriptor ReturnValueDirectionNotAllowed = new(
         id: "SDA0200",
-        title: "[Direction(ReturnValue)] not allowed on [DirectSql] parameter",
-        messageFormat: "Method=[{0}]: parameter '{1}' on a [DirectSql] method cannot use [Direction(ReturnValue)] (spec §1.4 F14)",
+        title: "[Direction(ReturnValue)] is not supported",
+        messageFormat: "Method=[{0}]: parameter '{1}' cannot use [Direction(ReturnValue)]; the stored procedure RETURN value maps to the method's scalar return value (spec §5.6)",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

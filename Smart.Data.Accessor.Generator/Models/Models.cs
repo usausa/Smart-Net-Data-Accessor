@@ -41,7 +41,11 @@ internal sealed record ParameterModelLegacy(
     // ConverterValueIsNullable is true when the parameter is `Nullable<TClr>` (a HasValue guard is
     // emitted so `ToDb` receives the non-null value and DB NULL is passed otherwise).
     string? ConverterTypeFullName = null,
-    bool ConverterValueIsNullable = false);
+    bool ConverterValueIsNullable = false,
+    // spec §5.6: non-null when this parameter is a POCO argument on a [Procedure]/[DirectSql] method.
+    // Its public properties are expanded into DB parameters; the parameter itself is not bound. The
+    // method signature still declares the POCO argument.
+    IReadOnlyList<PocoBindProperty>? PocoProperties = null);
 
 internal enum ReturnShapeLegacy
 {
@@ -70,7 +74,35 @@ internal enum ConnectionPatternLegacy
 internal sealed record OutputBindingLegacy(
     string ParameterName,
     string HandleName,
-    ParameterDirectionKindLegacy Direction);
+    ParameterDirectionKindLegacy Direction,
+    // spec §5.6: settable C# location to write the OUT/InputOutput value back to. Null → legacy
+    // out/ref-argument path (EmitOutputWriteback looks up the parameter by ParameterName). Non-null
+    // (e.g. "args.Count") for POCO-argument properties; WritebackTypeFullName gives the read type.
+    string? WritebackTarget = null,
+    string? WritebackTypeFullName = null,
+    // spec §7.4 / §7.7: when set, the OUT value is read as WritebackTypeFullName (= TDb) and converted
+    // via TConverter.FromDb before assignment to WritebackTarget.
+    string? ConverterTypeFullName = null);
+
+// spec §5.6: a property of a POCO procedure/DirectSql argument, expanded into one DB parameter.
+// Input by default; [Direction(Output/InputOutput)] makes it an output written back to
+// {ArgName}.{PropertyName}. The value is read from {ArgName}.{PropertyName}.
+internal sealed record PocoBindProperty(
+    string PropertyName,
+    string ParamName,                  // DB parameter name (BindMarker is prepended at emit): [Name] or PropertyName
+    string TypeFullName,
+    ParameterDirectionKindLegacy Direction,
+    string? DbTypeExpr,
+    int? Size,
+    string? EnumUnderlyingFullName,
+    bool IsNullableEnum,
+    string HandleName,                 // __op_{ArgName}_{PropertyName} for Output / InputOutput
+    // spec §7.4 / §7.7: when set, input is written via TConverter.ToDb and OUT read as
+    // ConverterDbTypeFullName (= TDb) then TConverter.FromDb. ConverterValueIsNullable adds a
+    // HasValue guard for a Nullable<TClr> input.
+    string? ConverterTypeFullName = null,
+    string? ConverterDbTypeFullName = null,
+    bool ConverterValueIsNullable = false);
 
 /// <summary>
 /// Per-column metadata used by Query-shape methods. Drives OrdinalCache struct emission
@@ -142,7 +174,10 @@ internal sealed record MethodModelLegacy(
     // method / class / profile scope). The scalar is read as ScalarConverterDbTypeFullName then
     // converted via `TConverter.FromDb(...)`. Only [ExecuteScalar] (non-int) scalar shapes use this.
     string? ScalarConverterTypeFullName = null,
-    string? ScalarConverterDbTypeFullName = null);
+    string? ScalarConverterDbTypeFullName = null,
+    // spec §5.6: true for a [Procedure] method with a scalar return — the stored-procedure RETURN
+    // value is captured via an auto-added ReturnValue parameter and returned (not ExecuteNonQuery rows).
+    bool MapsProcedureReturnValue = false);
 
 internal sealed record InjectModelLegacy(
     string TypeFullName,
