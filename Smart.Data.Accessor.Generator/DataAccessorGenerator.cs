@@ -2743,6 +2743,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 pragmaName));
         }
 
+        // SDA0105 / SDA0106: the /*% %/ code blocks are emitted verbatim, so unbalanced braces would
+        // otherwise surface as a confusing C# error. Report at the SQL location and skip emission
+        // (matches the tokenizer-error path; the Error fails the build either way).
+        switch (NodeBuilder.CheckBraceBalance(nodes))
+        {
+            case NodeBuilder.BraceBalance.UnclosedBlock:
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.SqlCodeBlockBraceUnclosed, member.Locations.FirstOrDefault(), member.Name));
+                return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+            case NodeBuilder.BraceBalance.ExtraClose:
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.SqlCodeBlockBraceExtraClose, member.Locations.FirstOrDefault(), member.Name));
+                return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+        }
+
         // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas
         // (UsingNodes are aggregated at file-header emission, not per-method output).
         // Validation against the current Compilation produces SDA0186 / SDA0187.

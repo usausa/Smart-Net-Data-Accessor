@@ -10,6 +10,8 @@ SDA0101 | Sql      | Warning  | SQL is empty
 SDA0102 | Sql      | Error    | SQL comment is not closed
 SDA0103 | Sql      | Error    | SQL quote is not closed
 SDA0104 | Sql      | Error    | Unknown SQL pragma
+SDA0105 | Sql      | Error    | SQL code block has an unclosed brace
+SDA0106 | Sql      | Error    | SQL code block has an unmatched closing brace
 SDA0110 | Sql      | Warning  | SQL parameter does not match method parameters
 SDA0111 | Sql      | Info     | Method parameter is unused in SQL
 SDA0112 | Sql      | Warning  | SQL property accessor does not match a property

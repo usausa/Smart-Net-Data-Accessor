@@ -25,6 +25,80 @@ public sealed class NodeBuilder
 
     public IReadOnlyList<string> UnknownPragmas => unknownPragmas;
 
+    /// <summary>Outcome of the <c>/*% %/</c> code-block brace-balance check (spec §11.2).</summary>
+    public enum BraceBalance
+    {
+        Balanced,
+        UnclosedBlock,   // SDA0105: more '{' than '}' across code blocks (a block is never closed)
+        ExtraClose,      // SDA0106: a '}' appears with no matching '{'
+    }
+
+    /// <summary>
+    /// Verifies that the C# braces across all <c>/*% %/</c> code blocks (spec §6) are balanced.
+    /// The block bodies are emitted verbatim into the generated method, so an unbalanced brace would
+    /// otherwise surface as a confusing C# compile error in generated code. Braces inside string /
+    /// char literals and <c>//</c> line comments within a block are ignored.
+    /// </summary>
+    public static BraceBalance CheckBraceBalance(IReadOnlyList<INode> nodes)
+    {
+        var depth = 0;
+        foreach (var node in nodes)
+        {
+            if (node is not CodeNode code)
+            {
+                continue;
+            }
+
+            var s = code.Code;
+            for (var i = 0; i < s.Length; i++)
+            {
+                switch (s[i])
+                {
+                    case '"':
+                        i = SkipLiteral(s, i, '"');
+                        break;
+                    case '\'':
+                        i = SkipLiteral(s, i, '\'');
+                        break;
+                    case '/' when i + 1 < s.Length && s[i + 1] == '/':
+                        i = s.Length;   // line comment: ignore the rest of this block fragment
+                        break;
+                    case '{':
+                        depth++;
+                        break;
+                    case '}':
+                        depth--;
+                        if (depth < 0)
+                        {
+                            return BraceBalance.ExtraClose;
+                        }
+                        break;
+                }
+            }
+        }
+
+        return depth > 0 ? BraceBalance.UnclosedBlock : BraceBalance.Balanced;
+    }
+
+    // Advances past a string ('"') or char ('\'') literal beginning at index i, honouring the '\'
+    // escape. Returns the index of the closing delimiter (the caller's loop increment moves past it).
+    private static int SkipLiteral(string s, int i, char delimiter)
+    {
+        for (var j = i + 1; j < s.Length; j++)
+        {
+            if (s[j] == '\\')
+            {
+                j++;   // skip the escaped character
+                continue;
+            }
+            if (s[j] == delimiter)
+            {
+                return j;
+            }
+        }
+        return s.Length;
+    }
+
     private Token? NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;
 
     private void Flush()

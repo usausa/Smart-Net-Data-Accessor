@@ -80,6 +80,22 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor SqlCodeBlockBraceUnclosed = new(
+        id: "SDA0105",
+        title: "SQL code block has an unclosed brace",
+        messageFormat: "Method=[{0}]: a /*% %/ code block opens a '{{' that is never closed; balance the braces across the code blocks (spec §11.2)",
+        category: "Sql",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SqlCodeBlockBraceExtraClose = new(
+        id: "SDA0106",
+        title: "SQL code block has an unmatched closing brace",
+        messageFormat: "Method=[{0}]: a /*% %/ code block has a '}}' with no matching '{{'; balance the braces across the code blocks (spec §11.2)",
+        category: "Sql",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public static readonly DiagnosticDescriptor UndefinedSqlParameter = new(
         id: "SDA0110",
         title: "SQL parameter does not match method parameters",
