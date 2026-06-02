@@ -1549,7 +1549,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 return null;
             }
-            var (tdbReader, _, _, _) = ClassifyColumnType(conv.DbType);
+            var (tdbReader, _, _, _, _) = ClassifyColumnType(conv.DbType);
             return new ConverterReadBinding(
                 conv.ConverterTypeFullName,
                 conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -1596,12 +1596,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
                     ?.ConstructorArguments.FirstOrDefault().Value as string ?? param.Name;
                 var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(param.Type);
+                var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
                     || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
                 var converter = ResolveConverterBinding(prop, param.Type);
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
-                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter));
+                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
             return (ctorInfos, true);
         }
@@ -1624,11 +1624,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
                 ?.ConstructorArguments.FirstOrDefault().Value as string ?? name;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var (typedReader, isValueType, isNullable, enumCast) = ClassifyColumnType(prop.Type);
+            var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(prop.Type);
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
             var converter = ResolveConverterBinding(prop, prop.Type);
             CheckNonNullableDbNull(prop.Type, name, skipNullCheck, converter);
-            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter));
+            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
         }
         return (infos, false);
     }
@@ -1667,7 +1667,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     /// drives the dispatch. For Enum types, returns the underlying primitive's <c>GetXxx</c> method
     /// plus the enum's FQN so the caller can emit an explicit cast (spec §7.9 / §7.10.3).
     /// </summary>
-    private static (string? TypedReader, bool IsValueType, bool IsNullable, string? EnumCastFullName) ClassifyColumnType(ITypeSymbol propertyType)
+    private static (string? TypedReader, bool IsValueType, bool IsNullable, string? EnumCastFullName, string? EnumUnderlyingCast) ClassifyColumnType(ITypeSymbol propertyType)
     {
         var isNullable = propertyType.NullableAnnotation == NullableAnnotation.Annotated;
         var underlying = propertyType;
@@ -1680,27 +1680,36 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         var isValueType = underlying.IsValueType;
 
-        // Enum: read underlying primitive then cast back to the enum FQN (spec §7.9 / §7.10.3).
+        // Enum: read the same-size signed primitive then cast back to the enum (spec §7.9 / §7.10.3).
+        // DbDataReader exposes no GetSByte / GetUInt16/32/64, so unsigned (and sbyte) underlyings read
+        // the signed counterpart and add an intermediate bit-preserving cast to the unsigned/sbyte
+        // underlying — e.g. (MyEnum)(uint)reader.GetInt32(ord) — avoiding the boxing GetValue<T> path.
         if (underlying is INamedTypeSymbol enumSym && enumSym.TypeKind == TypeKind.Enum)
         {
             var underlyingTyped = enumSym.EnumUnderlyingType?.SpecialType switch
             {
-                SpecialType.System_Byte => "GetByte",
-                SpecialType.System_SByte => null, // DbDataReader has no GetSByte; fall back to GetValue.
-                SpecialType.System_Int16 => "GetInt16",
-                SpecialType.System_UInt16 => null, // GetValue fallback
-                SpecialType.System_Int32 => "GetInt32",
-                SpecialType.System_UInt32 => null,
-                SpecialType.System_Int64 => "GetInt64",
-                SpecialType.System_UInt64 => null,
-                _ => null
+                SpecialType.System_Byte or SpecialType.System_SByte => "GetByte",
+                SpecialType.System_Int16 or SpecialType.System_UInt16 => "GetInt16",
+                SpecialType.System_Int32 or SpecialType.System_UInt32 => "GetInt32",
+                SpecialType.System_Int64 or SpecialType.System_UInt64 => "GetInt64",
+                _ => null,
+            };
+            // Intermediate bit-preserving cast for unsigned / sbyte underlyings (the reader returns the
+            // signed counterpart). null for signed underlyings (no intermediate cast needed).
+            var underlyingCast = enumSym.EnumUnderlyingType?.SpecialType switch
+            {
+                SpecialType.System_SByte => "sbyte",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_UInt64 => "ulong",
+                _ => null,
             };
             if (underlyingTyped is null)
             {
-                return (null, isValueType, isNullable, null);
+                return (null, isValueType, isNullable, null, null);
             }
             var enumFqn = enumSym.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return (underlyingTyped, isValueType, isNullable, enumFqn);
+            return (underlyingTyped, isValueType, isNullable, enumFqn, underlyingCast);
         }
 
         var typed = underlying.SpecialType switch
@@ -1723,7 +1732,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             typed = "GetGuid";
         }
 
-        return (typed, isValueType, isNullable, null);
+        return (typed, isValueType, isNullable, null, null);
     }
 
     /// <summary>
@@ -2947,7 +2956,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     if (col.EnumCastTypeFullName is not null)
                     {
                         // spec §7.9 / §7.10.3: Enum is read as its underlying primitive then cast back.
+                        // For unsigned / sbyte underlyings an intermediate bit-preserving cast bridges
+                        // the signed reader result, e.g. (MyEnum)(uint)reader.GetInt32(ord).
                         sb.Append('(').Append(col.EnumCastTypeFullName).Append(')');
+                        if (col.EnumUnderlyingCastFullName is not null)
+                        {
+                            sb.Append('(').Append(col.EnumUnderlyingCastFullName).Append(')');
+                        }
                     }
                     sb.Append(readerVar).Append('.').Append(col.TypedReaderMethod).Append('(').Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
                 }

@@ -126,7 +126,10 @@ internal sealed record ColumnInfoLegacy(
     bool SkipNullCheck = false,
     // spec §7.4 / §7.10: non-null when the property carries a valid [TypeHandler<>]; the mapping
     // reads TDb from the reader and calls TConverter.FromDb(...) to produce the property value.
-    ConverterReadBinding? Converter = null);
+    ConverterReadBinding? Converter = null,
+    // spec §7.9: intermediate bit-preserving cast inserted between the enum cast and the (signed)
+    // reader for unsigned / sbyte enum underlyings — e.g. "uint" → (MyEnum)(uint)reader.GetInt32(ord).
+    string? EnumUnderlyingCastFullName = null);
 
 // spec §7.4 / §7.10: reader-side converter binding for a mapped column. The DB value is read as
 // TDb (via the typed reader method, or ExecuteHelper.GetValue<TDb> when none exists) then passed

@@ -1,0 +1,1 @@
+SELECT Id, Perm FROM Perms
