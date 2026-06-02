@@ -45,6 +45,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private const string ProcedureAttributeName = "Smart.Data.Accessor.Attributes.ProcedureAttribute";
     private const string ExecuteConfigAttributeName = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
     private const string AccessorProfileAttributeName = "Smart.Data.Accessor.Attributes.AccessorProfileAttribute";
+    private const string TypeMapAttributeName = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
     private const string QueryBuilderAttributeName = "Smart.Data.Accessor.Builders.QueryBuilderAttribute";
     private const string QueryBuilderMethodSuffix = "__QueryBuilder";
     private const char DefaultBindMarker = '@';
@@ -232,6 +233,73 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return builder.ToString();
     }
 
+    // spec §7.5 / §7.7: builds the class/profile [TypeMap] lookup (unwrapped CLR type FQN → DbType
+    // expr + Size). Class scope is collected first so it wins over the profile.
+    private static Dictionary<string, (string DbTypeExpr, int? Size)> BuildTypeMapLookup(
+        INamedTypeSymbol classSymbol,
+        INamedTypeSymbol? profileSymbol)
+    {
+        var map = new Dictionary<string, (string DbTypeExpr, int? Size)>(StringComparer.Ordinal);
+        CollectTypeMaps(classSymbol, map);
+        if (profileSymbol is not null)
+        {
+            CollectTypeMaps(profileSymbol, map);
+        }
+        return map;
+    }
+
+    private static void CollectTypeMaps(INamedTypeSymbol owner, Dictionary<string, (string DbTypeExpr, int? Size)> map)
+    {
+        foreach (var attr in owner.GetAttributes())
+        {
+            if (attr.AttributeClass?.ToDisplayString() != TypeMapAttributeName ||
+                attr.ConstructorArguments.Length < 2 ||
+                attr.ConstructorArguments[0].Value is not ITypeSymbol clrType ||
+                attr.ConstructorArguments[1].Value is not int dbTypeValue)
+            {
+                continue;
+            }
+
+            var key = UnwrapNullableSymbol(clrType).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (map.ContainsKey(key))
+            {
+                continue;   // first occurrence wins (class scope collected before profile)
+            }
+
+            int? size = null;
+            foreach (var na in attr.NamedArguments)
+            {
+                if (na.Key == "Size" && na.Value.Value is int s)
+                {
+                    size = s;
+                }
+            }
+            map[key] = ($"(global::System.Data.DbType){dbTypeValue}", size);
+        }
+    }
+
+    private static ITypeSymbol UnwrapNullableSymbol(ITypeSymbol type) =>
+        type is INamedTypeSymbol nt && nt.IsGenericType &&
+        nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T
+            ? nt.TypeArguments[0]
+            : type;
+
+    // spec §7.7: the type referenced by [ExecuteConfig(typeof(P))] (null when absent). Used as the
+    // lowest converter-resolution scope; [AccessorProfile]/circularity validation is done separately.
+    private static INamedTypeSymbol? ResolveExecuteConfigProfile(INamedTypeSymbol classSymbol)
+    {
+        foreach (var attr in classSymbol.GetAttributes())
+        {
+            if (attr.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName &&
+                attr.ConstructorArguments.Length >= 1 &&
+                attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType)
+            {
+                return profileType;
+            }
+        }
+        return null;
+    }
+
     private static AccessorModelLegacy? BuildAccessorModelLegacy(
         SourceProductionContext context,
         INamedTypeSymbol classSymbol,
@@ -243,6 +311,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             ? ResolveBindMarker(asm.GetAttributes())
             : null;
         var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
+
+        // spec §7.7: [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest
+        // converter-resolution scope. Resolved here (validation is reported later, see SDA0146/0147).
+        var profileSymbol = ResolveExecuteConfigProfile(classSymbol);
+
+        // spec §7.5 / §7.7: class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for
+        // parameters of the mapped CLR type. Class scope takes precedence over the profile.
+        var typeMaps = BuildTypeMapLookup(classSymbol, profileSymbol);
 
         var methods = new List<MethodModelLegacy>();
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -580,6 +656,34 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     _ => RefKindLegacy.None,
                 };
                 var (enumUnderlyingFq, isNullableEnumParam) = ClassifyEnumParameter(p.Type);
+
+                // spec §7.4 / §7.7: resolve a [TypeHandler<>] for this parameter across the
+                // member → method → class → profile scope chain. When present, the bound value is
+                // written via TConverter.ToDb(...). Structural parameters never carry a converter.
+                string? converterFqn = null;
+                var converterNullableValue = false;
+                if (p.Type.ToDisplayString() != CancellationTokenTypeName &&
+                    !IsDbConnectionType(p.Type) && !IsDbTransactionType(p.Type))
+                {
+                    var paramScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
+                    if (ConverterResolver.Resolve(context, member, p.Name, p.GetAttributes(), p.Type, paramScope) is { } paramConv)
+                    {
+                        converterFqn = paramConv.ConverterTypeFullName;
+                        converterNullableValue = p.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
+                            pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
+                    }
+                }
+
+                // spec §7.5 / §7.7: a class/profile [TypeMap] supplies the DbType when no explicit
+                // [DbType]/[AnsiString], provider DbType, or converter applies (a converter rewrites
+                // the value to TDb, so its DbType is governed by the converter, not the CLR type).
+                if (dbTypeExpr is null && converterFqn is null && providerParamTypeFqn is null &&
+                    typeMaps.TryGetValue(UnwrapNullableSymbol(p.Type).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), out var typeMap))
+                {
+                    dbTypeExpr = typeMap.DbTypeExpr;
+                    size ??= typeMap.Size;
+                }
+
                 return new ParameterModelLegacy(
                     p.Name,
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -595,7 +699,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     isNullableEnumParam,
                     providerParamTypeFqn,
                     providerPropertyName,
-                    providerValueExpr);
+                    providerValueExpr,
+                    converterFqn,
+                    converterNullableValue);
             }).ToList();
 
             // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
@@ -691,7 +797,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                var (cols, ctorPath) = BuildColumnInfos(context, member, mapTarget);
+                var (cols, ctorPath) = BuildColumnInfos(context, member, mapTarget, classSymbol, profileSymbol);
                 queryColumns = cols;
                 useRecordPrimaryCtor = ctorPath;
                 if (ctorPath)
@@ -849,6 +955,28 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // QueryBuilder method (`{Method}__QueryBuilder`) is fully generated by
             // Builders.Generator (design doc §4.6); no user-declared method to validate.
 
+            // spec §7.4 / §7.7: resolve a [TypeHandler<>] for the scalar return value across the
+            // [return:] → method → class → profile scope chain. Only genuine scalar shapes carry a
+            // candidate type; entity/POCO returns never match a converter TClr so resolution is null.
+            string? scalarConverterFqn = null;
+            string? scalarConverterDbType = null;
+            var scalarSymbol = shape.Value switch
+            {
+                ReturnShapeLegacy.Scalar => member.ReturnType,
+                ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
+                    (member.ReturnType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault(),
+                _ => null,
+            };
+            if (scalarSymbol is not null)
+            {
+                var returnScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
+                if (ConverterResolver.Resolve(context, member, "return", member.GetReturnTypeAttributes(), scalarSymbol, returnScope) is { } scalarConv)
+                {
+                    scalarConverterFqn = scalarConv.ConverterTypeFullName;
+                    scalarConverterDbType = scalarConv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                }
+            }
+
             methods.Add(new MethodModelLegacy(
                 member.Name,
                 kind,
@@ -874,7 +1002,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 procedureName,
                 directSqlParameterName,
                 useRecordPrimaryCtor,
-                methodUsings));
+                methodUsings,
+                scalarConverterFqn,
+                scalarConverterDbType));
         }
 
         if (methods.Count == 0)
@@ -1369,13 +1499,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private static (List<ColumnInfoLegacy> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(
-        SourceProductionContext context, IMethodSymbol method, INamedTypeSymbol entity)
+        SourceProductionContext context,
+        IMethodSymbol method,
+        INamedTypeSymbol entity,
+        INamedTypeSymbol classSymbol,
+        INamedTypeSymbol? profileSymbol)
     {
-        // spec §7.4 / §7.10: resolve+validate a property's [TypeHandler<>] and, on success, build
-        // the reader-side binding (TDb read method + converter FQN). Returns null when absent/invalid.
+        var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
+
+        // spec §7.4 / §7.7 / §7.10: resolve+validate the [TypeHandler<>] for a property across the
+        // member → method → class → profile scope chain and, on success, build the reader-side
+        // binding (TDb read method + converter FQN). Returns null when absent/invalid.
         ConverterReadBinding? ResolveConverterBinding(ISymbol member, ITypeSymbol type)
         {
-            var conv = ConverterResolver.Resolve(context, method, member, type);
+            var conv = ConverterResolver.Resolve(context, method, member.Name, member.GetAttributes(), type, scope);
             if (conv is null)
             {
                 return null;
@@ -1571,6 +1708,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     /// </summary>
     private static string BuildParameterValueExpr(ParameterModelLegacy p)
     {
+        // spec §7.4 / §7.7: a bound [TypeHandler<>] writes the value via TConverter.ToDb(...) and
+        // takes priority over the enum default cast. For Nullable<TClr> a HasValue guard passes the
+        // non-null value to ToDb and a null (→ DBNull) otherwise.
+        if (p.ConverterTypeFullName is { } converter)
+        {
+            return p.ConverterValueIsNullable
+                ? $"({p.Name}.HasValue ? (object?){converter}.ToDb({p.Name}.Value) : null)"
+                : $"{converter}.ToDb({p.Name})";
+        }
         if (p.EnumUnderlyingFullName is null)
         {
             return p.Name;
@@ -1578,6 +1724,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return p.IsNullableEnum
             ? $"({p.EnumUnderlyingFullName}?){p.Name}"
             : $"({p.EnumUnderlyingFullName}){p.Name}";
+    }
+
+    // spec §7.4 / §7.7: builds the scalar read expression for an [ExecuteScalar] method.
+    // Without a converter: ConvertScalar<TClr>(executeCall). With one: read the DB value as TDb and
+    // convert via TConverter.FromDb (the [return:] / method / class / profile scope chain).
+    private static string BuildScalarReadExpr(MethodModelLegacy m, string executeCall)
+    {
+        const string convertScalar = "global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<";
+        if (m.ScalarConverterTypeFullName is { } converter)
+        {
+            return $"{converter}.FromDb({convertScalar}{m.ScalarConverterDbTypeFullName}>({executeCall})!)";
+        }
+        return $"{convertScalar}{m.ScalarTypeFullName}>({executeCall})";
     }
 
     private static (string? UnderlyingFullName, bool IsNullableEnum) ClassifyEnumParameter(ITypeSymbol parameterType)
@@ -2269,13 +2428,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd.ExecuteScalar());").NewLine();
+                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpr(m, "cmd.ExecuteScalar()")).Append(";").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(cmd.ExecuteScalar())!;").NewLine();
+                            builder.Indent().Append("return ").Append(BuildScalarReadExpr(m, "cmd.ExecuteScalar()")).Append("!;").NewLine();
                         }
                     }
                     break;
@@ -2300,15 +2459,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     }
                     else
                     {
+                        var scalarExecuteAsync = "await cmd.ExecuteScalarAsync(" + ctExpr + ").ConfigureAwait(false)";
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(await cmd.ExecuteScalarAsync(").Append(ctExpr).Append(").ConfigureAwait(false));").NewLine();
+                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpr(m, scalarExecuteAsync)).Append(";").NewLine();
                             EmitOutputWriteback(builder, m);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<").Append(m.ScalarTypeFullName!).Append(">(await cmd.ExecuteScalarAsync(").Append(ctExpr).Append(").ConfigureAwait(false))!;").NewLine();
+                            builder.Indent().Append("return ").Append(BuildScalarReadExpr(m, scalarExecuteAsync)).Append("!;").NewLine();
                         }
                     }
                     break;
@@ -2639,7 +2799,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 };
                 if (pm.DbTypeExpr is null && pm.Size is null &&
                     dirKind == NodeEmitter.Direction.Input && pm.EnumUnderlyingFullName is null &&
-                    pm.ProviderParameterTypeFullName is null)
+                    pm.ProviderParameterTypeFullName is null && pm.ConverterTypeFullName is null)
                 {
                     return null;
                 }
@@ -2654,6 +2814,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     ProviderParameterTypeFullName = pm.ProviderParameterTypeFullName,
                     ProviderPropertyName = pm.ProviderPropertyName,
                     ProviderValueExpr = pm.ProviderValueExpr,
+                    ConverterTypeFullName = pm.ConverterTypeFullName,
+                    ConverterValueIsNullable = pm.ConverterValueIsNullable,
                 };
             },
             bindMarker);

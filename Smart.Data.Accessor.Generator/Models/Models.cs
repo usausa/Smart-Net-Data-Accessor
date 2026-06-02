@@ -35,7 +35,13 @@ internal sealed record ParameterModelLegacy(
     // after `AddInParameter`/`AddOutParameter`/`AddInOutParameter`.
     string? ProviderParameterTypeFullName,
     string? ProviderPropertyName,
-    string? ProviderValueExpr);
+    string? ProviderValueExpr,
+    // spec §7.4 / §7.7: non-null when a [TypeHandler<>] applies to this parameter (member / method /
+    // class / profile scope). The bound value is written via `TConverter.ToDb(value)`.
+    // ConverterValueIsNullable is true when the parameter is `Nullable<TClr>` (a HasValue guard is
+    // emitted so `ToDb` receives the non-null value and DB NULL is passed otherwise).
+    string? ConverterTypeFullName = null,
+    bool ConverterValueIsNullable = false);
 
 internal enum ReturnShapeLegacy
 {
@@ -131,7 +137,12 @@ internal sealed record MethodModelLegacy(
     string? ProcedureName,
     string? DirectSqlParameterName,  // name of the `string` parameter that holds the SQL text
     bool UseRecordPrimaryConstructor,  // spec §7.8 / §7.10.5: emit `new T(name: ...)` via record primary ctor
-    IReadOnlyList<UsingDirectiveLegacy> Usings);  // spec §1.4 F12 / §6.3: /*!helper */ / /*!using */ pragmas
+    IReadOnlyList<UsingDirectiveLegacy> Usings,  // spec §1.4 F12 / §6.3: /*!helper */ / /*!using */ pragmas
+    // spec §7.4 / §7.7: non-null when a [TypeHandler<>] applies to the scalar return ([return:] /
+    // method / class / profile scope). The scalar is read as ScalarConverterDbTypeFullName then
+    // converted via `TConverter.FromDb(...)`. Only [ExecuteScalar] (non-int) scalar shapes use this.
+    string? ScalarConverterTypeFullName = null,
+    string? ScalarConverterDbTypeFullName = null);
 
 internal sealed record InjectModelLegacy(
     string TypeFullName,

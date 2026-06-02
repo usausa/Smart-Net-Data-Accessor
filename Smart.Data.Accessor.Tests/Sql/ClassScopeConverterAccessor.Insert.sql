@@ -1,0 +1,1 @@
+INSERT INTO Logs (Id, CreatedAt) VALUES (/*@ id */0, /*@ createdAt */0)

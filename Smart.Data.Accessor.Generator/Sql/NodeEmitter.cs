@@ -78,6 +78,12 @@ internal static class NodeEmitter
         public string? ProviderParameterTypeFullName { get; init; }
         public string? ProviderPropertyName { get; init; }
         public string? ProviderValueExpr { get; init; }
+
+        // spec §7.4 / §7.7: non-null when a [TypeHandler<>] applies to this parameter; the bound
+        // value is written via TConverter.ToDb(...). Applied only to a bare parameter marker
+        // (no member-access path). ConverterValueIsNullable adds a HasValue guard for Nullable<TClr>.
+        public string? ConverterTypeFullName { get; init; }
+        public bool ConverterValueIsNullable { get; init; }
     }
 
     public enum Direction
@@ -144,14 +150,24 @@ internal static class NodeEmitter
                     var dbTypeArg = attrs?.DbTypeExpr is { } dt ? ", " + dt : string.Empty;
                     var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
                     var direction = attrs?.Direction ?? Direction.Input;
-                    // Apply the spec §7.9 enum-cast only when the SQL token is the bare parameter
-                    // (no member access) — for `entity.X` the leaf type is unknown to this layer.
+                    // Apply the spec §7.4/§7.7 converter (ToDb) or the §7.9 enum-cast only when the
+                    // SQL token is the bare parameter (no member access) — for `entity.X` the leaf
+                    // type is unknown to this layer. A converter takes priority over the enum cast.
                     var valueExpr = p.Name;
-                    if (!p.Name.Contains('.') && attrs?.EnumUnderlyingFullName is { } enumUnderlying)
+                    if (!p.Name.Contains('.'))
                     {
-                        valueExpr = attrs.IsNullableEnum
-                            ? $"({enumUnderlying}?){p.Name}"
-                            : $"({enumUnderlying}){p.Name}";
+                        if (attrs?.ConverterTypeFullName is { } converter)
+                        {
+                            valueExpr = attrs.ConverterValueIsNullable
+                                ? $"({p.Name}.HasValue ? (object?){converter}.ToDb({p.Name}.Value) : null)"
+                                : $"{converter}.ToDb({p.Name})";
+                        }
+                        else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
+                        {
+                            valueExpr = attrs.IsNullableEnum
+                                ? $"({enumUnderlying}?){p.Name}"
+                                : $"({enumUnderlying}){p.Name}";
+                        }
                     }
                     var hasProvider = attrs?.ProviderParameterTypeFullName is not null
                         && attrs.ProviderPropertyName is not null

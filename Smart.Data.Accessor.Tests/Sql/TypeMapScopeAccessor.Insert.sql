@@ -1,0 +1,1 @@
+INSERT INTO Data (Name) VALUES (/*@ name */'x')

@@ -23,3 +23,12 @@ internal sealed class TimestampEntity
     [TypeHandler(typeof(TicksConverter))]
     public DateTime CreatedAt { get; set; }
 }
+
+// No per-property [TypeHandler]: the converter is supplied at method / class / profile scope
+// (spec §7.7) by the accessor that maps this entity.
+internal sealed class PlainTimestampEntity
+{
+    public long Id { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}
