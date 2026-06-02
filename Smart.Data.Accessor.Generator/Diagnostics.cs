@@ -243,6 +243,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor BuilderAndCommandSourceConflict = new(
+        id: "SDA0157",
+        title: "QueryBuilder attribute combined with [Procedure] / [DirectSql]",
+        messageFormat: "Method=[{0}]: a QueryBuilder attribute ([Insert]/[Update]/…) cannot be combined with [Procedure] or [DirectSql]; the SQL source is ambiguous (spec §11.4)",
+        category: "Builder",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     // ------------------------------------------------------------------
     // Structural diagnostics (SDA0170-0174, SDA0172, spec §11.5).
     // ------------------------------------------------------------------
@@ -339,6 +347,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor InjectNotReferenced = new(
+        id: "SDA0182",
+        title: "[Inject] declaration is not referenced",
+        messageFormat: "Class=[{0}]: [Inject] Name '{1}' is referenced neither in SQL (/*@ {1}.X */ etc.) nor in user code (spec §1.4 F1)",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true);
+
     // ------------------------------------------------------------------
     // [Execute] / [Name] diagnostics (SDA0132, SDA0134, spec §11.3.1).
     // ------------------------------------------------------------------
@@ -380,8 +396,16 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ------------------------------------------------------------------
-    // [DirectSql] structural diagnostics (SDA0128 / SDA0129, spec §5.2 / §1.4 F6).
+    // [DirectSql] structural diagnostics (SDA0127 / SDA0128 / SDA0129, spec §5.2 / §1.4 F6).
     // ------------------------------------------------------------------
+
+    public static readonly DiagnosticDescriptor DirectSqlInjectionWarning = new(
+        id: "SDA0127",
+        title: "[DirectSql] passes raw SQL (SQL injection responsibility is the caller's)",
+        messageFormat: "Method=[{0}]: [DirectSql] binds the first parameter directly to cmd.CommandText, so preventing SQL injection is the caller's responsibility; set [DirectSql(SuppressWarning = true)] to silence (spec §5.2 / §1.4 F6)",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DirectSqlFirstParamNotString = new(
         id: "SDA0128",

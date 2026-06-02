@@ -1,0 +1,126 @@
+namespace Smart.Data.Accessor.Generator.Tests;
+
+using Xunit;
+
+// Phase R1 diagnostics: SDA0127 ([DirectSql] injection advisory), SDA0182 ([Inject] unreferenced),
+// SDA0157 (QueryBuilder + [Procedure]/[DirectSql] conflict).
+public sealed class R1DiagnosticTests
+{
+    [Fact]
+    public void DirectSqlEmitsInjectionWarning()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [DirectSql]
+                public partial int Exec(string sql);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0127");
+    }
+
+    [Fact]
+    public void DirectSqlSuppressWarningSilencesInjectionWarning()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [DirectSql(SuppressWarning = true)]
+                public partial int Exec(string sql);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0127");
+    }
+
+    [Fact]
+    public void UnreferencedInjectReportsInfo()
+    {
+        // 'svc' is injected but used in neither SQL nor code.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal interface IService
+            {
+            }
+
+            [DataAccessor]
+            [Inject(typeof(IService), "svc")]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete();
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0182");
+    }
+
+    [Fact]
+    public void ReferencedInjectNoInfo()
+    {
+        // 'svc' is referenced in user code → no SDA0182. (CS0103 on the not-yet-generated field is
+        // irrelevant; the harness only inspects generator diagnostics.)
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal interface IService
+            {
+            }
+
+            [DataAccessor]
+            [Inject(typeof(IService), "svc")]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete();
+
+                public int Use() => svc.GetHashCode();
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
+
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0182");
+    }
+
+    [Fact]
+    public void QueryBuilderWithProcedureConflicts()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+            using Smart.Data.Accessor.Builders;
+
+            internal sealed class Entity
+            {
+                public int Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Insert(typeof(Entity))]
+                [Procedure("usp_Insert")]
+                [Execute]
+                public partial int Insert(Entity entity);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0157");
+    }
+}

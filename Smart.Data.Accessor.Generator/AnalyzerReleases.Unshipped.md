@@ -13,6 +13,7 @@ SDA0104 | Sql      | Error    | Unknown SQL pragma
 SDA0110 | Sql      | Warning  | SQL parameter does not match method parameters
 SDA0111 | Sql      | Info     | Method parameter is unused in SQL
 SDA0112 | Sql      | Warning  | SQL property accessor does not match a property
+SDA0127 | Usage    | Warning  | [DirectSql] passes raw SQL; SQL injection is the caller's responsibility
 SDA0128 | Usage    | Error    | [DirectSql] method first parameter must be string
 SDA0129 | Usage    | Error    | [DirectSql] method must not have a corresponding SQL file
 SDA0132 | Usage    | Error    | Duplicate [Name] on parameters or properties
@@ -27,12 +28,14 @@ SDA0145 | Mapping  | Warning  | Multiple [TypeHandler] on same property
 SDA0146 | Mapping  | Error    | [ExecuteConfig] target is not an [AccessorProfile]
 SDA0147 | Mapping  | Error    | [AccessorProfile] class also has [ExecuteConfig] (circular)
 SDA0152 | Builder  | Error    | Both SQL file and a QueryBuilder attribute are present (ambiguous)
+SDA0157 | Builder  | Error    | QueryBuilder attribute combined with [Procedure] / [DirectSql] (ambiguous)
 SDA0170 | Usage    | Error    | [DataAccessor] class must not be nested
 SDA0171 | Usage    | Error    | [DataAccessor] class must not be generic
 SDA0172 | Usage    | Error    | Partial method implementation already exists
 SDA0173 | Usage    | Error    | SQL file name collision
 SDA0180 | Usage    | Error    | [Inject] Name is duplicated within the class
 SDA0181 | Usage    | Warning  | [Inject] Type may not resolve from IServiceProvider
+SDA0182 | Usage    | Info     | [Inject] declaration is not referenced in SQL or code
 SDA0183 | Usage    | Warning  | [Provider] name is empty
 SDA0185 | Usage    | Error    | [MethodName] is duplicated within the class
 SDA0184 | Usage    | Info     | [Provider] has no effect on Pattern A only accessor

@@ -284,6 +284,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             string? sqlAlias = null;
             string? procedureName = null;
             var isDirectSql = false;
+            var directSqlSuppressWarning = false;
             var isExecuteNonScalar = false;
             foreach (var attr in member.GetAttributes())
             {
@@ -300,6 +301,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 else if (fullName == DirectSqlAttributeName)
                 {
                     isDirectSql = true;
+                    foreach (var na in attr.NamedArguments)
+                    {
+                        if (na.Key == "SuppressWarning" && na.Value.Value is bool suppress)
+                        {
+                            directSqlSuppressWarning = suppress;
+                        }
+                    }
                 }
                 else if (fullName == QueryAttributeName || fullName == QueryFirstAttributeName)
                 {
@@ -361,6 +369,17 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // SDA0157: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql]
+            // (the SQL source is ambiguous; the SQL-file combinations are SDA0152 / SDA0190 / SDA0129).
+            if (builder is not null && (isDirectSql || procedureName is not null))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Diagnostics.BuilderAndCommandSourceConflict,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
+                continue;
+            }
+
             var sqlKey = $"{classSymbol.Name}.{sqlAlias ?? member.Name}";
             if (collidedKeys.Contains(sqlKey))
             {
@@ -370,6 +389,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             string? sql = null;
             if (isDirectSql)
             {
+                // SDA0127: [DirectSql] binds raw SQL to cmd.CommandText; SQL-injection safety is the
+                // caller's responsibility. Always advised unless [DirectSql(SuppressWarning = true)].
+                if (!directSqlSuppressWarning)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.DirectSqlInjectionWarning,
+                        member.Locations.FirstOrDefault(),
+                        member.Name));
+                }
+
                 // SDA0129: [DirectSql] method must not have a corresponding SQL file.
                 if (sqlMap.ContainsKey(sqlKey))
                 {
@@ -960,6 +989,31 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 providerName));
         }
 
+        // SDA0182 (Info): an [Inject] declared but referenced neither in this class's SQL
+        // (/*@ name.X */, /*% … name … %/) nor in any user-written code in the class.
+        if (injects.Count > 0)
+        {
+            var sqlKeyPrefix = classSymbol.Name + ".";
+            foreach (var inject in injects)
+            {
+                var injectedName = inject.Name;
+                var referencedInSql = sqlMap.Any(kv =>
+                    kv.Key.StartsWith(sqlKeyPrefix, StringComparison.Ordinal) &&
+                    ReferencesIdentifier(kv.Value, injectedName));
+                var referencedInCode = !referencedInSql && classSymbol.DeclaringSyntaxReferences.Any(r =>
+                    r.GetSyntax().DescendantNodes().OfType<IdentifierNameSyntax>()
+                        .Any(id => id.Identifier.ValueText == injectedName));
+                if (!referencedInSql && !referencedInCode)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.InjectNotReferenced,
+                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
+                        classSymbol.Name,
+                        injectedName));
+                }
+            }
+        }
+
         return new AccessorModelLegacy(
             ns,
             classSymbol.Name,
@@ -1008,6 +1062,31 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
         return false;
     }
+
+    // SDA0182: whole-word occurrence of `name` in arbitrary text (SQL), with identifier-char
+    // boundaries so e.g. inject "log" does not match "dialog".
+    private static bool ReferencesIdentifier(string text, string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+        var index = text.IndexOf(name, StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            var beforeOk = index == 0 || !IsIdentifierChar(text[index - 1]);
+            var afterPos = index + name.Length;
+            var afterOk = afterPos >= text.Length || !IsIdentifierChar(text[afterPos]);
+            if (beforeOk && afterOk)
+            {
+                return true;
+            }
+            index = text.IndexOf(name, index + 1, StringComparison.Ordinal);
+        }
+        return false;
+    }
+
+    private static bool IsIdentifierChar(char c) => char.IsLetterOrDigit(c) || c == '_';
 
     private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
     {

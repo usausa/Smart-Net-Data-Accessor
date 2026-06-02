@@ -7,6 +7,7 @@ using Smart.Data.Accessor.Attributes;
 [DataAccessor]
 internal sealed partial class DirectSqlAccessor
 {
-    [DirectSql]
+    // SuppressWarning: this raw-SQL test intentionally opts out of the SDA0127 injection advisory.
+    [DirectSql(SuppressWarning = true)]
     public partial int ExecRaw(DbConnection con, string sql);
 }

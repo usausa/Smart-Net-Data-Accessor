@@ -58,7 +58,7 @@ internal sealed partial class ExampleAccessor
     [ExecuteReader]
     public partial DbDataReader QueryReader();
 
-    [DirectSql]
+    [DirectSql(SuppressWarning = true)]
     public partial int ExecuteDirect(string sql, [Direction(System.Data.ParameterDirection.Output)] out int rows);
 
     [Count(typeof(DataEntity), Table = "Data")]
