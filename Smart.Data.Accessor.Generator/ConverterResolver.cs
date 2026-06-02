@@ -6,6 +6,8 @@ using System.Linq;
 
 using Microsoft.CodeAnalysis;
 
+using Smart.Data.Accessor.Generator.Models;
+
 /// <summary>
 /// Resolves and validates <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeHandler(typeof(TConverter))]</c>
 /// across the scope chain defined in spec §7.7: member (property / parameter / <c>[return:]</c>) →
@@ -42,7 +44,7 @@ internal static class ConverterResolver
     /// in the latter case so the mapping/binding falls back to the plain path).
     /// </summary>
     public static Result? Resolve(
-        SourceProductionContext context,
+        List<DiagnosticData> diagnostics,
         IMethodSymbol method,
         string memberName,
         ImmutableArray<AttributeData> memberAttributes,
@@ -56,7 +58,7 @@ internal static class ConverterResolver
             // SDA0145: more than one [TypeHandler] on the same member; the first wins.
             if (memberConverters.Count > 1)
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.TypeHandlerDuplicated,
                     method.Locations.FirstOrDefault(),
                     method.Name,
@@ -64,7 +66,7 @@ internal static class ConverterResolver
             }
 
             return memberConverters[0] is { } explicitConverter
-                ? Validate(context, method, memberName, explicitConverter, valueType, requireClrMatch: true)
+                ? Validate(diagnostics, method, memberName, explicitConverter, valueType, requireClrMatch: true)
                 : null;
         }
 
@@ -74,7 +76,7 @@ internal static class ConverterResolver
         {
             if (FindTypeKeyedConverter(owner.GetAttributes(), valueType) is { } scopedConverter)
             {
-                return Validate(context, method, memberName, scopedConverter, valueType, requireClrMatch: false);
+                return Validate(diagnostics, method, memberName, scopedConverter, valueType, requireClrMatch: false);
             }
         }
 
@@ -113,7 +115,7 @@ internal static class ConverterResolver
     // only for the explicit member scope (a mismatch there is SDA0142); the type-keyed scopes have
     // already filtered on TClr so a mismatch cannot occur.
     private static Result? Validate(
-        SourceProductionContext context,
+        List<DiagnosticData> diagnostics,
         IMethodSymbol method,
         string memberName,
         INamedTypeSymbol converter,
@@ -123,7 +125,7 @@ internal static class ConverterResolver
         // SDA0143: the referenced converter type does not implement IValueConverter<,>.
         if (!TryGetConverterTypes(converter, out var dbType, out var clrType))
         {
-            context.ReportDiagnostic(Diagnostic.Create(
+            diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterNotIValueConverter,
                 method.Locations.FirstOrDefault(),
                 method.Name,
@@ -136,7 +138,7 @@ internal static class ConverterResolver
         {
             if (requireClrMatch)
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.ConverterTClrMismatch,
                     method.Locations.FirstOrDefault(),
                     method.Name,
@@ -149,7 +151,7 @@ internal static class ConverterResolver
         // present as accessible static methods (implicit interface implementation, not explicit).
         if (!HasCallableStatic(converter, "FromDb") || !HasCallableStatic(converter, "ToDb"))
         {
-            context.ReportDiagnostic(Diagnostic.Create(
+            diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterStaticAbstractMissing,
                 method.Locations.FirstOrDefault(),
                 method.Name,
@@ -160,7 +162,7 @@ internal static class ConverterResolver
         // SDA0141: when the converter declares [ConverterSupportedTypes], the CLR type must be listed.
         if (!IsClrTypeSupported(converter, clrType))
         {
-            context.ReportDiagnostic(Diagnostic.Create(
+            diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterTypeNotSupported,
                 method.Locations.FirstOrDefault(),
                 method.Name,

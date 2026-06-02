@@ -80,21 +80,67 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
             .Collect();
 
-        var classes = context.SyntaxProvider
+        // P3 (spec §7.11): symbol analysis runs in the FAWMN transform and returns an equatable
+        // ClassResult (model + diagnostics) — the incremental cache boundary. SQL resolution/parse
+        // runs in the output stage (it needs the .sql files), and is Compilation-free so it caches.
+        var classResults = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 DataAccessorAttributeName,
                 static (s, _) => s is ClassDeclarationSyntax,
-                static (ctx, _) => ctx)
-            .Collect();
+                static (ctx, _) => BuildClassResult(ctx))
+            .WithTrackingName("AccessorClassResult");
 
+        var completed = classResults
+            .Combine(sqlFiles)
+            .Select(static (pair, ct) => CompleteModel(pair.Left, pair.Right, ct))
+            .WithTrackingName("AccessorCompleted");
+
+        // Per-accessor source + its diagnostics.
+        context.RegisterSourceOutput(completed, static (spc, c) => EmitCompleted(spc, c));
+
+        // Registry initializer (aggregated across all accessors; symbol-derived, no SQL needed).
+        context.RegisterSourceOutput(completed.Collect(), static (spc, all) => EmitRegistry(spc, all));
+
+        // SDA0186/0187: the /*!using*/ / /*!helper*/ existence check is the only Compilation-dependent
+        // diagnostic; isolate it in a diagnostic-only branch so source generation stays cached (1-C / A案).
         context.RegisterSourceOutput(
-            classes.Combine(sqlFiles),
-            static (spc, source) => Execute(spc, source.Left, source.Right));
+            completed.Combine(context.CompilationProvider),
+            static (spc, pair) => ValidateUsings(spc, pair.Left, pair.Right));
     }
 
-    private static void Execute(
-        SourceProductionContext context,
-        ImmutableArray<GeneratorAttributeSyntaxContext> classes,
+    // P3 transform (symbol stage): class-level validation + symbol-only model build. Returns an
+    // equatable ClassResult so the pipeline caches on symbol changes only.
+    private static ClassResult BuildClassResult(GeneratorAttributeSyntaxContext ctx)
+    {
+        var diagnostics = new List<DiagnosticData>();
+        var syntax = (ClassDeclarationSyntax)ctx.TargetNode;
+        if (ctx.TargetSymbol is not INamedTypeSymbol classSymbol)
+        {
+            return new ClassResult(null, new EquatableArray<DiagnosticData>(diagnostics.ToArray()));
+        }
+
+        AccessorModel? model = null;
+        if (!syntax.Modifiers.Any(m => m.Text == "partial"))
+        {
+            diagnostics.Add(DiagnosticData.Create(Diagnostics.InvalidClass, syntax.Identifier.GetLocation(), classSymbol.Name));
+        }
+        else if (classSymbol.ContainingType is not null)
+        {
+            diagnostics.Add(DiagnosticData.Create(Diagnostics.DataAccessorClassNested, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+        }
+        else if (classSymbol.IsGenericType || classSymbol.TypeParameters.Length > 0)
+        {
+            diagnostics.Add(DiagnosticData.Create(Diagnostics.DataAccessorClassGeneric, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+        }
+        else
+        {
+            model = BuildAccessorModel(diagnostics, classSymbol);
+        }
+
+        return new ClassResult(model, new EquatableArray<DiagnosticData>(diagnostics.ToArray()));
+    }
+
+    private static (Dictionary<string, string> SqlMap, HashSet<string> Collided) BuildSqlMap(
         ImmutableArray<(string Path, string Text)> sqlFiles)
     {
         // SDA0173: multiple .sql files resolving to the same {Class}.{Method} key collide.
@@ -102,72 +148,187 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var collidedKeys = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in sqlFiles)
         {
-            if (sqlMap.ContainsKey(entry.Path))
-            {
-                collidedKeys.Add(entry.Path);
-            }
-            else
+            if (!sqlMap.ContainsKey(entry.Path))
             {
                 sqlMap[entry.Path] = entry.Text;
             }
+            else
+            {
+                collidedKeys.Add(entry.Path);
+            }
+        }
+        return (sqlMap, collidedKeys);
+    }
+
+    // P3 SQL stage: resolve each method's .sql file, apply SQL-file conflict diagnostics
+    // (SDA0173 / SDA0129 / SDA0152 / SDA0190 / SqlNotFound), parse 2-way SQL into the method's emit
+    // fields (dropping methods on SQL errors), evaluate SDA0182's SQL half, and gather /*!using*/
+    // directives to validate. Compilation-free → cacheable.
+    private static CompletedResult CompleteModel(
+        ClassResult result,
+        ImmutableArray<(string Path, string Text)> sqlFiles,
+        System.Threading.CancellationToken ct)
+    {
+        var diagnostics = new List<DiagnosticData>(result.Diagnostics.AsArray());
+        if (result.Model is not { } model)
+        {
+            return new CompletedResult(null, new EquatableArray<DiagnosticData>(diagnostics.ToArray()), EquatableArray<UsingValidation>.Empty);
         }
 
-        var registrations = new List<RegistryEntry>();
-
-        foreach (var ctx in classes)
+        var (sqlMap, collidedKeys) = BuildSqlMap(sqlFiles);
+        var usings = new List<UsingValidation>();
+        var keptMethods = new List<MethodModel>();
+        foreach (var method in model.Methods.AsArray())
         {
-            var syntax = (ClassDeclarationSyntax)ctx.TargetNode;
-            if (ctx.TargetSymbol is not INamedTypeSymbol classSymbol)
+            ct.ThrowIfCancellationRequested();
+            var isBuilder = method.BuilderMethodName is not null;
+            var isProcedure = method.ProcedureName is not null;
+            var isDirectSql = method.MethodKind == "DirectSql";
+            var sqlKey = $"{model.ClassName}.{method.SqlAlias ?? method.Name}";
+
+            if (collidedKeys.Contains(sqlKey))
             {
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.SqlFileNameCollision, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
             }
 
-            if (!syntax.Modifiers.Any(m => m.Text == "partial"))
+            if (isDirectSql)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.InvalidClass, syntax.Identifier.GetLocation(), classSymbol.Name));
+                // SDA0129: [DirectSql] must not have a corresponding .sql file.
+                if (sqlMap.ContainsKey(sqlKey))
+                {
+                    diagnostics.Add(DiagnosticData.Create(Diagnostics.DirectSqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
+                    continue;
+                }
+                keptMethods.Add(method);
                 continue;
             }
 
-            if (classSymbol.ContainingType is not null)
+            sqlMap.TryGetValue(sqlKey, out var sql);
+            if (sql is null && !isBuilder && !isProcedure)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DataAccessorClassNested, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.SqlNotFound, method.Location, method.Name, sqlKey + ".sql"));
+                continue;
+            }
+            if (sql is not null && isBuilder)
+            {
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.BuilderAndSqlBothPresent, method.Location, method.Name, sqlKey + ".sql"));
+                continue;
+            }
+            if (sql is not null && isProcedure)
+            {
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.ProcedureHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
             }
 
-            if (classSymbol.IsGenericType || classSymbol.TypeParameters.Length > 0)
+            if (sql is not null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DataAccessorClassGeneric, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
+                var (code, staticSql, staticParam, outputBindings, methodUsings) =
+                    BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters.AsArray(), sql, method.BindMarker);
+                foreach (var u in methodUsings)
+                {
+                    usings.Add(new UsingValidation(u.IsStatic, u.Name, method.Name, method.Location));
+                }
+                keptMethods.Add(method with
+                {
+                    SqlEmitCode = code,
+                    StaticSqlText = staticSql,
+                    StaticParameterCode = staticParam,
+                    OutputBindings = new EquatableArray<OutputBinding>(outputBindings.ToArray()),
+                    Usings = new EquatableArray<UsingDirective>(methodUsings.ToArray()),
+                });
                 continue;
             }
 
-            var model = BuildAccessorModelLegacy(context, classSymbol, sqlMap, collidedKeys, ctx.SemanticModel.Compilation);
-            if (model is null)
+            // Builder / Procedure without a .sql file — keep as-is.
+            keptMethods.Add(method);
+        }
+
+        // SDA0182 (Info): [Inject] referenced neither in code (computed in the transform) nor in SQL.
+        var sqlKeyPrefix = model.ClassName + ".";
+        foreach (var inject in model.Injects.AsArray())
+        {
+            if (inject.ReferencedInCode)
             {
                 continue;
             }
+            var referencedInSql = sqlMap.Any(kv =>
+                kv.Key.StartsWith(sqlKeyPrefix, StringComparison.Ordinal) &&
+                ReferencesIdentifier(kv.Value, inject.Name));
+            if (!referencedInSql)
+            {
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.InjectNotReferenced, model.Location, model.ClassName, inject.Name));
+            }
+        }
 
-            var source = Emit(model);
-            var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
-            var filename = $"{ns}_{model.ClassName}.g.cs";
-            context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
+        var completedModel = model with { Methods = new EquatableArray<MethodModel>(keptMethods.ToArray()) };
+        return new CompletedResult(
+            completedModel,
+            new EquatableArray<DiagnosticData>(diagnostics.ToArray()),
+            new EquatableArray<UsingValidation>(usings.ToArray()));
+    }
 
-            var concreteFq = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var iface = classSymbol.Interfaces.FirstOrDefault();
-            var serviceFq = iface is not null
-                ? iface.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                : concreteFq;
+    private static void EmitCompleted(SourceProductionContext context, CompletedResult c)
+    {
+        foreach (var d in c.Diagnostics.AsArray())
+        {
+            context.ReportDiagnostic(d.ToDiagnostic());
+        }
+        if (c.Model is not { } model)
+        {
+            return;
+        }
+        var source = Emit(model);
+        var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
+        var filename = $"{ns}_{model.ClassName}.g.cs";
+        context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
+    }
+
+    private static void EmitRegistry(SourceProductionContext context, ImmutableArray<CompletedResult> all)
+    {
+        var registrations = new List<RegistryEntry>();
+        foreach (var c in all)
+        {
+            if (c.Model is not { } model)
+            {
+                continue;
+            }
+            var concreteFq = string.IsNullOrEmpty(model.Namespace)
+                ? $"global::{model.ClassName}"
+                : $"global::{model.Namespace}.{model.ClassName}";
             registrations.Add(new RegistryEntry(
-                serviceFq,
+                model.ServiceTypeFullName ?? concreteFq,
                 concreteFq,
                 model.RequiresConnectionFactory,
                 model.ProviderName is not null,
-                model.Injects.Select(i => i.TypeFullName).ToArray()));
+                model.Injects.AsArray().Select(i => i.TypeFullName).ToArray()));
         }
 
         if (registrations.Count > 0)
         {
             var initializer = EmitRegistryInitializer(registrations);
             context.AddSource("DataAccessorRegistryInitializer.g.cs", SourceText.From(initializer, Encoding.UTF8));
+        }
+    }
+
+    // SDA0186 / SDA0187 (spec §1.4 F12 / §6.3): validate /*!helper*/ (using static) and /*!using*/
+    // namespaces against the Compilation. Diagnostic-only branch (no AddSource) so source generation
+    // stays cached; this re-runs on Compilation change but performs no generation (1-C / A案).
+    private static void ValidateUsings(SourceProductionContext context, CompletedResult c, Compilation compilation)
+    {
+        foreach (var u in c.Usings.AsArray())
+        {
+            if (u.IsStatic)
+            {
+                if (compilation.GetTypeByMetadataName(u.Name) is null)
+                {
+                    context.ReportDiagnostic(DiagnosticData.Create(Diagnostics.HelperTypeNotFound, u.Location, u.MethodName, u.Name).ToDiagnostic());
+                }
+            }
+            else if (!NamespaceExists(compilation, u.Name))
+            {
+                context.ReportDiagnostic(DiagnosticData.Create(Diagnostics.UsingNamespaceNotFound, u.Location, u.MethodName, u.Name).ToDiagnostic());
+            }
         }
     }
 
@@ -300,12 +461,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static AccessorModelLegacy? BuildAccessorModelLegacy(
-        SourceProductionContext context,
-        INamedTypeSymbol classSymbol,
-        Dictionary<string, string> sqlMap,
-        HashSet<string> collidedKeys,
-        Compilation? compilation)
+    private static AccessorModel? BuildAccessorModel(
+        List<DiagnosticData> diagnostics,
+        INamedTypeSymbol classSymbol)
     {
         var assemblyMarker = classSymbol.ContainingAssembly is { } asm
             ? ResolveBindMarker(asm.GetAttributes())
@@ -320,7 +478,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // parameters of the mapped CLR type. Class scope takes precedence over the profile.
         var typeMaps = BuildTypeMapLookup(classSymbol, profileSymbol);
 
-        var methods = new List<MethodModelLegacy>();
+        var methods = new List<MethodModel>();
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
@@ -337,7 +495,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // without such an attribute are intentionally ignored.
                 if (HasDataMethodAttribute(member))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.InvalidMethod,
                         member.Locations.FirstOrDefault(),
                         member.Name));
@@ -348,7 +506,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // SDA0172: user-written partial implementation already exists for this declaration.
             if (member.PartialImplementationPart is not null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.PartialMethodAlreadyImplemented,
                     member.Locations.FirstOrDefault(),
                     member.Name));
@@ -405,7 +563,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     // SDA0185: [MethodName("X")] is duplicated within the same class.
                     if (seenMethodNames.ContainsKey(aliasValue))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(
+                        diagnostics.Add(DiagnosticData.Create(
                             Diagnostics.MethodNameDuplicated,
                             member.Locations.FirstOrDefault(),
                             classSymbol.Name,
@@ -425,7 +583,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     // SDA0192: [Procedure("")] empty stored procedure name -> warning.
                     if (string.IsNullOrEmpty(procName))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(
+                        diagnostics.Add(DiagnosticData.Create(
                             Diagnostics.ProcedureNameEmpty,
                             member.Locations.FirstOrDefault(),
                             member.Name));
@@ -449,41 +607,26 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // (the SQL source is ambiguous; the SQL-file combinations are SDA0152 / SDA0190 / SDA0129).
             if (builder is not null && (isDirectSql || procedureName is not null))
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.BuilderAndCommandSourceConflict,
                     member.Locations.FirstOrDefault(),
                     member.Name));
                 continue;
             }
 
-            var sqlKey = $"{classSymbol.Name}.{sqlAlias ?? member.Name}";
-            if (collidedKeys.Contains(sqlKey))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlFileNameCollision, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
-                continue;
-            }
-            string? sql = null;
+            // spec §7.11 (P3): SQL-file resolution + its conflict diagnostics (SDA0173 / SDA0129 /
+            // SDA0152 / SDA0190 / SqlNotFound) and the 2-way-SQL parse run in the output stage
+            // (they need the .sql files). Here we keep only the symbol-derived checks.
             if (isDirectSql)
             {
                 // SDA0127: [DirectSql] binds raw SQL to cmd.CommandText; SQL-injection safety is the
                 // caller's responsibility. Always advised unless [DirectSql(SuppressWarning = true)].
                 if (!directSqlSuppressWarning)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.DirectSqlInjectionWarning,
                         member.Locations.FirstOrDefault(),
                         member.Name));
-                }
-
-                // SDA0129: [DirectSql] method must not have a corresponding SQL file.
-                if (sqlMap.ContainsKey(sqlKey))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.DirectSqlHasSqlFile,
-                        member.Locations.FirstOrDefault(),
-                        member.Name,
-                        sqlKey + ".sql"));
-                    continue;
                 }
 
                 // SDA0128: first parameter (after conn/tx/CT) must be `string`.
@@ -494,39 +637,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 if (firstUsable is null ||
                     firstUsable.Type.SpecialType != SpecialType.System_String)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.DirectSqlFirstParamNotString,
                         member.Locations.FirstOrDefault(),
                         member.Name));
-                    continue;
-                }
-            }
-            else
-            {
-                sqlMap.TryGetValue(sqlKey, out sql);
-                if (sql is null && builder is null && procedureName is null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlNotFound, member.Locations.FirstOrDefault(), member.Name, sqlKey + ".sql"));
-                    continue;
-                }
-                // SDA0152: both SQL file and Builder are present -> ambiguous.
-                if (sql is not null && builder is not null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.BuilderAndSqlBothPresent,
-                        member.Locations.FirstOrDefault(),
-                        member.Name,
-                        sqlKey + ".sql"));
-                    continue;
-                }
-                // SDA0190: [Procedure] + SQL file both exist -> ambiguous.
-                if (procedureName is not null && sql is not null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.ProcedureHasSqlFile,
-                        member.Locations.FirstOrDefault(),
-                        member.Name,
-                        sqlKey + ".sql"));
                     continue;
                 }
             }
@@ -547,7 +661,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
                 if (seenParamNames.ContainsKey(mappedName))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.NameDuplicated,
                         p.Locations.FirstOrDefault() ?? member.Locations.FirstOrDefault(),
                         member.Name,
@@ -614,7 +728,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            context.ReportDiagnostic(Diagnostic.Create(
+                            diagnostics.Add(DiagnosticData.Create(
                                 Diagnostics.DbTypeProviderEnumNotWhitelisted,
                                 p.Locations.FirstOrDefault(),
                                 member.Name,
@@ -643,7 +757,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
                 if (sawNonGenericDbType && sawGenericDbType)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.DbTypeAttributeConflict,
                         p.Locations.FirstOrDefault(),
                         member.Name,
@@ -675,7 +789,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     !IsDbConnectionType(p.Type) && !IsDbTransactionType(p.Type))
                 {
                     var paramScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
-                    if (ConverterResolver.Resolve(context, member, p.Name, p.GetAttributes(), p.Type, paramScope) is { } paramConv)
+                    if (ConverterResolver.Resolve(diagnostics, member, p.Name, p.GetAttributes(), p.Type, paramScope) is { } paramConv)
                     {
                         converterFqn = paramConv.ConverterTypeFullName;
                         converterNullableValue = p.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
@@ -701,10 +815,34 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     p.RefKind == Microsoft.CodeAnalysis.RefKind.None &&
                     IsPocoParameter(p.Type))
                 {
-                    pocoProperties = BuildPocoProperties(context, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
+                    pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
                 }
 
-                return new ParameterModelLegacy(
+                // SDA0112: mirror the old HasPublicMember semantics — public property/field on the
+                // type and its bases, plus properties from implemented interfaces.
+                var memberNames = new HashSet<string>(StringComparer.Ordinal);
+                for (var mt = p.Type; mt is not null; mt = mt.BaseType)
+                {
+                    foreach (var mem in mt.GetMembers())
+                    {
+                        if (mem.DeclaredAccessibility == Accessibility.Public && mem is IPropertySymbol or IFieldSymbol)
+                        {
+                            memberNames.Add(mem.Name);
+                        }
+                    }
+                }
+                foreach (var iface in p.Type.AllInterfaces)
+                {
+                    foreach (var mem in iface.GetMembers())
+                    {
+                        if (mem is IPropertySymbol)
+                        {
+                            memberNames.Add(mem.Name);
+                        }
+                    }
+                }
+
+                return new ParameterModel(
                     p.Name,
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     p.NullableAnnotation == NullableAnnotation.Annotated,
@@ -722,7 +860,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     providerValueExpr,
                     converterFqn,
                     converterNullableValue,
-                    pocoProperties);
+                    pocoProperties is { } pp ? new EquatableArray<PocoBindProperty>(pp.ToArray()) : (EquatableArray<PocoBindProperty>?)null,
+                    new EquatableArray<string>(memberNames.ToArray()));
             }).ToList();
 
             // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
@@ -758,7 +897,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var shape = ClassifyReturn(member.ReturnType, out var scalarFq, out var elementFq, out var entitySymbol);
             if (shape is null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                 continue;
             }
 
@@ -766,7 +905,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // (Does not apply to [ExecuteScalar], which supports arbitrary scalar T.)
             if (kind == "Execute" && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.ExecuteReturnInvalid,
                     member.Locations.FirstOrDefault(),
                     member.Name,
@@ -779,14 +918,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 if (!IsReaderShape(shape.Value))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.ExecuteReaderInvalidReturn,
                         member.Locations.FirstOrDefault(),
                         member.Name,
                         member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.ExecuteReaderRequiresUsing,
                     member.Locations.FirstOrDefault(),
                     member.Name));
@@ -800,7 +939,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     .Any(a => a.AttributeClass?.ToDisplayString() == EnumeratorCancellationAttributeName);
                 if (!hasEnumeratorCancellation)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.AsyncEnumerableMissingEnumeratorCancellation,
                         member.Locations.FirstOrDefault(),
                         member.Name));
@@ -808,23 +947,23 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
 
             // For Query kind, list/asyncenum must have a mappable element type.
-            IReadOnlyList<ColumnInfoLegacy>? queryColumns = null;
+            IReadOnlyList<ColumnInfo>? queryColumns = null;
             var useRecordPrimaryCtor = false;
             if (kind == "Query")
             {
                 var mapTarget = elementFq is not null ? entitySymbol : null;
                 if (mapTarget is null)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
+                    diagnostics.Add(DiagnosticData.Create(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                var (cols, ctorPath) = BuildColumnInfos(context, member, mapTarget, classSymbol, profileSymbol);
+                var (cols, ctorPath) = BuildColumnInfos(diagnostics, member, mapTarget, classSymbol, profileSymbol);
                 queryColumns = cols;
                 useRecordPrimaryCtor = ctorPath;
                 if (ctorPath)
                 {
                     // spec §7.8 / §7.10.5: inform the user that the record primary ctor path was selected.
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.RecordPrimaryConstructorPath,
                         member.Locations.FirstOrDefault(),
                         member.Name,
@@ -838,8 +977,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             string? sqlEmitCode = null;
             string? staticSqlText = null;
             string? staticParameterCode = null;
-            IReadOnlyList<OutputBindingLegacy> outputBindings = Array.Empty<OutputBindingLegacy>();
-            IReadOnlyList<UsingDirectiveLegacy> methodUsings = Array.Empty<UsingDirectiveLegacy>();
+            IReadOnlyList<OutputBinding> outputBindings = Array.Empty<OutputBinding>();
+            IReadOnlyList<UsingDirective> methodUsings = Array.Empty<UsingDirective>();
             string? directSqlParameterName = null;
 
             // SDA0191: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3.2).
@@ -849,7 +988,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     if (ms.RefKind is Microsoft.CodeAnalysis.RefKind.Out or Microsoft.CodeAnalysis.RefKind.Ref)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(
+                        diagnostics.Add(DiagnosticData.Create(
                             Diagnostics.AsyncProcedureRefParam,
                             ms.Locations.FirstOrDefault(),
                             member.Name,
@@ -875,7 +1014,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 }
                 if (!directionAllowedKind)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.DirectionOnUnsupportedMethod,
                         ms.Locations.FirstOrDefault(),
                         member.Name,
@@ -886,7 +1025,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     // spec §5.6: [Direction(ReturnValue)] is retired; the stored-procedure RETURN value
                     // maps to the method's scalar return value instead.
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.ReturnValueDirectionNotAllowed,
                         ms.Locations.FirstOrDefault(),
                         member.Name,
@@ -907,7 +1046,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         RefKindLegacy.Ref => "ref",
                         _ => "(none)"
                     };
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.DirectionRefKindMismatch,
                         ms.Locations.FirstOrDefault(),
                         member.Name,
@@ -938,7 +1077,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     }
                     if (pm.Name == directSqlParameterName && pm.Direction != ParameterDirectionKindLegacy.Input)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(
+                        diagnostics.Add(DiagnosticData.Create(
                             Diagnostics.DirectSqlCommandTextDirection,
                             ms.Locations.FirstOrDefault(),
                             member.Name,
@@ -953,16 +1092,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     .Where(p => p.PocoProperties is null && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
                     .Where(p => p.Direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
-                    .Select(p => new OutputBindingLegacy(
+                    .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
                         p.Direction))
                     .Concat(PocoOutputBindings(parameters))
                     .ToList();
-            }
-            else if (sql is not null && builder is null)
-            {
-                (sqlEmitCode, staticSqlText, staticParameterCode, outputBindings, methodUsings) = BuildSqlEmitCode(context, member, parameters, sql, methodMarker, compilation);
             }
             else if (procedureName is not null)
             {
@@ -970,7 +1105,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // plus POCO-argument output properties (spec §5.6).
                 outputBindings = parameters
                     .Where(p => p.PocoProperties is null && p.Direction != ParameterDirectionKindLegacy.Input)
-                    .Select(p => new OutputBindingLegacy(
+                    .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
                         p.Direction))
@@ -996,7 +1131,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (scalarSymbol is not null)
             {
                 var returnScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
-                if (ConverterResolver.Resolve(context, member, "return", member.GetReturnTypeAttributes(), scalarSymbol, returnScope) is { } scalarConv)
+                if (ConverterResolver.Resolve(diagnostics, member, "return", member.GetReturnTypeAttributes(), scalarSymbol, returnScope) is { } scalarConv)
                 {
                     scalarConverterFqn = scalarConv.ConverterTypeFullName;
                     scalarConverterDbType = scalarConv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -1008,7 +1143,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var mapsProcedureReturnValue = procedureName is not null &&
                 shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar;
 
-            methods.Add(new MethodModelLegacy(
+            methods.Add(new MethodModel(
                 member.Name,
                 kind,
                 member.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -1016,27 +1151,28 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 scalarFq,
                 elementFq,
                 AccessibilityText(member.DeclaredAccessibility),
-                parameters,
+                parameters.ToArray(),
                 builder,
-                sql,
+                null,
                 sqlEmitCode,
                 staticSqlText,
                 staticParameterCode,
-                queryColumns,
+                queryColumns is { } qc ? new EquatableArray<ColumnInfo>(qc.ToArray()) : (EquatableArray<ColumnInfo>?)null,
                 commandTimeout,
                 connectionPattern,
                 connectionParam?.Name,
                 transactionParam?.Name,
                 methodMarker,
                 sqlAlias,
-                outputBindings,
+                outputBindings.ToArray(),
                 procedureName,
                 directSqlParameterName,
                 useRecordPrimaryCtor,
-                methodUsings,
+                methodUsings.ToArray(),
                 scalarConverterFqn,
                 scalarConverterDbType,
-                mapsProcedureReturnValue));
+                mapsProcedureReturnValue,
+                SourceLocationInfo.From(member.Locations.FirstOrDefault())));
         }
 
         if (methods.Count == 0)
@@ -1050,7 +1186,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         // Read class-level attributes: [Inject(...)], [Provider("...")], [ExecuteConfig(...)].
         string? providerName = null;
-        var injects = new List<InjectModelLegacy>();
+        var injects = new List<InjectModel>();
         var seenInjectNames = new HashSet<string>(StringComparer.Ordinal);
         foreach (var attr in classSymbol.GetAttributes())
         {
@@ -1064,7 +1200,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // SDA0180: duplicate [Inject] Name within the same class.
                 if (!seenInjectNames.Add(injectName))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.InjectNameDuplicated,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name,
@@ -1076,7 +1212,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
                 if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName is "dbProvider" or "providerSelector")
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.InjectNameConflictsWithMember,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name,
@@ -1086,7 +1222,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
                 if (!IsLikelyResolvableInjectType(injectType))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.InjectTypeNotResolvable,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name,
@@ -1094,7 +1230,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         injectName));
                 }
 
-                injects.Add(new InjectModelLegacy(
+                injects.Add(new InjectModel(
                     injectType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     injectName));
             }
@@ -1106,7 +1242,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // SDA0183: [Provider("")] empty name -> warning.
                 if (string.IsNullOrEmpty(pName))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.ProviderNameEmpty,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name));
@@ -1121,7 +1257,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 var hasProfile = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == AccessorProfileAttributeName);
                 if (!hasProfile)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.ExecuteConfigProfileInvalid,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         classSymbol.Name,
@@ -1131,7 +1267,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 var profileHasConfig = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName);
                 if (profileHasConfig)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.ProfileCircularReference,
                         classSymbol.Locations.FirstOrDefault() ?? Location.None,
                         profileType.Name));
@@ -1144,46 +1280,35 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // SDA0184: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
         if (providerName is not null && methods.Count > 0 && !requiresFactory)
         {
-            context.ReportDiagnostic(Diagnostic.Create(
+            diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ProviderOnPatternAOnlyAccessor,
                 classSymbol.Locations.FirstOrDefault() ?? Location.None,
                 classSymbol.Name,
                 providerName));
         }
 
-        // SDA0182 (Info): an [Inject] declared but referenced neither in this class's SQL
-        // (/*@ name.X */, /*% … name … %/) nor in any user-written code in the class.
-        if (injects.Count > 0)
+        // spec §7.11 (P3) / SDA0182: compute the code-reference half here (symbol-derived). The
+        // SQL-file-reference half and the SDA0182 diagnostic itself are evaluated at the output stage
+        // (which has the .sql files); the result is carried on InjectModel.ReferencedInCode.
+        for (var i = 0; i < injects.Count; i++)
         {
-            var sqlKeyPrefix = classSymbol.Name + ".";
-            foreach (var inject in injects)
-            {
-                var injectedName = inject.Name;
-                var referencedInSql = sqlMap.Any(kv =>
-                    kv.Key.StartsWith(sqlKeyPrefix, StringComparison.Ordinal) &&
-                    ReferencesIdentifier(kv.Value, injectedName));
-                var referencedInCode = !referencedInSql && classSymbol.DeclaringSyntaxReferences.Any(r =>
-                    r.GetSyntax().DescendantNodes().OfType<IdentifierNameSyntax>()
-                        .Any(id => id.Identifier.ValueText == injectedName));
-                if (!referencedInSql && !referencedInCode)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.InjectNotReferenced,
-                        classSymbol.Locations.FirstOrDefault() ?? Location.None,
-                        classSymbol.Name,
-                        injectedName));
-                }
-            }
+            var injectedName = injects[i].Name;
+            var referencedInCode = classSymbol.DeclaringSyntaxReferences.Any(r =>
+                r.GetSyntax().DescendantNodes().OfType<IdentifierNameSyntax>()
+                    .Any(id => id.Identifier.ValueText == injectedName));
+            injects[i] = injects[i] with { ReferencedInCode = referencedInCode };
         }
 
-        return new AccessorModelLegacy(
+        return new AccessorModel(
             ns,
             classSymbol.Name,
             AccessibilityText(classSymbol.DeclaredAccessibility),
             providerName,
             requiresFactory,
-            injects,
-            methods);
+            injects.ToArray(),
+            methods.ToArray(),
+            SourceLocationInfo.From(classSymbol.Locations.FirstOrDefault()),
+            classSymbol.Interfaces.FirstOrDefault()?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
     }
 
     private static bool IsDbConnectionType(ITypeSymbol type)
@@ -1530,8 +1655,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static (List<ColumnInfoLegacy> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(
-        SourceProductionContext context,
+    private static (List<ColumnInfo> Columns, bool UseRecordPrimaryCtor) BuildColumnInfos(
+        List<DiagnosticData> diagnostics,
         IMethodSymbol method,
         INamedTypeSymbol entity,
         INamedTypeSymbol classSymbol,
@@ -1544,7 +1669,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // binding (TDb read method + converter FQN). Returns null when absent/invalid.
         ConverterReadBinding? ResolveConverterBinding(ISymbol member, ITypeSymbol type)
         {
-            var conv = ConverterResolver.Resolve(context, method, member.Name, member.GetAttributes(), type, scope);
+            var conv = ConverterResolver.Resolve(diagnostics, method, member.Name, member.GetAttributes(), type, scope);
             if (conv is null)
             {
                 return null;
@@ -1564,7 +1689,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (converter is null && !skipNullCheck &&
                 type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.NotAnnotated)
             {
-                context.ReportDiagnostic(Diagnostic.Create(
+                diagnostics.Add(DiagnosticData.Create(
                     Diagnostics.NonNullableDbNull,
                     method.Locations.FirstOrDefault(),
                     method.Name,
@@ -1579,7 +1704,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // property's attribute list.
         if (entity.IsRecord && TryGetRecordPrimaryConstructor(entity, out var primaryCtor))
         {
-            var ctorInfos = new List<ColumnInfoLegacy>();
+            var ctorInfos = new List<ColumnInfo>();
             foreach (var param in primaryCtor.Parameters)
             {
                 var prop = entity.GetMembers(param.Name).OfType<IPropertySymbol>().FirstOrDefault();
@@ -1601,12 +1726,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
                 var converter = ResolveConverterBinding(prop, param.Type);
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
-                ctorInfos.Add(new ColumnInfoLegacy(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+                ctorInfos.Add(new ColumnInfo(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
             return (ctorInfos, true);
         }
 
-        var infos = new List<ColumnInfoLegacy>();
+        var infos = new List<ColumnInfo>();
         foreach (var prop in entity.GetMembers().OfType<IPropertySymbol>())
         {
             if (prop.DeclaredAccessibility != Accessibility.Public || prop.IsStatic || prop.SetMethod is null)
@@ -1628,7 +1753,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
             var converter = ResolveConverterBinding(prop, prop.Type);
             CheckNonNullableDbNull(prop.Type, name, skipNullCheck, converter);
-            infos.Add(new ColumnInfoLegacy(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+            infos.Add(new ColumnInfo(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
         }
         return (infos, false);
     }
@@ -1747,7 +1872,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     /// <c>Nullable&lt;T&gt;</c> for <c>TEnum?</c>) so the runtime <c>Convert.ChangeType</c> in
     /// <c>AssignValue</c> is avoided (spec §7.9).
     /// </summary>
-    private static string BuildParameterValueExpr(ParameterModelLegacy p)
+    private static string BuildParameterValueExpr(ParameterModel p)
     {
         // spec §7.4 / §7.7: a bound [TypeHandler<>] writes the value via TConverter.ToDb(...) and
         // takes priority over the enum default cast. For Nullable<TClr> a HasValue guard passes the
@@ -1835,7 +1960,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private static List<PocoBindProperty> BuildPocoProperties(
-        SourceProductionContext context,
+        List<DiagnosticData> diagnostics,
         IMethodSymbol method,
         INamedTypeSymbol classSymbol,
         INamedTypeSymbol? profileSymbol,
@@ -1896,7 +2021,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             string? converterDbTypeFqn = null;
             ITypeSymbol? converterDbType = null;
             var converterNullable = false;
-            if (ConverterResolver.Resolve(context, method, prop.Name, prop.GetAttributes(), prop.Type, scope) is { } conv)
+            if (ConverterResolver.Resolve(diagnostics, method, prop.Name, prop.GetAttributes(), prop.Type, scope) is { } conv)
             {
                 converterFqn = conv.ConverterTypeFullName;
                 converterDbType = conv.DbType;
@@ -1932,12 +2057,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     // spec §5.6: the OUT/InputOutput bindings contributed by POCO arguments (writeback target =
     // {argName}.{property}).
-    private static IEnumerable<OutputBindingLegacy> PocoOutputBindings(IReadOnlyList<ParameterModelLegacy> parameters) =>
+    private static IEnumerable<OutputBinding> PocoOutputBindings(IReadOnlyList<ParameterModel> parameters) =>
         parameters
             .Where(static p => p.PocoProperties is not null)
-            .SelectMany(static p => p.PocoProperties!
+            .SelectMany(static p => p.PocoProperties!.Value.AsArray()
                 .Where(static pp => pp.Direction != ParameterDirectionKindLegacy.Input)
-                .Select(pp => new OutputBindingLegacy(
+                .Select(pp => new OutputBinding(
                     pp.ParamName,
                     pp.HandleName,
                     pp.Direction,
@@ -1999,7 +2124,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // spec §7.4 / §7.7: builds the scalar read expression for an [ExecuteScalar] method.
     // Without a converter: ConvertScalar<TClr>(executeCall). With one: read the DB value as TDb and
     // convert via TConverter.FromDb (the [return:] / method / class / profile scope chain).
-    private static string BuildScalarReadExpr(MethodModelLegacy m, string executeCall)
+    private static string BuildScalarReadExpr(MethodModel m, string executeCall)
     {
         const string convertScalar = "global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<";
         if (m.ScalarConverterTypeFullName is { } converter)
@@ -2082,7 +2207,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Emit
     //--------------------------------------------------------------------------------
 
-    private static string Emit(AccessorModelLegacy model)
+    private static string Emit(AccessorModel model)
     {
         var builder = new SourceBuilder();
         builder.AutoGenerated();
@@ -2093,8 +2218,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // spec §1.4 F12 / §6.3: aggregate /*!helper */ / /*!using */ across all methods,
         // dedupe by (IsStatic, Name), and emit before the namespace declaration.
         // `using static` directives come after plain `using` to match conventional ordering.
-        var aggregated = model.Methods
-            .SelectMany(m => m.Usings)
+        var aggregated = model.Methods.AsArray()
+            .SelectMany(m => m.Usings.AsArray())
             .Distinct()
             .OrderBy(u => u.IsStatic ? 1 : 0)
             .ThenBy(u => u.Name, StringComparer.Ordinal)
@@ -2121,7 +2246,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.BeginScope();
         EmitConstructor(builder, model);
 
-        foreach (var m in model.Methods)
+        foreach (var m in model.Methods.AsArray())
         {
             builder.NewLine();
             EmitMethod(builder, m, model.ProviderName);
@@ -2131,11 +2256,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return builder.ToString();
     }
 
-    private static void EmitConstructor(SourceBuilder builder, AccessorModelLegacy model)
+    private static void EmitConstructor(SourceBuilder builder, AccessorModel model)
     {
         var hasProvider = model.RequiresConnectionFactory;
         var multiProvider = model.ProviderName is not null;
-        var hasInjects = model.Injects.Count > 0;
+        var hasInjects = model.Injects.AsArray().Length > 0;
 
         if (!hasProvider && !hasInjects)
         {
@@ -2160,7 +2285,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 builder.Indent().Append("private readonly global::Smart.Data.IDbProvider dbProvider;").NewLine();
             }
         }
-        foreach (var inject in model.Injects)
+        foreach (var inject in model.Injects.AsArray())
         {
             builder.Indent().Append("private readonly ").Append(inject.TypeFullName).Append(" ").Append(inject.Name).Append(";").NewLine();
         }
@@ -2173,7 +2298,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ? "global::Smart.Data.IDbProviderSelector providerSelector"
                 : "global::Smart.Data.IDbProvider dbProvider");
         }
-        foreach (var inject in model.Injects)
+        foreach (var inject in model.Injects.AsArray())
         {
             ctorParams.Add($"{inject.TypeFullName} {inject.Name}");
         }
@@ -2187,7 +2312,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ? "this.providerSelector = providerSelector;"
                 : "this.dbProvider = dbProvider;").NewLine();
         }
-        foreach (var inject in model.Injects)
+        foreach (var inject in model.Injects.AsArray())
         {
             builder.Indent().Append("this.").Append(inject.Name).Append(" = ").Append(inject.Name).Append(";").NewLine();
         }
@@ -2234,12 +2359,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitMethod(SourceBuilder builder, MethodModelLegacy m, string? providerName)
+    private static void EmitMethod(SourceBuilder builder, MethodModel m, string? providerName)
     {
         // Per-method OrdinalCache struct (spec §7.10.4). Cached once per query, reused per row.
         EmitOrdinalCacheStruct(builder, m);
 
-        var paramList = string.Join(", ", m.Parameters.Select(p =>
+        var paramList = string.Join(", ", m.Parameters.AsArray().Select(p =>
         {
             var modifier = p.RefKind switch
             {
@@ -2258,7 +2383,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.BeginScope();
 
         // Cancellation token discovery
-        var ct = m.Parameters.FirstOrDefault(p => p.IsCancellationToken);
+        var ct = m.Parameters.AsArray().FirstOrDefault(p => p.IsCancellationToken);
         var ctExpr = ct?.Name ?? "default";
 
         // For reader shapes (ExecuteReader), cmd and (Pattern B) connection ownership
@@ -2380,7 +2505,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // design doc §4.3: value parameters = method params excluding DbConnection / DbTransaction / CancellationToken.
             // Both generators must apply the identical exclusion so the call and the generated
             // `{Method}__QueryBuilder` signature line up.
-            var valueArgs = m.Parameters
+            var valueArgs = m.Parameters.AsArray()
                 .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                 .Select(p => p.Name);
             var args = string.Join(", ", new[] { "ref ctx" }.Concat(valueArgs));
@@ -2390,7 +2515,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             // Pre-declare OUT / InOut / ReturnValue parameter handles so they remain accessible
             // after the SQL-building try/finally block.
-            foreach (var binding in m.OutputBindings)
+            foreach (var binding in m.OutputBindings.AsArray())
             {
                 builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
             }
@@ -2454,7 +2579,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.EndScope();
     }
 
-    private static void EmitDirectSqlSetup(SourceBuilder builder, MethodModelLegacy m)
+    private static void EmitDirectSqlSetup(SourceBuilder builder, MethodModel m)
     {
         if (m.DirectSqlParameterName is null)
         {
@@ -2466,12 +2591,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         // X1 / spec §1.4 F14: pre-declare OUT / InOut handles so EmitOutputWriteback can
         // read them after the execute call.
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in m.OutputBindings.AsArray())
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
-        foreach (var p in m.Parameters)
+        foreach (var p in m.Parameters.AsArray())
         {
             if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
             {
@@ -2484,7 +2609,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (p.PocoProperties is { } pocoProps)
             {
                 // spec §5.6: expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps)
+                foreach (var pp in pocoProps.AsArray())
                 {
                     EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
                 }
@@ -2515,7 +2640,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
                 case ParameterDirectionKindLegacy.ReturnValue:
-                    // SDA0200 already reported in BuildAccessorModelLegacy; skip emission.
+                    // SDA0200 already reported in BuildAccessorModel; skip emission.
                     break;
                 default:
                     if (hasProvider)
@@ -2541,7 +2666,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModelLegacy p, string handleName)
+    private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModel p, string handleName)
     {
         if (p.ProviderParameterTypeFullName is null || p.ProviderPropertyName is null || p.ProviderValueExpr is null)
         {
@@ -2552,20 +2677,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Append(").").Append(p.ProviderPropertyName).Append(" = ").Append(p.ProviderValueExpr).Append(";").NewLine();
     }
 
-    private static void EmitProcedureSetup(SourceBuilder builder, MethodModelLegacy m)
+    private static void EmitProcedureSetup(SourceBuilder builder, MethodModel m)
     {
         var procName = m.ProcedureName!.Replace("\"", "\\\"");
         builder.Indent().Append("cmd.CommandType = global::System.Data.CommandType.StoredProcedure;").NewLine();
         builder.Indent().Append("cmd.CommandText = \"").Append(procName).Append("\";").NewLine();
 
         // Pre-declare OUT / InOut / ReturnValue parameter handles so they are accessible after Execute.
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in m.OutputBindings.AsArray())
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
         // Emit Add*Parameter for each method parameter, using BindMarker + parameter name.
-        foreach (var p in m.Parameters)
+        foreach (var p in m.Parameters.AsArray())
         {
             if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
             {
@@ -2574,7 +2699,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (p.PocoProperties is { } pocoProps)
             {
                 // spec §5.6: expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps)
+                foreach (var pp in pocoProps.AsArray())
                 {
                     EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
                 }
@@ -2642,9 +2767,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitOutputWriteback(SourceBuilder builder, MethodModelLegacy m)
+    private static void EmitOutputWriteback(SourceBuilder builder, MethodModel m)
     {
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in m.OutputBindings.AsArray())
         {
             // spec §5.6: POCO-argument output property → write the value back into {arg}.{property}.
             // spec §7.4 / §7.7: with a converter, read the OUT value as TDb then TConverter.FromDb.
@@ -2665,7 +2790,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
+            var param = m.Parameters.AsArray().FirstOrDefault(p => p.Name == binding.ParameterName);
             if (param is null || param.RefKind == RefKindLegacy.None)
             {
                 continue;
@@ -2677,7 +2802,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitReaderInvocation(SourceBuilder builder, MethodModelLegacy m, string ctExpr)
+    private static void EmitReaderInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
     {
         var ownsConnection = m.ConnectionPattern == ConnectionPatternLegacy.None;
         var isAsync = m.ReturnShapeLegacy is ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
@@ -2705,9 +2830,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitInvocation(SourceBuilder builder, MethodModelLegacy m, string ctExpr)
+    private static void EmitInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
     {
-        var hasOutputs = m.OutputBindings.Count > 0;
+        var hasOutputs = m.OutputBindings.AsArray().Length > 0;
 
         if (m.MethodKind == "ExecuteReader" || IsReaderShape(m.ReturnShapeLegacy))
         {
@@ -2906,15 +3031,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Emit either `new T { Prop = ..., ... }` (class/POCO) or `new T(name: ..., ...)`
     // (record primary ctor, spec §7.10.5). Ordinals come from the supplied OrdinalCache
     // variable; column reads use type-specific reader methods (spec §16.3).
-    private static string BuildEntityCreationBody(MethodModelLegacy m, string readerVar, string ordVar)
+    private static string BuildEntityCreationBody(MethodModel m, string readerVar, string ordVar)
     {
         var sb = new StringBuilder();
         var useCtor = m.UseRecordPrimaryConstructor;
         sb.Append("new ").Append(m.ElementTypeFullName).Append(useCtor ? "(" : " { ");
-        if (m.QueryColumns is not null)
+        var cols = m.QueryColumns?.AsArray();
+        if (cols is not null)
         {
             var first = true;
-            foreach (var col in m.QueryColumns)
+            foreach (var col in cols)
             {
                 if (!first)
                 {
@@ -2978,11 +3104,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string OrdinalStructName(MethodModelLegacy m) => "__" + m.Name + "Ordinals";
+    private static string OrdinalStructName(MethodModel m) => "__" + m.Name + "Ordinals";
 
-    private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModelLegacy m)
+    private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel m)
     {
-        if (m.QueryColumns is null || m.QueryColumns.Count == 0)
+        var cols = m.QueryColumns?.AsArray();
+        if (cols is null || cols.Length == 0)
         {
             return;
         }
@@ -2990,15 +3117,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var name = OrdinalStructName(m);
         builder.Indent().Append("private readonly struct ").Append(name).NewLine();
         builder.BeginScope();
-        foreach (var col in m.QueryColumns)
+        foreach (var col in cols)
         {
             builder.Indent().Append("public readonly int ").Append(col.PropertyName).Append(";").NewLine();
         }
         builder.NewLine();
-        var ctorParams = string.Join(", ", m.QueryColumns.Select(c => "int " + LowerFirst(c.PropertyName)));
+        var ctorParams = string.Join(", ", cols.Select(c => "int " + LowerFirst(c.PropertyName)));
         builder.Indent().Append("private ").Append(name).Append("(").Append(ctorParams).Append(")").NewLine();
         builder.BeginScope();
-        foreach (var col in m.QueryColumns)
+        foreach (var col in cols)
         {
             builder.Indent().Append(col.PropertyName).Append(" = ").Append(LowerFirst(col.PropertyName)).Append(";").NewLine();
         }
@@ -3008,13 +3135,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.Indent().Append("public static ").Append(name).Append(" From(global::System.Data.Common.DbDataReader reader)").NewLine();
         builder.IndentLevel++;
         builder.Indent().Append("=> new(");
-        for (var i = 0; i < m.QueryColumns.Count; i++)
+        for (var i = 0; i < cols.Length; i++)
         {
             if (i > 0)
             {
                 builder.Append(", ");
             }
-            var col = m.QueryColumns[i];
+            var col = cols[i];
             builder.Append("reader.GetOrdinal(\"").Append(col.ColumnName).Append("\")");
         }
         builder.Append(");").NewLine();
@@ -3029,18 +3156,18 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // 2-way SQL tokenization + emit (Phase 2 §3.1)
     //--------------------------------------------------------------------------------
 
-    private static (string Code, string? StaticSqlText, string? StaticParameterCode, IReadOnlyList<OutputBindingLegacy> OutputBindings, IReadOnlyList<UsingDirectiveLegacy> Usings) BuildSqlEmitCode(
-        SourceProductionContext context,
-        IMethodSymbol member,
-        IReadOnlyList<ParameterModelLegacy> parameters,
+    private static (string Code, string? StaticSqlText, string? StaticParameterCode, IReadOnlyList<OutputBinding> OutputBindings, IReadOnlyList<UsingDirective> Usings) BuildSqlEmitCode(
+        List<DiagnosticData> diagnostics,
+        string methodName,
+        SourceLocationInfo? location,
+        IReadOnlyList<ParameterModel> parameters,
         string sql,
-        char bindMarker,
-        Compilation? compilation)
+        char bindMarker)
     {
         if (string.IsNullOrWhiteSpace(sql))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.SqlEmpty, member.Locations.FirstOrDefault(), member.Name));
-            return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+            diagnostics.Add(DiagnosticData.Create(Diagnostics.SqlEmpty, location, methodName));
+            return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
         IReadOnlyList<INode> nodes;
@@ -3063,19 +3190,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 _ => Diagnostics.SqlTokenizeFailed
             };
             object[] args = ex.Kind == SqlTokenizerErrorKind.Unknown
-                ? [member.Name, ex.Message]
-                : [member.Name];
-            context.ReportDiagnostic(Diagnostic.Create(descriptor, member.Locations.FirstOrDefault(), args));
-            return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+                ? [methodName, ex.Message]
+                : [methodName];
+            diagnostics.Add(DiagnosticData.Create(descriptor, location, args));
+            return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
         // SDA0104: report any unknown pragmas '/*!xxx */' that survived parsing.
         foreach (var pragmaName in unknownPragmas)
         {
-            context.ReportDiagnostic(Diagnostic.Create(
+            diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.SqlUnknownPragma,
-                member.Locations.FirstOrDefault(),
-                member.Name,
+                location,
+                methodName,
                 pragmaName));
         }
 
@@ -3085,49 +3212,25 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         switch (NodeBuilder.CheckBraceBalance(nodes))
         {
             case NodeBuilder.BraceBalance.UnclosedBlock:
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.SqlCodeBlockBraceUnclosed, member.Locations.FirstOrDefault(), member.Name));
-                return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+                diagnostics.Add(DiagnosticData.Create(
+                    Diagnostics.SqlCodeBlockBraceUnclosed, location, methodName));
+                return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
             case NodeBuilder.BraceBalance.ExtraClose:
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.SqlCodeBlockBraceExtraClose, member.Locations.FirstOrDefault(), member.Name));
-                return (string.Empty, null, null, Array.Empty<OutputBindingLegacy>(), Array.Empty<UsingDirectiveLegacy>());
+                diagnostics.Add(DiagnosticData.Create(
+                    Diagnostics.SqlCodeBlockBraceExtraClose, location, methodName));
+                return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
-        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas
-        // (UsingNodes are aggregated at file-header emission, not per-method output).
-        // Validation against the current Compilation produces SDA0186 / SDA0187.
-        var usings = new List<UsingDirectiveLegacy>();
+        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas (UsingNodes are
+        // aggregated at file-header emission). Their existence validation (SDA0186 / SDA0187) needs the
+        // Compilation and runs in the separate ValidateUsings branch (P3 / 1-C, A案).
+        var usings = new List<UsingDirective>();
         foreach (var node in nodes)
         {
-            if (node is not UsingNode un)
+            if (node is UsingNode un)
             {
-                continue;
+                usings.Add(new UsingDirective(un.IsStatic, un.Name));
             }
-            if (compilation is not null)
-            {
-                if (un.IsStatic)
-                {
-                    if (compilation.GetTypeByMetadataName(un.Name) is null)
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(
-                            Diagnostics.HelperTypeNotFound,
-                            member.Locations.FirstOrDefault(),
-                            member.Name,
-                            un.Name));
-                        continue;
-                    }
-                }
-                else if (!NamespaceExists(compilation, un.Name))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.UsingNamespaceNotFound,
-                        member.Locations.FirstOrDefault(),
-                        member.Name,
-                        un.Name));
-                }
-            }
-            usings.Add(new UsingDirectiveLegacy(un.IsStatic, un.Name));
         }
 
         var known = new HashSet<string>(parameters.Where(p => !p.IsCancellationToken).Select(p => p.Name), StringComparer.Ordinal);
@@ -3173,7 +3276,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         foreach (var u in result.UndefinedParameters.Distinct(StringComparer.Ordinal))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UndefinedSqlParameter, member.Locations.FirstOrDefault(), member.Name, u));
+            diagnostics.Add(DiagnosticData.Create(Diagnostics.UndefinedSqlParameter, location, methodName, u));
         }
 
         // SDA0112: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
@@ -3191,8 +3294,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             var root = pn.Name[..dot];
             var rest = pn.Name[(dot + 1)..];
-            var paramSymbol = member.Parameters.FirstOrDefault(p => string.Equals(p.Name, root, StringComparison.Ordinal));
-            if (paramSymbol is null)
+            var paramModel = parameters.FirstOrDefault(p => string.Equals(p.Name, root, StringComparison.Ordinal));
+            if (paramModel is null)
             {
                 continue; // SDA0110 already reported this root mismatch.
             }
@@ -3203,18 +3306,18 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 firstHop = rest[..nextDot];
             }
-            if (!HasPublicMember(paramSymbol.Type, firstHop))
+            if (!paramModel.MemberNames.AsArray().Contains(firstHop))
             {
                 var key = root + "." + firstHop;
                 if (reportedProperty.Add(key))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(
+                    diagnostics.Add(DiagnosticData.Create(
                         Diagnostics.SqlPropertyNotFound,
-                        member.Locations.FirstOrDefault(),
-                        member.Name,
+                        location,
+                        methodName,
                         root,
                         firstHop,
-                        paramSymbol.Type.ToDisplayString()));
+                        paramModel.TypeFullName));
                 }
             }
         }
@@ -3251,12 +3354,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
             if (!referenced.Contains(p.Name))
             {
-                context.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnusedMethodParameter, member.Locations.FirstOrDefault(), member.Name, p.Name));
+                diagnostics.Add(DiagnosticData.Create(Diagnostics.UnusedMethodParameter, location, methodName, p.Name));
             }
         }
 
         var bindings = result.OutputBindings
-            .Select(static b => new OutputBindingLegacy(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
+            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
             .ToList();
         return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
     }
@@ -3284,35 +3387,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private static string EscapeCSharpString(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
-
-    private static bool HasPublicMember(ITypeSymbol type, string name)
-    {
-        for (var current = type; current is not null; current = current.BaseType)
-        {
-            foreach (var member in current.GetMembers(name))
-            {
-                if (member.DeclaredAccessibility != Accessibility.Public)
-                {
-                    continue;
-                }
-                if (member is IPropertySymbol or IFieldSymbol)
-                {
-                    return true;
-                }
-            }
-        }
-        foreach (var iface in type.AllInterfaces)
-        {
-            foreach (var member in iface.GetMembers(name))
-            {
-                if (member is IPropertySymbol)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     private static ParameterDirectionKindLegacy ToLegacyDirection(NodeEmitter.Direction d) => d switch
     {

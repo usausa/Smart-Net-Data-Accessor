@@ -2,27 +2,17 @@ namespace Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;
 
-// v1 skeleton (spec.md §7.11.1). Filled in by Phase 6.3.
 internal sealed record AccessorModel(
-    string FullyQualifiedName,
     string Namespace,
+    string ClassName,
+    string Accessibility,
     string? ProviderName,
-    char? ClassBindPrefixOverride,
-    char? AssemblyBindPrefixOverride,
+    bool RequiresConnectionFactory,
     EquatableArray<InjectModel> Injects,
-    bool RequiresDbProvider,
     EquatableArray<MethodModel> Methods,
-    EquatableArray<TypeMapModel> TypeMaps,
-    EquatableArray<TypeHandlerModel> ClassTypeHandlers);
-
-internal sealed record InjectModel(
-    string TypeFullName,
-    string FieldName);
-
-internal sealed record TypeMapModel(
-    string ClrTypeFullName,
-    string DbTypeExpr);
-
-internal sealed record TypeHandlerModel(
-    string TargetClrTypeFullName,
-    string ConverterTypeFullName);
+    // spec §7.11 (P3): class declaration location, captured equatably for class-level diagnostics
+    // (e.g. SDA0182) reported at the output stage.
+    SourceLocationInfo? Location = null,
+    // spec §7.11 (P3): DI service type FQN for the registry (the first implemented interface, or the
+    // concrete type when none). Symbol-derived → captured here so the registry output stage needs no symbols.
+    string? ServiceTypeFullName = null);

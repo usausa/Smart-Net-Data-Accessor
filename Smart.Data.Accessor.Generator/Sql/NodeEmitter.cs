@@ -250,8 +250,8 @@ internal static class NodeEmitter
                     sb.Append(c.Code).Append('\n');
                     break;
 
-                // UsingNode is consumed by DataAccessorGenerator at the AccessorModel
-                // level (aggregated and emitted as file-header `using` directives, spec
+                // UsingNode is consumed by DataAccessorGenerator at the accessor level
+                // (aggregated and emitted as file-header `using` directives, spec
                 // §1.4 F12 / §6.3). Skip it here to avoid duplicating in the method body.
                 default:
                     break;

@@ -109,6 +109,35 @@ internal static class GeneratorTestHelper
                 d.Id.StartsWith("SDB", StringComparison.Ordinal))
             .ToList();
 
+    // For incremental-cache regression tests (spec §7.11 / P3): a driver with step tracking enabled
+    // plus the compilation. Only the core DataAccessorGenerator is wired (the unit under test).
+    internal static (GeneratorDriver Driver, Compilation Compilation) CreateTrackingDriver(
+        string source, params (string Name, string Sql)[] sqlFiles)
+    {
+        _ = EnsureDeps.Value;
+
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        var compilation = CSharpCompilation.Create(
+            assemblyName: "GeneratorTestAssembly",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source, parseOptions)],
+            references: BuildReferences(),
+            options: new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var additionalTexts = sqlFiles
+            .Select(static f => (AdditionalText)new InMemoryAdditionalText($"/proj/Sql/{f.Name}.sql", f.Sql))
+            .ToImmutableArray();
+
+        var driver = CSharpGeneratorDriver.Create(
+            generators: [new DataAccessorGenerator().AsSourceGenerator()],
+            additionalTexts: additionalTexts,
+            parseOptions: parseOptions,
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+
+        return (driver, compilation);
+    }
+
     // Use every assembly the test host trusts as a metadata reference. This includes the runtime
     // attribute assemblies (Smart.Data.Accessor[.Builders]) and their dependencies, which are
     // copied next to the test binaries.
