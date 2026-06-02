@@ -19,11 +19,6 @@
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 
-  <!-- Shared, dialect-parameterized QueryBuilder engine (linked into every builder generator). -->
-  <ItemGroup>
-    <Compile Include="..\Smart.Data.Accessor.Builders.Generator.Shared\*.cs" Link="Engine\%(Filename)%(Extension)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
   </PropertyGroup>
