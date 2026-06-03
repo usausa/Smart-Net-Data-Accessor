@@ -4,7 +4,7 @@ public enum SqlTokenizerErrorKind
 {
     Unknown,
     CommentNotClosed,
-    QuoteNotClosed,
+    QuoteNotClosed
 }
 
 [Serializable]

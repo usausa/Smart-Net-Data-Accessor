@@ -37,7 +37,7 @@ internal static class CodeExpressionHelper
         Accessibility.Protected => "protected",
         Accessibility.ProtectedOrInternal => "protected internal",
         Accessibility.ProtectedAndInternal => "private protected",
-        _ => "internal",
+        _ => "internal"
     };
 
     // The trailing DbType / Size arguments of an AddInParameter(cmd, name, value, dbType?, size?) call:

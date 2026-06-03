@@ -68,13 +68,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Where(static t => t.Path.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
             .Select(static (t, ct) => (
                 FullPath: t.Path,
-                Path: System.IO.Path.GetFileNameWithoutExtension(t.Path),
+                Path: Path.GetFileNameWithoutExtension(t.Path),
                 Text: t.GetText(ct)?.ToString() ?? string.Empty))
             .Combine(sqlFolder)
             .Where(static pair =>
             {
                 // spec §3.2.1: restrict to files whose parent directory name matches {SqlFolder}.
-                var parentDir = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(pair.Left.FullPath));
+                var parentDir = Path.GetFileName(Path.GetDirectoryName(pair.Left.FullPath));
                 return string.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
             })
             .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
@@ -177,9 +177,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private static CompletedResult CompleteModel(
         ClassResult result,
         ImmutableArray<(string Path, string Text)> sqlFiles,
-        System.Threading.CancellationToken ct)
+        CancellationToken ct)
     {
-        var diagnostics = new List<DiagnosticData>(result.Diagnostics.AsArray());
+        var diagnostics = new List<DiagnosticData>(result.Diagnostics);
         if (result.Model is not { } model)
         {
             return new CompletedResult(null, new EquatableArray<DiagnosticData>(diagnostics.ToArray()));
@@ -187,7 +187,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         var (sqlMap, collidedKeys) = BuildSqlMap(sqlFiles);
         var keptMethods = new List<MethodModel>();
-        foreach (var method in model.Methods.AsArray())
+        foreach (var method in model.Methods)
         {
             ct.ThrowIfCancellationRequested();
             var isBuilder = method.BuilderMethodName is not null;
@@ -233,14 +233,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (sql is not null)
             {
                 var (code, staticSql, staticParam, outputBindings, methodUsings) =
-                    BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters.AsArray(), sql, method.BindMarker);
+                    BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters, sql, method.BindMarker);
                 keptMethods.Add(method with
                 {
                     SqlEmitCode = code,
                     StaticSqlText = staticSql,
                     StaticParameterCode = staticParam,
                     OutputBindings = new EquatableArray<OutputBinding>(outputBindings.ToArray()),
-                    Usings = new EquatableArray<UsingDirective>(methodUsings.ToArray()),
+                    Usings = new EquatableArray<UsingDirective>(methodUsings.ToArray())
                 });
                 continue;
             }
@@ -251,7 +251,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         // SDA0182 (Info): [Inject] referenced neither in code (computed in the transform) nor in SQL.
         var sqlKeyPrefix = model.ClassName + ".";
-        foreach (var inject in model.Injects.AsArray())
+        foreach (var inject in model.Injects)
         {
             if (inject.ReferencedInCode)
             {
@@ -274,7 +274,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitCompleted(SourceProductionContext context, CompletedResult c)
     {
-        foreach (var d in c.Diagnostics.AsArray())
+        foreach (var d in c.Diagnostics)
         {
             context.ReportDiagnostic(d.ToDiagnostic());
         }
@@ -305,7 +305,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 concreteFq,
                 model.RequiresConnectionFactory,
                 model.ProviderName is not null,
-                model.Injects.AsArray().Select(i => i.TypeFullName).ToArray()));
+                model.Injects.Select(i => i.TypeFullName).ToArray()));
         }
 
         if (registrations.Count > 0)
@@ -398,7 +398,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
-            if (member.MethodKind != Microsoft.CodeAnalysis.MethodKind.Ordinary)
+            if (member.MethodKind != MethodKind.Ordinary)
             {
                 continue;
             }
@@ -651,7 +651,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         if (ctorVal is not null && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
                         {
                             // Build the enum-value expression: `(global::Ns.Enum)42`.
-                            var rawVal = System.Convert.ToInt64(ctorVal, System.Globalization.CultureInfo.InvariantCulture)
+                            var rawVal = Convert.ToInt64(ctorVal, System.Globalization.CultureInfo.InvariantCulture)
                                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
                             var enumValueExpr = $"({enumFqn}){rawVal}";
                             if (routeAsBclDbType)
@@ -715,8 +715,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
                 var refKind = p.RefKind switch
                 {
-                    Microsoft.CodeAnalysis.RefKind.Out => RefKindLegacy.Out,
-                    Microsoft.CodeAnalysis.RefKind.Ref => RefKindLegacy.Ref,
+                    RefKind.Out => RefKindLegacy.Out,
+                    RefKind.Ref => RefKindLegacy.Ref,
                     _ => RefKindLegacy.None
                 };
                 var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(p.Type);
@@ -759,7 +759,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // reference POCO members via /*@ arg.Prop */ instead, so expansion is limited here.
                 IReadOnlyList<PocoBindProperty>? pocoProperties = null;
                 if ((procedureName is not null || isDirectSql) &&
-                    p.RefKind == Microsoft.CodeAnalysis.RefKind.None &&
+                    p.RefKind == RefKind.None &&
                     IsPocoParameter(p.Type))
                 {
                     pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
@@ -935,7 +935,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 foreach (var ms in member.Parameters)
                 {
-                    if (ms.RefKind is Microsoft.CodeAnalysis.RefKind.Out or Microsoft.CodeAnalysis.RefKind.Ref)
+                    if (ms.RefKind is RefKind.Out or RefKind.Ref)
                     {
                         diagnostics.Add(DiagnosticData.Create(
                             Diagnostics.AsyncProcedureRefParam,
@@ -1764,7 +1764,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 SpecialType.System_Int16 or SpecialType.System_UInt16 => "GetInt16",
                 SpecialType.System_Int32 or SpecialType.System_UInt32 => "GetInt32",
                 SpecialType.System_Int64 or SpecialType.System_UInt64 => "GetInt64",
-                _ => null,
+                _ => null
             };
             // Intermediate bit-preserving cast for unsigned / sbyte underlyings (the reader returns the
             // signed counterpart). null for signed underlyings (no intermediate cast needed).
@@ -1774,7 +1774,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 SpecialType.System_UInt16 => "ushort",
                 SpecialType.System_UInt32 => "uint",
                 SpecialType.System_UInt64 => "ulong",
-                _ => null,
+                _ => null
             };
             if (underlyingTyped is null)
             {
@@ -2018,7 +2018,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private static IEnumerable<OutputBinding> PocoOutputBindings(IReadOnlyList<ParameterModel> parameters) =>
         parameters
             .Where(static p => p.PocoProperties is not null)
-            .SelectMany(static p => p.PocoProperties!.Value.AsArray()
+            .SelectMany(static p => p.PocoProperties!.Value
                 .Where(static pp => pp.Direction != ParameterDirectionKindLegacy.Input)
                 .Select(pp => new OutputBinding(
                     pp.ParamName,
@@ -2146,8 +2146,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // spec §1.4 F12 / §6.3: aggregate /*!helper */ / /*!using */ across all methods,
         // dedupe by (IsStatic, Name), and emit before the namespace declaration.
         // `using static` directives come after plain `using` to match conventional ordering.
-        var aggregated = model.Methods.AsArray()
-            .SelectMany(m => m.Usings.AsArray())
+        var aggregated = model.Methods
+            .SelectMany(m => m.Usings)
             .Distinct()
             .OrderBy(u => u.IsStatic ? 1 : 0)
             .ThenBy(u => u.Name, StringComparer.Ordinal)
@@ -2174,7 +2174,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.BeginScope();
         EmitConstructor(builder, model);
 
-        foreach (var m in model.Methods.AsArray())
+        foreach (var m in model.Methods)
         {
             builder.NewLine();
             EmitMethod(builder, m, model.ProviderName);
@@ -2188,7 +2188,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     {
         var hasProvider = model.RequiresConnectionFactory;
         var multiProvider = model.ProviderName is not null;
-        var hasInjects = model.Injects.AsArray().Length > 0;
+        var hasInjects = model.Injects.Count > 0;
 
         if (!hasProvider && !hasInjects)
         {
@@ -2213,7 +2213,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 builder.Indent().Append("private readonly global::Smart.Data.IDbProvider dbProvider;").NewLine();
             }
         }
-        foreach (var inject in model.Injects.AsArray())
+        foreach (var inject in model.Injects)
         {
             builder.Indent().Append("private readonly ").Append(inject.TypeFullName).Append(" ").Append(inject.Name).Append(";").NewLine();
         }
@@ -2226,7 +2226,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ? "global::Smart.Data.IDbProviderSelector providerSelector"
                 : "global::Smart.Data.IDbProvider dbProvider");
         }
-        foreach (var inject in model.Injects.AsArray())
+        foreach (var inject in model.Injects)
         {
             ctorParams.Add($"{inject.TypeFullName} {inject.Name}");
         }
@@ -2240,7 +2240,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 ? "this.providerSelector = providerSelector;"
                 : "this.dbProvider = dbProvider;").NewLine();
         }
-        foreach (var inject in model.Injects.AsArray())
+        foreach (var inject in model.Injects)
         {
             builder.Indent().Append("this.").Append(inject.Name).Append(" = ").Append(inject.Name).Append(";").NewLine();
         }
@@ -2292,7 +2292,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // Per-method OrdinalCache struct (spec §7.10.4). Cached once per query, reused per row.
         EmitOrdinalCacheStruct(builder, m);
 
-        var paramList = string.Join(", ", m.Parameters.AsArray().Select(p =>
+        var paramList = string.Join(", ", m.Parameters.Select(p =>
         {
             var modifier = p.RefKind switch
             {
@@ -2311,7 +2311,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.BeginScope();
 
         // Cancellation token discovery
-        var ct = m.Parameters.AsArray().FirstOrDefault(p => p.IsCancellationToken);
+        var ct = m.Parameters.FirstOrDefault(p => p.IsCancellationToken);
         var ctExpr = ct?.Name ?? "default";
 
         // For reader shapes (ExecuteReader), cmd and (Pattern B) connection ownership
@@ -2433,7 +2433,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // design doc §4.3: value parameters = method params excluding DbConnection / DbTransaction / CancellationToken.
             // Both generators must apply the identical exclusion so the call and the generated
             // `{Method}__QueryBuilder` signature line up.
-            var valueArgs = m.Parameters.AsArray()
+            var valueArgs = m.Parameters
                 .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                 .Select(p => p.Name);
             var args = string.Join(", ", new[] { "ref ctx" }.Concat(valueArgs));
@@ -2443,7 +2443,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             // Pre-declare OUT / InOut / ReturnValue parameter handles so they remain accessible
             // after the SQL-building try/finally block.
-            foreach (var binding in m.OutputBindings.AsArray())
+            foreach (var binding in m.OutputBindings)
             {
                 builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
             }
@@ -2519,12 +2519,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         // X1 / spec §1.4 F14: pre-declare OUT / InOut handles so EmitOutputWriteback can
         // read them after the execute call.
-        foreach (var binding in m.OutputBindings.AsArray())
+        foreach (var binding in m.OutputBindings)
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
-        foreach (var p in m.Parameters.AsArray())
+        foreach (var p in m.Parameters)
         {
             if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
             {
@@ -2537,7 +2537,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (p.PocoProperties is { } pocoProps)
             {
                 // spec §5.6: expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps.AsArray())
+                foreach (var pp in pocoProps)
                 {
                     EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
                 }
@@ -2613,13 +2613,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.Indent().Append("cmd.CommandText = \"").Append(procName).Append("\";").NewLine();
 
         // Pre-declare OUT / InOut / ReturnValue parameter handles so they are accessible after Execute.
-        foreach (var binding in m.OutputBindings.AsArray())
+        foreach (var binding in m.OutputBindings)
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
         // Emit Add*Parameter for each method parameter, using BindMarker + parameter name.
-        foreach (var p in m.Parameters.AsArray())
+        foreach (var p in m.Parameters)
         {
             if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
             {
@@ -2628,7 +2628,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             if (p.PocoProperties is { } pocoProps)
             {
                 // spec §5.6: expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps.AsArray())
+                foreach (var pp in pocoProps)
                 {
                     EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
                 }
@@ -2699,7 +2699,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitOutputWriteback(SourceBuilder builder, MethodModel m)
     {
-        foreach (var binding in m.OutputBindings.AsArray())
+        foreach (var binding in m.OutputBindings)
         {
             // spec §5.6: POCO-argument output property → write the value back into {arg}.{property}.
             // spec §7.4 / §7.7: with a converter, read the OUT value as TDb then TConverter.FromDb.
@@ -2720,7 +2720,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var param = m.Parameters.AsArray().FirstOrDefault(p => p.Name == binding.ParameterName);
+            var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
             if (param is null || param.RefKind == RefKindLegacy.None)
             {
                 continue;
@@ -2762,7 +2762,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
     {
-        var hasOutputs = m.OutputBindings.AsArray().Length > 0;
+        var hasOutputs = m.OutputBindings.Count > 0;
 
         if (m.MethodKind == "ExecuteReader" || IsReaderShape(m.ReturnShapeLegacy))
         {
@@ -2966,7 +2966,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var sb = new StringBuilder();
         var useCtor = m.UseRecordPrimaryConstructor;
         sb.Append("new ").Append(m.ElementTypeFullName).Append(useCtor ? "(" : " { ");
-        var cols = m.QueryColumns?.AsArray();
+        var cols = m.QueryColumns;
         if (cols is not null)
         {
             var first = true;
@@ -3038,8 +3038,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel m)
     {
-        var cols = m.QueryColumns?.AsArray();
-        if (cols is null || cols.Length == 0)
+        var cols = m.QueryColumns ?? [];
+        if (cols.Count == 0)
         {
             return;
         }
@@ -3065,7 +3065,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.Indent().Append("public static ").Append(name).Append(" From(global::System.Data.Common.DbDataReader reader)").NewLine();
         builder.IndentLevel++;
         builder.Indent().Append("=> new(");
-        for (var i = 0; i < cols.Length; i++)
+        for (var i = 0; i < cols.Count; i++)
         {
             if (i > 0)
             {
@@ -3238,7 +3238,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 firstHop = rest[..nextDot];
             }
-            if (!paramModel.MemberNames.AsArray().Contains(firstHop))
+            if (!paramModel.MemberNames.Contains(firstHop))
             {
                 var key = root + "." + firstHop;
                 if (reportedProperty.Add(key))

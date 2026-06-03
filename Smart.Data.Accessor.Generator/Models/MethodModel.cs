@@ -18,14 +18,14 @@ internal enum ReturnShapeLegacy
     AsyncEnumerable,     // IAsyncEnumerable<T> — Generator emits await foreach + yield return directly
     Reader,              // IDataReader / DbDataReader (sync)
     TaskReader,          // Task<IDataReader> / Task<DbDataReader>
-    ValueTaskReader,     // ValueTask<IDataReader> / ValueTask<DbDataReader>
+    ValueTaskReader // ValueTask<IDataReader> / ValueTask<DbDataReader>
 }
 
 internal enum ConnectionPatternLegacy
 {
     None,            // Pattern B: no DbConnection / DbTransaction arg → IDbProvider.CreateConnection() or IDbProviderSelector.GetProvider(name).CreateConnection()
     ConnectionArg,   // Pattern A: DbConnection arg
-    TransactionArg,  // Pattern A: DbTransaction arg (also brings connection)
+    TransactionArg // Pattern A: DbTransaction arg (also brings connection)
 }
 
 internal sealed record MethodModel(

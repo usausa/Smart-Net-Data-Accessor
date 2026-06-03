@@ -23,7 +23,7 @@ internal sealed record BuilderDiagnosticData(
             new EquatableArray<string>(args.Select(static a => a?.ToString() ?? string.Empty).ToArray()));
 
     public Diagnostic ToDiagnostic()
-        => Diagnostic.Create(Descriptor, Location?.ToLocation(), Args.AsArray());
+        => Diagnostic.Create(Descriptor, Location?.ToLocation(), Args);
 }
 
 // Equatable representation of a Roslyn Location (not value-equatable), reconstructed at the output stage.

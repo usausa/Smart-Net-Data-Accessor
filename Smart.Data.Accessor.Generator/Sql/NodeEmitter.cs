@@ -96,7 +96,7 @@ internal static class NodeEmitter
         Input,
         Output,
         InputOutput,
-        ReturnValue,
+        ReturnValue
     }
 
     public static EmitResult Emit(IReadOnlyList<INode> nodes, ISet<string> knownParameters)

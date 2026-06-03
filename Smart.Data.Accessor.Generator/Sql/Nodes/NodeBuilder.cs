@@ -30,7 +30,7 @@ public sealed class NodeBuilder
     {
         Balanced,
         UnclosedBlock,   // SDA0105: more '{' than '}' across code blocks (a block is never closed)
-        ExtraClose,      // SDA0106: a '}' appears with no matching '{'
+        ExtraClose // SDA0106: a '}' appears with no matching '{'
     }
 
     /// <summary>

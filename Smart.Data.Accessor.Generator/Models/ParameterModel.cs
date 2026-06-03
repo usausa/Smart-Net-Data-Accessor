@@ -7,14 +7,14 @@ internal enum ParameterDirectionKindLegacy
     Input,
     Output,
     InputOutput,
-    ReturnValue,
+    ReturnValue
 }
 
 internal enum RefKindLegacy
 {
     None,
     Out,
-    Ref,
+    Ref
 }
 
 internal sealed record ParameterModel(
