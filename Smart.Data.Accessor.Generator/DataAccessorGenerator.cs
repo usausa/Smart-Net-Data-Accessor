@@ -96,16 +96,26 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .WithTrackingName("AccessorCompleted");
 
         // Per-accessor source + its diagnostics.
+        // `completed` is an IncrementalValuesProvider<CompletedResult> — a STREAM with one element per
+        // [DataAccessor] class. RegisterSourceOutput therefore runs EmitCompleted ONCE PER ELEMENT
+        // (= per accessor class), emitting that class's `{ns}_{Class}.g.cs`. Re-runs only for the
+        // accessor(s) whose own CompletedResult changed; unchanged accessors stay cached and are
+        // skipped (per-class granularity).
         context.RegisterSourceOutput(completed, static (spc, c) => EmitCompleted(spc, c));
 
         // Registry initializer (aggregated across all accessors; symbol-derived, no SQL needed).
+        // `.Collect()` collapses the stream into a single IncrementalValueProvider<ImmutableArray<...>>
+        // holding ALL accessors at once. RegisterSourceOutput therefore runs EmitRegistry ONCE with the
+        // whole set — because the registry (`DataAccessorRegistryInitializer.g.cs`) is a single file that
+        // aggregates the DI registration of every accessor and cannot be split per-class. Re-runs
+        // whenever the collected set changes (an accessor added/removed, or any accessor's
+        // registration-relevant data changed), and re-emits just that one small file.
         context.RegisterSourceOutput(completed.Collect(), static (spc, all) => EmitRegistry(spc, all));
 
-        // SDA0186/0187: the /*!using*/ / /*!helper*/ existence check is the only Compilation-dependent
-        // diagnostic; isolate it in a diagnostic-only branch so source generation stays cached (1-C / A案).
-        context.RegisterSourceOutput(
-            completed.Combine(context.CompilationProvider),
-            static (spc, pair) => ValidateUsings(spc, pair.Left, pair.Right));
+        // NOTE: /*!using*/ / /*!helper*/ are NOT validated against the Compilation. An invalid namespace
+        // or helper type surfaces as a C# error on the generated `using` line, so no dedicated diagnostic
+        // is emitted (案C: SDA0186/0187 retired — same policy as SDA0113-0120; keeps the pipeline
+        // Compilation-free and fully cached).
     }
 
     // P3 transform (symbol stage): class-level validation + symbol-only model build. Returns an
@@ -172,11 +182,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var diagnostics = new List<DiagnosticData>(result.Diagnostics.AsArray());
         if (result.Model is not { } model)
         {
-            return new CompletedResult(null, new EquatableArray<DiagnosticData>(diagnostics.ToArray()), EquatableArray<UsingValidation>.Empty);
+            return new CompletedResult(null, new EquatableArray<DiagnosticData>(diagnostics.ToArray()));
         }
 
         var (sqlMap, collidedKeys) = BuildSqlMap(sqlFiles);
-        var usings = new List<UsingValidation>();
         var keptMethods = new List<MethodModel>();
         foreach (var method in model.Methods.AsArray())
         {
@@ -225,10 +234,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 var (code, staticSql, staticParam, outputBindings, methodUsings) =
                     BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters.AsArray(), sql, method.BindMarker);
-                foreach (var u in methodUsings)
-                {
-                    usings.Add(new UsingValidation(u.IsStatic, u.Name, method.Name, method.Location));
-                }
                 keptMethods.Add(method with
                 {
                     SqlEmitCode = code,
@@ -264,8 +269,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var completedModel = model with { Methods = new EquatableArray<MethodModel>(keptMethods.ToArray()) };
         return new CompletedResult(
             completedModel,
-            new EquatableArray<DiagnosticData>(diagnostics.ToArray()),
-            new EquatableArray<UsingValidation>(usings.ToArray()));
+            new EquatableArray<DiagnosticData>(diagnostics.ToArray()));
     }
 
     private static void EmitCompleted(SourceProductionContext context, CompletedResult c)
@@ -308,27 +312,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             var initializer = EmitRegistryInitializer(registrations);
             context.AddSource("DataAccessorRegistryInitializer.g.cs", SourceText.From(initializer, Encoding.UTF8));
-        }
-    }
-
-    // SDA0186 / SDA0187 (spec §1.4 F12 / §6.3): validate /*!helper*/ (using static) and /*!using*/
-    // namespaces against the Compilation. Diagnostic-only branch (no AddSource) so source generation
-    // stays cached; this re-runs on Compilation change but performs no generation (1-C / A案).
-    private static void ValidateUsings(SourceProductionContext context, CompletedResult c, Compilation compilation)
-    {
-        foreach (var u in c.Usings.AsArray())
-        {
-            if (u.IsStatic)
-            {
-                if (compilation.GetTypeByMetadataName(u.Name) is null)
-                {
-                    context.ReportDiagnostic(DiagnosticData.Create(Diagnostics.HelperTypeNotFound, u.Location, u.MethodName, u.Name).ToDiagnostic());
-                }
-            }
-            else if (!NamespaceExists(compilation, u.Name))
-            {
-                context.ReportDiagnostic(DiagnosticData.Create(Diagnostics.UsingNamespaceNotFound, u.Location, u.MethodName, u.Name).ToDiagnostic());
-            }
         }
     }
 
@@ -3221,9 +3204,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
-        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas (UsingNodes are
-        // aggregated at file-header emission). Their existence validation (SDA0186 / SDA0187) needs the
-        // Compilation and runs in the separate ValidateUsings branch (P3 / 1-C, A案).
+        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas (UsingNodes are aggregated
+        // at file-header emission). Existence is NOT validated (案C: SDA0186/0187 retired) — an invalid
+        // namespace/type surfaces as a C# error on the generated `using` line.
         var usings = new List<UsingDirective>();
         foreach (var node in nodes)
         {
@@ -3362,22 +3345,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
             .ToList();
         return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
-    }
-
-    private static bool NamespaceExists(Compilation compilation, string name)
-    {
-        var parts = name.Split('.');
-        var ns = compilation.GlobalNamespace;
-        foreach (var part in parts)
-        {
-            var next = ns.GetNamespaceMembers().FirstOrDefault(n => n.Name == part);
-            if (next is null)
-            {
-                return false;
-            }
-            ns = next;
-        }
-        return true;
     }
 
     private static string ExtractRoot(string name)

@@ -391,25 +391,8 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    // ------------------------------------------------------------------
-    // F12: /*!helper */ / /*!using */ pragmas (SDA0186-0187, spec §1.4 F12 / §6.3).
-    // ------------------------------------------------------------------
-
-    public static readonly DiagnosticDescriptor HelperTypeNotFound = new(
-        id: "SDA0186",
-        title: "/*!helper */ type cannot be resolved",
-        messageFormat: "Method=[{0}]: /*!helper {1} */ references a type that cannot be resolved in the current Compilation (spec §1.4 F12)",
-        category: "Sql",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor UsingNamespaceNotFound = new(
-        id: "SDA0187",
-        title: "/*!using */ namespace cannot be resolved",
-        messageFormat: "Method=[{0}]: /*!using {1} */ references a namespace that cannot be resolved in the current Compilation (spec §1.4 F12)",
-        category: "Sql",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+    // F12: /*!helper */ / /*!using */ pragmas — existence validation (旧 SDA0186/0187) は案C で廃止。
+    // 不正な名前空間/型は生成された `using` 行が C# エラーになるため専用診断は設けない（spec §6.3）。
 
     // ------------------------------------------------------------------
     // [DirectSql] structural diagnostics (SDA0127 / SDA0128 / SDA0129, spec §5.2 / §1.4 F6).
