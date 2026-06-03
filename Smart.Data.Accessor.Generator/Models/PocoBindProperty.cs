@@ -14,8 +14,10 @@ internal sealed record PocoBindProperty(
     bool IsNullableEnum,
     string HandleName,                 // __op_{ArgName}_{PropertyName} for Output / InputOutput
     // spec §7.4 / §7.7: when set, input is written via TConverter.ToDb and OUT read as
-    // ConverterDbTypeFullName (= TDb) then TConverter.FromDb. ConverterValueIsNullable adds a
-    // HasValue guard for a Nullable<TClr> input.
+    // ConverterDbTypeFullName (= TDb) then TConverter.FromDb. ConverterClrTypeFullName (= TClr) +
+    // ConverterDbTypeFullName feed ExecuteHelper.AddInParameter<TConverter,TDb,TClr> (改善2).
+    // ConverterValueIsNullable adds a HasValue guard for a Nullable<TClr> input.
     string? ConverterTypeFullName = null,
     string? ConverterDbTypeFullName = null,
+    string? ConverterClrTypeFullName = null,
     bool ConverterValueIsNullable = false);

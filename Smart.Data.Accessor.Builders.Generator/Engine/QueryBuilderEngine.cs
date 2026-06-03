@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Text;
 
 using Smart.Data.Accessor.Builders.Generator.Builders;
 using Smart.Data.Accessor.Builders.Generator.Models;
+using Smart.Data.Accessor.CodeGen;
 
 using SourceGenerateHelper;
 
@@ -335,10 +336,9 @@ internal static class QueryBuilderEngine
         if (c.Converter is { } conv)
         {
             builder.Indent()
-                .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter<")
-                .Append(conv.ConverterTypeFullName).Append(", ")
-                .Append(conv.DbTypeFullName).Append(", ")
-                .Append(conv.ClrTypeFullName).Append(">(cmd, \"")
+                .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.")
+                .Append(Smart.Data.Accessor.CodeGen.GenExpr.AddInParameterConverter(conv.ConverterTypeFullName, conv.DbTypeFullName, conv.ClrTypeFullName))
+                .Append("(cmd, \"")
                 .Append(paramName).Append("\", ")
                 .Append(valueExpression)
                 .Append(DbTypeSizeArgs(c.DbTypeExpr, c.Size))
@@ -356,7 +356,7 @@ internal static class QueryBuilderEngine
 
     private static string ColumnValueArg(string valueExpr, BuilderColumn c)
         => c.EnumUnderlyingFullName is not null
-            ? EnumValueArg(valueExpr, c.EnumUnderlyingFullName, c.IsNullableEnum)
+            ? GenExpr.EnumCastValue(c.EnumUnderlyingFullName, c.IsNullableEnum, valueExpr)
             : valueExpr;
 
     // Method value parameter (no converter — matching the prior behaviour): enum underlying cast or
@@ -371,13 +371,8 @@ internal static class QueryBuilderEngine
 
     private static string ValueParamArg(BuilderValueParam p)
         => p.EnumUnderlyingFullName is not null
-            ? EnumValueArg(p.Name, p.EnumUnderlyingFullName, p.IsNullableEnum)
+            ? GenExpr.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name)
             : p.Name;
-
-    private static string EnumValueArg(string valueExpr, string underlyingFq, bool isNullableEnum)
-        => isNullableEnum
-            ? $"({valueExpr}.HasValue ? (object?)({underlyingFq}){valueExpr}.Value : null)"
-            : $"(object?)({underlyingFq}){valueExpr}";
 
     private static string DbTypeSizeArgs(string? dbTypeExpr, int? size)
     {
@@ -391,25 +386,5 @@ internal static class QueryBuilderEngine
     }
 
     private static void EmitCommandText(SourceBuilder builder, string sql)
-        => builder.Indent().Append("cmd.CommandText = ").Append(EncodeStringLiteral(sql)).Append(";").NewLine();
-
-    private static string EncodeStringLiteral(string value)
-    {
-        var sb = new StringBuilder(value.Length + 2);
-        sb.Append('"');
-        foreach (var ch in value)
-        {
-            switch (ch)
-            {
-                case '\\': sb.Append("\\\\"); break;
-                case '"': sb.Append("\\\""); break;
-                case '\r': sb.Append("\\r"); break;
-                case '\n': sb.Append("\\n"); break;
-                case '\t': sb.Append("\\t"); break;
-                default: sb.Append(ch); break;
-            }
-        }
-        sb.Append('"');
-        return sb.ToString();
-    }
+        => builder.Indent().Append("cmd.CommandText = ").Append(GenExpr.StringLiteral(sql)).Append(";").NewLine();
 }

@@ -84,6 +84,11 @@ internal static class NodeEmitter
         // (no member-access path). ConverterValueIsNullable adds a HasValue guard for Nullable<TClr>.
         public string? ConverterTypeFullName { get; init; }
         public bool ConverterValueIsNullable { get; init; }
+
+        // spec §7.7 (改善2): the converter's IValueConverter<TDb, TClr> type-argument FQNs, for emitting
+        // ExecuteHelper.AddInParameter<TConverter, TDb, TClr>. Meaningful only with ConverterTypeFullName.
+        public string? ConverterDbTypeFullName { get; init; }
+        public string? ConverterClrTypeFullName { get; init; }
     }
 
     public enum Direction
@@ -154,19 +159,18 @@ internal static class NodeEmitter
                     // SQL token is the bare parameter (no member access) — for `entity.X` the leaf
                     // type is unknown to this layer. A converter takes priority over the enum cast.
                     var valueExpr = p.Name;
+                    var inMethod = "AddInParameter";
                     if (!p.Name.Contains('.'))
                     {
                         if (attrs?.ConverterTypeFullName is { } converter)
                         {
-                            valueExpr = attrs.ConverterValueIsNullable
-                                ? $"({p.Name}.HasValue ? (object?){converter}.ToDb({p.Name}.Value) : null)"
-                                : $"{converter}.ToDb({p.Name})";
+                            // 改善2: bind via the converter-sharing overload; valueExpr stays raw (the
+                            // helper calls TConverter.ToDb + handles null/Nullable).
+                            inMethod = Smart.Data.Accessor.CodeGen.GenExpr.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
                         }
                         else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
                         {
-                            valueExpr = attrs.IsNullableEnum
-                                ? $"({enumUnderlying}?){p.Name}"
-                                : $"({enumUnderlying}){p.Name}";
+                            valueExpr = Smart.Data.Accessor.CodeGen.GenExpr.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
                         }
                     }
                     var hasProvider = attrs?.ProviderParameterTypeFullName is not null
@@ -198,12 +202,12 @@ internal static class NodeEmitter
                                 ? ", size: " + pSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
                                 : string.Empty;
                             EmitParamLine(
-                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
+                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
                         }
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
                         }
                     }
                     else

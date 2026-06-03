@@ -42,6 +42,10 @@ internal sealed record ParameterModel(
     // emitted so `ToDb` receives the non-null value and DB NULL is passed otherwise).
     string? ConverterTypeFullName = null,
     bool ConverterValueIsNullable = false,
+    // spec §7.7 (改善2): the converter's IValueConverter<TDb, TClr> type-argument FQNs, for emitting
+    // ExecuteHelper.AddInParameter<TConverter, TDb, TClr>. Meaningful only when ConverterTypeFullName is set.
+    string? ConverterDbTypeFullName = null,
+    string? ConverterClrTypeFullName = null,
     // spec §5.6: non-null when this parameter is a POCO argument on a [Procedure]/[DirectSql] method.
     // Its public properties are expanded into DB parameters; the parameter itself is not bound. The
     // method signature still declares the POCO argument.

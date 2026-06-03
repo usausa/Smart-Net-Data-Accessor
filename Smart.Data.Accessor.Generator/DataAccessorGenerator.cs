@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+using Smart.Data.Accessor.CodeGen;
 using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.Generator.Sql;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
@@ -793,6 +794,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // written via TConverter.ToDb(...). Structural parameters never carry a converter.
                 string? converterFqn = null;
                 var converterNullableValue = false;
+                string? converterDbFqn = null;
+                string? converterClrFqn = null;
                 if (p.Type.ToDisplayString() != CancellationTokenTypeName &&
                     !IsDbConnectionType(p.Type) && !IsDbTransactionType(p.Type))
                 {
@@ -802,6 +805,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         converterFqn = paramConv.ConverterTypeFullName;
                         converterNullableValue = p.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
                             pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
+                        converterDbFqn = paramConv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        converterClrFqn = paramConv.ClrType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     }
                 }
 
@@ -868,6 +873,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     providerValueExpr,
                     converterFqn,
                     converterNullableValue,
+                    converterDbFqn,
+                    converterClrFqn,
                     pocoProperties is { } pp ? new EquatableArray<PocoBindProperty>(pp.ToArray()) : (EquatableArray<PocoBindProperty>?)null,
                     new EquatableArray<string>(memberNames.ToArray()));
             }).ToList();
@@ -1158,7 +1165,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 shape.Value,
                 scalarFq,
                 elementFq,
-                AccessibilityText(member.DeclaredAccessibility),
+                GenExpr.AccessibilityText(member.DeclaredAccessibility),
                 parameters.ToArray(),
                 builder,
                 null,
@@ -1310,7 +1317,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return new AccessorModel(
             ns,
             classSymbol.Name,
-            AccessibilityText(classSymbol.DeclaredAccessibility),
+            GenExpr.AccessibilityText(classSymbol.DeclaredAccessibility),
             providerName,
             requiresFactory,
             injects.ToArray(),
@@ -1880,6 +1887,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     /// <c>Nullable&lt;T&gt;</c> for <c>TEnum?</c>) so the runtime <c>Convert.ChangeType</c> in
     /// <c>AssignValue</c> is avoided (spec §7.9).
     /// </summary>
+    // 改善2 (P8): a [TypeHandler<>] INPUT parameter binds through the converter-sharing overload
+    // AddInParameter<TConverter, TDb, TClr>(cmd, name, value) — the helper calls ToDb + handles null.
+    // Non-converter parameters use the plain AddInParameter with a gen-time value expression.
+    private static (string Method, string Value) BuildInParameterCall(ParameterModel p)
+        => p.ConverterTypeFullName is { } conv
+            ? (GenExpr.AddInParameterConverter(conv, p.ConverterDbTypeFullName!, p.ConverterClrTypeFullName!), p.Name)
+            : ("AddInParameter", BuildParameterValueExpr(p));
+
     private static string BuildParameterValueExpr(ParameterModel p)
     {
         // spec §7.4 / §7.7: a bound [TypeHandler<>] writes the value via TConverter.ToDb(...) and
@@ -1895,9 +1910,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             return p.Name;
         }
-        return p.IsNullableEnum
-            ? $"({p.EnumUnderlyingFullName}?){p.Name}"
-            : $"({p.EnumUnderlyingFullName}){p.Name}";
+        return GenExpr.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name);
     }
 
     // spec §5.6: a parameter is a POCO argument (expanded into one DB parameter per public property)
@@ -2027,6 +2040,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             // DbType is then governed by TDb, not the CLR property type.
             string? converterFqn = null;
             string? converterDbTypeFqn = null;
+            string? converterClrTypeFqn = null;
             ITypeSymbol? converterDbType = null;
             var converterNullable = false;
             if (ConverterResolver.Resolve(diagnostics, method, prop.Name, prop.GetAttributes(), prop.Type, scope) is { } conv)
@@ -2034,6 +2048,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 converterFqn = conv.ConverterTypeFullName;
                 converterDbType = conv.DbType;
                 converterDbTypeFqn = conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                converterClrTypeFqn = conv.ClrType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 converterNullable = prop.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
                     pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
             }
@@ -2058,6 +2073,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 $"__op_{argName}_{prop.Name}",
                 converterFqn,
                 converterDbTypeFqn,
+                converterClrTypeFqn,
                 converterNullable));
         }
         return list;
@@ -2095,10 +2111,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             return access;
         }
-        return pp.IsNullableEnum
-            ? $"({pp.EnumUnderlyingFullName}?){access}"
-            : $"({pp.EnumUnderlyingFullName}){access}";
+        return GenExpr.EnumCastValue(pp.EnumUnderlyingFullName, pp.IsNullableEnum, access);
     }
+
+    // 改善2 (P8): a [TypeHandler<>] INPUT POCO property binds through AddInParameter<TConverter,TDb,TClr>
+    // (the helper calls ToDb + handles null); non-converter properties use the gen-time value expression.
+    private static (string Method, string Value) BuildPocoInParameterCall(string argName, PocoBindProperty pp)
+        => pp.ConverterTypeFullName is { } conv
+            ? (GenExpr.AddInParameterConverter(conv, pp.ConverterDbTypeFullName!, pp.ConverterClrTypeFullName!), argName + "." + pp.PropertyName)
+            : ("AddInParameter", BuildPocoValueExpr(argName, pp));
 
     // spec §5.6: emit Add*Parameter for one expanded POCO property (procedure / DirectSql setup).
     private static void EmitPocoPropertyParameter(SourceBuilder builder, char bindMarker, string argName, PocoBindProperty pp)
@@ -2122,9 +2143,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     .Append(paramName).Append("\", ").Append(valueExpr).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
             default:
+                var (pocoMethod, pocoValue) = BuildPocoInParameterCall(argName, pp);
                 builder.Indent()
-                    .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(valueExpr).Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
+                    .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(pocoMethod).Append("(cmd, \"")
+                    .Append(paramName).Append("\", ").Append(pocoValue).Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
                 break;
         }
     }
@@ -2199,17 +2221,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         }
         return false;
     }
-
-    private static string AccessibilityText(Accessibility a) => a switch
-    {
-        Accessibility.Public => "public",
-        Accessibility.Internal => "internal",
-        Accessibility.Private => "private",
-        Accessibility.Protected => "protected",
-        Accessibility.ProtectedOrInternal => "protected internal",
-        Accessibility.ProtectedAndInternal => "private protected",
-        _ => "internal"
-    };
 
     //--------------------------------------------------------------------------------
     // Emit
@@ -2656,17 +2667,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         var providerSizeArg = p.Size is { } iSz
                             ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
                             : string.Empty;
+                        var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()
                             .Append("((").Append(p.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p)).Append(providerSizeArg)
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
+                            .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
                             .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
                     }
                     else
                     {
+                        var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
+                            .Append(paramName).Append("\", ").Append(inValue)
                             .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
                     }
                     break;
@@ -2750,17 +2763,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         var providerSizeArg = p.Size is { } iSz
                             ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
                             : string.Empty;
+                        var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()
                             .Append("((").Append(p.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p)).Append(providerSizeArg)
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
+                            .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
                             .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
                     }
                     else
                     {
+                        var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
+                            .Append(paramName).Append("\", ").Append(inValue)
                             .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
                     }
                     break;
@@ -3277,7 +3292,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     ProviderPropertyName = pm.ProviderPropertyName,
                     ProviderValueExpr = pm.ProviderValueExpr,
                     ConverterTypeFullName = pm.ConverterTypeFullName,
-                    ConverterValueIsNullable = pm.ConverterValueIsNullable
+                    ConverterValueIsNullable = pm.ConverterValueIsNullable,
+                    ConverterDbTypeFullName = pm.ConverterDbTypeFullName,
+                    ConverterClrTypeFullName = pm.ConverterClrTypeFullName
                 };
             },
             bindMarker);

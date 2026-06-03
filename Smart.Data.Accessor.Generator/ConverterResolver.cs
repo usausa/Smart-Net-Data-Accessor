@@ -6,6 +6,7 @@ using System.Linq;
 
 using Microsoft.CodeAnalysis;
 
+using Smart.Data.Accessor.CodeGen;
 using Smart.Data.Accessor.Generator.Models;
 
 /// <summary>
@@ -17,15 +18,15 @@ using Smart.Data.Accessor.Generator.Models;
 /// The member scope is an <em>explicit</em> binding (a TClr mismatch is the error SDA0142); the
 /// outer scopes are <em>type-keyed</em> (a handler applies only when its TClr matches the value
 /// type, and a non-matching handler is simply skipped). Reports SDA0142–SDA0145.
+/// The scope-chain primitives (attribute reading / type-keyed find / TDb·TClr extraction / Nullable
+/// unwrap) are shared with the Builder generator via <see cref="ScopeResolver"/> (改善2 ②); only the
+/// ordering and the validation (SDA0142-0145) are core-specific.
 /// </summary>
 internal static class ConverterResolver
 {
-    private const string TypeHandlerGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute<TConverter>";
-    private const string TypeHandlerNonGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute";
-    private const string IValueConverterFq = "Smart.Data.Accessor.Converters.IValueConverter<TDb, TClr>";
-
     /// <summary>The converter binding resolved for a single mapped value (column / parameter / scalar).</summary>
-    internal sealed record Result(string ConverterTypeFullName, ITypeSymbol DbType);
+    /// <remarks><see cref="DbType"/> = TDb, <see cref="ClrType"/> = TClr of IValueConverter&lt;TDb, TClr&gt;.</remarks>
+    internal sealed record Result(string ConverterTypeFullName, ITypeSymbol DbType, ITypeSymbol ClrType);
 
     /// <summary>
     /// The outer scope owners consulted (in spec §7.7 order) when the member itself carries no
@@ -36,9 +37,6 @@ internal static class ConverterResolver
 
     /// <summary>
     /// Resolves the converter to apply to a member of type <paramref name="valueType"/>.
-    /// <paramref name="memberAttributes"/> are the member's own attributes (a property's, a
-    /// parameter's, or <c>method.GetReturnTypeAttributes()</c> for <c>[return:]</c>); when they carry
-    /// no <c>[TypeHandler]</c> the resolution falls through to the type-keyed outer scopes.
     /// Returns <c>null</c> when no handler applies or when validation fails (a diagnostic is reported
     /// in the latter case so the mapping/binding falls back to the plain path).
     /// </summary>
@@ -51,7 +49,7 @@ internal static class ConverterResolver
         in Scope scope)
     {
         // 1. Member scope (explicit binding): the first [TypeHandler] wins and TClr must match.
-        var memberConverters = CollectHandlerConverters(memberAttributes);
+        var memberConverters = ScopeResolver.CollectHandlerConverters(memberAttributes);
         if (memberConverters.Count > 0)
         {
             // SDA0145: more than one [TypeHandler] on the same member; the first wins.
@@ -73,7 +71,7 @@ internal static class ConverterResolver
         // declares a handler whose TClr matches the value type wins.
         foreach (var owner in EnumerateScopeOwners(scope))
         {
-            if (FindTypeKeyedConverter(owner.GetAttributes(), valueType) is { } scopedConverter)
+            if (ScopeResolver.FindTypeKeyedConverter(owner.GetAttributes(), valueType) is { } scopedConverter)
             {
                 return Validate(diagnostics, method, memberName, scopedConverter, valueType, requireClrMatch: false);
             }
@@ -92,24 +90,6 @@ internal static class ConverterResolver
         }
     }
 
-    // The first [TypeHandler]-family handler at this scope whose IValueConverter TClr matches the
-    // value type (Nullable<T> compares against T). Non-matching handlers apply to other types and
-    // are skipped without a diagnostic.
-    private static INamedTypeSymbol? FindTypeKeyedConverter(ImmutableArray<AttributeData> attributes, ITypeSymbol valueType)
-    {
-        var underlying = UnwrapNullable(valueType);
-        foreach (var converter in CollectHandlerConverters(attributes))
-        {
-            if (converter is not null &&
-                TryGetConverterTypes(converter, out _, out var clrType) &&
-                SymbolEqualityComparer.Default.Equals(clrType, underlying))
-            {
-                return converter;
-            }
-        }
-        return null;
-    }
-
     // Validates a selected converter and, on success, returns its binding. requireClrMatch is true
     // only for the explicit member scope (a mismatch there is SDA0142); the type-keyed scopes have
     // already filtered on TClr so a mismatch cannot occur.
@@ -122,7 +102,7 @@ internal static class ConverterResolver
         bool requireClrMatch)
     {
         // SDA0143: the referenced converter type does not implement IValueConverter<,>.
-        if (!TryGetConverterTypes(converter, out var dbType, out var clrType))
+        if (!ScopeResolver.TryGetConverterTypes(converter, out var dbType, out var clrType))
         {
             diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterNotIValueConverter,
@@ -133,7 +113,7 @@ internal static class ConverterResolver
         }
 
         // SDA0142: the converter's TClr must match the member type (Nullable<T> compares against T).
-        if (!SymbolEqualityComparer.Default.Equals(clrType, UnwrapNullable(valueType)))
+        if (!SymbolEqualityComparer.Default.Equals(clrType, ScopeResolver.UnwrapNullable(valueType)))
         {
             if (requireClrMatch)
             {
@@ -158,48 +138,7 @@ internal static class ConverterResolver
             return null;
         }
 
-        return new Result(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType);
-    }
-
-    private static bool TryGetConverterTypes(INamedTypeSymbol converter, out ITypeSymbol dbType, out ITypeSymbol clrType)
-    {
-        var iface = converter.AllInterfaces.FirstOrDefault(static i =>
-            i.IsGenericType && i.ConstructedFrom.ToDisplayString() == IValueConverterFq);
-        if (iface is null)
-        {
-            dbType = null!;
-            clrType = null!;
-            return false;
-        }
-        dbType = iface.TypeArguments[0];
-        clrType = iface.TypeArguments[1];
-        return true;
-    }
-
-    // All converter types referenced by [TypeHandler]-family attributes, in source order. An entry
-    // is null when the attribute's converter type could not be resolved.
-    private static List<INamedTypeSymbol?> CollectHandlerConverters(ImmutableArray<AttributeData> attributes)
-    {
-        var converters = new List<INamedTypeSymbol?>();
-        foreach (var attr in attributes)
-        {
-            for (var current = attr.AttributeClass; current is not null; current = current.BaseType)
-            {
-                if (current.IsGenericType && current.ConstructedFrom.ToDisplayString() == TypeHandlerGenericFq)
-                {
-                    converters.Add(current.TypeArguments[0] as INamedTypeSymbol);
-                    break;
-                }
-                if (current.ToDisplayString() == TypeHandlerNonGenericFq)
-                {
-                    converters.Add(attr.ConstructorArguments.Length > 0
-                        ? attr.ConstructorArguments[0].Value as INamedTypeSymbol
-                        : null);
-                    break;
-                }
-            }
-        }
-        return converters;
+        return new Result(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType, clrType);
     }
 
     private static bool HasCallableStatic(INamedTypeSymbol converter, string name) =>
@@ -207,14 +146,4 @@ internal static class ConverterResolver
             m.IsStatic &&
             m.MethodKind == MethodKind.Ordinary &&
             m.DeclaredAccessibility == Accessibility.Public);
-
-    private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
-    {
-        if (type is INamedTypeSymbol nt && nt.IsGenericType &&
-            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
-        {
-            return nt.TypeArguments[0];
-        }
-        return type;
-    }
 }

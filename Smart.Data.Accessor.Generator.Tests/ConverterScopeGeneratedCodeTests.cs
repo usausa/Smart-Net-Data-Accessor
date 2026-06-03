@@ -73,7 +73,10 @@ public sealed class ConverterScopeGeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.Insert", "insert into T (C) values (/*@ createdAt */0)"));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("ClassConv.ToDb(createdAt)", text, StringComparison.Ordinal);
+        // 改善2: the class-scope [TypeHandler] writer binding goes through the converter-sharing overload
+        // (the gen-time ClassConv.ToDb(createdAt) value expression disappears).
+        Assert.Contains("AddInParameter<global::ClassConv, long, global::System.DateTime>(cmd, \"@p0\", createdAt)", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ClassConv.ToDb(createdAt)", text, StringComparison.Ordinal);
     }
 
     [Fact]

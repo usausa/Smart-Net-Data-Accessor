@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 改善2 ②: gen-time expression builders shared with the Builder generator (linked source, no DLL). -->
+    <Compile Include="..\Shared.Generator\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Smart.Data.Accessor.Generator.Tests" />
   </ItemGroup>
 

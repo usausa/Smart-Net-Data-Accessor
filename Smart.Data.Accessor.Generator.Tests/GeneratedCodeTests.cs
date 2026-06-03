@@ -151,4 +151,57 @@ public sealed class GeneratedCodeTests
         Assert.Contains("global::TicksConverter.FromDb(__reader.GetInt64(__o.Created))", text, System.StringComparison.Ordinal);
         Assert.Contains("IsDBNull(__o.Created) ? default! : global::TicksConverter.FromDb(", text, System.StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TypeHandlerParameterBindsViaConverterOverload()
+    {
+        // 改善2: a [TypeHandler<>] bare-marker parameter in 2-way SQL binds via the converter-sharing
+        // overload (NodeEmitter); the gen-time TicksConverter.ToDb(at) value expression disappears.
+        const string source = """
+            using System;
+            using Smart.Data.Accessor.Attributes;
+            using Smart.Data.Accessor.Converters;
+
+            internal sealed class TicksConverter : IValueConverter<long, DateTime>
+            {
+                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
+                public static long ToDb(DateTime v) => v.Ticks;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Touch([TypeHandler(typeof(TicksConverter))] DateTime at, int id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set At = /*@ at */0 where Id = /*@ id */0")).AllGeneratedText;
+
+        Assert.Contains("AddInParameter<global::TicksConverter, long, global::System.DateTime>(cmd, \"@p0\", at)", text, System.StringComparison.Ordinal);
+        Assert.DoesNotContain("global::TicksConverter.ToDb(at)", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EnumParameterBindsViaUnderlyingCast()
+    {
+        // 改善2: an enum parameter binds via the canonical (object?)(underlying) cast (shared
+        // GenExpr.EnumCastValue), kept gen-time to avoid a runtime Convert.ChangeType.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal enum Status { A, B }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Touch(Status status, int id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set S = /*@ status */0 where Id = /*@ id */0")).AllGeneratedText;
+
+        Assert.Contains("AddInParameter(cmd, \"@p0\", (object?)(int)status)", text, System.StringComparison.Ordinal);
+    }
 }
