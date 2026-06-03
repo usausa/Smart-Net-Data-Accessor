@@ -7,6 +7,8 @@ using System.Data.Common;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
+using Smart.Data.Accessor.Converters;
+
 /// <summary>
 /// Static helpers used by Source-Generator-emitted accessor code.
 /// </summary>
@@ -71,6 +73,37 @@ public static class ExecuteHelper
         AssignValue(p, value, type, size);
         cmd.Parameters.Add(p);
         return p;
+    }
+
+    /// <summary>
+    /// spec §7.7 (P8 / 改善2): converter-sharing input-parameter overload. The static abstract
+    /// <see cref="IValueConverter{TDb, TClr}.ToDb"/> is reached through the generic constraint, so the
+    /// Source Generator emits no inline <c>ToDb</c> value expression and the null/DBNull handling is
+    /// centralised here (a null reference TClr binds DBNull). This <c>TClr value</c> form covers
+    /// non-nullable value types and reference types; P6 confirmed the JIT devirtualises + inlines it to
+    /// the same native code as a direct call (no shared-generics overhead).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static DbParameter AddInParameter<TConverter, TDb, TClr>(DbCommand cmd, string name, TClr value, DbType? type = null, int? size = null)
+        where TConverter : IValueConverter<TDb, TClr>
+    {
+        object? converted = value is null ? null : TConverter.ToDb(value);
+        return AddInParameter(cmd, name, converted, type, size);
+    }
+
+    /// <summary>
+    /// spec §7.7 (P8): converter-sharing overload for a <see cref="Nullable{TClr}"/> input — null binds
+    /// DBNull, otherwise <c>TConverter.ToDb(value.Value)</c>. Split from the <c>TClr value</c> form
+    /// because differing only by a <c>struct</c> constraint would collide (CS0111); the parameter types
+    /// (<c>TClr</c> vs <c>TClr?</c>) differ, so both overloads coexist.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static DbParameter AddInParameter<TConverter, TDb, TClr>(DbCommand cmd, string name, TClr? value, DbType? type = null, int? size = null)
+        where TConverter : IValueConverter<TDb, TClr>
+        where TClr : struct
+    {
+        object? converted = value.HasValue ? TConverter.ToDb(value.Value) : null;
+        return AddInParameter(cmd, name, converted, type, size);
     }
 
     /// <summary>

@@ -131,6 +131,23 @@ internal static class MappingResolver
         return true;
     }
 
+    // spec §7.7 (P8): the converter's IValueConverter<TDb, TClr> type-argument FQNs, for emitting
+    // ExecuteHelper.AddInParameter<TConverter, TDb, TClr>. False when the type does not implement it.
+    public static bool TryGetConverterTypes(INamedTypeSymbol converter, out string dbTypeFullName, out string clrTypeFullName)
+    {
+        var iface = converter.AllInterfaces.FirstOrDefault(static i =>
+            i.IsGenericType && i.ConstructedFrom.ToDisplayString() == IValueConverterFq);
+        if (iface is null)
+        {
+            dbTypeFullName = string.Empty;
+            clrTypeFullName = string.Empty;
+            return false;
+        }
+        dbTypeFullName = iface.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        clrTypeFullName = iface.TypeArguments[1].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return true;
+    }
+
     private static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
         type is INamedTypeSymbol nt && nt.IsGenericType &&
         nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T

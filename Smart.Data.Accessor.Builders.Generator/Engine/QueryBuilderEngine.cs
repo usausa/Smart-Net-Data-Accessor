@@ -325,101 +325,69 @@ internal static class QueryBuilderEngine
     private static List<BuilderValueParam> BindParams(BuilderMethodModel m)
         => m.ValueParams.AsArray().Where(static p => !p.IsLimit && !p.IsOffset).ToList();
 
-    // Entity column parameter: p.DbType from the resolved expression (explicit [DbType] or [TypeMap]);
-    // p.Value via converter ToDb / enum underlying cast / null-coalesce (spec §7.4 / §7.7 / §7.9).
+    // Entity column parameter, bound via ExecuteHelper.AddInParameter (P7 / spec §7.11: L1 plumbing
+    // centralised). DbType / Size are passed as call arguments (the helper sets p.DbType / p.Size /
+    // p.Value / Direction). A [TypeHandler<>] column (P8) binds through the converter-sharing overload
+    // AddInParameter<TConverter, TDb, TClr> — the value is passed raw and the helper calls ToDb + handles
+    // null/DBNull; enum / plain columns pass the underlying-cast / plain value argument.
     private static void EmitColumnParameter(SourceBuilder builder, string paramName, string valueExpression, BuilderColumn c)
     {
+        if (c.Converter is { } conv)
+        {
+            builder.Indent()
+                .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter<")
+                .Append(conv.ConverterTypeFullName).Append(", ")
+                .Append(conv.DbTypeFullName).Append(", ")
+                .Append(conv.ClrTypeFullName).Append(">(cmd, \"")
+                .Append(paramName).Append("\", ")
+                .Append(valueExpression)
+                .Append(DbTypeSizeArgs(c.DbTypeExpr, c.Size))
+                .Append(");").NewLine();
+            return;
+        }
+
         builder.Indent()
-            .Append("{ var p = cmd.CreateParameter(); p.ParameterName = \"")
-            .Append(paramName).Append("\"; ");
-
-        if (c.DbTypeExpr is not null)
-        {
-            builder.Append("p.DbType = ").Append(c.DbTypeExpr).Append("; ");
-            if (c.Size is { } sz)
-            {
-                builder.Append("p.Size = ").Append(sz.ToString(CultureInfo.InvariantCulture)).Append("; ");
-            }
-        }
-
-        AppendColumnValue(builder, valueExpression, c);
-
-        builder.Append(" cmd.Parameters.Add(p); }").NewLine();
+            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
+            .Append(paramName).Append("\", ")
+            .Append(ColumnValueArg(valueExpression, c))
+            .Append(DbTypeSizeArgs(c.DbTypeExpr, c.Size))
+            .Append(");").NewLine();
     }
 
-    private static void AppendColumnValue(SourceBuilder builder, string valueExpr, BuilderColumn c)
-    {
-        if (c.ConverterTypeFullName is not null)
-        {
-            if (c.IsNullableValueType)
-            {
-                builder.Append("p.Value = ")
-                    .Append(valueExpr).Append(".HasValue ? (object)")
-                    .Append(c.ConverterTypeFullName).Append(".ToDb(").Append(valueExpr).Append(".Value) : global::System.DBNull.Value;");
-            }
-            else if (c.IsValueType)
-            {
-                builder.Append("p.Value = (object)")
-                    .Append(c.ConverterTypeFullName).Append(".ToDb(").Append(valueExpr).Append(");");
-            }
-            else
-            {
-                builder.Append("p.Value = ")
-                    .Append(valueExpr).Append(" is null ? global::System.DBNull.Value : (object)")
-                    .Append(c.ConverterTypeFullName).Append(".ToDb(").Append(valueExpr).Append(");");
-            }
-            return;
-        }
+    private static string ColumnValueArg(string valueExpr, BuilderColumn c)
+        => c.EnumUnderlyingFullName is not null
+            ? EnumValueArg(valueExpr, c.EnumUnderlyingFullName, c.IsNullableEnum)
+            : valueExpr;
 
-        if (c.EnumUnderlyingFullName is not null)
-        {
-            AppendEnumValue(builder, valueExpr, c.EnumUnderlyingFullName, c.IsNullableEnum);
-            return;
-        }
-
-        builder.Append("p.Value = (object?)").Append(valueExpr).Append(" ?? global::System.DBNull.Value;");
-    }
-
-    // Method value parameter: p.DbType from a [TypeMap] default; p.Value via enum underlying cast or
-    // null-coalesce (method parameters do not resolve a converter — matching the prior behaviour).
+    // Method value parameter (no converter — matching the prior behaviour): enum underlying cast or
+    // plain value, bound via ExecuteHelper.AddInParameter.
     private static void EmitValueParamBinding(SourceBuilder builder, BuilderValueParam p)
+        => builder.Indent()
+            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
+            .Append(Marker).Append(p.Name).Append("\", ")
+            .Append(ValueParamArg(p))
+            .Append(DbTypeSizeArgs(p.DbTypeExpr, p.Size))
+            .Append(");").NewLine();
+
+    private static string ValueParamArg(BuilderValueParam p)
+        => p.EnumUnderlyingFullName is not null
+            ? EnumValueArg(p.Name, p.EnumUnderlyingFullName, p.IsNullableEnum)
+            : p.Name;
+
+    private static string EnumValueArg(string valueExpr, string underlyingFq, bool isNullableEnum)
+        => isNullableEnum
+            ? $"({valueExpr}.HasValue ? (object?)({underlyingFq}){valueExpr}.Value : null)"
+            : $"(object?)({underlyingFq}){valueExpr}";
+
+    private static string DbTypeSizeArgs(string? dbTypeExpr, int? size)
     {
-        builder.Indent()
-            .Append("{ var p = cmd.CreateParameter(); p.ParameterName = \"")
-            .Append(Marker).Append(p.Name).Append("\"; ");
-
-        if (p.DbTypeExpr is not null)
+        if (dbTypeExpr is null)
         {
-            builder.Append("p.DbType = ").Append(p.DbTypeExpr).Append("; ");
-            if (p.Size is { } sz)
-            {
-                builder.Append("p.Size = ").Append(sz.ToString(CultureInfo.InvariantCulture)).Append("; ");
-            }
+            return string.Empty;
         }
-
-        if (p.EnumUnderlyingFullName is not null)
-        {
-            AppendEnumValue(builder, p.Name, p.EnumUnderlyingFullName, p.IsNullableEnum);
-        }
-        else
-        {
-            builder.Append("p.Value = (object?)").Append(p.Name).Append(" ?? global::System.DBNull.Value;");
-        }
-
-        builder.Append(" cmd.Parameters.Add(p); }").NewLine();
-    }
-
-    private static void AppendEnumValue(SourceBuilder builder, string valueExpr, string underlyingFq, bool isNullableEnum)
-    {
-        if (isNullableEnum)
-        {
-            builder.Append("p.Value = ").Append(valueExpr).Append(".HasValue ? (object)(")
-                .Append(underlyingFq).Append(")").Append(valueExpr).Append(".Value : global::System.DBNull.Value;");
-        }
-        else
-        {
-            builder.Append("p.Value = (object)(").Append(underlyingFq).Append(")").Append(valueExpr).Append(";");
-        }
+        return size is { } sz
+            ? $", {dbTypeExpr}, {sz.ToString(CultureInfo.InvariantCulture)}"
+            : $", {dbTypeExpr}";
     }
 
     private static void EmitCommandText(SourceBuilder builder, string sql)

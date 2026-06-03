@@ -50,7 +50,7 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("ClassConv.ToDb(entity.CreatedAt)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter<global::ClassConv, ", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("ClassConv.ToDb(entity.CreatedAt)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter<global::ClassConv, ", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("PropConv.ToDb(entity.CreatedAt)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter<global::PropConv, ", text, StringComparison.Ordinal);
         Assert.DoesNotContain("ClassConv", text, StringComparison.Ordinal);
     }
 
@@ -132,7 +132,7 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        // The Name column carries an explicit DbType (F3); the converter-free Id column does not.
-        Assert.Contains("p.ParameterName = \"@Name\"; p.DbType = (global::System.Data.DbType)", text, StringComparison.Ordinal);
+        // The Name column carries an explicit DbType (F3), passed as the AddInParameter DbType argument.
+        Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name, (global::System.Data.DbType)", text, StringComparison.Ordinal);
     }
 }
