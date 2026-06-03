@@ -22,7 +22,6 @@ SDA0132 | Usage    | Error    | Duplicate [Name] on parameters or properties
 SDA0133 | Mapping  | Info     | Record entity is mapped via primary constructor
 SDA0134 | Usage    | Error    | [Execute] return type is not int/void/Task<int>/Task
 SDA0140 | Mapping  | Info     | Non-nullable reference property may receive DB NULL
-SDA0141 | Mapping  | Error    | Property type not in [ConverterSupportedTypes]
 SDA0142 | Mapping  | Error    | Converter TClr does not match property type
 SDA0143 | Mapping  | Error    | Converter type does not implement IValueConverter<,>
 SDA0144 | Mapping  | Error    | Converter type missing static abstract implementation

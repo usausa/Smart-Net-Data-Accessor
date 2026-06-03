@@ -108,42 +108,6 @@ public sealed class ConverterDiagnosticTests
     }
 
     [Fact]
-    public void ConverterTypeNotSupported()
-    {
-        // SDA0141: the property type (int) is not in the converter's [ConverterSupportedTypes] whitelist.
-        const string source = """
-            using System;
-            using System.Collections.Generic;
-            using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Converters;
-
-            [ConverterSupportedTypes(typeof(DateTime))]
-            internal sealed class WhitelistConverter : IValueConverter<long, int>
-            {
-                public static int FromDb(long v) => (int)v;
-                public static long ToDb(int v) => v;
-            }
-
-            internal sealed class Entity
-            {
-                [TypeHandler(typeof(WhitelistConverter))]
-                public int Value { get; set; }
-            }
-
-            [DataAccessor]
-            internal sealed partial class Accessor
-            {
-                [Query]
-                public partial IReadOnlyList<Entity> Query();
-            }
-            """;
-
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
-
-        Assert.Contains(diagnostics, d => d.Id == "SDA0141");
-    }
-
-    [Fact]
     public void TypeHandlerDuplicated()
     {
         // SDA0145: more than one [TypeHandler] on the same property (first wins).

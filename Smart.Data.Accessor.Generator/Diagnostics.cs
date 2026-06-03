@@ -138,7 +138,7 @@ internal static class Diagnostics
     // invoked from DataAccessorGenerator.BuildColumnInfos:
     //
     //     SDA0140 NonNullableDbNull               ← DataAccessorGenerator.cs (Info; non-nullable ref column)
-    //     SDA0141 ConverterTypeNotSupported       ← ConverterResolver.cs
+    //     SDA0141 ConverterTypeNotSupported       ← 廃止：[ConverterSupportedTypes] は IValueConverter<,> の TClr と冗長
     //     SDA0142 ConverterTClrMismatch           ← ConverterResolver.cs
     //     SDA0143 ConverterNotIValueConverter     ← ConverterResolver.cs
     //     SDA0144 ConverterStaticAbstractMissing  ← ConverterResolver.cs
@@ -166,14 +166,6 @@ internal static class Diagnostics
         // Info: advisory only. As a warning it would fire on nearly every non-nullable
         // reference-type column and conflict with the project's zero-warning policy.
         defaultSeverity: DiagnosticSeverity.Info,
-        isEnabledByDefault: true);
-
-    public static readonly DiagnosticDescriptor ConverterTypeNotSupported = new(
-        id: "SDA0141",
-        title: "Property type not in [ConverterSupportedTypes]",
-        messageFormat: "Property '{1}' on method=[{0}] has a type that is not allowed by the converter's [ConverterSupportedTypes] whitelist",
-        category: "Mapping",
-        defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ConverterTClrMismatch = new(

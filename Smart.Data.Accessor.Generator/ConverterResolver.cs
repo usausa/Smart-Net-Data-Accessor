@@ -16,14 +16,13 @@ using Smart.Data.Accessor.Generator.Models;
 /// <c>TConverter.FromDb(...)</c> while the writer calls <c>TConverter.ToDb(...)</c>.
 /// The member scope is an <em>explicit</em> binding (a TClr mismatch is the error SDA0142); the
 /// outer scopes are <em>type-keyed</em> (a handler applies only when its TClr matches the value
-/// type, and a non-matching handler is simply skipped). Reports SDA0141–SDA0145.
+/// type, and a non-matching handler is simply skipped). Reports SDA0142–SDA0145.
 /// </summary>
 internal static class ConverterResolver
 {
     private const string TypeHandlerGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute<TConverter>";
     private const string TypeHandlerNonGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute";
     private const string IValueConverterFq = "Smart.Data.Accessor.Converters.IValueConverter<TDb, TClr>";
-    private const string ConverterSupportedTypesFq = "Smart.Data.Accessor.Attributes.ConverterSupportedTypesAttribute";
 
     /// <summary>The converter binding resolved for a single mapped value (column / parameter / scalar).</summary>
     internal sealed record Result(string ConverterTypeFullName, ITypeSymbol DbType);
@@ -159,17 +158,6 @@ internal static class ConverterResolver
             return null;
         }
 
-        // SDA0141: when the converter declares [ConverterSupportedTypes], the CLR type must be listed.
-        if (!IsClrTypeSupported(converter, clrType))
-        {
-            diagnostics.Add(DiagnosticData.Create(
-                Diagnostics.ConverterTypeNotSupported,
-                method.Locations.FirstOrDefault(),
-                method.Name,
-                memberName));
-            return null;
-        }
-
         return new Result(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType);
     }
 
@@ -219,24 +207,6 @@ internal static class ConverterResolver
             m.IsStatic &&
             m.MethodKind == MethodKind.Ordinary &&
             m.DeclaredAccessibility == Accessibility.Public);
-
-    private static bool IsClrTypeSupported(INamedTypeSymbol converter, ITypeSymbol clrType)
-    {
-        var supported = converter.GetAttributes()
-            .FirstOrDefault(static a => a.AttributeClass?.ToDisplayString() == ConverterSupportedTypesFq);
-        if (supported is null || supported.ConstructorArguments.Length == 0)
-        {
-            return true;
-        }
-
-        var allowed = supported.ConstructorArguments[0].Values;
-        if (allowed.IsDefaultOrEmpty)
-        {
-            return true;
-        }
-
-        return allowed.Any(v => v.Value is ITypeSymbol t && SymbolEqualityComparer.Default.Equals(t, clrType));
-    }
 
     private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
     {
