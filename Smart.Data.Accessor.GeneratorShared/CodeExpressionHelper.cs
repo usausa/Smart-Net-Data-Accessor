@@ -2,8 +2,6 @@ namespace Smart.Data.Accessor.GeneratorShared;
 
 using System.Text;
 
-using Microsoft.CodeAnalysis;
-
 // 改善2 ②: gen-time expression builders shared (as linked source) by the core
 // (Smart.Data.Accessor.Generator) and Builder (Smart.Data.Accessor.Builders.Generator) generators.
 // These are pure functions whose outputs are symbol-free strings; the file is compiled `internal`
@@ -27,18 +25,6 @@ internal static class CodeExpressionHelper
         => isNullable
             ? $"({valueExpr}.HasValue ? (object?)({underlyingFullName}){valueExpr}.Value : null)"
             : $"(object?)({underlyingFullName}){valueExpr}";
-
-    // C# accessibility keyword for a (partial) class declaration.
-    public static string AccessibilityText(Accessibility accessibility) => accessibility switch
-    {
-        Accessibility.Public => "public",
-        Accessibility.Internal => "internal",
-        Accessibility.Private => "private",
-        Accessibility.Protected => "protected",
-        Accessibility.ProtectedOrInternal => "protected internal",
-        Accessibility.ProtectedAndInternal => "private protected",
-        _ => "internal"
-    };
 
     // The trailing DbType / Size arguments of an AddInParameter(cmd, name, value, dbType?, size?) call:
     // ", dbType, size" / ", dbType" / "". Size is only emitted alongside a DbType (the signature has no

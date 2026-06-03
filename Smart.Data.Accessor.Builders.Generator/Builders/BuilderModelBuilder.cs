@@ -40,7 +40,7 @@ internal static class BuilderModelBuilder
         var profile = MappingAttributeHelper.ResolveProfile(container);
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(container, profile);
 
-        var diagnostics = new List<BuilderDiagnosticData>();
+        var diagnostics = new List<DiagnosticInfo>();
         var methods = new List<BuilderMethodModel>();
 
         foreach (var member in container.GetMembers())
@@ -70,19 +70,19 @@ internal static class BuilderModelBuilder
                 continue;
             }
 
-            var location = method.Locations.FirstOrDefault();
+            var location = method.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null;
 
             // SDB0002: the container is not a partial class, so the helper cannot be emitted.
             if (!isPartial)
             {
-                diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.InvalidContainer, location, container.Name));
+                diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.InvalidContainer, location, container.Name));
                 continue;
             }
 
             // SDB0006: more than one of this generator's QueryBuilder attributes on the same method.
             if (matched.Count > 1)
             {
-                diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.QueryBuilderDuplicated, location, method.Name));
+                diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.QueryBuilderDuplicated, location, method.Name));
                 continue;
             }
 
@@ -98,7 +98,7 @@ internal static class BuilderModelBuilder
             container.Name,
             accessibility,
             new EquatableArray<BuilderMethodModel>(methods.ToArray()),
-            new EquatableArray<BuilderDiagnosticData>(diagnostics.ToArray()));
+            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
     }
 
     private static BuilderMethodModel? BuildMethod(
@@ -108,9 +108,9 @@ internal static class BuilderModelBuilder
         QueryBuilderEngine.BuilderKind kind,
         Dictionary<string, TypeMapInfo> typeMaps,
         INamedTypeSymbol? profile,
-        List<BuilderDiagnosticData> diagnostics)
+        List<DiagnosticInfo> diagnostics)
     {
-        var location = method.Locations.FirstOrDefault();
+        var location = method.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null;
 
         var entityType = attr.ConstructorArguments.Length > 0
             ? attr.ConstructorArguments[0].Value as INamedTypeSymbol
@@ -128,7 +128,7 @@ internal static class BuilderModelBuilder
         if (tableName is null)
         {
             // SDB0004: neither an entity type nor a Table name was supplied.
-            diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.MissingTable, location, method.Name));
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.MissingTable, location, method.Name));
             return null;
         }
 
@@ -166,18 +166,18 @@ internal static class BuilderModelBuilder
                 if (!hasEntityType || entityParam is null)
                 {
                     // SDB0005: cannot resolve the column list (no entity instance).
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
                 }
                 else if (!columns.Any(static c => c.IsKey))
                 {
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
                 }
                 return new UpdateModel(method.Name, tableName, valueParamsEq, columnsEq, entityParam?.Name, hasEntityType);
 
             case QueryBuilderEngine.BuilderKind.Delete:
                 if (hasEntityType && !columns.Any(static c => c.IsKey))
                 {
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
                 }
                 return new DeleteModel(method.Name, tableName, valueParamsEq, columnsEq, hasEntityType);
 
@@ -190,18 +190,18 @@ internal static class BuilderModelBuilder
             case QueryBuilderEngine.BuilderKind.Select:
                 if (!hasEntityType)
                 {
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
                 }
                 return new SelectModel(method.Name, tableName, valueParamsEq, columnsEq, hasEntityType);
 
             case QueryBuilderEngine.BuilderKind.SelectSingle:
                 if (!hasEntityType)
                 {
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
                 }
                 else if (!columns.Any(static c => c.IsKey))
                 {
-                    diagnostics.Add(BuilderDiagnosticData.Create(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
+                    diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, location, entityType!.Name, method.Name));
                 }
                 return new SelectSingleModel(method.Name, tableName, valueParamsEq, columnsEq, hasEntityType);
 
@@ -247,8 +247,8 @@ internal static class BuilderModelBuilder
         INamedTypeSymbol container,
         INamedTypeSymbol? profile,
         Dictionary<string, TypeMapInfo> typeMaps,
-        List<BuilderDiagnosticData> diagnostics,
-        Location? location)
+        List<DiagnosticInfo> diagnostics,
+        LocationInfo? location)
     {
         var prop = c.Symbol;
         var handler = MappingResolver.ResolveTypeHandler(prop, method, container, profile);
@@ -257,7 +257,7 @@ internal static class BuilderModelBuilder
         // SDA0148: a [TypeHandler] wins over a [TypeMap] for the same type; warn the [TypeMap] is dead.
         if (handler is not null && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out _))
         {
-            diagnostics.Add(BuilderDiagnosticData.Create(
+            diagnostics.Add(new DiagnosticInfo(
                 BuilderDiagnostics.TypeMapTypeHandlerConflict,
                 location,
                 container.Name,

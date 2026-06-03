@@ -9,6 +9,8 @@ using Microsoft.CodeAnalysis;
 using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.GeneratorShared;
 
+using SourceGenerateHelper;
+
 /// <summary>
 /// Resolves and validates <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeHandler(typeof(TConverter))]</c>
 /// across the scope chain defined in spec §7.7: member (property / parameter / <c>[return:]</c>) →
@@ -41,7 +43,7 @@ internal static class ConverterResolver
     /// in the latter case so the mapping/binding falls back to the plain path).
     /// </summary>
     public static Result? Resolve(
-        List<DiagnosticData> diagnostics,
+        List<DiagnosticInfo> diagnostics,
         IMethodSymbol method,
         string memberName,
         ImmutableArray<AttributeData> memberAttributes,
@@ -55,7 +57,7 @@ internal static class ConverterResolver
             // SDA0145: more than one [TypeHandler] on the same member; the first wins.
             if (memberConverters.Count > 1)
             {
-                diagnostics.Add(DiagnosticData.Create(
+                diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.TypeHandlerDuplicated,
                     method.Locations.FirstOrDefault(),
                     method.Name,
@@ -94,7 +96,7 @@ internal static class ConverterResolver
     // only for the explicit member scope (a mismatch there is SDA0142); the type-keyed scopes have
     // already filtered on TClr so a mismatch cannot occur.
     private static Result? Validate(
-        List<DiagnosticData> diagnostics,
+        List<DiagnosticInfo> diagnostics,
         IMethodSymbol method,
         string memberName,
         INamedTypeSymbol converter,
@@ -104,7 +106,7 @@ internal static class ConverterResolver
         // SDA0143: the referenced converter type does not implement IValueConverter<,>.
         if (!ConverterScopeHelper.TryGetConverterTypes(converter, out var dbType, out var clrType))
         {
-            diagnostics.Add(DiagnosticData.Create(
+            diagnostics.Add(new DiagnosticInfo(
                 Diagnostics.ConverterNotIValueConverter,
                 method.Locations.FirstOrDefault(),
                 method.Name,
@@ -117,7 +119,7 @@ internal static class ConverterResolver
         {
             if (requireClrMatch)
             {
-                diagnostics.Add(DiagnosticData.Create(
+                diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.ConverterTClrMismatch,
                     method.Locations.FirstOrDefault(),
                     method.Name,
@@ -130,7 +132,7 @@ internal static class ConverterResolver
         // present as accessible static methods (implicit interface implementation, not explicit).
         if (!ConverterScopeHelper.HasCallableConversionMethods(converter))
         {
-            diagnostics.Add(DiagnosticData.Create(
+            diagnostics.Add(new DiagnosticInfo(
                 Diagnostics.ConverterStaticAbstractMissing,
                 method.Locations.FirstOrDefault(),
                 method.Name,

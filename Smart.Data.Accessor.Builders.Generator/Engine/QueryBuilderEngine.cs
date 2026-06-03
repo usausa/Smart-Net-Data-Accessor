@@ -83,7 +83,7 @@ internal static class QueryBuilderEngine
             builder.NewLine();
         }
 
-        builder.Indent().Append(CodeExpressionHelper.AccessibilityText(model.Accessibility)).Append(" partial class ").Append(model.ClassName).NewLine();
+        builder.Indent().Append(model.Accessibility.ToText()).Append(" partial class ").Append(model.ClassName).NewLine();
         builder.BeginScope();
 
         var first = true;

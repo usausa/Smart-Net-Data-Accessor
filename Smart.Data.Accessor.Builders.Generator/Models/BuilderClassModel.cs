@@ -14,4 +14,4 @@ internal sealed record BuilderClassModel(
     string ClassName,
     Accessibility Accessibility,
     EquatableArray<BuilderMethodModel> Methods,
-    EquatableArray<BuilderDiagnosticData> Diagnostics);
+    EquatableArray<DiagnosticInfo> Diagnostics);

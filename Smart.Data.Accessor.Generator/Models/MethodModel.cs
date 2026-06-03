@@ -66,4 +66,4 @@ internal sealed record MethodModel(
     bool MapsProcedureReturnValue = false,
     // spec §7.11 (P3): the method declaration location, captured equatably so the SQL-parse stage
     // (which runs without symbols) can still emit located diagnostics (SqlEmpty / brace / pragma …).
-    SourceLocationInfo? Location = null);
+    LocationInfo? Location = null);
