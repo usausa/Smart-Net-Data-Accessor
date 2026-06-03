@@ -288,12 +288,61 @@ public sealed class DiagnosticTests
         Assert.Contains(diagnostics, d => d.Id == "SDA0152");
     }
 
+    [Fact]
+    public void ExecutionKindDuplicated()
+    {
+        // SDA0136: [Execute] and [Query] (both A-group) on the same method are mutually exclusive.
+        const string source = """
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                public int Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Query]
+                public partial IReadOnlyList<Entity> Go();
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Go", "select Id from T"));
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0136");
+    }
+
+    [Fact]
+    public void ProcedureDirectSqlConflict()
+    {
+        // SDA0158: [Procedure] and [DirectSql] (both B-group command sources) are mutually exclusive.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Procedure("sp_Foo")]
+                [DirectSql]
+                public partial int Go(string sql);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0158");
+    }
+
     // ---- Builders generator (SDB) -----------------------------------------------------------
 
     [Fact]
     public void BuilderInvalidContainerWhenNotPartial()
     {
         const string source = """
+            using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
@@ -301,6 +350,7 @@ public sealed class DiagnosticTests
                 public int Id { get; set; }
             }
 
+            [DataAccessor]
             internal sealed class NotPartial
             {
                 [Insert(typeof(Entity))]
@@ -318,8 +368,10 @@ public sealed class DiagnosticTests
     {
         // SDB0004: [Insert] with neither an entity type nor a Table name.
         const string source = """
+            using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
 
+            [DataAccessor]
             internal sealed partial class Accessor
             {
                 [Insert]
@@ -337,8 +389,10 @@ public sealed class DiagnosticTests
     {
         // SDB0005: [Select] with only a Table name cannot determine the column list.
         const string source = """
+            using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
 
+            [DataAccessor]
             internal sealed partial class Accessor
             {
                 [Select(Table = "Data")]
@@ -367,6 +421,7 @@ public sealed class DiagnosticTests
                 public string Name { get; set; } = string.Empty;
             }
 
+            [DataAccessor]
             internal sealed partial class Accessor
             {
                 [Insert(typeof(Entity))]

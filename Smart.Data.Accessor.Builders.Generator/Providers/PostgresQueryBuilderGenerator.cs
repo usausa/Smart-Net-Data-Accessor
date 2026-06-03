@@ -1,16 +1,14 @@
 namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 
-using System.Linq;
-
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
 /// <summary>
 /// PostgreSQL QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
 /// carrying the <c>[PostgresInsert]</c>/…/<c>[PostgresTruncate]</c> attributes, using double-quote
-/// quoting and LIMIT/OFFSET paging. All emit logic is the shared <see cref="QueryBuilderEngine"/>.
+/// quoting and LIMIT/OFFSET paging. Registers on <c>[DataAccessor]</c>; all transform + emit logic is
+/// the shared <see cref="QueryBuilderEngine"/>.
 /// </summary>
 [Generator]
 public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
@@ -31,25 +29,5 @@ public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
     private static readonly SqlDialect Dialect = new PostgresDialect();
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
-    {
-        var providers = Targets.Select(t =>
-        {
-            var kind = t.Kind;
-            return context.SyntaxProvider
-                .ForAttributeWithMetadataName(
-                    t.Attribute,
-                    static (s, _) => s is MethodDeclarationSyntax,
-                    (ctx, _) => (ctx, kind))
-                .Collect();
-        }).ToArray();
-
-        var combined = providers[0];
-        for (var i = 1; i < providers.Length; i++)
-        {
-            var local = providers[i];
-            combined = combined.Combine(local).Select((pair, _) => pair.Left.AddRange(pair.Right));
-        }
-
-        context.RegisterSourceOutput(combined, static (spc, src) => QueryBuilderEngine.Run(spc, src, Dialect));
-    }
+        => QueryBuilderEngine.Register(context, Targets, Dialect, ".Postgres");
 }

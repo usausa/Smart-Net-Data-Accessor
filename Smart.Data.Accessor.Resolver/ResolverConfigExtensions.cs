@@ -17,10 +17,7 @@ public static class ResolverConfigExtensions
     /// services) are resolved from the container at activation time via
     /// <see cref="ServiceProviderAdapter"/>.
     /// </summary>
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2072:DynamicallyAccessedMembers",
-        Justification = "The bound accessor type is activated only through the ToMethod factory (DataAccessorRegistry.Create), which calls a source-generated `new` constructor rooted by the [ModuleInitializer]. Smart.Resolver never reflects over the type's constructors/properties, so the DynamicallyAccessedMembers requirement on ResolverConfig.Bind(Type) is satisfied for this usage.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2072:DynamicallyAccessedMembers", Justification = "The bound accessor type is activated only through the ToMethod factory (DataAccessorRegistry.Create), which calls a source-generated `new` constructor rooted by the [ModuleInitializer]. Smart.Resolver never reflects over the type's constructors/properties, so the DynamicallyAccessedMembers requirement on ResolverConfig.Bind(Type) is satisfied for this usage.")]
     public static ResolverConfig UseDataAccessors(this ResolverConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);

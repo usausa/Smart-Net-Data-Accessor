@@ -503,6 +503,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var isDirectSql = false;
             var directSqlSuppressWarning = false;
             var isExecuteNonScalar = false;
+            // SDA0136: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
+            var executionKindCount = 0;
             foreach (var attr in member.GetAttributes())
             {
                 var fullName = attr.AttributeClass?.ToDisplayString();
@@ -510,10 +512,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 {
                     kind = "Execute";
                     isExecuteNonScalar = fullName == ExecuteAttributeName;
+                    executionKindCount++;
                 }
                 else if (fullName == ExecuteReaderAttributeName)
                 {
                     kind = "ExecuteReader";
+                    executionKindCount++;
                 }
                 else if (fullName == DirectSqlAttributeName)
                 {
@@ -529,6 +533,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 else if (fullName == QueryAttributeName || fullName == QueryFirstAttributeName)
                 {
                     kind = "Query";
+                    executionKindCount++;
                 }
                 else if (IsQueryBuilderAttribute(attr.AttributeClass))
                 {
@@ -583,6 +588,26 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
             if (kind is null)
             {
+                continue;
+            }
+
+            // SDA0136: more than one execution-kind attribute (A-group) on the same method (exclusive).
+            if (executionKindCount >= 2)
+            {
+                diagnostics.Add(DiagnosticData.Create(
+                    Diagnostics.ExecutionKindDuplicated,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
+                continue;
+            }
+
+            // SDA0158: [Procedure] combined with [DirectSql] (B-group command sources are exclusive).
+            if (isDirectSql && procedureName is not null)
+            {
+                diagnostics.Add(DiagnosticData.Create(
+                    Diagnostics.ProcedureDirectSqlConflict,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
                 continue;
             }
 

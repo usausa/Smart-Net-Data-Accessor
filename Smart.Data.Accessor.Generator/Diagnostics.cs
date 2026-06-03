@@ -259,6 +259,16 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // spec §11.4: [Procedure] and [DirectSql] (B-group command sources) are mutually exclusive. The
+    // QueryBuilder combinations are SDA0157 (core) / SDB0006 (builder); this fills the remaining gap.
+    public static readonly DiagnosticDescriptor ProcedureDirectSqlConflict = new(
+        id: "SDA0158",
+        title: "[Procedure] combined with [DirectSql]",
+        messageFormat: "Method=[{0}]: [Procedure] cannot be combined with [DirectSql]; the command source is ambiguous (spec §11.4)",
+        category: "Builder",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     // ------------------------------------------------------------------
     // Structural diagnostics (SDA0170-0174, SDA0172, spec §11.5).
     // ------------------------------------------------------------------
@@ -379,6 +389,15 @@ internal static class Diagnostics
         id: "SDA0134",
         title: "[Execute] return type must be int/void/Task<int>/Task",
         messageFormat: "Method=[{0}]: [Execute] return type '{1}' is not one of int/void/Task<int>/Task/ValueTask<int>/ValueTask (spec §11.3.1)",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    // spec §11.3.1: the execution-kind attributes (A-group) are mutually exclusive.
+    public static readonly DiagnosticDescriptor ExecutionKindDuplicated = new(
+        id: "SDA0136",
+        title: "Multiple execution-kind attributes on the same method",
+        messageFormat: "Method=[{0}]: more than one execution attribute ([Execute]/[ExecuteScalar]/[Query]/[QueryFirst]/[ExecuteReader]) is present; they are mutually exclusive (spec §11.3.1)",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

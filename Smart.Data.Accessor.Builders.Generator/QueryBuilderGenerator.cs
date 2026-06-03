@@ -1,19 +1,16 @@
 namespace Smart.Data.Accessor.Builders.Generator;
 
-using System.Linq;
-
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
 /// <summary>
 /// Default (ANSI) QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
 /// carrying the core <c>[Insert]</c>/<c>[Update]</c>/<c>[Delete]</c>/<c>[Count]</c>/<c>[Select]</c>/
-/// <c>[SelectSingle]</c>/<c>[Truncate]</c> attributes. All emit logic lives in the shared
-/// <see cref="QueryBuilderEngine"/>; this class only wires the attribute set + the ANSI dialect.
-/// Provider-specific generators (SqlServer / MySql / Postgres) follow the same pattern with their
-/// own dialect (Phase 7).
+/// <c>[SelectSingle]</c>/<c>[Truncate]</c> attributes. Registers on <c>[DataAccessor]</c> (spec §7.11);
+/// all transform + emit logic lives in the shared <see cref="QueryBuilderEngine"/> /
+/// <see cref="Builders.BuilderModelBuilder"/>. Provider generators (SqlServer / MySql / Postgres) follow
+/// the same pattern with their own attribute set + dialect (Phase 7).
 /// </summary>
 [Generator]
 public sealed class QueryBuilderGenerator : IIncrementalGenerator
@@ -34,25 +31,5 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
     private static readonly SqlDialect Dialect = new AnsiSqlDialect();
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
-    {
-        var providers = Targets.Select(t =>
-        {
-            var kind = t.Kind;
-            return context.SyntaxProvider
-                .ForAttributeWithMetadataName(
-                    t.Attribute,
-                    static (s, _) => s is MethodDeclarationSyntax,
-                    (ctx, _) => (ctx, kind))
-                .Collect();
-        }).ToArray();
-
-        var combined = providers[0];
-        for (var i = 1; i < providers.Length; i++)
-        {
-            var local = providers[i];
-            combined = combined.Combine(local).Select((pair, _) => pair.Left.AddRange(pair.Right));
-        }
-
-        context.RegisterSourceOutput(combined, static (spc, src) => QueryBuilderEngine.Run(spc, src, Dialect));
-    }
+        => QueryBuilderEngine.Register(context, Targets, Dialect, string.Empty);
 }

@@ -138,6 +138,30 @@ internal static class GeneratorTestHelper
         return (driver, compilation);
     }
 
+    // For Builder incremental-cache regression tests (spec §7.11 / P4): a driver with step tracking
+    // enabled wiring the (ANSI) QueryBuilderGenerator. The Builder generators have no .sql dependency,
+    // so no AdditionalText is needed.
+    internal static (GeneratorDriver Driver, Compilation Compilation) CreateBuilderTrackingDriver(string source)
+    {
+        _ = EnsureDeps.Value;
+
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        var compilation = CSharpCompilation.Create(
+            assemblyName: "GeneratorTestAssembly",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source, parseOptions)],
+            references: BuildReferences(),
+            options: new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var driver = CSharpGeneratorDriver.Create(
+            generators: [new QueryBuilderGenerator().AsSourceGenerator()],
+            parseOptions: parseOptions,
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+
+        return (driver, compilation);
+    }
+
     // Use every assembly the test host trusts as a metadata reference. This includes the runtime
     // attribute assemblies (Smart.Data.Accessor[.Builders]) and their dependencies, which are
     // copied next to the test binaries.
