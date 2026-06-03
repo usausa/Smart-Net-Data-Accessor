@@ -6,8 +6,8 @@ using System.Linq;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.CodeGen;
 using Smart.Data.Accessor.Generator.Models;
+using Smart.Data.Accessor.GeneratorShared;
 
 /// <summary>
 /// Resolves and validates <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeHandler(typeof(TConverter))]</c>
@@ -19,7 +19,7 @@ using Smart.Data.Accessor.Generator.Models;
 /// outer scopes are <em>type-keyed</em> (a handler applies only when its TClr matches the value
 /// type, and a non-matching handler is simply skipped). Reports SDA0142–SDA0145.
 /// The scope-chain primitives (attribute reading / type-keyed find / TDb·TClr extraction / Nullable
-/// unwrap) are shared with the Builder generator via <see cref="ScopeResolver"/> (改善2 ②); only the
+/// unwrap) are shared with the Builder generator via <see cref="ConverterScopeHelper"/> (改善2 ②); only the
 /// ordering and the validation (SDA0142-0145) are core-specific.
 /// </summary>
 internal static class ConverterResolver
@@ -49,7 +49,7 @@ internal static class ConverterResolver
         in Scope scope)
     {
         // 1. Member scope (explicit binding): the first [TypeHandler] wins and TClr must match.
-        var memberConverters = ScopeResolver.CollectHandlerConverters(memberAttributes);
+        var memberConverters = ConverterScopeHelper.CollectHandlerConverters(memberAttributes);
         if (memberConverters.Count > 0)
         {
             // SDA0145: more than one [TypeHandler] on the same member; the first wins.
@@ -71,7 +71,7 @@ internal static class ConverterResolver
         // declares a handler whose TClr matches the value type wins.
         foreach (var owner in EnumerateScopeOwners(scope))
         {
-            if (ScopeResolver.FindTypeKeyedConverter(owner.GetAttributes(), valueType) is { } scopedConverter)
+            if (ConverterScopeHelper.FindTypeKeyedConverter(owner.GetAttributes(), valueType) is { } scopedConverter)
             {
                 return Validate(diagnostics, method, memberName, scopedConverter, valueType, requireClrMatch: false);
             }
@@ -102,7 +102,7 @@ internal static class ConverterResolver
         bool requireClrMatch)
     {
         // SDA0143: the referenced converter type does not implement IValueConverter<,>.
-        if (!ScopeResolver.TryGetConverterTypes(converter, out var dbType, out var clrType))
+        if (!ConverterScopeHelper.TryGetConverterTypes(converter, out var dbType, out var clrType))
         {
             diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterNotIValueConverter,
@@ -113,7 +113,7 @@ internal static class ConverterResolver
         }
 
         // SDA0142: the converter's TClr must match the member type (Nullable<T> compares against T).
-        if (!SymbolEqualityComparer.Default.Equals(clrType, ScopeResolver.UnwrapNullable(valueType)))
+        if (!ConverterScopeHelper.ClrMatchesValueType(clrType, valueType))
         {
             if (requireClrMatch)
             {
@@ -128,7 +128,7 @@ internal static class ConverterResolver
 
         // SDA0144: the generated code calls TConverter.FromDb / .ToDb directly, so both must be
         // present as accessible static methods (implicit interface implementation, not explicit).
-        if (!HasCallableStatic(converter, "FromDb") || !HasCallableStatic(converter, "ToDb"))
+        if (!ConverterScopeHelper.HasCallableConversionMethods(converter))
         {
             diagnostics.Add(DiagnosticData.Create(
                 Diagnostics.ConverterStaticAbstractMissing,
@@ -140,10 +140,4 @@ internal static class ConverterResolver
 
         return new Result(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType, clrType);
     }
-
-    private static bool HasCallableStatic(INamedTypeSymbol converter, string name) =>
-        converter.GetMembers(name).OfType<IMethodSymbol>().Any(static m =>
-            m.IsStatic &&
-            m.MethodKind == MethodKind.Ordinary &&
-            m.DeclaredAccessibility == Accessibility.Public);
 }

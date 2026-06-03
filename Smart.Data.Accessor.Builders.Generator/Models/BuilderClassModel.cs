@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Builders.Generator.Models;
 
+using Microsoft.CodeAnalysis;
+
 using SourceGenerateHelper;
 
 // spec §7.11 (P4): the equatable per-accessor model produced by the FAWMN transform on [DataAccessor].
@@ -10,6 +12,6 @@ using SourceGenerateHelper;
 internal sealed record BuilderClassModel(
     string Namespace,
     string ClassName,
-    string Accessibility,
+    Accessibility Accessibility,
     EquatableArray<BuilderMethodModel> Methods,
     EquatableArray<BuilderDiagnosticData> Diagnostics);

@@ -1,11 +1,13 @@
 namespace Smart.Data.Accessor.Generator.Models;
 
+using Microsoft.CodeAnalysis;
+
 using SourceGenerateHelper;
 
 internal sealed record AccessorModel(
     string Namespace,
     string ClassName,
-    string Accessibility,
+    Accessibility Accessibility,
     string? ProviderName,
     bool RequiresConnectionFactory,
     EquatableArray<InjectModel> Injects,

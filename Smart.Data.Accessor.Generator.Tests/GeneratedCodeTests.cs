@@ -186,7 +186,7 @@ public sealed class GeneratedCodeTests
     public void EnumParameterBindsViaUnderlyingCast()
     {
         // 改善2: an enum parameter binds via the canonical (object?)(underlying) cast (shared
-        // GenExpr.EnumCastValue), kept gen-time to avoid a runtime Convert.ChangeType.
+        // CodeExpressionHelper.EnumCastValue), kept gen-time to avoid a runtime Convert.ChangeType.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 

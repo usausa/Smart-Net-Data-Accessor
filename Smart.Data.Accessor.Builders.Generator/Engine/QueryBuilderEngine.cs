@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Builders.Generator.Engine;
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -11,7 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 
 using Smart.Data.Accessor.Builders.Generator.Builders;
 using Smart.Data.Accessor.Builders.Generator.Models;
-using Smart.Data.Accessor.CodeGen;
+using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;
 
@@ -84,7 +83,7 @@ internal static class QueryBuilderEngine
             builder.NewLine();
         }
 
-        builder.Indent().Append(model.Accessibility).Append(" partial class ").Append(model.ClassName).NewLine();
+        builder.Indent().Append(CodeExpressionHelper.AccessibilityText(model.Accessibility)).Append(" partial class ").Append(model.ClassName).NewLine();
         builder.BeginScope();
 
         var first = true;
@@ -337,11 +336,11 @@ internal static class QueryBuilderEngine
         {
             builder.Indent()
                 .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.")
-                .Append(Smart.Data.Accessor.CodeGen.GenExpr.AddInParameterConverter(conv.ConverterTypeFullName, conv.DbTypeFullName, conv.ClrTypeFullName))
+                .Append(Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.AddInParameterConverter(conv.ConverterTypeFullName, conv.DbTypeFullName, conv.ClrTypeFullName))
                 .Append("(cmd, \"")
                 .Append(paramName).Append("\", ")
                 .Append(valueExpression)
-                .Append(DbTypeSizeArgs(c.DbTypeExpr, c.Size))
+                .Append(CodeExpressionHelper.DbTypeSizeArgs(c.DbTypeExpr, c.Size))
                 .Append(");").NewLine();
             return;
         }
@@ -350,13 +349,13 @@ internal static class QueryBuilderEngine
             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
             .Append(paramName).Append("\", ")
             .Append(ColumnValueArg(valueExpression, c))
-            .Append(DbTypeSizeArgs(c.DbTypeExpr, c.Size))
+            .Append(CodeExpressionHelper.DbTypeSizeArgs(c.DbTypeExpr, c.Size))
             .Append(");").NewLine();
     }
 
     private static string ColumnValueArg(string valueExpr, BuilderColumn c)
         => c.EnumUnderlyingFullName is not null
-            ? GenExpr.EnumCastValue(c.EnumUnderlyingFullName, c.IsNullableEnum, valueExpr)
+            ? CodeExpressionHelper.EnumCastValue(c.EnumUnderlyingFullName, c.IsNullableEnum, valueExpr)
             : valueExpr;
 
     // Method value parameter (no converter — matching the prior behaviour): enum underlying cast or
@@ -366,25 +365,14 @@ internal static class QueryBuilderEngine
             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
             .Append(Marker).Append(p.Name).Append("\", ")
             .Append(ValueParamArg(p))
-            .Append(DbTypeSizeArgs(p.DbTypeExpr, p.Size))
+            .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size))
             .Append(");").NewLine();
 
     private static string ValueParamArg(BuilderValueParam p)
         => p.EnumUnderlyingFullName is not null
-            ? GenExpr.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name)
+            ? CodeExpressionHelper.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name)
             : p.Name;
 
-    private static string DbTypeSizeArgs(string? dbTypeExpr, int? size)
-    {
-        if (dbTypeExpr is null)
-        {
-            return string.Empty;
-        }
-        return size is { } sz
-            ? $", {dbTypeExpr}, {sz.ToString(CultureInfo.InvariantCulture)}"
-            : $", {dbTypeExpr}";
-    }
-
     private static void EmitCommandText(SourceBuilder builder, string sql)
-        => builder.Indent().Append("cmd.CommandText = ").Append(GenExpr.StringLiteral(sql)).Append(";").NewLine();
+        => builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(sql)).Append(";").NewLine();
 }

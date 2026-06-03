@@ -135,4 +135,62 @@ public sealed class BuilderScopeGeneratedCodeTests
         // The Name column carries an explicit DbType (F3), passed as the AddInParameter DbType argument.
         Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name, (global::System.Data.DbType)", text, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ProfileTypeMapEmitsColumnDbType()
+    {
+        var source = Preamble + """
+
+            [AccessorProfile]
+            [TypeMap(typeof(DateTime), System.Data.DbType.Int64)]
+            internal static class Profile
+            {
+            }
+
+            [DataAccessor]
+            [ExecuteConfig(typeof(Profile))]
+            internal sealed partial class Accessor
+            {
+                [Insert(typeof(Entity), Table = "T")]
+                [Execute]
+                public partial int Insert(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        // The profile-scope [TypeMap] supplies the DbType for the DateTime column — Builder now resolves
+        // class+profile [TypeMap] exactly like the core generator (shared MappingAttributeHelper).
+        Assert.Contains("AddInParameter(cmd, \"@CreatedAt\", entity.CreatedAt, (global::System.Data.DbType)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValueParameterDbTypeEmitsParameterDbType()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+            using Smart.Data.Accessor.Builders;
+
+            internal sealed class Entity
+            {
+                [Key]
+                public long Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Delete(typeof(Entity), Table = "T")]
+                [Execute]
+                public partial int Delete([DbType(System.Data.DbType.AnsiString)] string code);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        // The value (method) parameter carries an explicit [DbType] — now honoured on Builder methods
+        // exactly like the core generator (shared MappingAttributeHelper.ResolveParameterDbType). It binds
+        // through the Delete builder's WHERE clause.
+        Assert.Contains("AddInParameter(cmd, \"@code\", code, (global::System.Data.DbType)", text, StringComparison.Ordinal);
+    }
 }

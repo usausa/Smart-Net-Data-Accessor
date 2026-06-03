@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Models;
 
+using Microsoft.CodeAnalysis;
+
 using SourceGenerateHelper;
 
 internal enum ReturnShapeLegacy
@@ -33,7 +35,7 @@ internal sealed record MethodModel(
     ReturnShapeLegacy ReturnShapeLegacy,
     string? ScalarTypeFullName,    // inner T for Scalar / TaskScalar / ValueTaskScalar
     string? ElementTypeFullName,   // element T for List/TaskList/AsyncEnumerable
-    string Accessibility,
+    Accessibility Accessibility,
     EquatableArray<ParameterModel> Parameters,
     string? BuilderMethodName,
     string? EmbeddedSql,

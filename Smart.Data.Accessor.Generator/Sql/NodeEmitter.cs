@@ -152,7 +152,6 @@ internal static class NodeEmitter
                     }
                     var pname = bindMarker + "p" + counter++;
                     var attrs = attrLookup(root);
-                    var dbTypeArg = attrs?.DbTypeExpr is { } dt ? ", " + dt : string.Empty;
                     var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
                     var direction = attrs?.Direction ?? Direction.Input;
                     // Apply the spec §7.4/§7.7 converter (ToDb) or the §7.9 enum-cast only when the
@@ -166,11 +165,11 @@ internal static class NodeEmitter
                         {
                             // 改善2: bind via the converter-sharing overload; valueExpr stays raw (the
                             // helper calls TConverter.ToDb + handles null/Nullable).
-                            inMethod = Smart.Data.Accessor.CodeGen.GenExpr.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
+                            inMethod = Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
                         }
                         else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
                         {
-                            valueExpr = Smart.Data.Accessor.CodeGen.GenExpr.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
+                            valueExpr = Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
                         }
                     }
                     var hasProvider = attrs?.ProviderParameterTypeFullName is not null
@@ -186,7 +185,7 @@ internal static class NodeEmitter
                             .Append(pname)
                             .Append("\", ")
                             .Append(p.Name)
-                            .Append(dbTypeArg)
+                            .Append(Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, null))
                             .Append("));\n");
                     }
                     else if (direction == Direction.Input)
@@ -207,7 +206,7 @@ internal static class NodeEmitter
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{dbTypeArg}{sizeArg});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, attrs?.Size)});");
                         }
                     }
                     else

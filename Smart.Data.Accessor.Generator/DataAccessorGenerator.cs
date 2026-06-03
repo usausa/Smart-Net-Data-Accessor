@@ -10,10 +10,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-using Smart.Data.Accessor.CodeGen;
 using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.Generator.Sql;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
+using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;
 
@@ -46,7 +46,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private const string ProcedureAttributeName = "Smart.Data.Accessor.Attributes.ProcedureAttribute";
     private const string ExecuteConfigAttributeName = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
     private const string AccessorProfileAttributeName = "Smart.Data.Accessor.Attributes.AccessorProfileAttribute";
-    private const string TypeMapAttributeName = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
     private const string QueryBuilderAttributeName = "Smart.Data.Accessor.Builders.QueryBuilderAttribute";
     private const string QueryBuilderMethodSuffix = "__QueryBuilder";
     private const char DefaultBindMarker = '@';
@@ -378,73 +377,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return builder.ToString();
     }
 
-    // spec §7.5 / §7.7: builds the class/profile [TypeMap] lookup (unwrapped CLR type FQN → DbType
-    // expr + Size). Class scope is collected first so it wins over the profile.
-    private static Dictionary<string, (string DbTypeExpr, int? Size)> BuildTypeMapLookup(
-        INamedTypeSymbol classSymbol,
-        INamedTypeSymbol? profileSymbol)
-    {
-        var map = new Dictionary<string, (string DbTypeExpr, int? Size)>(StringComparer.Ordinal);
-        CollectTypeMaps(classSymbol, map);
-        if (profileSymbol is not null)
-        {
-            CollectTypeMaps(profileSymbol, map);
-        }
-        return map;
-    }
-
-    private static void CollectTypeMaps(INamedTypeSymbol owner, Dictionary<string, (string DbTypeExpr, int? Size)> map)
-    {
-        foreach (var attr in owner.GetAttributes())
-        {
-            if (attr.AttributeClass?.ToDisplayString() != TypeMapAttributeName ||
-                attr.ConstructorArguments.Length < 2 ||
-                attr.ConstructorArguments[0].Value is not ITypeSymbol clrType ||
-                attr.ConstructorArguments[1].Value is not int dbTypeValue)
-            {
-                continue;
-            }
-
-            var key = UnwrapNullableSymbol(clrType).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (map.ContainsKey(key))
-            {
-                continue;   // first occurrence wins (class scope collected before profile)
-            }
-
-            int? size = null;
-            foreach (var na in attr.NamedArguments)
-            {
-                if (na.Key == "Size" && na.Value.Value is int s)
-                {
-                    size = s;
-                }
-            }
-            map[key] = ($"(global::System.Data.DbType){dbTypeValue}", size);
-        }
-    }
-
-    private static ITypeSymbol UnwrapNullableSymbol(ITypeSymbol type) =>
-        type is INamedTypeSymbol nt && nt.IsGenericType &&
-        nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T
-            ? nt.TypeArguments[0]
-            : type;
-
-    // spec §7.7: the type referenced by [ExecuteConfig(typeof(P))] (null when absent). Used as the
-    // lowest converter-resolution scope; [AccessorProfile]/circularity validation is done separately.
-    private static INamedTypeSymbol? ResolveExecuteConfigProfile(INamedTypeSymbol classSymbol)
-    {
-        foreach (var attr in classSymbol.GetAttributes())
-        {
-            if (attr.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName &&
-                attr.ConstructorArguments.Length >= 1 &&
-                attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType)
-            {
-                return profileType;
-            }
-        }
-        return null;
-    }
-
     private static AccessorModel? BuildAccessorModel(
         List<DiagnosticData> diagnostics,
         INamedTypeSymbol classSymbol)
@@ -456,11 +388,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
         // spec §7.7: [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest
         // converter-resolution scope. Resolved here (validation is reported later, see SDA0146/0147).
-        var profileSymbol = ResolveExecuteConfigProfile(classSymbol);
+        var profileSymbol = MappingAttributeHelper.ResolveProfile(classSymbol);
 
         // spec §7.5 / §7.7: class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for
         // parameters of the mapped CLR type. Class scope takes precedence over the profile.
-        var typeMaps = BuildTypeMapLookup(classSymbol, profileSymbol);
+        var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(classSymbol, profileSymbol);
 
         var methods = new List<MethodModel>();
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -787,7 +719,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     Microsoft.CodeAnalysis.RefKind.Ref => RefKindLegacy.Ref,
                     _ => RefKindLegacy.None
                 };
-                var (enumUnderlyingFq, isNullableEnumParam) = ClassifyEnumParameter(p.Type);
+                var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(p.Type);
+                var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
+                var isNullableEnumParam = enumInfo?.IsNullable ?? false;
 
                 // spec §7.4 / §7.7: resolve a [TypeHandler<>] for this parameter across the
                 // member → method → class → profile scope chain. When present, the bound value is
@@ -814,7 +748,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 // [DbType]/[AnsiString], provider DbType, or converter applies (a converter rewrites
                 // the value to TDb, so its DbType is governed by the converter, not the CLR type).
                 if (dbTypeExpr is null && converterFqn is null && providerParamTypeFqn is null &&
-                    typeMaps.TryGetValue(UnwrapNullableSymbol(p.Type).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), out var typeMap))
+                    MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var typeMap))
                 {
                     dbTypeExpr = typeMap.DbTypeExpr;
                     size ??= typeMap.Size;
@@ -1165,7 +1099,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 shape.Value,
                 scalarFq,
                 elementFq,
-                GenExpr.AccessibilityText(member.DeclaredAccessibility),
+                member.DeclaredAccessibility,
                 parameters.ToArray(),
                 builder,
                 null,
@@ -1317,7 +1251,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return new AccessorModel(
             ns,
             classSymbol.Name,
-            GenExpr.AccessibilityText(classSymbol.DeclaredAccessibility),
+            classSymbol.DeclaredAccessibility,
             providerName,
             requiresFactory,
             injects.ToArray(),
@@ -1728,13 +1662,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     continue;
                 }
                 var propAttrs = prop.GetAttributes();
-                if (propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+                var ca = ColumnAttributeHelper.Read(prop);
+                if (ca.IsIgnored)
                 {
                     continue;
                 }
-                var column = propAttrs
-                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
-                    ?.ConstructorArguments.FirstOrDefault().Value as string ?? param.Name;
+                var column = ca.ColumnName;
                 var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
@@ -1754,15 +1687,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
             var propAttrs = prop.GetAttributes();
+            var ca = ColumnAttributeHelper.Read(prop);
             // [Ignore] now means exclude everywhere (phase 2 §2.3).
-            if (propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == IgnoreAttributeName))
+            if (ca.IsIgnored)
             {
                 continue;
             }
             var name = prop.Name;
-            var column = propAttrs
-                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
-                ?.ConstructorArguments.FirstOrDefault().Value as string ?? name;
+            var column = ca.ColumnName;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(prop.Type);
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
@@ -1892,7 +1824,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Non-converter parameters use the plain AddInParameter with a gen-time value expression.
     private static (string Method, string Value) BuildInParameterCall(ParameterModel p)
         => p.ConverterTypeFullName is { } conv
-            ? (GenExpr.AddInParameterConverter(conv, p.ConverterDbTypeFullName!, p.ConverterClrTypeFullName!), p.Name)
+            ? (CodeExpressionHelper.AddInParameterConverter(conv, p.ConverterDbTypeFullName!, p.ConverterClrTypeFullName!), p.Name)
             : ("AddInParameter", BuildParameterValueExpr(p));
 
     private static string BuildParameterValueExpr(ParameterModel p)
@@ -1910,7 +1842,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             return p.Name;
         }
-        return GenExpr.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name);
+        return CodeExpressionHelper.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name);
     }
 
     // spec §5.6: a parameter is a POCO argument (expanded into one DB parameter per public property)
@@ -1947,7 +1879,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Infers a DbType expression from the CLR type (Nullable<T> / enum unwrapped); null when unknown.
     private static string? InferDbTypeExpr(ITypeSymbol type)
     {
-        var t = UnwrapNullableSymbol(type);
+        var t = ConverterScopeHelper.UnwrapNullable(type);
         if (t.TypeKind == TypeKind.Enum && t is INamedTypeSymbol en && en.EnumUnderlyingType is { } ut)
         {
             t = ut;
@@ -2060,7 +1992,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
 
-            var (enumUnderlyingFq, isNullableEnumProp) = ClassifyEnumParameter(prop.Type);
+            var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(prop.Type);
+            var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
+            var isNullableEnumProp = enumInfo?.IsNullable ?? false;
             list.Add(new PocoBindProperty(
                 prop.Name,
                 paramName ?? prop.Name,
@@ -2111,14 +2045,14 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             return access;
         }
-        return GenExpr.EnumCastValue(pp.EnumUnderlyingFullName, pp.IsNullableEnum, access);
+        return CodeExpressionHelper.EnumCastValue(pp.EnumUnderlyingFullName, pp.IsNullableEnum, access);
     }
 
     // 改善2 (P8): a [TypeHandler<>] INPUT POCO property binds through AddInParameter<TConverter,TDb,TClr>
     // (the helper calls ToDb + handles null); non-converter properties use the gen-time value expression.
     private static (string Method, string Value) BuildPocoInParameterCall(string argName, PocoBindProperty pp)
         => pp.ConverterTypeFullName is { } conv
-            ? (GenExpr.AddInParameterConverter(conv, pp.ConverterDbTypeFullName!, pp.ConverterClrTypeFullName!), argName + "." + pp.PropertyName)
+            ? (CodeExpressionHelper.AddInParameterConverter(conv, pp.ConverterDbTypeFullName!, pp.ConverterClrTypeFullName!), argName + "." + pp.PropertyName)
             : ("AddInParameter", BuildPocoValueExpr(argName, pp));
 
     // spec §5.6: emit Add*Parameter for one expanded POCO property (procedure / DirectSql setup).
@@ -2126,7 +2060,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     {
         var paramName = bindMarker + pp.ParamName;
         var valueExpr = BuildPocoValueExpr(argName, pp);
-        var dbTypeArg = pp.DbTypeExpr is not null ? ", " + pp.DbTypeExpr : string.Empty;
         var dbTypeExprOrDefault = pp.DbTypeExpr ?? "global::System.Data.DbType.Object";
         var sizeArg = pp.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
 
@@ -2146,7 +2079,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 var (pocoMethod, pocoValue) = BuildPocoInParameterCall(argName, pp);
                 builder.Indent()
                     .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(pocoMethod).Append("(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(pocoValue).Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
+                    .Append(paramName).Append("\", ").Append(pocoValue).Append(CodeExpressionHelper.DbTypeSizeArgs(pp.DbTypeExpr, pp.Size)).Append(");").NewLine();
                 break;
         }
     }
@@ -2162,30 +2095,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return $"{converter}.FromDb({convertScalar}{m.ScalarConverterDbTypeFullName}>({executeCall})!)";
         }
         return $"{convertScalar}{m.ScalarTypeFullName}>({executeCall})";
-    }
-
-    private static (string? UnderlyingFullName, bool IsNullableEnum) ClassifyEnumParameter(ITypeSymbol parameterType)
-    {
-        INamedTypeSymbol? enumSym = null;
-        var isNullableEnum = false;
-        if (parameterType is INamedTypeSymbol nt && nt.IsGenericType &&
-            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T &&
-            nt.TypeArguments[0] is INamedTypeSymbol inner && inner.TypeKind == TypeKind.Enum)
-        {
-            enumSym = inner;
-            isNullableEnum = true;
-        }
-        else if (parameterType is INamedTypeSymbol named && named.TypeKind == TypeKind.Enum)
-        {
-            enumSym = named;
-        }
-
-        if (enumSym?.EnumUnderlyingType is null)
-        {
-            return (null, false);
-        }
-
-        return (enumSym.EnumUnderlyingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), isNullableEnum);
     }
 
     // SDA0002: the attributes that establish a method as a generated data method. A non-partial
@@ -2261,7 +2170,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             builder.Namespace(model.Namespace);
             builder.NewLine();
         }
-        builder.Indent().Append(model.Accessibility).Append(" partial class ").Append(model.ClassName).NewLine();
+        builder.Indent().Append(CodeExpressionHelper.AccessibilityText(model.Accessibility)).Append(" partial class ").Append(model.ClassName).NewLine();
         builder.BeginScope();
         EmitConstructor(builder, model);
 
@@ -2397,7 +2306,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var isReader = IsReaderShape(m.ReturnShapeLegacy);
         var asyncKw = isAsync ? "async " : string.Empty;
         builder.Indent()
-            .Append(m.Accessibility).Append(" ").Append(asyncKw).Append("partial ").Append(m.ReturnTypeFullName).Append(" ")
+            .Append(CodeExpressionHelper.AccessibilityText(m.Accessibility)).Append(" ").Append(asyncKw).Append("partial ").Append(m.ReturnTypeFullName).Append(" ")
             .Append(m.Name).Append("(").Append(paramList).Append(")").NewLine();
         builder.BeginScope();
 
@@ -2636,7 +2545,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
 
             var paramName = m.BindMarker + p.Name;
-            var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
             var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
             var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
             var hasProvider = p.ProviderParameterTypeFullName is not null;
@@ -2680,7 +2588,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         builder.Indent()
                             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue)
-                            .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size)).Append(");").NewLine();
                     }
                     break;
             }
@@ -2728,7 +2636,6 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             }
 
             var paramName = m.BindMarker + p.Name;
-            var dbTypeArg = p.DbTypeExpr is not null ? ", " + p.DbTypeExpr : string.Empty;
             var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
             var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
             var hasProvider = p.ProviderParameterTypeFullName is not null;
@@ -2776,7 +2683,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                         builder.Indent()
                             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue)
-                            .Append(dbTypeArg).Append(sizeArg).Append(");").NewLine();
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size)).Append(");").NewLine();
                     }
                     break;
             }
