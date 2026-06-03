@@ -1662,12 +1662,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                     continue;
                 }
                 var propAttrs = prop.GetAttributes();
-                var ca = ColumnAttributeHelper.Read(prop);
-                if (ca.IsIgnored)
+                var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(prop);
+                if (isIgnored)
                 {
                     continue;
                 }
-                var column = ca.ColumnName;
                 var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
@@ -1687,14 +1686,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 continue;
             }
             var propAttrs = prop.GetAttributes();
-            var ca = ColumnAttributeHelper.Read(prop);
+            var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(prop);
             // [Ignore] now means exclude everywhere (phase 2 §2.3).
-            if (ca.IsIgnored)
+            if (isIgnored)
             {
                 continue;
             }
             var name = prop.Name;
-            var column = ca.ColumnName;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(prop.Type);
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
@@ -3038,8 +3036,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel m)
     {
-        var cols = m.QueryColumns ?? [];
-        if (cols.Count == 0)
+        if (m.QueryColumns is not { } cols || cols.Count == 0)
         {
             return;
         }
