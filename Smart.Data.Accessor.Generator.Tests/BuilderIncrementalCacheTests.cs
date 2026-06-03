@@ -41,14 +41,15 @@ public sealed class BuilderIncrementalCacheTests
         var (driver, compilation) = GeneratorTestHelper.CreateBuilderTrackingDriver(source);
 
         // First run populates the incremental caches.
-        driver = driver.RunGenerators(compilation);
+        driver = driver.RunGenerators(compilation, TestContext.Current.CancellationToken);
 
         // Second run after an UNRELATED change (a class with no [DataAccessor]). The accessor's syntax
         // is unchanged, so the equatable BuilderClassModel must be reused.
         var unrelated = CSharpSyntaxTree.ParseText(
             "namespace Other { internal sealed class Unrelated { } }",
-            new CSharpParseOptions(LanguageVersion.Preview));
-        driver = driver.RunGenerators(compilation.AddSyntaxTrees(unrelated));
+            new CSharpParseOptions(LanguageVersion.Preview),
+            cancellationToken: TestContext.Current.CancellationToken);
+        driver = driver.RunGenerators(compilation.AddSyntaxTrees(unrelated), TestContext.Current.CancellationToken);
 
         var result = driver.GetRunResult().Results.Single();
 
