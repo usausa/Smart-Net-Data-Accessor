@@ -68,7 +68,7 @@ internal static class AccessorModelBuilder
         {
             diagnostics.Add(new DiagnosticInfo(Diagnostics.DataAccessorClassNested, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
         }
-        else if (classSymbol.IsGenericType || classSymbol.TypeParameters.Length > 0)
+        else if (classSymbol.IsGenericType || (classSymbol.TypeParameters.Length > 0))
         {
             diagnostics.Add(new DiagnosticInfo(Diagnostics.DataAccessorClassGeneric, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
         }
@@ -144,17 +144,17 @@ internal static class AccessorModelBuilder
             }
 
             sqlMap.TryGetValue(sqlKey, out var sql);
-            if (sql is null && !isBuilder && !isProcedure)
+            if ((sql is null) && !isBuilder && !isProcedure)
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlNotFound, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
             }
-            if (sql is not null && isBuilder)
+            if ((sql is not null) && isBuilder)
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.BuilderAndSqlBothPresent, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
             }
-            if (sql is not null && isProcedure)
+            if ((sql is not null) && isProcedure)
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.ProcedureHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
@@ -206,9 +206,9 @@ internal static class AccessorModelBuilder
     {
         foreach (var attr in attributes)
         {
-            if (attr.AttributeClass?.ToDisplayString() == BindPrefixAttributeName &&
-                attr.ConstructorArguments.Length > 0 &&
-                attr.ConstructorArguments[0].Value is char ch)
+            if ((attr.AttributeClass?.ToDisplayString() == BindPrefixAttributeName) &&
+                (attr.ConstructorArguments.Length > 0) &&
+                (attr.ConstructorArguments[0].Value is char ch))
             {
                 return ch;
             }
@@ -280,7 +280,7 @@ internal static class AccessorModelBuilder
             foreach (var attr in member.GetAttributes())
             {
                 var fullName = attr.AttributeClass?.ToDisplayString();
-                if (fullName == ExecuteAttributeName || fullName == ExecuteScalarAttributeName)
+                if ((fullName == ExecuteAttributeName) || (fullName == ExecuteScalarAttributeName))
                 {
                     kind = "Execute";
                     isExecuteNonScalar = fullName == ExecuteAttributeName;
@@ -296,13 +296,13 @@ internal static class AccessorModelBuilder
                     isDirectSql = true;
                     foreach (var na in attr.NamedArguments)
                     {
-                        if (na.Key == "SuppressWarning" && na.Value.Value is bool suppress)
+                        if ((na.Key == "SuppressWarning") && (na.Value.Value is bool suppress))
                         {
                             directSqlSuppressWarning = suppress;
                         }
                     }
                 }
-                else if (fullName == QueryAttributeName || fullName == QueryFirstAttributeName)
+                else if ((fullName == QueryAttributeName) || (fullName == QueryFirstAttributeName))
                 {
                     kind = "Query";
                     executionKindCount++;
@@ -314,10 +314,10 @@ internal static class AccessorModelBuilder
                     // The core generator only needs the convention-derived helper name.
                     builder = member.Name + QueryBuilderMethodSuffix;
                 }
-                else if (fullName == MethodNameAttributeName &&
-                    attr.ConstructorArguments.Length > 0 &&
-                    attr.ConstructorArguments[0].Value is string aliasValue &&
-                    !string.IsNullOrEmpty(aliasValue))
+                else if ((fullName == MethodNameAttributeName) &&
+                    (attr.ConstructorArguments.Length > 0) &&
+                    (attr.ConstructorArguments[0].Value is string aliasValue) &&
+                    !String.IsNullOrEmpty(aliasValue))
                 {
                     sqlAlias = aliasValue;
                     // SDA0106: [MethodName("X")] is duplicated within the same class.
@@ -334,14 +334,14 @@ internal static class AccessorModelBuilder
                         seenMethodNames[aliasValue] = member.Name;
                     }
                 }
-                else if (fullName == ProcedureAttributeName &&
-                    attr.ConstructorArguments.Length > 0 &&
-                    attr.ConstructorArguments[0].Value is string procName)
+                else if ((fullName == ProcedureAttributeName) &&
+                    (attr.ConstructorArguments.Length > 0) &&
+                    (attr.ConstructorArguments[0].Value is string procName))
                 {
                     procedureName = procName;
                     kind ??= "Execute";
                     // SDA0204: [Procedure("")] empty stored procedure name -> warning.
-                    if (string.IsNullOrEmpty(procName))
+                    if (String.IsNullOrEmpty(procName))
                     {
                         diagnostics.Add(new DiagnosticInfo(
                             Diagnostics.ProcedureNameEmpty,
@@ -374,7 +374,7 @@ internal static class AccessorModelBuilder
             }
 
             // SDA0104: [Procedure] combined with [DirectSql] (B-group command sources are exclusive).
-            if (isDirectSql && procedureName is not null)
+            if (isDirectSql && (procedureName is not null))
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.ProcedureDirectSqlConflict,
@@ -385,7 +385,7 @@ internal static class AccessorModelBuilder
 
             // SDA0105: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql]
             // (the SQL source is ambiguous; the SQL-file combinations are SDA0405 / SDA0404 / SDA0403).
-            if (builder is not null && (isDirectSql || procedureName is not null))
+            if ((builder is not null) && (isDirectSql || (procedureName is not null)))
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.BuilderAndCommandSourceConflict,
@@ -411,11 +411,11 @@ internal static class AccessorModelBuilder
 
                 // SDA0203: first parameter (after conn/tx/CT) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(p =>
-                    p.Type.ToDisplayString() != CancellationTokenTypeName &&
+                    (p.Type.ToDisplayString() != CancellationTokenTypeName) &&
                     !IsDbConnectionType(p.Type) &&
                     !IsDbTransactionType(p.Type));
-                if (firstUsable is null ||
-                    firstUsable.Type.SpecialType != SpecialType.System_String)
+                if ((firstUsable is null) ||
+                    (firstUsable.Type.SpecialType != SpecialType.System_String))
                 {
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.DirectSqlFirstParamNotString,
@@ -431,11 +431,11 @@ internal static class AccessorModelBuilder
             foreach (var p in member.Parameters)
             {
                 var nameAttr = p.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == NameAttributeName);
-                if (nameAttr is null || nameAttr.ConstructorArguments.Length == 0)
+                if ((nameAttr is null) || (nameAttr.ConstructorArguments.Length == 0))
                 {
                     continue;
                 }
-                if (nameAttr.ConstructorArguments[0].Value is not string mappedName || string.IsNullOrEmpty(mappedName))
+                if ((nameAttr.ConstructorArguments[0].Value is not string mappedName) || String.IsNullOrEmpty(mappedName))
                 {
                     continue;
                 }
@@ -472,22 +472,22 @@ internal static class AccessorModelBuilder
                 {
                     var attrClass = pa.AttributeClass;
                     var an = attrClass?.ToDisplayString();
-                    if (an == DbTypeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dt)
+                    if ((an == DbTypeAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int dt))
                     {
                         dbTypeExpr = $"(global::System.Data.DbType){dt}";
                         sawNonGenericDbType = true;
                     }
-                    else if (attrClass is not null && attrClass.IsGenericType &&
-                             attrClass.OriginalDefinition.ToDisplayString() == DbTypeGenericAttributeName &&
-                             attrClass.TypeArguments.Length > 0 &&
-                             pa.ConstructorArguments.Length > 0)
+                    else if ((attrClass is not null) && attrClass.IsGenericType &&
+                             (attrClass.OriginalDefinition.ToDisplayString() == DbTypeGenericAttributeName) &&
+                             (attrClass.TypeArguments.Length > 0) &&
+                             (pa.ConstructorArguments.Length > 0))
                     {
                         sawGenericDbType = true;
                         var enumType = attrClass.TypeArguments[0];
                         var enumFqn = enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         var rawEnumFqn = enumType.ToDisplayString();
                         var ctorVal = pa.ConstructorArguments[0].Value;
-                        if (ctorVal is not null && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
+                        if ((ctorVal is not null) && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
                         {
                             // Build the enum-value expression: `(global::Ns.Enum)42`.
                             var rawVal = Convert.ToInt64(ctorVal, CultureInfo.InvariantCulture)
@@ -520,11 +520,11 @@ internal static class AccessorModelBuilder
                     {
                         dbTypeExpr ??= "global::System.Data.DbType.AnsiString";
                     }
-                    else if (an == SqlSizeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int sz2)
+                    else if ((an == SqlSizeAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int sz2))
                     {
                         size = sz2;
                     }
-                    else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
+                    else if ((an == DirectionAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int dirRaw))
                     {
                         direction = (ParameterDirection)dirRaw switch
                         {
@@ -546,8 +546,8 @@ internal static class AccessorModelBuilder
 
                 // spec §5.6: OUT / InputOutput parameters need a concrete DbType (else sql_variant).
                 // Infer from the CLR type when no explicit [DbType] / provider DbType is present.
-                if (dbTypeExpr is null && providerParamTypeFqn is null &&
-                    direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
+                if ((dbTypeExpr is null) && (providerParamTypeFqn is null) &&
+                    (direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput))
                 {
                     dbTypeExpr = InferDbTypeExpr(p.Type);
                 }
@@ -569,15 +569,15 @@ internal static class AccessorModelBuilder
                 var converterNullableValue = false;
                 string? converterDbFqn = null;
                 string? converterClrFqn = null;
-                if (p.Type.ToDisplayString() != CancellationTokenTypeName &&
+                if ((p.Type.ToDisplayString() != CancellationTokenTypeName) &&
                     !IsDbConnectionType(p.Type) && !IsDbTransactionType(p.Type))
                 {
                     var paramScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
                     if (ConverterResolver.Resolve(diagnostics, member, p.Name, p.GetAttributes(), p.Type, paramScope) is { } paramConv)
                     {
                         converterFqn = paramConv.ConverterTypeFullName;
-                        converterNullableValue = p.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
-                            pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
+                        converterNullableValue = (p.Type is INamedTypeSymbol pnt) && pnt.IsGenericType &&
+                            (pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T);
                         converterDbFqn = paramConv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         converterClrFqn = paramConv.ClrType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     }
@@ -586,7 +586,7 @@ internal static class AccessorModelBuilder
                 // spec §7.5 / §7.7: a class/profile [TypeMap] supplies the DbType when no explicit
                 // [DbType]/[AnsiString], provider DbType, or converter applies (a converter rewrites
                 // the value to TDb, so its DbType is governed by the converter, not the CLR type).
-                if (dbTypeExpr is null && converterFqn is null && providerParamTypeFqn is null &&
+                if ((dbTypeExpr is null) && (converterFqn is null) && (providerParamTypeFqn is null) &&
                     MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var typeMap))
                 {
                     dbTypeExpr = typeMap.DbTypeExpr;
@@ -597,8 +597,8 @@ internal static class AccessorModelBuilder
                 // parameter per public property (the argument itself is not bound). 2-way SQL methods
                 // reference POCO members via /*@ arg.Prop */ instead, so expansion is limited here.
                 IReadOnlyList<PocoBindProperty>? pocoProperties = null;
-                if ((procedureName is not null || isDirectSql) &&
-                    p.RefKind == RefKind.None &&
+                if (((procedureName is not null) || isDirectSql) &&
+                    (p.RefKind == RefKind.None) &&
                     IsPocoParameter(p.Type))
                 {
                     pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
@@ -611,7 +611,7 @@ internal static class AccessorModelBuilder
                 {
                     foreach (var mem in mt.GetMembers())
                     {
-                        if (mem.DeclaredAccessibility == Accessibility.Public && mem is IPropertySymbol or IFieldSymbol)
+                        if ((mem.DeclaredAccessibility == Accessibility.Public) && (mem is IPropertySymbol or IFieldSymbol))
                         {
                             memberNames.Add(mem.Name);
                         }
@@ -674,9 +674,9 @@ internal static class AccessorModelBuilder
             foreach (var ma in member.GetAttributes())
             {
                 var an = ma.AttributeClass?.ToDisplayString();
-                if ((an == CommandTimeoutAttributeName || an == TimeoutAttributeName) &&
-                    ma.ConstructorArguments.Length > 0 &&
-                    ma.ConstructorArguments[0].Value is int sec)
+                if (((an == CommandTimeoutAttributeName) || (an == TimeoutAttributeName)) &&
+                    (ma.ConstructorArguments.Length > 0) &&
+                    (ma.ConstructorArguments[0].Value is int sec))
                 {
                     commandTimeout = sec;
                 }
@@ -691,7 +691,7 @@ internal static class AccessorModelBuilder
 
             // SDA0302: [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
             // (Does not apply to [ExecuteScalar], which supports arbitrary scalar T.)
-            if (kind == "Execute" && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
+            if ((kind == "Execute") && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.ExecuteReturnInvalid,
@@ -723,7 +723,7 @@ internal static class AccessorModelBuilder
             if (shape == ReturnShapeLegacy.AsyncEnumerable)
             {
                 var ctParam = member.Parameters.FirstOrDefault(p => p.Type.ToDisplayString() == CancellationTokenTypeName);
-                var hasEnumeratorCancellation = ctParam is not null && ctParam.GetAttributes()
+                var hasEnumeratorCancellation = (ctParam is not null) && ctParam.GetAttributes()
                     .Any(a => a.AttributeClass?.ToDisplayString() == EnumeratorCancellationAttributeName);
                 if (!hasEnumeratorCancellation)
                 {
@@ -770,7 +770,7 @@ internal static class AccessorModelBuilder
             string? directSqlParameterName = null;
 
             // SDA0205: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3).
-            if (procedureName is not null && IsAsyncShape(shape.Value))
+            if ((procedureName is not null) && IsAsyncShape(shape.Value))
             {
                 foreach (var ms in member.Parameters)
                 {
@@ -788,11 +788,11 @@ internal static class AccessorModelBuilder
             // SDA0208 / SDA0209: [Direction] consistency checks (spec §1.4 F4 / §11.3).
             //  - SDA0208: [Direction] vs. RefKind mismatch.
             //  - SDA0209: [Direction] used on method kinds other than [Procedure] / [Execute] / [DirectSql].
-            var directionAllowedKind = kind == "Execute" || kind == "DirectSql";
+            var directionAllowedKind = (kind == "Execute") || (kind == "DirectSql");
             foreach (var ms in member.Parameters)
             {
                 var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
-                if (pm is null || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
+                if ((pm is null) || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
                 {
                     continue;
                 }
@@ -851,7 +851,7 @@ internal static class AccessorModelBuilder
                     !p.IsCancellationToken &&
                     !p.IsDbConnection &&
                     !p.IsDbTransaction &&
-                    p.TypeFullName == "string");
+                    (p.TypeFullName == "string"));
                 directSqlParameterName = sqlParam?.Name;
 
                 // spec §1.4 F14: SDA0211 — [Direction] on the SQL-source string parameter is invalid.
@@ -859,11 +859,11 @@ internal static class AccessorModelBuilder
                 foreach (var ms in member.Parameters)
                 {
                     var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
-                    if (pm is null || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
+                    if ((pm is null) || pm.IsCancellationToken || pm.IsDbConnection || pm.IsDbTransaction)
                     {
                         continue;
                     }
-                    if (pm.Name == directSqlParameterName && pm.Direction != ParameterDirectionKindLegacy.Input)
+                    if ((pm.Name == directSqlParameterName) && (pm.Direction != ParameterDirectionKindLegacy.Input))
                     {
                         diagnostics.Add(new DiagnosticInfo(
                             Diagnostics.DirectSqlCommandTextDirection,
@@ -877,7 +877,7 @@ internal static class AccessorModelBuilder
                 // any erroneous ReturnValue assignments — those have already been reported).
                 // POCO-argument output properties (spec §5.6) are added via PocoOutputBindings.
                 outputBindings = parameters
-                    .Where(p => p.PocoProperties is null && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
+                    .Where(p => (p.PocoProperties is null) && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
                     .Where(p => p.Direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
                     .Select(p => new OutputBinding(
@@ -892,7 +892,7 @@ internal static class AccessorModelBuilder
                 // Procedure: bindings are derived from method parameters with non-Input Direction,
                 // plus POCO-argument output properties (spec §5.6).
                 outputBindings = parameters
-                    .Where(p => p.PocoProperties is null && p.Direction != ParameterDirectionKindLegacy.Input)
+                    .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionKindLegacy.Input))
                     .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
@@ -928,8 +928,8 @@ internal static class AccessorModelBuilder
 
             // spec §5.6: a [Procedure] with a scalar return maps the stored-procedure RETURN value to
             // the method's return value (via an auto-added ReturnValue parameter).
-            var mapsProcedureReturnValue = procedureName is not null &&
-                shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar;
+            var mapsProcedureReturnValue = (procedureName is not null) &&
+                (shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar);
 
             methods.Add(new MethodModel(
                 member.Name,
@@ -979,11 +979,11 @@ internal static class AccessorModelBuilder
         foreach (var attr in classSymbol.GetAttributes())
         {
             var attrName = attr.AttributeClass?.ToDisplayString();
-            if (attrName == InjectAttributeName &&
-                attr.ConstructorArguments.Length >= 2 &&
-                attr.ConstructorArguments[0].Value is INamedTypeSymbol injectType &&
-                attr.ConstructorArguments[1].Value is string injectName &&
-                !string.IsNullOrEmpty(injectName))
+            if ((attrName == InjectAttributeName) &&
+                (attr.ConstructorArguments.Length >= 2) &&
+                (attr.ConstructorArguments[0].Value is INamedTypeSymbol injectType) &&
+                (attr.ConstructorArguments[1].Value is string injectName) &&
+                !String.IsNullOrEmpty(injectName))
             {
                 // SDA0010: duplicate [Inject] Name within the same class.
                 if (!seenInjectNames.Add(injectName))
@@ -998,7 +998,7 @@ internal static class AccessorModelBuilder
 
                 // SDA0011: [Inject] Name collides with an existing field/property in the (partial) class
                 // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
-                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName is "dbProvider" or "providerSelector")
+                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || (injectName is "dbProvider" or "providerSelector"))
                 {
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.InjectNameConflictsWithMember,
@@ -1022,13 +1022,13 @@ internal static class AccessorModelBuilder
                     injectType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     injectName));
             }
-            else if (attrName == ProviderAttributeName &&
-                attr.ConstructorArguments.Length >= 1 &&
-                attr.ConstructorArguments[0].Value is string pName)
+            else if ((attrName == ProviderAttributeName) &&
+                (attr.ConstructorArguments.Length >= 1) &&
+                (attr.ConstructorArguments[0].Value is string pName))
             {
                 providerName = pName;
                 // SDA0014: [Provider("")] empty name -> warning.
-                if (string.IsNullOrEmpty(pName))
+                if (String.IsNullOrEmpty(pName))
                 {
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.ProviderNameEmpty,
@@ -1036,9 +1036,9 @@ internal static class AccessorModelBuilder
                         classSymbol.Name));
                 }
             }
-            else if (attrName == ExecuteConfigAttributeName &&
-                attr.ConstructorArguments.Length >= 1 &&
-                attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType)
+            else if ((attrName == ExecuteConfigAttributeName) &&
+                (attr.ConstructorArguments.Length >= 1) &&
+                (attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType))
             {
                 // SDA0016: target type must carry [AccessorProfile].
                 var profileAttrs = profileType.GetAttributes();
@@ -1066,7 +1066,7 @@ internal static class AccessorModelBuilder
         var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
 
         // SDA0015: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
-        if (providerName is not null && methods.Count > 0 && !requiresFactory)
+        if ((providerName is not null) && (methods.Count > 0) && !requiresFactory)
         {
             diagnostics.Add(new DiagnosticInfo(
                 Diagnostics.ProviderOnPatternAOnlyAccessor,
@@ -1116,9 +1116,9 @@ internal static class AccessorModelBuilder
         ReturnShapeLegacy.Void or ReturnShapeLegacy.Task or ReturnShapeLegacy.ValueTask => true,
         ReturnShapeLegacy.Scalar => returnType.SpecialType == SpecialType.System_Int32,
         ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
-            returnType is INamedTypeSymbol named &&
-            named.TypeArguments.Length == 1 &&
-            named.TypeArguments[0].SpecialType == SpecialType.System_Int32,
+            (returnType is INamedTypeSymbol named) &&
+            (named.TypeArguments.Length == 1) &&
+            (named.TypeArguments[0].SpecialType == SpecialType.System_Int32),
         _ => false
     };
 
@@ -1142,16 +1142,16 @@ internal static class AccessorModelBuilder
     // boundaries so e.g. inject "log" does not match "dialog".
     private static bool ReferencesIdentifier(string text, string name)
     {
-        if (string.IsNullOrEmpty(name))
+        if (String.IsNullOrEmpty(name))
         {
             return false;
         }
         var index = text.IndexOf(name, StringComparison.Ordinal);
         while (index >= 0)
         {
-            var beforeOk = index == 0 || !IsIdentifierChar(text[index - 1]);
+            var beforeOk = (index == 0) || !IsIdentifierChar(text[index - 1]);
             var afterPos = index + name.Length;
-            var afterOk = afterPos >= text.Length || !IsIdentifierChar(text[afterPos]);
+            var afterOk = (afterPos >= text.Length) || !IsIdentifierChar(text[afterPos]);
             if (beforeOk && afterOk)
             {
                 return true;
@@ -1161,7 +1161,7 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    private static bool IsIdentifierChar(char c) => char.IsLetterOrDigit(c) || c == '_';
+    private static bool IsIdentifierChar(char c) => Char.IsLetterOrDigit(c) || (c == '_');
 
     private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
     {
@@ -1171,7 +1171,7 @@ internal static class AccessorModelBuilder
         {
             return false;
         }
-        if (type.IsUnboundGenericType || type.TypeParameters.Length > type.TypeArguments.Length)
+        if (type.IsUnboundGenericType || (type.TypeParameters.Length > type.TypeArguments.Length))
         {
             return false;
         }
@@ -1181,7 +1181,7 @@ internal static class AccessorModelBuilder
     private static bool IsReaderType(ITypeSymbol type)
     {
         var fq = type.ToDisplayString();
-        if (fq == "System.Data.Common.DbDataReader" || fq == "System.Data.IDataReader")
+        if ((fq == "System.Data.Common.DbDataReader") || (fq == "System.Data.IDataReader"))
         {
             return true;
         }
@@ -1379,7 +1379,7 @@ internal static class AccessorModelBuilder
         // ReturnShapeLegacy.Scalar for Query). Primitive scalars (SpecialType set) keep
         // elementSymbol null so [ExecuteScalar]/scalar paths are unaffected.
         scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        if (returnType.SpecialType == SpecialType.None && returnType is INamedTypeSymbol scalarNamed)
+        if ((returnType.SpecialType == SpecialType.None) && (returnType is INamedTypeSymbol scalarNamed))
         {
             elementSymbol = scalarNamed;
             elementFq = scalarFq;
@@ -1398,7 +1398,7 @@ internal static class AccessorModelBuilder
         {
             return true;
         }
-        if (type is INamedTypeSymbol named && named.IsGenericType)
+        if ((type is INamedTypeSymbol named) && named.IsGenericType)
         {
             var fq = named.ConstructedFrom.ToDisplayString();
             if (fq is "System.Memory<T>"
@@ -1422,7 +1422,7 @@ internal static class AccessorModelBuilder
     {
         elementFq = null;
         elementSymbol = null;
-        if (type is not INamedTypeSymbol named || !named.IsGenericType)
+        if ((type is not INamedTypeSymbol named) || !named.IsGenericType)
         {
             return false;
         }
@@ -1474,8 +1474,8 @@ internal static class AccessorModelBuilder
         // columns are excluded (a value-type default is benign).
         void CheckNonNullableDbNull(ITypeSymbol type, string propName, bool skipNullCheck, ConverterReadBinding? converter)
         {
-            if (converter is null && !skipNullCheck &&
-                type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.NotAnnotated)
+            if ((converter is null) && !skipNullCheck &&
+                type.IsReferenceType && (type.NullableAnnotation == NullableAnnotation.NotAnnotated))
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.NonNullableDbNull,
@@ -1520,7 +1520,7 @@ internal static class AccessorModelBuilder
         var infos = new List<ColumnInfo>();
         foreach (var prop in entity.GetMembers().OfType<IPropertySymbol>())
         {
-            if (prop.DeclaredAccessibility != Accessibility.Public || prop.IsStatic || prop.SetMethod is null)
+            if ((prop.DeclaredAccessibility != Accessibility.Public) || prop.IsStatic || (prop.SetMethod is null))
             {
                 continue;
             }
@@ -1580,8 +1580,8 @@ internal static class AccessorModelBuilder
     {
         var isNullable = propertyType.NullableAnnotation == NullableAnnotation.Annotated;
         var underlying = propertyType;
-        if (propertyType is INamedTypeSymbol nt && nt.IsGenericType &&
-            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
+        if ((propertyType is INamedTypeSymbol nt) && nt.IsGenericType &&
+            (nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T))
         {
             underlying = nt.TypeArguments[0];
             isNullable = true;
@@ -1593,7 +1593,7 @@ internal static class AccessorModelBuilder
         // DbDataReader exposes no GetSByte / GetUInt16/32/64, so unsigned (and sbyte) underlyings read
         // the signed counterpart and add an intermediate bit-preserving cast to the unsigned/sbyte
         // underlying — e.g. (MyEnum)(uint)reader.GetInt32(ord) — avoiding the boxing GetValue<T> path.
-        if (underlying is INamedTypeSymbol enumSym && enumSym.TypeKind == TypeKind.Enum)
+        if ((underlying is INamedTypeSymbol enumSym) && (enumSym.TypeKind == TypeKind.Enum))
         {
             var underlyingTyped = enumSym.EnumUnderlyingType?.SpecialType switch
             {
@@ -1636,7 +1636,7 @@ internal static class AccessorModelBuilder
             _ => null
         };
 
-        if (typed is null && underlying.ToDisplayString() == "System.Guid")
+        if ((typed is null) && (underlying.ToDisplayString() == "System.Guid"))
         {
             typed = "GetGuid";
         }
@@ -1649,7 +1649,7 @@ internal static class AccessorModelBuilder
     // connection/transaction/cancellation token.
     private static bool IsPocoParameter(ITypeSymbol type)
     {
-        if (type is not INamedTypeSymbol nt || nt.TypeKind is not (TypeKind.Class or TypeKind.Struct))
+        if ((type is not INamedTypeSymbol nt) || (nt.TypeKind is not (TypeKind.Class or TypeKind.Struct)))
         {
             return false;
         }
@@ -1657,17 +1657,17 @@ internal static class AccessorModelBuilder
         {
             return false;   // string / decimal / DateTime / primitives / object
         }
-        if (IsDbConnectionType(nt) || IsDbTransactionType(nt) || nt.ToDisplayString() == CancellationTokenTypeName)
+        if (IsDbConnectionType(nt) || IsDbTransactionType(nt) || (nt.ToDisplayString() == CancellationTokenTypeName))
         {
             return false;
         }
         var ns = nt.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        if (ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal))
+        if ((ns == "System") || ns.StartsWith("System.", StringComparison.Ordinal))
         {
             return false;   // Guid / DateTimeOffset / TimeSpan / Nullable<T> など BCL の値型
         }
         return nt.GetMembers().OfType<IPropertySymbol>()
-            .Any(static p => p.DeclaredAccessibility == Accessibility.Public && !p.IsStatic && p.GetMethod is not null);
+            .Any(static p => (p.DeclaredAccessibility == Accessibility.Public) && !p.IsStatic && (p.GetMethod is not null));
     }
 
     // spec §5.6: expand a POCO argument's public properties into bind metadata. Default Input;
@@ -1679,7 +1679,7 @@ internal static class AccessorModelBuilder
     private static string? InferDbTypeExpr(ITypeSymbol type)
     {
         var t = ConverterScopeHelper.UnwrapNullable(type);
-        if (t.TypeKind == TypeKind.Enum && t is INamedTypeSymbol en && en.EnumUnderlyingType is { } ut)
+        if ((t.TypeKind == TypeKind.Enum) && (t is INamedTypeSymbol en) && (en.EnumUnderlyingType is { } ut))
         {
             t = ut;
         }
@@ -1723,7 +1723,7 @@ internal static class AccessorModelBuilder
         var list = new List<PocoBindProperty>();
         foreach (var prop in pocoType.GetMembers().OfType<IPropertySymbol>())
         {
-            if (prop.DeclaredAccessibility != Accessibility.Public || prop.IsStatic || prop.GetMethod is null)
+            if ((prop.DeclaredAccessibility != Accessibility.Public) || prop.IsStatic || (prop.GetMethod is null))
             {
                 continue;
             }
@@ -1739,11 +1739,11 @@ internal static class AccessorModelBuilder
             foreach (var pa in prop.GetAttributes())
             {
                 var an = pa.AttributeClass?.ToDisplayString();
-                if (an == NameAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is string nm && !string.IsNullOrEmpty(nm))
+                if ((an == NameAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is string nm) && !String.IsNullOrEmpty(nm))
                 {
                     paramName = nm;
                 }
-                else if (an == DbTypeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dt)
+                else if ((an == DbTypeAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int dt))
                 {
                     dbTypeExpr = $"(global::System.Data.DbType){dt}";
                 }
@@ -1751,11 +1751,11 @@ internal static class AccessorModelBuilder
                 {
                     dbTypeExpr ??= "global::System.Data.DbType.AnsiString";
                 }
-                else if (an == SqlSizeAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int sz)
+                else if ((an == SqlSizeAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int sz))
                 {
                     size = sz;
                 }
-                else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
+                else if ((an == DirectionAttributeName) && (pa.ConstructorArguments.Length > 0) && (pa.ConstructorArguments[0].Value is int dirRaw))
                 {
                     direction = (ParameterDirection)dirRaw switch
                     {
@@ -1780,13 +1780,13 @@ internal static class AccessorModelBuilder
                 converterDbType = conv.DbType;
                 converterDbTypeFqn = conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 converterClrTypeFqn = conv.ClrType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                converterNullable = prop.Type is INamedTypeSymbol pnt && pnt.IsGenericType &&
-                    pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T;
+                converterNullable = (prop.Type is INamedTypeSymbol pnt) && pnt.IsGenericType &&
+                    (pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T);
             }
 
             // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is
             // inferred from TDb (the DB-side type), otherwise from the CLR property type.
-            if (dbTypeExpr is null && direction != ParameterDirectionKindLegacy.Input)
+            if ((dbTypeExpr is null) && (direction != ParameterDirectionKindLegacy.Input))
             {
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
@@ -1881,7 +1881,7 @@ internal static class AccessorModelBuilder
         string sql,
         char bindMarker)
     {
-        if (string.IsNullOrWhiteSpace(sql))
+        if (String.IsNullOrWhiteSpace(sql))
         {
             diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlEmpty, location, methodName));
             return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
@@ -1968,9 +1968,9 @@ internal static class AccessorModelBuilder
                     ParameterDirectionKindLegacy.ReturnValue => NodeEmitter.Direction.ReturnValue,
                     _ => NodeEmitter.Direction.Input
                 };
-                if (pm.DbTypeExpr is null && pm.Size is null &&
-                    dirKind == NodeEmitter.Direction.Input && pm.EnumUnderlyingFullName is null &&
-                    pm.ProviderParameterTypeFullName is null && pm.ConverterTypeFullName is null)
+                if ((pm.DbTypeExpr is null) && (pm.Size is null) &&
+                    (dirKind == NodeEmitter.Direction.Input) && (pm.EnumUnderlyingFullName is null) &&
+                    (pm.ProviderParameterTypeFullName is null) && (pm.ConverterTypeFullName is null))
                 {
                     return null;
                 }
@@ -2013,7 +2013,7 @@ internal static class AccessorModelBuilder
             }
             var root = pn.Name[..dot];
             var rest = pn.Name[(dot + 1)..];
-            var paramModel = parameters.FirstOrDefault(p => string.Equals(p.Name, root, StringComparison.Ordinal));
+            var paramModel = parameters.FirstOrDefault(p => String.Equals(p.Name, root, StringComparison.Ordinal));
             if (paramModel is null)
             {
                 continue; // SDA0508 already reported this root mismatch.

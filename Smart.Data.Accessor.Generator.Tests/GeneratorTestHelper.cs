@@ -170,7 +170,7 @@ internal static class GeneratorTestHelper
         {
             foreach (var path in trusted.Split(Path.PathSeparator))
             {
-                if (!string.IsNullOrEmpty(path) &&
+                if (!String.IsNullOrEmpty(path) &&
                     path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     references.Add(MetadataReference.CreateFromFile(path));

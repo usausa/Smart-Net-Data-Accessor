@@ -21,9 +21,9 @@ internal static class MappingAttributeHelper
     {
         foreach (var attr in container.GetAttributes())
         {
-            if (attr.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeFq &&
-                attr.ConstructorArguments.Length >= 1 &&
-                attr.ConstructorArguments[0].Value is INamedTypeSymbol profile)
+            if ((attr.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeFq) &&
+                (attr.ConstructorArguments.Length >= 1) &&
+                (attr.ConstructorArguments[0].Value is INamedTypeSymbol profile))
             {
                 return profile;
             }
@@ -48,10 +48,10 @@ internal static class MappingAttributeHelper
     {
         foreach (var attr in owner.GetAttributes())
         {
-            if (attr.AttributeClass?.ToDisplayString() != TypeMapAttributeFq ||
-                attr.ConstructorArguments.Length < 2 ||
-                attr.ConstructorArguments[0].Value is not ITypeSymbol clrType ||
-                attr.ConstructorArguments[1].Value is not int dbTypeValue)
+            if ((attr.AttributeClass?.ToDisplayString() != TypeMapAttributeFq) ||
+                (attr.ConstructorArguments.Length < 2) ||
+                (attr.ConstructorArguments[0].Value is not ITypeSymbol clrType) ||
+                (attr.ConstructorArguments[1].Value is not int dbTypeValue))
             {
                 continue;
             }
@@ -65,7 +65,7 @@ internal static class MappingAttributeHelper
             int? size = null;
             foreach (var na in attr.NamedArguments)
             {
-                if (na.Key == "Size" && na.Value.Value is int s)
+                if ((na.Key == "Size") && (na.Value.Value is int s))
                 {
                     size = s;
                 }
@@ -91,9 +91,9 @@ internal static class MappingAttributeHelper
     {
         foreach (var attr in attributes)
         {
-            if (attr.AttributeClass?.ToDisplayString() == DbTypeAttributeFq &&
-                attr.ConstructorArguments.Length > 0 &&
-                attr.ConstructorArguments[0].Value is int dbTypeRaw)
+            if ((attr.AttributeClass?.ToDisplayString() == DbTypeAttributeFq) &&
+                (attr.ConstructorArguments.Length > 0) &&
+                (attr.ConstructorArguments[0].Value is int dbTypeRaw))
             {
                 return $"(global::System.Data.DbType){dbTypeRaw}";
             }

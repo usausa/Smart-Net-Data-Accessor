@@ -66,7 +66,7 @@ internal static class Program
             ids.Add(item.Id);
         }
         var byIds = accessor.QueryByIds(ids);
-        Console.WriteLine($"QueryByIds([{string.Join(",", ids)}]) -> {byIds.Count} row(s)  // IN expansion");
+        Console.WriteLine($"QueryByIds([{String.Join(",", ids)}]) -> {byIds.Count} row(s)  // IN expansion");
 
         var emptyIds = accessor.QueryByIds(Array.Empty<long>());
         Console.WriteLine($"QueryByIds([]) -> {emptyIds.Count} row(s)  // empty IN -> '(NULL)'");
@@ -98,16 +98,16 @@ internal static class Program
         Console.WriteLine($"CountAll -> {count}");
 
         Console.WriteLine();
-        var ok = list.Count == 3
-            && type2.Count == 1
-            && byKind.Count == 2
-            && byIds.Count == 3
-            && emptyIds.Count == 0
-            && records.Count == 3
-            && readerRows == 3
-            && updated == 1
-            && deleted == 1
-            && count == 2;
+        var ok = (list.Count == 3)
+            && (type2.Count == 1)
+            && (byKind.Count == 2)
+            && (byIds.Count == 3)
+            && (emptyIds.Count == 0)
+            && (records.Count == 3)
+            && (readerRows == 3)
+            && (updated == 1)
+            && (deleted == 1)
+            && (count == 2);
         return ok ? 0 : 1;
     }
 
@@ -166,7 +166,7 @@ internal static class Program
         Console.WriteLine($"DI ExampleInjectAccessor.QueryAll -> {all.Count} row(s), logger={injectAccessor.GetLoggerTypeName()}, count={logged}");
 
         Console.WriteLine();
-        return all.Count == rows.Count && logged == 1 ? 0 : 1;
+        return (all.Count == rows.Count) && (logged == 1) ? 0 : 1;
     }
 
     // Custom [TypeHandler] sample (F6): a DateTime property stored as Int64 ticks, verified round-trip.
@@ -183,9 +183,9 @@ internal static class Program
         accessor.InsertEvent(new EventEntity { OccurredAt = occurred });
 
         var events = accessor.QueryEvents();
-        var roundTripped = events.Count == 1
-            && events[0].OccurredAt == occurred
-            && events[0].OccurredAt.Kind == DateTimeKind.Utc;
+        var roundTripped = (events.Count == 1)
+            && (events[0].OccurredAt == occurred)
+            && (events[0].OccurredAt.Kind == DateTimeKind.Utc);
         Console.WriteLine($"InsertEvent/QueryEvents -> {events.Count} row(s), OccurredAt={events[0].OccurredAt:O} (ToDb/FromDb round-trip {(roundTripped ? "OK" : "FAIL")})");
 
         Console.WriteLine();

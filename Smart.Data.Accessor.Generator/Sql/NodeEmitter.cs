@@ -138,7 +138,7 @@ internal static class NodeEmitter
             switch (node)
             {
                 case SqlNode s:
-                    if (!string.IsNullOrEmpty(s.Sql))
+                    if (!String.IsNullOrEmpty(s.Sql))
                     {
                         sb.Append("__sb.Append(\"").Append(Escape(s.Sql)).Append("\");\n");
                         staticSql.Append(s.Sql);
@@ -174,9 +174,9 @@ internal static class NodeEmitter
                             valueExpr = CodeExpressionHelper.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
                         }
                     }
-                    var hasProvider = attrs?.ProviderParameterTypeFullName is not null
-                        && attrs.ProviderPropertyName is not null
-                        && attrs.ProviderValueExpr is not null;
+                    var hasProvider = (attrs?.ProviderParameterTypeFullName is not null)
+                        && (attrs.ProviderPropertyName is not null)
+                        && (attrs.ProviderValueExpr is not null);
                     if (p.IsMultiple)
                     {
                         // /*@ list */ expands to a comma-separated placeholder list whose
@@ -234,7 +234,7 @@ internal static class NodeEmitter
                                     $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"{pname}\", {dbTypeExpr});");
                                 break;
                         }
-                        if (hasProvider && direction is Direction.Output or Direction.InputOutput)
+                        if (hasProvider && (direction is Direction.Output or Direction.InputOutput))
                         {
                             EmitParamLine(
                                 $"(({attrs!.ProviderParameterTypeFullName}){handle}).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");

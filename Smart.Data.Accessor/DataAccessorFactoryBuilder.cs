@@ -37,7 +37,7 @@ public sealed class DataAccessorFactoryBuilder
 
     public DataAccessorFactory Build()
     {
-        if (dbProvider is null && providerSelector is null)
+        if ((dbProvider is null) && (providerSelector is null))
         {
             throw new InvalidOperationException("At least one of UseDbProvider / UseDbProviderSelector is required.");
         }

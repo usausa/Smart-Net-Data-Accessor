@@ -31,7 +31,7 @@ internal static class BuilderModelBuilder
         var container = (INamedTypeSymbol)ctx.TargetSymbol;
         var ns = container.ContainingNamespace.IsGlobalNamespace ? string.Empty : container.ContainingNamespace.ToDisplayString();
         var accessibility = container.DeclaredAccessibility;
-        var isPartial = ctx.TargetNode is ClassDeclarationSyntax classSyntax && classSyntax.Modifiers.Any(static t => t.Text == "partial");
+        var isPartial = (ctx.TargetNode is ClassDeclarationSyntax classSyntax) && classSyntax.Modifiers.Any(static t => t.Text == "partial");
 
         var profile = MappingAttributeHelper.ResolveProfile(container);
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(container, profile);
@@ -114,7 +114,7 @@ internal static class BuilderModelBuilder
         string? table = null;
         foreach (var kv in attr.NamedArguments)
         {
-            if (kv.Key == "Table" && kv.Value.Value is string s)
+            if ((kv.Key == "Table") && (kv.Value.Value is string s))
             {
                 table = s;
             }
@@ -159,7 +159,7 @@ internal static class BuilderModelBuilder
                 return new InsertModel(method.Name, tableName, valueParamsEq, columnsEq, entityParam?.Name);
 
             case QueryBuilderEngine.BuilderKind.Update:
-                if (!hasEntityType || entityParam is null)
+                if (!hasEntityType || (entityParam is null))
                 {
                     // SDA1004: cannot resolve the column list (no entity instance).
                     diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
@@ -217,7 +217,7 @@ internal static class BuilderModelBuilder
         // default applies (identical to the core generator — shared MappingAttributeHelper).
         var dbTypeExpr = MappingAttributeHelper.ResolveParameterDbType(p);
         int? size = null;
-        if (dbTypeExpr is null && MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var info))
+        if ((dbTypeExpr is null) && MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var info))
         {
             dbTypeExpr = info.DbTypeExpr;
             size = info.Size;
@@ -251,7 +251,7 @@ internal static class BuilderModelBuilder
         var explicitDbType = MappingAttributeHelper.ResolvePropertyDbType(prop);
 
         // SDA1006: a [TypeHandler] wins over a [TypeMap] for the same type; warn the [TypeMap] is dead.
-        if (handler is not null && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out _))
+        if ((handler is not null) && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out _))
         {
             diagnostics.Add(new DiagnosticInfo(
                 BuilderDiagnostics.TypeMapTypeHandlerConflict,
@@ -265,7 +265,7 @@ internal static class BuilderModelBuilder
         // type args so the value binds via ExecuteHelper.AddInParameter<TConverter,TDb,TClr> (ToDb + null
         // handling centralised in the helper — no gen-time value expression / nullability flags needed).
         BuilderConverterBinding? converter = null;
-        if (handler is not null && ConverterScopeHelper.TryGetConverterTypes(handler, out var convDb, out var convClr))
+        if ((handler is not null) && ConverterScopeHelper.TryGetConverterTypes(handler, out var convDb, out var convClr))
         {
             converter = new BuilderConverterBinding(
                 handler.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -281,7 +281,7 @@ internal static class BuilderModelBuilder
         {
             dbTypeExpr = explicitDbType;
         }
-        else if (converter is null && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out var info))
+        else if ((converter is null) && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out var info))
         {
             dbTypeExpr = info.DbTypeExpr;
             size = info.Size;
@@ -306,7 +306,7 @@ internal static class BuilderModelBuilder
         var list = new List<EntityColumn>();
         foreach (var p in entityType.GetMembers().OfType<IPropertySymbol>())
         {
-            if (p.DeclaredAccessibility != Accessibility.Public || p.IsStatic || p.GetMethod is null)
+            if ((p.DeclaredAccessibility != Accessibility.Public) || p.IsStatic || (p.GetMethod is null))
             {
                 continue;
             }

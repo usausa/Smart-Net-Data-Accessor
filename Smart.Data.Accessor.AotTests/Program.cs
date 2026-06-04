@@ -76,7 +76,7 @@ internal static class Program
 
     private static int Report(string label, IReadOnlyList<AotData> rows)
     {
-        var ok = rows.Count == 3 && rows[0].Name == "Alice" && rows[2].Type == 1;
+        var ok = (rows.Count == 3) && (rows[0].Name == "Alice") && (rows[2].Type == 1);
         Console.WriteLine($"  [{(ok ? "OK" : "NG")}] {label}: {rows.Count} row(s)");
         return ok ? 0 : 1;
     }

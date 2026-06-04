@@ -149,7 +149,7 @@ internal static class AccessorSourceBuilder
             builder.NewLine();
         }
 
-        if (!string.IsNullOrEmpty(model.Namespace))
+        if (!String.IsNullOrEmpty(model.Namespace))
         {
             builder.Namespace(model.Namespace);
             builder.NewLine();
@@ -216,7 +216,7 @@ internal static class AccessorSourceBuilder
         }
 
         builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
-        builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(string.Join(", ", ctorParams)).Append(")").NewLine();
+        builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(String.Join(", ", ctorParams)).Append(")").NewLine();
         builder.BeginScope();
         if (hasProvider)
         {
@@ -244,7 +244,7 @@ internal static class AccessorSourceBuilder
     // as `NewLine()` without an indent prefix.
     private static void AppendCodeLines(SourceBuilder builder, string? content)
     {
-        if (string.IsNullOrEmpty(content))
+        if (String.IsNullOrEmpty(content))
         {
             return;
         }
@@ -276,7 +276,7 @@ internal static class AccessorSourceBuilder
         // Per-method OrdinalCache struct (spec §7.10.4). Cached once per query, reused per row.
         EmitOrdinalCacheStruct(builder, m);
 
-        var paramList = string.Join(", ", m.Parameters.Select(p =>
+        var paramList = String.Join(", ", m.Parameters.Select(p =>
         {
             var modifier = p.RefKind switch
             {
@@ -301,7 +301,7 @@ internal static class AccessorSourceBuilder
         // For reader shapes (ExecuteReader), cmd and (Pattern B) connection ownership
         // is transferred to WrappedReader, so we avoid `using` and add catch/dispose for safety.
         var cmdKeyword = isReader ? "var" : "using var";
-        var ownsConnectionForReader = isReader && m.ConnectionPattern == ConnectionPatternLegacy.None;
+        var ownsConnectionForReader = isReader && (m.ConnectionPattern == ConnectionPatternLegacy.None);
 
         // Pattern A / Pattern B connection acquisition.
         string commandSource;
@@ -420,7 +420,7 @@ internal static class AccessorSourceBuilder
             var valueArgs = m.Parameters
                 .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                 .Select(p => p.Name);
-            var args = string.Join(", ", new[] { "ref ctx" }.Concat(valueArgs));
+            var args = String.Join(", ", new[] { "ref ctx" }.Concat(valueArgs));
             builder.Indent().Append(m.BuilderMethodName).Append("(").Append(args).Append(");").NewLine();
         }
         else
@@ -437,7 +437,7 @@ internal static class AccessorSourceBuilder
                 // Static SQL fast path: no dynamic branches → emit literal CommandText
                 // and parameter setup without StringBuilderPool / try-finally.
                 builder.Indent().Append("cmd.CommandText = \"").Append(EscapeCSharpString(m.StaticSqlText)).Append("\";").NewLine();
-                if (!string.IsNullOrEmpty(m.StaticParameterCode))
+                if (!String.IsNullOrEmpty(m.StaticParameterCode))
                 {
                     AppendCodeLines(builder, m.StaticParameterCode);
                 }
@@ -448,7 +448,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("var __sb = global::Smart.Data.Accessor.Helpers.StringBuilderPool.Rent();").NewLine();
                 builder.Indent().Append("try").NewLine();
                 builder.BeginScope();
-                if (!string.IsNullOrEmpty(m.SqlEmitCode))
+                if (!String.IsNullOrEmpty(m.SqlEmitCode))
                 {
                     AppendCodeLines(builder, m.SqlEmitCode);
                 }
@@ -581,7 +581,7 @@ internal static class AccessorSourceBuilder
 
     private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModel p, string handleName)
     {
-        if (p.ProviderParameterTypeFullName is null || p.ProviderPropertyName is null || p.ProviderValueExpr is null)
+        if ((p.ProviderParameterTypeFullName is null) || (p.ProviderPropertyName is null) || (p.ProviderValueExpr is null))
         {
             return;
         }
@@ -705,7 +705,7 @@ internal static class AccessorSourceBuilder
             }
 
             var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
-            if (param is null || param.RefKind == RefKindLegacy.None)
+            if ((param is null) || (param.RefKind == RefKindLegacy.None))
             {
                 continue;
             }
@@ -748,13 +748,13 @@ internal static class AccessorSourceBuilder
     {
         var hasOutputs = m.OutputBindings.Count > 0;
 
-        if (m.MethodKind == "ExecuteReader" || IsReaderShape(m.ReturnShapeLegacy))
+        if ((m.MethodKind == "ExecuteReader") || IsReaderShape(m.ReturnShapeLegacy))
         {
             EmitReaderInvocation(builder, m, ctExpr);
             return;
         }
 
-        if (m.MethodKind == "Execute" || m.MethodKind == "DirectSql")
+        if ((m.MethodKind == "Execute") || (m.MethodKind == "DirectSql"))
         {
             switch (m.ReturnShapeLegacy)
             {
@@ -1022,7 +1022,7 @@ internal static class AccessorSourceBuilder
 
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel m)
     {
-        if (m.QueryColumns is not { } cols || cols.Count == 0)
+        if ((m.QueryColumns is not { } cols) || (cols.Count == 0))
         {
             return;
         }
@@ -1035,7 +1035,7 @@ internal static class AccessorSourceBuilder
             builder.Indent().Append("public readonly int ").Append(col.PropertyName).Append(";").NewLine();
         }
         builder.NewLine();
-        var ctorParams = string.Join(", ", cols.Select(c => "int " + LowerFirst(c.PropertyName)));
+        var ctorParams = String.Join(", ", cols.Select(c => "int " + LowerFirst(c.PropertyName)));
         builder.Indent().Append("private ").Append(name).Append("(").Append(ctorParams).Append(")").NewLine();
         builder.BeginScope();
         foreach (var col in cols)
@@ -1063,7 +1063,7 @@ internal static class AccessorSourceBuilder
     }
 
     private static string LowerFirst(string s) =>
-        string.IsNullOrEmpty(s) || char.IsLower(s[0]) ? s : char.ToLowerInvariant(s[0]) + s[1..];
+        String.IsNullOrEmpty(s) || Char.IsLower(s[0]) ? s : Char.ToLowerInvariant(s[0]) + s[1..];
 
     private static string EscapeCSharpString(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

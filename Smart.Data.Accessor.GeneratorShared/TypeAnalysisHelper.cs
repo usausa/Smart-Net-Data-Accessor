@@ -14,14 +14,14 @@ internal static class TypeAnalysisHelper
     {
         INamedTypeSymbol? enumSym = null;
         var isNullable = false;
-        if (type is INamedTypeSymbol nt && nt.IsGenericType &&
-            nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T &&
-            nt.TypeArguments[0] is INamedTypeSymbol inner && inner.TypeKind == TypeKind.Enum)
+        if ((type is INamedTypeSymbol nt) && nt.IsGenericType &&
+            (nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T) &&
+            (nt.TypeArguments[0] is INamedTypeSymbol inner) && (inner.TypeKind == TypeKind.Enum))
         {
             enumSym = inner;
             isNullable = true;
         }
-        else if (type is INamedTypeSymbol named && named.TypeKind == TypeKind.Enum)
+        else if ((type is INamedTypeSymbol named) && (named.TypeKind == TypeKind.Enum))
         {
             enumSym = named;
         }

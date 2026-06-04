@@ -148,7 +148,7 @@ public sealed class BuilderSourceBuilderTests
         // offset → limit の順で束縛される（EmitSelect）
         var idxOffset = source.IndexOf("AddInParameter(cmd, \"@offset\"", StringComparison.Ordinal);
         var idxLimit = source.IndexOf("AddInParameter(cmd, \"@limit\"", StringComparison.Ordinal);
-        Assert.True(idxOffset >= 0 && idxLimit > idxOffset);
+        Assert.True((idxOffset >= 0) && (idxLimit > idxOffset));
     }
 
     [Fact]

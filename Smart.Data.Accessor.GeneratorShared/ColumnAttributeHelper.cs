@@ -28,7 +28,7 @@ internal static class ColumnAttributeHelper
         {
             switch (attr.AttributeClass?.ToDisplayString())
             {
-                case NameAttributeFq when attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string nm:
+                case NameAttributeFq when (attr.ConstructorArguments.Length > 0) && (attr.ConstructorArguments[0].Value is string nm):
                     name = nm;
                     break;
                 case KeyAttributeFq:

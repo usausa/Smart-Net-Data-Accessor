@@ -27,7 +27,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // AnalyzerConfigOptions. Default: "Sql".
         var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (p, _) =>
             p.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var v) &&
-                !string.IsNullOrWhiteSpace(v)
+                !String.IsNullOrWhiteSpace(v)
                 ? v
                 : "Sql");
 
@@ -42,7 +42,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 // spec §3.2.1: restrict to files whose parent directory name matches {SqlFolder}.
                 var parentDir = Path.GetFileName(Path.GetDirectoryName(pair.Left.FullPath));
-                return string.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
+                return String.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
             })
             .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
             .Collect();
@@ -96,7 +96,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return;
         }
         var source = AccessorSourceBuilder.Emit(model);
-        var ns = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
+        var ns = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
         var filename = $"{ns}_{model.ClassName}.g.cs";
         context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
     }
@@ -110,7 +110,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 continue;
             }
-            var concreteFq = string.IsNullOrEmpty(model.Namespace)
+            var concreteFq = String.IsNullOrEmpty(model.Namespace)
                 ? $"global::{model.ClassName}"
                 : $"global::{model.Namespace}.{model.ClassName}";
             registrations.Add(new RegistryEntry(
@@ -167,7 +167,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 .Append(">(static sp => new ")
                 .Append(entry.ConcreteTypeFq)
                 .Append("(")
-                .Append(string.Join(", ", args))
+                .Append(String.Join(", ", args))
                 .Append("));")
                 .NewLine();
         }

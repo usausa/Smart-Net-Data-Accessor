@@ -58,7 +58,7 @@ public sealed class NodeBuilder
                     case '\'':
                         i = SkipLiteral(s, i, '\'');
                         break;
-                    case '/' when i + 1 < s.Length && s[i + 1] == '/':
+                    case '/' when (i + 1 < s.Length) && (s[i + 1] == '/'):
                         i = s.Length;   // line comment: ignore the rest of this block fragment
                         break;
                     case '{':
@@ -165,7 +165,7 @@ public sealed class NodeBuilder
     // leave a stray space in CommandText.
     private void TrimBodyEdges()
     {
-        if (bodyNodes.Count > 0 && bodyNodes[0] is SqlNode first)
+        if ((bodyNodes.Count > 0) && (bodyNodes[0] is SqlNode first))
         {
             var trimmed = first.Sql.TrimStart();
             if (trimmed.Length == 0)
@@ -178,7 +178,7 @@ public sealed class NodeBuilder
             }
         }
 
-        if (bodyNodes.Count > 0 && bodyNodes[^1] is SqlNode last)
+        if ((bodyNodes.Count > 0) && (bodyNodes[^1] is SqlNode last))
         {
             var trimmed = last.Sql.TrimEnd();
             if (trimmed.Length == 0)

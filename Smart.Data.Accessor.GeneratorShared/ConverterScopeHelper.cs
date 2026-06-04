@@ -20,7 +20,7 @@ internal static class ConverterScopeHelper
     {
         for (var current = attr.AttributeClass; current is not null; current = current.BaseType)
         {
-            if (current.IsGenericType && current.ConstructedFrom.ToDisplayString() == TypeHandlerGenericFq)
+            if (current.IsGenericType && (current.ConstructedFrom.ToDisplayString() == TypeHandlerGenericFq))
             {
                 converter = current.TypeArguments[0] as INamedTypeSymbol;
                 return true;
@@ -58,7 +58,7 @@ internal static class ConverterScopeHelper
         var underlying = UnwrapNullable(valueType);
         foreach (var converter in CollectHandlerConverters(attributes))
         {
-            if (converter is not null &&
+            if ((converter is not null) &&
                 TryGetConverterTypes(converter, out _, out var clrType) &&
                 SymbolEqualityComparer.Default.Equals(clrType, underlying))
             {
@@ -72,7 +72,7 @@ internal static class ConverterScopeHelper
     public static bool TryGetConverterTypes(INamedTypeSymbol converter, out ITypeSymbol dbType, out ITypeSymbol clrType)
     {
         var iface = converter.AllInterfaces.FirstOrDefault(static i =>
-            i.IsGenericType && i.ConstructedFrom.ToDisplayString() == IValueConverterFq);
+            i.IsGenericType && (i.ConstructedFrom.ToDisplayString() == IValueConverterFq));
         if (iface is null)
         {
             dbType = null!;
@@ -85,8 +85,8 @@ internal static class ConverterScopeHelper
     }
 
     public static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
-        type is INamedTypeSymbol nt && nt.IsGenericType &&
-        nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T
+        (type is INamedTypeSymbol nt) && nt.IsGenericType &&
+        (nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
             ? nt.TypeArguments[0]
             : type;
 
@@ -109,6 +109,6 @@ internal static class ConverterScopeHelper
     private static bool HasCallableStatic(INamedTypeSymbol converter, string name) =>
         converter.GetMembers(name).OfType<IMethodSymbol>().Any(static m =>
             m.IsStatic &&
-            m.MethodKind == MethodKind.Ordinary &&
-            m.DeclaredAccessibility == Accessibility.Public);
+            (m.MethodKind == MethodKind.Ordinary) &&
+            (m.DeclaredAccessibility == Accessibility.Public));
 }

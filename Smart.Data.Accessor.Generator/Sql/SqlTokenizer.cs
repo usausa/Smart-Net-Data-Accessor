@@ -216,7 +216,7 @@ public sealed class SqlTokenizer
             current++;
 
             var closed = false;
-            while (current < source.Length && !closed)
+            while ((current < source.Length) && !closed)
             {
                 if (source[current] == '\'')
                 {

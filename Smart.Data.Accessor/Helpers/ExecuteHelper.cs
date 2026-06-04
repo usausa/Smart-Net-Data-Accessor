@@ -28,7 +28,7 @@ public static class ExecuteHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T? ConvertScalar<T>(object? raw)
     {
-        if (raw is null || raw is DBNull)
+        if ((raw is null) || (raw is DBNull))
         {
             return default;
         }
@@ -185,7 +185,7 @@ public static class ExecuteHelper
     public static T? GetOutputValue<T>(DbParameter parameter)
     {
         var raw = parameter.Value;
-        if (raw is null || raw is DBNull)
+        if ((raw is null) || (raw is DBNull))
         {
             return default;
         }

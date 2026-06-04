@@ -63,7 +63,7 @@ internal static class QueryBuilderEngine
         }
 
         var source = BuilderSourceBuilder.Build(model, dialect);
-        var nsForFile = string.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
+        var nsForFile = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
         var filename = $"{nsForFile}_{model.ClassName}.QueryBuilders{providerTag}.g.cs";
         context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
     }
