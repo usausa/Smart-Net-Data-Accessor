@@ -4,12 +4,9 @@ using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
-/// <summary>
-/// SQL Server QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
-/// carrying the <c>[SqlServerInsert]</c>/…/<c>[SqlServerTruncate]</c> attributes, using bracket
-/// quoting and OFFSET/FETCH paging. Registers on <c>[DataAccessor]</c>; all transform + emit logic is
-/// the shared <see cref="QueryBuilderEngine"/>.
-/// </summary>
+// SQL Server QueryBuilder generator: emits the {Method}__QueryBuilder helper for methods carrying the
+// [SqlServerInsert]/…/[SqlServerTruncate] attributes, using bracket quoting and OFFSET/FETCH paging.
+// Registers on [DataAccessor]; all transform + emit logic is the shared QueryBuilderEngine.
 [Generator]
 public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
 {

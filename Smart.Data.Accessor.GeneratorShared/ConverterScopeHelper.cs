@@ -4,10 +4,10 @@ using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
 
-// 改善2 ②: shared (linked source) TypeHandler resolution primitives used by both generators — pure
-// symbol→symbol/type functions. The scope-chain *ordering* (member→method→class→profile) and the
-// core's converter *validation* (SDA0308-0145) stay per-generator; only the duplicated building
-// blocks live here. Compiled `internal` into each generator assembly (no DLL; §1.4.4 と両立).
+// Shared (linked source) TypeHandler resolution primitives used by both generators — pure
+// symbol→symbol/type functions. The scope-chain ordering (member→method→class→profile) and the
+// core's converter validation stay per-generator; only the duplicated building blocks live here.
+// Compiled `internal` into each generator assembly (no DLL).
 internal static class ConverterScopeHelper
 {
     public const string TypeHandlerGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute<TConverter>";
@@ -91,10 +91,10 @@ internal static class ConverterScopeHelper
             : type;
 
     // --- "can this converter be used in this context?" predicates (shared) ---------------------------
-    // These are pure judgements only; the *diagnostic reporting* stays per-generator. The core generator
-    // reports SDA0308/0144 from these; the Builder generator (which sees the same [DataAccessor] class)
-    // must NOT re-report them — sharing the predicate avoids duplicating the *logic* without duplicating
-    // the *warning*.
+    // These are pure judgements only; the diagnostic reporting stays per-generator. The core generator
+    // reports SDA0308 / SDA0310 from these; the Builder generator (which sees the same [DataAccessor]
+    // class) must NOT re-report them — sharing the predicate avoids duplicating the logic without
+    // duplicating the warning.
 
     // True when the converter's IValueConverter<TDb, TClr> TClr matches the bound value type
     // (Nullable<T> compares against T). The judgement behind SDA0308 (member-scope TClr mismatch).

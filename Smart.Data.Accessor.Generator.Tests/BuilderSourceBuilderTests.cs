@@ -12,7 +12,7 @@ using Xunit;
 
 // BuilderSourceBuilder.Build is a pure (BuilderClassModel, SqlDialect) -> string function, so the emitted
 // QueryBuilder helper can be unit-tested from a hand-built model without a generator driver — the
-// testability win of the 3-layer split (spec §7.11.4). ProviderBuilderTests exercise the full pipeline.
+// testability win of the 3-layer split. ProviderBuilderTests exercise the full pipeline.
 public sealed class BuilderSourceBuilderTests
 {
     private static BuilderColumn Col(string name, bool isKey = false, bool isDatabaseManaged = false) =>
@@ -182,7 +182,7 @@ public sealed class BuilderSourceBuilderTests
 
         var source = BuilderSourceBuilder.Build(Model(insert), new AnsiSqlDialect());
 
-        // spec §7.9: enum は underlying へキャストして束縛
+        // enum は underlying へキャストして束縛
         Assert.Contains("(object?)(int)entity.Status", source, StringComparison.Ordinal);
     }
 }

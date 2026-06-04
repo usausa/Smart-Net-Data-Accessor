@@ -20,7 +20,7 @@ internal sealed class BuilderScopeEntity
     public DateTime CreatedAt { get; set; }
 }
 
-// Class-scope [TypeHandler<>] (spec §7.7, R2 carryover into the Builder): TicksConverter applies to
+// Class-scope [TypeHandler<>]: TicksConverter applies to
 // the DateTime column's write binding (ToDb) without a per-property attribute.
 [DataAccessor]
 [TypeHandler(typeof(TicksConverter))]

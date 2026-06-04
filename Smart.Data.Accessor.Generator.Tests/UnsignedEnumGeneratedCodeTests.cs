@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// spec §7.9: enums with unsigned / sbyte underlying types read the same-size signed reader method
+// Enums with unsigned / sbyte underlying types read the same-size signed reader method
 // and apply an intermediate bit-preserving cast (no boxing GetValue<T> fallback).
 public sealed class UnsignedEnumGeneratedCodeTests
 {

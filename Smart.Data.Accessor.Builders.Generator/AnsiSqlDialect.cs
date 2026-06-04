@@ -4,8 +4,8 @@ using System.Text;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
-// Default ANSI dialect (spec §4.3): double-quoted identifiers, LIMIT/OFFSET paging
-// (works for SQLite / MySQL / PostgreSQL; SQL Server has its own provider package).
+// Default ANSI dialect: double-quoted identifiers, LIMIT/OFFSET paging (works for SQLite / MySQL /
+// PostgreSQL; SQL Server has its own provider package).
 internal sealed class AnsiSqlDialect : SqlDialect
 {
     public override string Quote(string identifier) => "\"" + identifier + "\"";

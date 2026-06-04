@@ -69,7 +69,7 @@ public sealed class BenchEnumRow
     public BenchStatus Status { get; set; }
 }
 
-// Case 4: a DateTime stored as Int64 ticks, mapped on read via [TypeHandler<>] (spec §7.4 / §7.10).
+// Case 4: a DateTime stored as Int64 ticks, mapped on read via [TypeHandler<>].
 [SuppressMessage("Microsoft.Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Never instantiated; static abstract interface impl host (spec §7.4).")]
 internal sealed class BenchTicksConverter : IValueConverter<long, DateTime>
 {

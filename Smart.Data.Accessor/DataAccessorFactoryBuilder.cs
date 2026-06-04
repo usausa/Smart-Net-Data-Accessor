@@ -6,20 +6,14 @@ public sealed class DataAccessorFactoryBuilder
     private IDbProvider? dbProvider;
     private IDbProviderSelector? providerSelector;
 
-    /// <summary>
-    /// Registers a single-source <see cref="IDbProvider"/>. Use for accessor classes
-    /// that do NOT carry <c>[Provider("...")]</c>.
-    /// </summary>
+    // Registers a single-source IDbProvider. Use for accessor classes that do NOT carry [Provider("...")].
     public DataAccessorFactoryBuilder UseDbProvider(IDbProvider provider)
     {
         dbProvider = provider;
         return this;
     }
 
-    /// <summary>
-    /// Registers a multi-source <see cref="IDbProviderSelector"/>. Use for accessor
-    /// classes that carry <c>[Provider("name")]</c>.
-    /// </summary>
+    // Registers a multi-source IDbProviderSelector. Use for accessor classes that carry [Provider("name")].
     public DataAccessorFactoryBuilder UseDbProviderSelector(IDbProviderSelector selector)
     {
         providerSelector = selector;

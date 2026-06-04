@@ -11,26 +11,30 @@ using Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;
 
-// spec §7.11.4: the IIncrementalGenerator wiring only. The two builder layers it drives are split out
-// for clarity and unit-testability (mirrors AmazonLambdaExtension's LambdaGenerator / LambdaModelBuilder
-// / LambdaSourceBuilder split):
-//   - AccessorModelBuilder : transform stage (symbol → equatable Result<AccessorModel>, diagnostics)
-//   - AccessorSourceBuilder : emit stage (Model → generated C# string; symbol-free ⇒ unit-testable)
 [Generator]
 public sealed class DataAccessorGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // spec §3.2 / §3.2.1: SQL folder name is configurable per-project via
-        // <SmartDataAccessor_SqlFolder>. The .targets exposes it via
-        // CompilerVisibleProperty so the Generator can read it from
-        // AnalyzerConfigOptions. Default: "Sql".
+        // === インクリメンタル生成パイプラインの配線（本体は配線のみで、実処理は 2 層に分離している）===
+        //   AccessorModelBuilder … transform 段：symbol を等価な Result<AccessorModel>（Model ＋ 診断）へ変換
+        //   AccessorSourceBuilder … emit 段：Model を生成 C# 文字列へ。symbol 非依存なので単体テスト可能
+        // === Wiring of the incremental generation pipeline (this type only wires; the work is split in two) ===
+        //   AccessorModelBuilder  — transform stage: symbol -> equatable Result<AccessorModel> (model + diagnostics)
+        //   AccessorSourceBuilder — emit stage: Model -> generated C# string; symbol-free, so unit-testable
+
+        // SQL フォルダ名はプロジェクト毎に MSBuild プロパティ <SmartDataAccessor_SqlFolder> で変更できる（既定 "Sql"）。
+        // .targets が CompilerVisibleProperty として公開し、ここでは AnalyzerConfigOptions から読み取る。
+        // The SQL folder name is configurable per project via the <SmartDataAccessor_SqlFolder> MSBuild property
+        // (default "Sql"); the .targets exposes it as a CompilerVisibleProperty, read here from AnalyzerConfigOptions.
         var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (p, _) =>
             p.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var v) &&
                 !String.IsNullOrWhiteSpace(v)
                 ? v
                 : "Sql");
 
+        // 追加ファイル（AdditionalText）から .sql を集め、(ファイル名, 本文) に射影し、SQL フォルダ名と結合する。
+        // Collect .sql additional files, project each to (file name, text), and combine them with the SQL folder name.
         var sqlFiles = context.AdditionalTextsProvider
             .Where(static t => t.Path.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
             .Select(static (t, ct) => (
@@ -40,16 +44,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Combine(sqlFolder)
             .Where(static pair =>
             {
-                // spec §3.2.1: restrict to files whose parent directory name matches {SqlFolder}.
+                // 親ディレクトリ名が {SqlFolder} に一致する .sql だけを対象にする（無関係な .sql を除外）。
+                // Keep only .sql whose parent directory name matches {SqlFolder} (excludes unrelated .sql files).
                 var parentDir = Path.GetFileName(Path.GetDirectoryName(pair.Left.FullPath));
                 return String.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
             })
             .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
             .Collect();
 
-        // P3 (spec §7.11): symbol analysis runs in the FAWMN transform and returns an equatable
-        // Result<AccessorModel> (model + diagnostics) — the incremental cache boundary. SQL resolution/parse
-        // runs in the output stage (it needs the .sql files), and is Compilation-free so it caches.
+        // [DataAccessor] クラスを FAWMN で拾い、transform 段で等価な Result<AccessorModel>（Model ＋ 診断）へ変換する。
+        // ここがインクリメンタルキャッシュの境界。SQL の解決・解析は .sql を要するので後段（出力段）に置き、
+        // Compilation 非依存に保つことでキャッシュを効かせる。
+        // Pick up [DataAccessor] classes via FAWMN and convert each, in the transform stage, into an equatable
+        // Result<AccessorModel> (model + diagnostics) — the incremental cache boundary. SQL resolution/parsing
+        // needs the .sql files, so it runs in a later (output) stage and is kept Compilation-free so it caches.
         var classResults = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 AccessorModelBuilder.DataAccessorAttributeName,
@@ -57,34 +65,44 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 static (ctx, _) => AccessorModelBuilder.BuildClassResult(ctx))
             .WithTrackingName("AccessorClassResult");
 
+        // 各アクセサの暫定 Model と .sql 集合を結合し、SQL を解決・解析して Model を完成させる。
+        // Combine each accessor's partial model with the .sql set, then resolve/parse SQL to complete the model.
         var completed = classResults
             .Combine(sqlFiles)
             .Select(static (pair, ct) => AccessorModelBuilder.CompleteModel(pair.Left, pair.Right, ct))
             .WithTrackingName("AccessorCompleted");
 
-        // Per-accessor source + its diagnostics.
-        // `completed` is an IncrementalValuesProvider<Result<AccessorModel>> — a STREAM with one element per
-        // [DataAccessor] class. RegisterSourceOutput therefore runs EmitCompleted ONCE PER ELEMENT
-        // (= per accessor class), emitting that class's `{ns}_{Class}.g.cs`. Re-runs only for the
-        // accessor(s) whose own Result<AccessorModel> changed; unchanged accessors stay cached and are
-        // skipped (per-class granularity).
+        // アクセサ毎のソース＋診断を出力する。completed は [DataAccessor] クラス 1 個につき 1 要素のストリームなので、
+        // RegisterSourceOutput は要素（＝クラス）毎に 1 回走り、そのクラスの {ns}_{Class}.g.cs を出力する。
+        // 自分の Result<AccessorModel> が変わったアクセサだけ再生成され、変化のないものはキャッシュされ skip される（クラス単位の粒度）。
+        // Emit per-accessor source + diagnostics. `completed` is a stream with one element per [DataAccessor]
+        // class, so RegisterSourceOutput runs once per element (= per class), emitting that class's
+        // {ns}_{Class}.g.cs. Only accessors whose own Result<AccessorModel> changed are re-emitted; unchanged
+        // ones stay cached and are skipped (per-class granularity).
         context.RegisterSourceOutput(completed, static (spc, c) => EmitCompleted(spc, c));
 
-        // Registry initializer (aggregated across all accessors; symbol-derived, no SQL needed).
-        // `.Collect()` collapses the stream into a single IncrementalValueProvider<ImmutableArray<...>>
-        // holding ALL accessors at once. RegisterSourceOutput therefore runs EmitRegistry ONCE with the
-        // whole set — because the registry (`DataAccessorRegistryInitializer.g.cs`) is a single file that
-        // aggregates the DI registration of every accessor and cannot be split per-class. Re-runs
-        // whenever the collected set changes (an accessor added/removed, or any accessor's
-        // registration-relevant data changed), and re-emits just that one small file.
+        // レジストリ初期化子（全アクセサを横断して集約。symbol 由来で SQL 不要）。
+        // .Collect() がストリームを 1 つの ImmutableArray に畳み込み、全アクセサを一度に渡す。レジストリ
+        // （DataAccessorRegistryInitializer.g.cs）は全アクセサの DI 登録を集約する単一ファイルでクラス毎に分割できないため、
+        // RegisterSourceOutput は集合全体で 1 回だけ走る。集合が変わった時（アクセサの追加/削除、登録関連データの変化）に
+        // その小さな 1 ファイルだけを再出力する。
+        // Registry initializer (aggregated across all accessors; symbol-derived, no SQL needed). `.Collect()`
+        // collapses the stream into a single ImmutableArray holding every accessor at once. The registry
+        // (DataAccessorRegistryInitializer.g.cs) is one file aggregating every accessor's DI registration and
+        // cannot be split per class, so RegisterSourceOutput runs once over the whole set; it re-emits that one
+        // small file whenever the set changes (an accessor added/removed, or any registration-relevant data).
         context.RegisterSourceOutput(completed.Collect(), static (spc, all) => EmitRegistry(spc, all));
 
-        // NOTE: /*!using*/ / /*!helper*/ are NOT validated against the Compilation. An invalid namespace
-        // or helper type surfaces as a C# error on the generated `using` line, so no dedicated diagnostic
-        // is emitted (案C: SDA0186/0187 retired — same policy as SDA0113-0120; keeps the pipeline
-        // Compilation-free and fully cached).
+        // /*!using*/ と /*!helper*/ は Compilation に対して検証しない。無効な名前空間・ヘルパー型は生成された
+        // using 行の C# エラーとして現れるため、専用診断は出さない（パイプラインを Compilation 非依存・完全キャッシュに保つ）。
+        // /*!using*/ and /*!helper*/ are not validated against the Compilation. An invalid namespace or helper
+        // type surfaces as a C# error on the generated `using` line, so no dedicated diagnostic is emitted
+        // (this keeps the pipeline Compilation-free and fully cached).
     }
 
+    // 1 アクセサ分の出力：診断を報告し、Model があれば AccessorSourceBuilder でソースを生成して {ns}_{Class}.g.cs を追加する。
+    // Emit one accessor: report its diagnostics, then (if a model exists) generate its source via
+    // AccessorSourceBuilder and add it as {ns}_{Class}.g.cs.
     private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> c)
     {
         foreach (var d in c.Diagnostics)
@@ -101,6 +119,11 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
     }
 
+    // 全アクセサを集約し、DI 登録に要る情報（サービス型 / 具象型 / プロバイダ要否 / [Inject] 型）を RegistryEntry に集める。
+    // 1 件以上あれば、各アクセサを登録する ModuleInitializer 初期化子ファイルを出力する。
+    // Aggregate all accessors, gathering the data needed for DI registration (service/concrete type, whether a
+    // provider is required, [Inject] types) into RegistryEntry; if there is at least one, emit an initializer
+    // file that registers every accessor from a ModuleInitializer.
     private static void EmitRegistry(SourceProductionContext context, ImmutableArray<Result<AccessorModel>> all)
     {
         var registrations = new List<RegistryEntry>();
@@ -135,6 +158,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         bool MultiProvider,
         IReadOnlyList<string> InjectTypeFqs);
 
+    // ModuleInitializer 内で DataAccessorRegistry.Register<T>(factory) を 1 件ずつ生成する。各 factory は
+    // sp.GetService 経由でプロバイダ／[Inject] 依存を解決し、アクセサを new する。
+    // Build the initializer: emit one DataAccessorRegistry.Register<T>(factory) per accessor inside a
+    // ModuleInitializer. Each factory resolves its provider / [Inject] dependencies via sp.GetService and news up the accessor.
     private static string EmitRegistryInitializer(List<RegistryEntry> entries)
     {
         var builder = new SourceBuilder();

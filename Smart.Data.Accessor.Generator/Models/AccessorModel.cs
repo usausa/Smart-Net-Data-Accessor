@@ -12,9 +12,9 @@ internal sealed record AccessorModel(
     bool RequiresConnectionFactory,
     EquatableArray<InjectModel> Injects,
     EquatableArray<MethodModel> Methods,
-    // spec §7.11 (P3): class declaration location, captured equatably for class-level diagnostics
-    // (e.g. SDA0013) reported at the output stage.
+    // class declaration location, captured equatably for class-level diagnostics (e.g. SDA0013)
+    // reported at the output stage.
     LocationInfo? Location = null,
-    // spec §7.11 (P3): DI service type FQN for the registry (the first implemented interface, or the
-    // concrete type when none). Symbol-derived → captured here so the registry output stage needs no symbols.
+    // DI service type FQN for the registry (the first implemented interface, or the concrete type when
+    // none). Symbol-derived → captured here so the registry output stage needs no symbols.
     string? ServiceTypeFullName = null);

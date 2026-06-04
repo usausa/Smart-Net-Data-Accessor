@@ -4,7 +4,7 @@ using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
 
-// uint underlying with a value > int.MaxValue, to prove the signed-read + (uint) reinterpret (spec §7.9).
+// uint underlying with a value > int.MaxValue, to prove the signed-read + (uint) reinterpret.
 internal enum Permission : uint
 {
     None = 0,

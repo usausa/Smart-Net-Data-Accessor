@@ -8,37 +8,30 @@ using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;
 
-/// <summary>
-/// Resolves and validates <c>[TypeHandler&lt;TConverter&gt;]</c> / <c>[TypeHandler(typeof(TConverter))]</c>
-/// across the scope chain defined in spec §7.7: member (property / parameter / <c>[return:]</c>) →
-/// method → accessor class → <c>[ExecuteConfig]</c> profile. A converter implements
-/// <c>IValueConverter&lt;TDb, TClr&gt;</c>; the reader reads <c>TDb</c> and calls
-/// <c>TConverter.FromDb(...)</c> while the writer calls <c>TConverter.ToDb(...)</c>.
-/// The member scope is an <em>explicit</em> binding (a TClr mismatch is the error SDA0308); the
-/// outer scopes are <em>type-keyed</em> (a handler applies only when its TClr matches the value
-/// type, and a non-matching handler is simply skipped). Reports SDA0308–SDA0311.
-/// The scope-chain primitives (attribute reading / type-keyed find / TDb·TClr extraction / Nullable
-/// unwrap) are shared with the Builder generator via <see cref="ConverterScopeHelper"/> (改善2 ②); only the
-/// ordering and the validation (SDA0308-0145) are core-specific.
-/// </summary>
+// Resolves and validates [TypeHandler<TConverter>] / [TypeHandler(typeof(TConverter))] across the
+// scope chain: member (property / parameter / [return:]) → method → accessor class → [ExecuteConfig]
+// profile. A converter implements IValueConverter<TDb, TClr>; the reader reads TDb and calls
+// TConverter.FromDb(...) while the writer calls TConverter.ToDb(...).
+// The member scope is an explicit binding (a TClr mismatch is the error SDA0308); the outer scopes
+// are type-keyed (a handler applies only when its TClr matches the value type, and a non-matching
+// handler is simply skipped). Reports SDA0308–SDA0311.
+// The scope-chain primitives (attribute reading / type-keyed find / TDb·TClr extraction / Nullable
+// unwrap) are shared with the Builder generator via ConverterScopeHelper; only the ordering and the
+// validation are core-specific.
 internal static class ConverterResolver
 {
-    /// <summary>The converter binding resolved for a single mapped value (column / parameter / scalar).</summary>
-    /// <remarks><see cref="DbType"/> = TDb, <see cref="ClrType"/> = TClr of IValueConverter&lt;TDb, TClr&gt;.</remarks>
+    // The converter binding resolved for a single mapped value (column / parameter / scalar).
+    // DbType = TDb, ClrType = TClr of IValueConverter<TDb, TClr>.
     internal sealed record Result(string ConverterTypeFullName, ITypeSymbol DbType, ITypeSymbol ClrType);
 
-    /// <summary>
-    /// The outer scope owners consulted (in spec §7.7 order) when the member itself carries no
-    /// <c>[TypeHandler]</c>: method → accessor class → profile. <paramref name="Profile"/> is the
-    /// type referenced by <c>[ExecuteConfig(typeof(P))]</c> (null when absent).
-    /// </summary>
+    // The outer scope owners consulted (in order) when the member itself carries no [TypeHandler]:
+    // method → accessor class → profile. Profile is the type referenced by [ExecuteConfig(typeof(P))]
+    // (null when absent).
     internal readonly record struct Scope(IMethodSymbol Method, INamedTypeSymbol AccessorClass, INamedTypeSymbol? Profile);
 
-    /// <summary>
-    /// Resolves the converter to apply to a member of type <paramref name="valueType"/>.
-    /// Returns <c>null</c> when no handler applies or when validation fails (a diagnostic is reported
-    /// in the latter case so the mapping/binding falls back to the plain path).
-    /// </summary>
+    // Resolves the converter to apply to a member of type valueType. Returns null when no handler
+    // applies or when validation fails (a diagnostic is reported in the latter case so the
+    // mapping/binding falls back to the plain path).
     public static Result? Resolve(
         List<DiagnosticInfo> diagnostics,
         IMethodSymbol method,

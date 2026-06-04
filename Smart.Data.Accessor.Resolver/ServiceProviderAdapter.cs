@@ -2,12 +2,9 @@ namespace Smart.Data.Accessor.Resolver;
 
 using Smart.Resolver;
 
-/// <summary>
-/// Adapts an <see cref="IResolver"/> to <see cref="IServiceProvider"/> so that
-/// <see cref="DataAccessorRegistry.Create"/> (which resolves an accessor's constructor
-/// dependencies through <see cref="IServiceProvider.GetService"/>) can be backed by the
-/// Smart.Resolver container.
-/// </summary>
+// Adapts an IResolver to IServiceProvider so that DataAccessorRegistry.Create (which resolves an
+// accessor's constructor dependencies through IServiceProvider.GetService) can be backed by the
+// Smart.Resolver container.
 public sealed class ServiceProviderAdapter : IServiceProvider
 {
     private readonly IResolver resolver;

@@ -3,25 +3,24 @@ namespace Smart.Data.Accessor.GeneratorShared;
 using System.Globalization;
 using System.Text;
 
-// 改善2 ②: gen-time expression builders shared (as linked source) by the core
-// (Smart.Data.Accessor.Generator) and Builder (Smart.Data.Accessor.Builders.Generator) generators.
-// These are pure functions whose outputs are symbol-free strings; the file is compiled `internal`
-// into each generator assembly via <Compile Link> (no DLL dependency — consistent with §1.4.4's
-// "Smart.Data.Accessor.GeneratorHelper プロジェクトは新設しない"; this is shared source, not a DLL).
-// Only emit-time string builders and Roslyn-enum→string helpers live here; equatable Models,
-// transforms and diagnostic descriptors stay per-generator.
+// Gen-time expression builders shared (as linked source) by the core (Smart.Data.Accessor.Generator)
+// and Builder (Smart.Data.Accessor.Builders.Generator) generators. These are pure functions whose
+// outputs are symbol-free strings; the file is compiled `internal` into each generator assembly via
+// <Compile Link> (no DLL dependency; this is shared source, not a DLL). Only emit-time string builders
+// and Roslyn-enum→string helpers live here; equatable Models, transforms and diagnostic descriptors
+// stay per-generator.
 internal static class CodeExpressionHelper
 {
     public const string ExecuteHelper = "global::Smart.Data.Accessor.Helpers.ExecuteHelper";
 
-    // spec §7.7 (改善2): the converter-sharing overload method name — AddInParameter<TConverter, TDb, TClr>.
-    // The helper calls TConverter.ToDb and centralises null/DBNull handling, so generators pass the raw value.
+    // The converter-sharing overload method name — AddInParameter<TConverter, TDb, TClr>. The helper
+    // calls TConverter.ToDb and centralises null/DBNull handling, so generators pass the raw value.
     public static string AddInParameterConverter(string converterFullName, string dbTypeFullName, string clrTypeFullName)
         => $"AddInParameter<{converterFullName}, {dbTypeFullName}, {clrTypeFullName}>";
 
-    // spec §7.9 (改善2): the enum underlying-cast value expression in its canonical form — an explicit
-    // (object?)(underlying) cast, with a HasValue guard (→ DBNull) for Nullable<enum>. Kept gen-time
-    // (a runtime cast via Convert.ChangeType would box / regress).
+    // The enum underlying-cast value expression in its canonical form — an explicit (object?)(underlying)
+    // cast, with a HasValue guard (→ DBNull) for Nullable<enum>. Kept gen-time (a runtime cast via
+    // Convert.ChangeType would box / regress).
     public static string EnumCastValue(string underlyingFullName, bool isNullable, string valueExpr)
         => isNullable
             ? $"({valueExpr}.HasValue ? (object?)({underlyingFullName}){valueExpr}.Value : null)"

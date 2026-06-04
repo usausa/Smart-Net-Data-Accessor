@@ -5,7 +5,7 @@ using Smart.Mock.Data;
 
 using Xunit;
 
-// spec §5.6 / §7.7: stored-procedure POCO parameter aggregation verified against the Mock —
+// Stored-procedure POCO parameter aggregation verified against the Mock —
 // input/output/InputOutput directions, scalar RETURN value mapping, and [TypeHandler] conversion
 // (ToDb on input, FromDb on output) across all directions. The Executing hook simulates the proc by
 // setting OUT parameter values; the generated write-back reads them back into the POCO.

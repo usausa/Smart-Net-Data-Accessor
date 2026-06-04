@@ -4,19 +4,16 @@ using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.GeneratorShared;
 
-/// <summary>
-/// Resolves the <c>[TypeHandler&lt;TConverter&gt;]</c> scope chain (member (property) → method →
-/// accessor class → <c>[ExecuteConfig]</c> profile) for Builder entity columns, reusing the shared
-/// <see cref="ConverterScopeHelper"/> primitives (改善2 ②). Builder applies the result as-is (no converter
-/// validation = 2-C). <c>[TypeMap]</c> / <c>[DbType]</c> / <c>[ExecuteConfig]</c> are resolved via the
-/// shared <see cref="MappingAttributeHelper"/> (identical to the core generator). Shared source (linked
-/// into each builder generator assembly).
-/// </summary>
+// Resolves the [TypeHandler<TConverter>] scope chain (member (property) → method → accessor class →
+// [ExecuteConfig] profile) for Builder entity columns, reusing the shared ConverterScopeHelper
+// primitives. Builder applies the result as-is (no converter validation). [TypeMap] / [DbType] /
+// [ExecuteConfig] are resolved via the shared MappingAttributeHelper (identical to the core generator).
+// Shared source (linked into each builder generator assembly).
 internal static class MappingResolver
 {
-    // spec §7.7: resolve the converter for an entity property across member → method → class →
-    // profile. The member scope is exclusive (a declared [TypeHandler] governs even when the
-    // converter type is unresolved); the outer scopes are type-keyed.
+    // resolve the converter for an entity property across member → method → class → profile. The
+    // member scope is exclusive (a declared [TypeHandler] governs even when the converter type is
+    // unresolved); the outer scopes are type-keyed.
     public static INamedTypeSymbol? ResolveTypeHandler(
         IPropertySymbol prop,
         IMethodSymbol method,

@@ -2,10 +2,10 @@ namespace Smart.Data.Accessor.Builders.Generator.Engine;
 
 using Microsoft.CodeAnalysis;
 
-// QueryBuilder generator diagnostics (spec §11.7). Shared across providers (linked source); each
-// generator assembly tracks them in its AnalyzerReleases. IDs use the SDA1xxx band so the reporting
-// generator is identifiable from the number (the core generator owns SDA0xxx). Ordered by the
-// BuilderModelBuilder pipeline: container → attribute → table → columns → key → mapping.
+// QueryBuilder generator diagnostics. Shared across providers (linked source); each generator assembly
+// tracks them in its AnalyzerReleases. IDs use the SDA1xxx band so the reporting generator is
+// identifiable from the number (the core generator owns SDA0xxx). Ordered by the BuilderModelBuilder
+// pipeline: container → attribute → table → columns → key → mapping.
 internal static class BuilderDiagnostics
 {
     public static readonly DiagnosticDescriptor InvalidContainer = new(

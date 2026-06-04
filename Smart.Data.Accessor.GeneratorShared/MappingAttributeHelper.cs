@@ -4,19 +4,19 @@ using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
 
-// 改善2 ②: shared (linked source) resolution + construction for the standard [TypeMap] / [DbType] /
+// Shared (linked source) resolution + construction for the standard [TypeMap] / [DbType] /
 // [ExecuteConfig] attributes — used identically by the core and Builder generators so a Builder
 // method honours class+profile [TypeMap], property/parameter [DbType], and [ExecuteConfig] profiles
 // exactly like a core method. Pure symbol→value/Model functions; the equatable Model TypeMapInfo lives
-// here too (a standard-attribute resolution result, NOT an entity Mapping Model — outside §1.4.4's
-// "Mapping Model は共有しない" scope, since it carries no generator-specific / Builder-specific shape).
+// here too (a standard-attribute resolution result, not an entity Mapping Model — it carries no
+// generator-specific / Builder-specific shape).
 internal static class MappingAttributeHelper
 {
     private const string TypeMapAttributeFq = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
     private const string DbTypeAttributeFq = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
     private const string ExecuteConfigAttributeFq = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
 
-    // spec §7.6: the profile referenced by [ExecuteConfig(typeof(P))] on the accessor (null when absent).
+    // The profile referenced by [ExecuteConfig(typeof(P))] on the accessor (null when absent).
     public static INamedTypeSymbol? ResolveProfile(INamedTypeSymbol container)
     {
         foreach (var attr in container.GetAttributes())
@@ -31,8 +31,8 @@ internal static class MappingAttributeHelper
         return null;
     }
 
-    // spec §7.5: class + profile [TypeMap] lookup (unwrapped CLR type FQN → TypeMapInfo). Class scope is
-    // collected first so it wins over the profile (first occurrence wins).
+    // Class + profile [TypeMap] lookup (unwrapped CLR type FQN → TypeMapInfo). Class scope is collected
+    // first so it wins over the profile (first occurrence wins).
     public static Dictionary<string, TypeMapInfo> BuildTypeMapLookup(INamedTypeSymbol container, INamedTypeSymbol? profile)
     {
         var map = new Dictionary<string, TypeMapInfo>(StringComparer.Ordinal);
@@ -81,7 +81,7 @@ internal static class MappingAttributeHelper
         return lookup.TryGetValue(key, out info);
     }
 
-    // spec §5.4 (F3): a property-scope [DbType(DbType)] expression (non-generic), or null.
+    // A property-scope [DbType(DbType)] expression (non-generic), or null.
     public static string? ResolvePropertyDbType(IPropertySymbol prop) => ResolveDbType(prop.GetAttributes());
 
     // A parameter-scope [DbType(DbType)] expression (non-generic), or null.
@@ -102,5 +102,5 @@ internal static class MappingAttributeHelper
     }
 }
 
-// 改善2 ②: equatable resolution result of a [TypeMap] entry (shared by both generators).
+// Equatable resolution result of a [TypeMap] entry (shared by both generators).
 internal readonly record struct TypeMapInfo(string DbTypeExpr, int? Size);

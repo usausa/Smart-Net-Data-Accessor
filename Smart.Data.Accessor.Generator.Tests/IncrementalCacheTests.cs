@@ -5,10 +5,10 @@ using Microsoft.CodeAnalysis.CSharp;
 
 using Xunit;
 
-// spec §7.11 (P3): the core generator extracts an equatable model in the FAWMN transform, so an
+// The core generator extracts an equatable model in the FAWMN transform, so an
 // unrelated compilation change must NOT re-run the accessor model build / SQL completion. If a model
 // field were non-equatable the steps would report Modified and this test would fail (the guard that
-// makes the §7.11 model-based pipeline actually cache).
+// makes the model-based pipeline actually cache).
 public sealed class IncrementalCacheTests
 {
     [Fact]

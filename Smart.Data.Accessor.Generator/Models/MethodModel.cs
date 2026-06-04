@@ -8,8 +8,8 @@ internal enum ReturnShapeLegacy
 {
     Void,
     Scalar,              // T (sync)
-    List,                // List<T> / IList<T> / IReadOnlyList<T> (BufferList, spec §7.8.1)
-    IteratorEnumerable,  // IEnumerable<T> — Generator emits yield return directly (spec §7.8.1 F13)
+    List,                // List<T> / IList<T> / IReadOnlyList<T> (BufferList)
+    IteratorEnumerable,  // IEnumerable<T> — Generator emits yield return directly
     Task,                // Task (async, no result)
     TaskScalar,          // Task<T>
     TaskList,            // Task<List<T>> etc.
@@ -54,16 +54,16 @@ internal sealed record MethodModel(
     EquatableArray<OutputBinding> OutputBindings,
     string? ProcedureName,
     string? DirectSqlParameterName,  // name of the `string` parameter that holds the SQL text
-    bool UseRecordPrimaryConstructor,  // spec §7.8 / §7.10.5: emit `new T(name: ...)` via record primary ctor
-    EquatableArray<UsingDirective> Usings,  // spec §1.4 F12 / §6.3: /*!helper */ / /*!using */ pragmas
-    // spec §7.4 / §7.7: non-null when a [TypeHandler<>] applies to the scalar return ([return:] /
-    // method / class / profile scope). The scalar is read as ScalarConverterDbTypeFullName then
-    // converted via `TConverter.FromDb(...)`. Only [ExecuteScalar] (non-int) scalar shapes use this.
+    bool UseRecordPrimaryConstructor,  // emit `new T(name: ...)` via record primary ctor
+    EquatableArray<UsingDirective> Usings,  // /*!helper */ / /*!using */ pragmas
+    // non-null when a [TypeHandler<>] applies to the scalar return ([return:] / method / class /
+    // profile scope). The scalar is read as ScalarConverterDbTypeFullName then converted via
+    // `TConverter.FromDb(...)`. Only [ExecuteScalar] (non-int) scalar shapes use this.
     string? ScalarConverterTypeFullName = null,
     string? ScalarConverterDbTypeFullName = null,
-    // spec §5.6: true for a [Procedure] method with a scalar return — the stored-procedure RETURN
-    // value is captured via an auto-added ReturnValue parameter and returned (not ExecuteNonQuery rows).
+    // true for a [Procedure] method with a scalar return — the stored-procedure RETURN value is
+    // captured via an auto-added ReturnValue parameter and returned (not ExecuteNonQuery rows).
     bool MapsProcedureReturnValue = false,
-    // spec §7.11 (P3): the method declaration location, captured equatably so the SQL-parse stage
-    // (which runs without symbols) can still emit located diagnostics (SqlEmpty / brace / pragma …).
+    // the method declaration location, captured equatably so the SQL-parse stage (which runs without
+    // symbols) can still emit located diagnostics (SqlEmpty / brace / pragma …).
     LocationInfo? Location = null);

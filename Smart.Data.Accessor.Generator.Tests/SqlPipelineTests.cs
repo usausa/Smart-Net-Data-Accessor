@@ -7,10 +7,8 @@ using Smart.Data.Accessor.Generator.Sql.Nodes;
 
 using Xunit;
 
-/// <summary>
-/// End-to-end checks of the SQL parsing pipeline (<c>SqlTokenizer</c> → <c>SqlTokenNormalizer</c>
-/// → <c>NodeBuilder</c>) focused on whitespace handling around comments and query hints.
-/// </summary>
+// End-to-end checks of the SQL parsing pipeline (SqlTokenizer → SqlTokenNormalizer → NodeBuilder)
+// focused on whitespace handling around comments and query hints.
 public sealed class SqlPipelineTests
 {
     // ----------------------------------------------------------------------------
@@ -177,11 +175,9 @@ public sealed class SqlPipelineTests
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Runs the full pipeline through <see cref="NodeEmitter.Emit"/> with the supplied
-    /// known parameter names, and returns the static-SQL string that would be assigned
-    /// to <c>cmd.CommandText</c>. Used when the SQL contains parameter markers (`@`).
-    /// </summary>
+    // Runs the full pipeline through NodeEmitter.Emit with the supplied known parameter names, and
+    // returns the static-SQL string that would be assigned to cmd.CommandText. Used when the SQL
+    // contains parameter markers (`@`).
     private static string EmitStatic(string source, params string[] knownParameters)
     {
         var tokens = new SqlTokenizer(source).Tokenize();

@@ -107,7 +107,7 @@ internal static class GeneratorTestHelper
                 d.Id.StartsWith("SDB", StringComparison.Ordinal))
             .ToList();
 
-    // For incremental-cache regression tests (spec §7.11 / P3): a driver with step tracking enabled
+    // For incremental-cache regression tests: a driver with step tracking enabled
     // plus the compilation. Only the core DataAccessorGenerator is wired (the unit under test).
     internal static (GeneratorDriver Driver, Compilation Compilation) CreateTrackingDriver(
         string source, params (string Name, string Sql)[] sqlFiles)
@@ -136,7 +136,7 @@ internal static class GeneratorTestHelper
         return (driver, compilation);
     }
 
-    // For Builder incremental-cache regression tests (spec §7.11 / P4): a driver with step tracking
+    // For Builder incremental-cache regression tests: a driver with step tracking
     // enabled wiring the (ANSI) QueryBuilderGenerator. The Builder generators have no .sql dependency,
     // so no AdditionalText is needed.
     internal static (GeneratorDriver Driver, Compilation Compilation) CreateBuilderTrackingDriver(string source)

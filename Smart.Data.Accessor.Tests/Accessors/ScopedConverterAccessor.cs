@@ -6,7 +6,7 @@ using System.Data.Common;
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Tests.Models;
 
-// Class-scope [TypeHandler<>] (spec §7.7): TicksConverter applies to every DateTime value in the
+// Class-scope [TypeHandler<>]: TicksConverter applies to every DateTime value in the
 // accessor — reader (FromDb), writer (ToDb), and scalar return (FromDb) — without per-member attrs.
 [DataAccessor]
 [TypeHandler(typeof(TicksConverter))]
@@ -22,7 +22,7 @@ internal sealed partial class ClassScopeConverterAccessor
     public partial DateTime MaxCreatedAt(DbConnection con);
 }
 
-// Method-scope [TypeHandler<>] (spec §7.7): the converter applies only to this method's mapping.
+// Method-scope [TypeHandler<>]: the converter applies only to this method's mapping.
 [DataAccessor]
 internal sealed partial class MethodScopeConverterAccessor
 {
@@ -31,7 +31,7 @@ internal sealed partial class MethodScopeConverterAccessor
     public partial IReadOnlyList<PlainTimestampEntity> QueryAll(DbConnection con);
 }
 
-// Profile-scope [TypeHandler<>] via [ExecuteConfig] (spec §7.6 / §7.7): the profile's TicksConverter
+// Profile-scope [TypeHandler<>] via [ExecuteConfig]: the profile's TicksConverter
 // is the lowest resolution scope and applies to the accessor's DateTime mapping.
 [AccessorProfile]
 [TypeHandler(typeof(TicksConverter))]
@@ -47,7 +47,7 @@ internal sealed partial class ProfileScopeConverterAccessor
     public partial IReadOnlyList<PlainTimestampEntity> QueryAll(DbConnection con);
 }
 
-// Class-scope [TypeMap] (spec §7.5 / §7.7): supplies DbType.AnsiString for string parameters when
+// Class-scope [TypeMap]: supplies DbType.AnsiString for string parameters when
 // no explicit [DbType]/[AnsiString] is present.
 [DataAccessor]
 [TypeMap(typeof(string), DbType.AnsiString)]

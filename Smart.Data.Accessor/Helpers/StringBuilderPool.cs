@@ -2,13 +2,8 @@ namespace Smart.Data.Accessor.Helpers;
 
 using System.Text;
 
-/// <summary>
-/// Lightweight thread-local <see cref="StringBuilder"/> pool used by <see cref="BuilderScope"/>.
-/// </summary>
-/// <remarks>
-/// Phase 2 §2.2: <c>BuilderContext</c> wraps a pooled <see cref="StringBuilder"/> instead of
-/// allocating one per method invocation.
-/// </remarks>
+// Lightweight thread-local StringBuilder pool used by BuilderScope. BuilderContext wraps a pooled
+// StringBuilder instead of allocating one per method invocation.
 public static class StringBuilderPool
 {
     private const int DefaultCapacity = 256;

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // PostgreSQL dialect QueryBuilder attributes (double-quote quoting, LIMIT/OFFSET paging).
 
-/// <summary>PostgreSQL <c>INSERT</c> builder.</summary>
+// PostgreSQL INSERT builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresInsertAttribute : QueryBuilderAttribute
@@ -23,7 +23,7 @@ public sealed class PostgresInsertAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL <c>UPDATE</c> builder.</summary>
+// PostgreSQL UPDATE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresUpdateAttribute : QueryBuilderAttribute
@@ -42,7 +42,7 @@ public sealed class PostgresUpdateAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL <c>DELETE</c> builder.</summary>
+// PostgreSQL DELETE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresDeleteAttribute : QueryBuilderAttribute
@@ -61,7 +61,7 @@ public sealed class PostgresDeleteAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL <c>SELECT COUNT(*)</c> builder.</summary>
+// PostgreSQL SELECT COUNT(*) builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresCountAttribute : QueryBuilderAttribute
@@ -80,7 +80,7 @@ public sealed class PostgresCountAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL full-scan <c>SELECT</c> builder (supports [Limit]/[Offset] paging).</summary>
+// PostgreSQL full-scan SELECT builder (supports [Limit]/[Offset] paging).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresSelectAttribute : QueryBuilderAttribute
@@ -99,7 +99,7 @@ public sealed class PostgresSelectAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL keyed <c>SELECT</c> builder (WHERE from value parameters).</summary>
+// PostgreSQL keyed SELECT builder (WHERE from value parameters).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresSelectSingleAttribute : QueryBuilderAttribute
@@ -118,7 +118,7 @@ public sealed class PostgresSelectSingleAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>PostgreSQL <c>TRUNCATE TABLE</c> builder.</summary>
+// PostgreSQL TRUNCATE TABLE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresTruncateAttribute : QueryBuilderAttribute

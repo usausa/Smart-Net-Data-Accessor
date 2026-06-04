@@ -23,7 +23,7 @@ public sealed class NodeBuilder
 
     public IReadOnlyList<string> UnknownPragmas => unknownPragmas;
 
-    /// <summary>Outcome of the <c>/*% %/</c> code-block brace-balance check (spec §11.6).</summary>
+    // Outcome of the /*% %/ code-block brace-balance check.
     public enum BraceBalance
     {
         Balanced,
@@ -31,12 +31,10 @@ public sealed class NodeBuilder
         ExtraClose // SDA0507: a '}' appears with no matching '{'
     }
 
-    /// <summary>
-    /// Verifies that the C# braces across all <c>/*% %/</c> code blocks (spec §6) are balanced.
-    /// The block bodies are emitted verbatim into the generated method, so an unbalanced brace would
-    /// otherwise surface as a confusing C# compile error in generated code. Braces inside string /
-    /// char literals and <c>//</c> line comments within a block are ignored.
-    /// </summary>
+    // Verifies that the C# braces across all /*% %/ code blocks are balanced. The block bodies are
+    // emitted verbatim into the generated method, so an unbalanced brace would otherwise surface as a
+    // confusing C# compile error in generated code. Braces inside string / char literals and //
+    // line comments within a block are ignored.
     public static BraceBalance CheckBraceBalance(IReadOnlyList<NodeBase> nodes)
     {
         var depth = 0;

@@ -7,14 +7,18 @@ using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;
 
-// spec §7.11.4: emit stage for the QueryBuilder generators (Model -> generated C# string; symbol-free
-// so it is unit-testable from a hand-built BuilderClassModel). Driven by QueryBuilderEngine's output
-// stage. The only per-provider variation is identifier quoting + the paging clause (via SqlDialect).
 internal static class BuilderSourceBuilder
 {
     private const string QueryBuilderMethodSuffix = "__QueryBuilder";
     private const char Marker = '@';
 
+    // QueryBuilder ジェネレータの emit 段：BuilderClassModel（symbol 非依存）から生成 C# 文字列を組み立てる。手組みのモデルから
+    // 単体テスト可能で、QueryBuilderEngine の出力段から呼ばれる。プロバイダ毎の差異は識別子クォートとページング句だけ（SqlDialect が吸収）。
+    // partial クラスを開き、各 QueryBuilder メソッドの {Method}__QueryBuilder ヘルパーを順に出力する。
+    // Emit stage for the QueryBuilder generators: build the generated C# string from a BuilderClassModel (symbol-free,
+    // so unit-testable from a hand-built model); called by QueryBuilderEngine's output stage. The only per-provider
+    // variation is identifier quoting + the paging clause (absorbed by SqlDialect). Opens the partial class and emits
+    // each QueryBuilder method's {Method}__QueryBuilder helper in turn.
     internal static string Build(BuilderClassModel model, SqlDialect dialect)
     {
         var builder = new SourceBuilder();
@@ -47,9 +51,14 @@ internal static class BuilderSourceBuilder
         return builder.ToString();
     }
 
+    // 1 メソッド分のヘルパーを出力する。シグネチャは private static void {Method}__QueryBuilder(ref BuilderContext ctx, <値パラメータ>)。
+    // 本体では ctx.Command を取り出し、種別（Insert/Update/…）毎に SQL 組み立て＋パラメータ束縛を行う。
+    // Emit one method's helper. The signature is private static void {Method}__QueryBuilder(ref BuilderContext ctx,
+    // <value params>). The body grabs ctx.Command, then builds the SQL and binds parameters per kind (Insert/Update/...).
     private static void EmitMethod(SourceBuilder builder, BuilderMethodModel method, SqlDialect dialect)
     {
-        // Signature: private static void {Method}__QueryBuilder(ref BuilderContext ctx, <value params>)
+        // シグネチャを組む：ref BuilderContext ctx ＋ 各値パラメータ。
+        // Build the signature: ref BuilderContext ctx + each value parameter.
         var sig = new StringBuilder();
         sig.Append("ref global::Smart.Data.Accessor.BuilderContext ctx");
         foreach (var p in method.ValueParams)
@@ -90,11 +99,16 @@ internal static class BuilderSourceBuilder
         builder.EndScope();
     }
 
+    // INSERT を組み立てる。エンティティモード（typeof(T) 指定）はエンティティ列（[DatabaseManaged] は除外）を、
+    // パラメータモード（Table 指定）はバインドパラメータを列・値にする。
+    // Build an INSERT. Entity mode (typeof(T)) uses the entity columns (excluding [DatabaseManaged]); parameter mode
+    // (Table = "...") uses the bind parameters as columns/values.
     private static void EmitInsert(SourceBuilder builder, InsertModel m, SqlDialect dialect)
     {
         if (m.EntityParamName is not null)
         {
-            // Entity mode: columns from entity properties (excluding [DatabaseManaged]).
+            // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
+            // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
             var cols = m.Columns.Where(static c => !c.IsDatabaseManaged).ToList();
             var colSql = String.Join(", ", cols.Select(c => dialect.Quote(c.ColumnName)));
             var valSql = String.Join(", ", cols.Select(c => Marker + c.PropertyName));
@@ -106,7 +120,8 @@ internal static class BuilderSourceBuilder
         }
         else
         {
-            // Parameter mode: columns / values from the bind parameters.
+            // パラメータモード：列・値はバインドパラメータから組む。
+            // Parameter mode: columns / values come from the bind parameters.
             var bindParams = BindParams(m);
             var colSql = String.Join(", ", bindParams.Select(p => dialect.Quote(p.ColumnName)));
             var valSql = String.Join(", ", bindParams.Select(p => Marker + p.Name));
@@ -118,6 +133,10 @@ internal static class BuilderSourceBuilder
         }
     }
 
+    // UPDATE を組み立てる。SET 句は非キーかつ非 [DatabaseManaged] 列、WHERE 句は [Key] 列（@k_ 接頭辞のパラメータ）。
+    // エンティティが無い場合は "UPDATE T SET " だけを出力する。
+    // Build an UPDATE: the SET clause uses non-key, non-[DatabaseManaged] columns; the WHERE clause uses [Key] columns
+    // (parameters prefixed @k_). Without an entity it emits just "UPDATE T SET ".
     private static void EmitUpdate(SourceBuilder builder, UpdateModel m, SqlDialect dialect)
     {
         if (!m.HasEntityType || (m.EntityParamName is null))
@@ -165,6 +184,8 @@ internal static class BuilderSourceBuilder
         }
     }
 
+    // DELETE を組み立てる。WHERE 句はバインドパラメータ（先頭から [Key] 列に対応付け）。
+    // Build a DELETE: the WHERE clause uses the bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, DeleteModel m, SqlDialect dialect)
     {
         var keyColumns = m.Columns.Where(static c => c.IsKey).ToList();
@@ -194,6 +215,9 @@ internal static class BuilderSourceBuilder
         }
     }
 
+    // SELECT（全件）を組み立てる。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があればプロバイダのページング句を付ける。
+    // Build a SELECT (all rows): SELECT * when there is no entity; otherwise list the columns and, if [Limit]/[Offset]
+    // are present, append the provider's paging clause.
     private static void EmitSelect(SourceBuilder builder, SelectModel m, SqlDialect dialect)
     {
         if (!m.HasEntityType)
@@ -205,7 +229,8 @@ internal static class BuilderSourceBuilder
         var sql = new StringBuilder();
         sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => dialect.Quote(c.ColumnName)))).Append(" FROM ").Append(dialect.Quote(m.TableName));
 
-        // Phase 7: append the provider paging clause when [Limit]/[Offset] params are present.
+        // [Limit]/[Offset] パラメータがある場合のみ、プロバイダのページング句を付加する（パラメータ束縛は offset→limit の順）。
+        // Append the provider's paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
         var valueParams = m.ValueParams;
         var limitParam = valueParams.FirstOrDefault(static p => p.IsLimit);
         var offsetParam = valueParams.FirstOrDefault(static p => p.IsOffset);
@@ -229,6 +254,8 @@ internal static class BuilderSourceBuilder
         }
     }
 
+    // SELECT（単一行）を組み立てる。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, SelectSingleModel m, SqlDialect dialect)
     {
         if (!m.HasEntityType)
@@ -264,15 +291,20 @@ internal static class BuilderSourceBuilder
         }
     }
 
+    // バインドパラメータ＝値パラメータから [Limit]/[Offset] のページングパラメータを除いたもの。
     // Bind parameters = value parameters minus the [Limit]/[Offset] paging parameters.
     private static List<BuilderValueParam> BindParams(BuilderMethodModel m)
         => m.ValueParams.Where(static p => !p.IsLimit && !p.IsOffset).ToList();
 
-    // Entity column parameter, bound via ExecuteHelper.AddInParameter (P7 / spec §7.11: L1 plumbing
-    // centralised). DbType / Size are passed as call arguments (the helper sets p.DbType / p.Size /
-    // p.Value / Direction). A [TypeHandler<>] column (P8) binds through the converter-sharing overload
-    // AddInParameter<TConverter, TDb, TClr> — the value is passed raw and the helper calls ToDb + handles
-    // null/DBNull; enum / plain columns pass the underlying-cast / plain value argument.
+    // エンティティ列パラメータを ExecuteHelper.AddInParameter で束縛する（低レベルのプラミングはヘルパーに集約）。DbType / Size は
+    // 呼び出し引数で渡す（ヘルパーが p.DbType / p.Size / p.Value / Direction を設定）。[TypeHandler<>] 列は converter 共有オーバーロード
+    // AddInParameter<TConverter, TDb, TClr> で束縛＝値は生で渡し、ヘルパーが ToDb と null/DBNull を処理する。enum / 通常列は
+    // underlying キャスト／生値を引数として渡す。
+    // Bind an entity column parameter via ExecuteHelper.AddInParameter (low-level plumbing centralised in the helper).
+    // DbType / Size are passed as call arguments (the helper sets p.DbType / p.Size / p.Value / Direction). A
+    // [TypeHandler<>] column binds through the converter-sharing overload AddInParameter<TConverter, TDb, TClr> — the
+    // value is passed raw and the helper calls ToDb + handles null/DBNull; enum / plain columns pass the underlying-cast
+    // / plain value argument.
     private static void EmitColumnParameter(SourceBuilder builder, string paramName, string valueExpression, BuilderColumn c)
     {
         if (c.Converter is { } conv)
@@ -296,13 +328,16 @@ internal static class BuilderSourceBuilder
             .Append(");").NewLine();
     }
 
+    // 列の値引数：enum なら underlying へキャストした式、そうでなければ値式そのまま。
+    // The column value argument: an underlying-cast expression for enums, otherwise the value expression as-is.
     private static string ColumnValueArg(string valueExpr, BuilderColumn c)
         => c.EnumUnderlyingFullName is not null
             ? CodeExpressionHelper.EnumCastValue(c.EnumUnderlyingFullName, c.IsNullableEnum, valueExpr)
             : valueExpr;
 
-    // Method value parameter (no converter — matching the prior behaviour): enum underlying cast or
-    // plain value, bound via ExecuteHelper.AddInParameter.
+    // メソッドの値パラメータ（converter は付かない＝従来挙動どおり）：enum underlying キャストか生値を ExecuteHelper.AddInParameter で束縛する。
+    // Method value parameter (no converter, matching the prior behaviour): bind the enum underlying cast or the plain
+    // value via ExecuteHelper.AddInParameter.
     private static void EmitValueParamBinding(SourceBuilder builder, BuilderValueParam p)
         => builder.Indent()
             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
@@ -311,11 +346,15 @@ internal static class BuilderSourceBuilder
             .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size))
             .Append(");").NewLine();
 
+    // 値パラメータの値引数：enum なら underlying へキャストした式、そうでなければパラメータ名そのまま。
+    // The value-parameter argument: an underlying-cast expression for enums, otherwise the parameter name as-is.
     private static string ValueParamArg(BuilderValueParam p)
         => p.EnumUnderlyingFullName is not null
             ? CodeExpressionHelper.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name)
             : p.Name;
 
+    // cmd.CommandText に SQL 文字列リテラルを代入する 1 行を出力する。
+    // Emit the single line that assigns the SQL string literal to cmd.CommandText.
     private static void EmitCommandText(SourceBuilder builder, string sql)
         => builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(sql)).Append(";").NewLine();
 }

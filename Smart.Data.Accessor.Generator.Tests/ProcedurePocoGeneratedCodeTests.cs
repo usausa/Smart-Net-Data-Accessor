@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// spec §5.6: POCO-argument parameter aggregation for [Procedure] / [DirectSql] — properties expand
+// POCO-argument parameter aggregation for [Procedure] / [DirectSql] — properties expand
 // into DB parameters (default Input), [Direction(Output/InputOutput)] properties are written back
 // into the same POCO object. Verified on the generated source (SQLite can't run stored procs).
 public sealed class ProcedurePocoGeneratedCodeTests
@@ -38,7 +38,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
         // Input property → AddInParameter from args.CategoryId.
         Assert.Contains("AddInParameter(cmd, \"@CategoryId\", args.CategoryId", text, StringComparison.Ordinal);
         // Output / InputOutput properties → AddOut/AddInOut, with the DbType inferred from the CLR
-        // type (int → Int32) so SQL Server doesn't create a sql_variant OUT parameter (§5.6).
+        // type (int → Int32) so SQL Server doesn't create a sql_variant OUT parameter.
         Assert.Contains("AddOutParameter(cmd, \"@Count\", global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
         Assert.Contains("AddInOutParameter(cmd, \"@Total\", args.Total, global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
         // Write-back into the same POCO object (after the async execute).
@@ -120,7 +120,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        // spec §5.6: a scalar return maps the proc RETURN value (auto-added ReturnValue parameter).
+        // A scalar return maps the proc RETURN value (auto-added ReturnValue parameter).
         Assert.Contains("AddReturnValueParameter(cmd, \"@__ReturnValue\"", text, StringComparison.Ordinal);
         Assert.Contains("cmd.ExecuteNonQuery();", text, StringComparison.Ordinal);
         Assert.Contains("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(__returnValue)!;", text, StringComparison.Ordinal);
@@ -237,7 +237,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        // spec §5.6: [Direction(ReturnValue)] is retired everywhere.
+        // [Direction(ReturnValue)] is retired everywhere.
         Assert.Contains(diagnostics, d => d.Id == "SDA0210");
     }
 }

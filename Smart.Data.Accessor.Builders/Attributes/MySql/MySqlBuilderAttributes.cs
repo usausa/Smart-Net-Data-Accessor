@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 // MySQL dialect QueryBuilder attributes (backtick quoting, LIMIT/OFFSET paging).
 
-/// <summary>MySQL <c>INSERT</c> builder.</summary>
+// MySQL INSERT builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlInsertAttribute : QueryBuilderAttribute
@@ -23,7 +23,7 @@ public sealed class MySqlInsertAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL <c>UPDATE</c> builder.</summary>
+// MySQL UPDATE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlUpdateAttribute : QueryBuilderAttribute
@@ -42,7 +42,7 @@ public sealed class MySqlUpdateAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL <c>DELETE</c> builder.</summary>
+// MySQL DELETE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlDeleteAttribute : QueryBuilderAttribute
@@ -61,7 +61,7 @@ public sealed class MySqlDeleteAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL <c>SELECT COUNT(*)</c> builder.</summary>
+// MySQL SELECT COUNT(*) builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlCountAttribute : QueryBuilderAttribute
@@ -80,7 +80,7 @@ public sealed class MySqlCountAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL full-scan <c>SELECT</c> builder (supports [Limit]/[Offset] paging).</summary>
+// MySQL full-scan SELECT builder (supports [Limit]/[Offset] paging).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlSelectAttribute : QueryBuilderAttribute
@@ -99,7 +99,7 @@ public sealed class MySqlSelectAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL keyed <c>SELECT</c> builder (WHERE from value parameters).</summary>
+// MySQL keyed SELECT builder (WHERE from value parameters).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlSelectSingleAttribute : QueryBuilderAttribute
@@ -118,7 +118,7 @@ public sealed class MySqlSelectSingleAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>MySQL <c>TRUNCATE TABLE</c> builder.</summary>
+// MySQL TRUNCATE TABLE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class MySqlTruncateAttribute : QueryBuilderAttribute

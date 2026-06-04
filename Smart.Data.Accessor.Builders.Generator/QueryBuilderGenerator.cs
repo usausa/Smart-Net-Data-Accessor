@@ -4,14 +4,11 @@ using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
-/// <summary>
-/// Default (ANSI) QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
-/// carrying the core <c>[Insert]</c>/<c>[Update]</c>/<c>[Delete]</c>/<c>[Count]</c>/<c>[Select]</c>/
-/// <c>[SelectSingle]</c>/<c>[Truncate]</c> attributes. Registers on <c>[DataAccessor]</c> (spec §7.11);
-/// all transform + emit logic lives in the shared <see cref="QueryBuilderEngine"/> /
-/// <see cref="Builders.BuilderModelBuilder"/>. Provider generators (SqlServer / MySql / Postgres) follow
-/// the same pattern with their own attribute set + dialect (Phase 7).
-/// </summary>
+// Default (ANSI) QueryBuilder generator: emits the {Method}__QueryBuilder helper for methods carrying
+// the core [Insert]/[Update]/[Delete]/[Count]/[Select]/[SelectSingle]/[Truncate] attributes. Registers
+// on [DataAccessor]; all transform + emit logic lives in the shared QueryBuilderEngine /
+// Builders.BuilderModelBuilder. Provider generators (SqlServer / MySql / Postgres) follow the same
+// pattern with their own attribute set + dialect.
 [Generator]
 public sealed class QueryBuilderGenerator : IIncrementalGenerator
 {

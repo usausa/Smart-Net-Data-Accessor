@@ -2,9 +2,9 @@ namespace Smart.Data.Accessor.Builders.Generator.Models;
 
 using SourceGenerateHelper;
 
-// spec §7.11 (P4): base of the per-attribute Builder method models. Fully equatable (string / bool /
-// EquatableArray only) so the FAWMN transform output participates in incremental caching. The concrete
-// subtype encodes the BuilderKind; the output stage type-switches on it (no enum / no symbol). Per-method
+// Base of the per-attribute Builder method models. Fully equatable (string / bool / EquatableArray
+// only) so the FAWMN transform output participates in incremental caching. The concrete subtype
+// encodes the BuilderKind; the output stage type-switches on it (no enum / no symbol). Per-method
 // diagnostics live on the owning BuilderClassModel (collected in the transform, replayed at output).
 //
 // ValueParams is the full ordered list of method value parameters (entity instance + WHERE/VALUES keys

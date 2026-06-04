@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 using Xunit;
 
-// spec §7.11 (P4): the Builder generators extract an equatable BuilderClassModel in the FAWMN transform
+// The Builder generators extract an equatable BuilderClassModel in the FAWMN transform
 // (on [DataAccessor]) and emit purely from it, so an unrelated compilation change must NOT re-run the
 // model build / emit. Before P4 the transform flowed GeneratorAttributeSyntaxContext (non-equatable)
 // through Collect(), so every edit re-ran the whole pipeline; this test is the guard that the fix

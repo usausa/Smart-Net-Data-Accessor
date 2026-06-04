@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R2 (spec §7.7): verifies the generated source for the [TypeHandler<>] scope chain —
+// Verifies the generated source for the [TypeHandler<>] scope chain —
 // member > method > class > profile precedence, writer-side ToDb, and scalar-return FromDb.
 public sealed class ConverterScopeGeneratedCodeTests
 {
@@ -49,7 +49,7 @@ public sealed class ConverterScopeGeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.QueryAll", "select Id, CreatedAt from T"));
         var text = result.AllGeneratedText;
 
-        // The property-scope converter wins; the class-scope one is never emitted (spec §7.7).
+        // The property-scope converter wins; the class-scope one is never emitted.
         Assert.Contains("PropConv.FromDb", text, StringComparison.Ordinal);
         Assert.DoesNotContain("ClassConv", text, StringComparison.Ordinal);
     }
@@ -94,7 +94,7 @@ public sealed class ConverterScopeGeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.Max", "select max(C) from T"));
         var text = result.AllGeneratedText;
 
-        // Scalar is read as TDb (long) then converted via FromDb (spec §7.4 / §7.7).
+        // Scalar is read as TDb (long) then converted via FromDb.
         Assert.Contains("ClassConv.FromDb(", text, StringComparison.Ordinal);
         Assert.Contains("ConvertScalar<", text, StringComparison.Ordinal);
     }

@@ -5,13 +5,10 @@ using Smart.Data.Accessor;
 
 public static class DataAccessorServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers every accessor class discovered by the source generator (via
-    /// <see cref="DataAccessorRegistry"/>) as a singleton in the M.E.DI container.
-    /// The accessor's constructor parameters (<see cref="global::Smart.Data.IDbProvider"/>
-    /// or <see cref="global::Smart.Data.IDbProviderSelector"/>, plus any
-    /// <c>[Inject]</c>-injected services) are resolved from the container at activation time.
-    /// </summary>
+    // Registers every accessor class discovered by the source generator (via DataAccessorRegistry)
+    // as a singleton in the M.E.DI container. The accessor's constructor parameters (IDbProvider or
+    // IDbProviderSelector, plus any [Inject]-injected services) are resolved from the container at
+    // activation time.
     public static IServiceCollection AddDataAccessors(this IServiceCollection services)
     {
         foreach (var serviceType in DataAccessorRegistry.RegisteredServiceTypes)

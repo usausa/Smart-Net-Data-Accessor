@@ -4,12 +4,9 @@ using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
-/// <summary>
-/// MySQL QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods carrying
-/// the <c>[MySqlInsert]</c>/…/<c>[MySqlTruncate]</c> attributes, using backtick quoting and
-/// LIMIT/OFFSET paging. Registers on <c>[DataAccessor]</c>; all transform + emit logic is the shared
-/// <see cref="QueryBuilderEngine"/>.
-/// </summary>
+// MySQL QueryBuilder generator: emits the {Method}__QueryBuilder helper for methods carrying the
+// [MySqlInsert]/…/[MySqlTruncate] attributes, using backtick quoting and LIMIT/OFFSET paging.
+// Registers on [DataAccessor]; all transform + emit logic is the shared QueryBuilderEngine.
 [Generator]
 public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator
 {

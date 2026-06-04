@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R4: SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks (spec §11.6).
+// SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks.
 public sealed class R4DiagnosticTests
 {
     private const string Source = """

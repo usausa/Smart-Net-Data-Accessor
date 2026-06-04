@@ -5,7 +5,7 @@ using Smart.Mock.Data;
 
 using Xunit;
 
-// spec §7.9: an enum with a uint underlying is read via GetInt32 + an intermediate (uint) cast.
+// An enum with a uint underlying is read via GetInt32 + an intermediate (uint) cast.
 // Permission.All (4_000_000_000 > int.MaxValue) is stored as the bit-equivalent negative int; the
 // signed read + reinterpret must recover it (the old GetValue<T> fallback could not).
 public sealed class UnsignedEnumTest

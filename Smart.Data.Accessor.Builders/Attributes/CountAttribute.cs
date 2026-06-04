@@ -2,10 +2,7 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Builds a <c>SELECT COUNT(*)</c> statement. The entity type / table supplies the table name only
-/// (design doc §4.4).
-/// </summary>
+// Builds a SELECT COUNT(*) statement. The entity type / table supplies the table name only.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class CountAttribute : QueryBuilderAttribute

@@ -10,7 +10,7 @@ using Xunit;
 
 // AccessorSourceBuilder.Emit is a pure Model -> string function (no symbols, no Roslyn driver), so the
 // generated-code shape can be unit-tested directly from a hand-built AccessorModel — the testability win
-// of the 3-layer split (spec §7.11.4). These complement GeneratedCodeTests, which exercise the full
+// of the 3-layer split. These complement GeneratedCodeTests, which exercise the full
 // transform + emit pipeline via the generator driver.
 public sealed class AccessorSourceBuilderTests
 {

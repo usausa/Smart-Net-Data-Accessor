@@ -2,10 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Builds a <c>TRUNCATE TABLE t</c> statement. The entity type / table supplies the table name only
-/// (design doc §4.4). SQLite users should use raw SQL (DELETE FROM) instead.
-/// </summary>
+// Builds a TRUNCATE TABLE t statement. The entity type / table supplies the table name only.
+// SQLite users should use raw SQL (DELETE FROM) instead.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class TruncateAttribute : QueryBuilderAttribute

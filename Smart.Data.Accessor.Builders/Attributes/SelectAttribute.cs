@@ -2,10 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Builds a full-scan <c>SELECT cols FROM t</c> statement. Columns come from the entity type
-/// (or the query method's return element type), design doc §4.4.
-/// </summary>
+// Builds a full-scan SELECT cols FROM t statement. Columns come from the entity type
+// (or the query method's return element type).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SelectAttribute : QueryBuilderAttribute

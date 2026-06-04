@@ -2,11 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Builds an <c>INSERT</c> statement. Entity mode (<c>[Insert(typeof(T))]</c>) derives columns
-/// from the entity type; parameter mode (<c>[Insert(Table = "...")]</c>) derives columns from
-/// the method's value parameters (design doc §4.4).
-/// </summary>
+// Builds an INSERT statement. Entity mode ([Insert(typeof(T))]) derives columns from the entity
+// type; parameter mode ([Insert(Table = "...")]) derives columns from the method's value parameters.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class InsertAttribute : QueryBuilderAttribute

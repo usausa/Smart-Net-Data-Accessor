@@ -24,7 +24,7 @@ internal sealed class TimestampEntity
 }
 
 // No per-property [TypeHandler]: the converter is supplied at method / class / profile scope
-// (spec §7.7) by the accessor that maps this entity.
+// by the accessor that maps this entity.
 internal sealed class PlainTimestampEntity
 {
     public long Id { get; set; }

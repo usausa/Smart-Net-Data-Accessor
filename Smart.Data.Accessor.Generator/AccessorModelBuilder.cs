@@ -27,8 +27,8 @@ internal static class AccessorModelBuilder
     private const string IgnoreAttributeName = "Smart.Data.Accessor.Attributes.IgnoreAttribute";
     private const string NotNullColumnAttributeName = "Smart.Data.Accessor.Attributes.NotNullColumnAttribute";
     private const string DbTypeAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
-    // spec §1.4 F15 / §5.3 / §5.3.1: Roslyn renders the generic original definition as
-    // "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>" via ToDisplayString().
+    // ジェネリックな元定義は Roslyn の ToDisplayString() で "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>" と表現される。
+    // Roslyn renders the generic original definition as "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>" via ToDisplayString().
     private const string DbTypeGenericAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute<TEnum>";
     private const string SqlSizeAttributeName = "Smart.Data.Accessor.Attributes.SqlSizeAttribute";
     private const string AnsiStringAttributeName = "Smart.Data.Accessor.Attributes.AnsiStringAttribute";
@@ -48,8 +48,10 @@ internal static class AccessorModelBuilder
     private const string CancellationTokenTypeName = "System.Threading.CancellationToken";
     private const string EnumeratorCancellationAttributeName = "System.Runtime.CompilerServices.EnumeratorCancellationAttribute";
 
-    // P3 transform (symbol stage): class-level validation + symbol-only model build. Returns an
-    // equatable Result<AccessorModel> so the pipeline caches on symbol changes only.
+    // transform 段（symbol ステージ）：クラスレベルの検証と、symbol だけからの Model 構築を行う。等価な Result<AccessorModel> を
+    // 返すので、パイプラインは symbol が変わった時のみ再計算する（それ以外はキャッシュ）。
+    // Transform stage (symbol stage): class-level validation + a symbol-only model build. Returns an equatable
+    // Result<AccessorModel> so the pipeline recomputes only on symbol changes (otherwise it caches).
     internal static Result<AccessorModel> BuildClassResult(GeneratorAttributeSyntaxContext ctx)
     {
         var diagnostics = new List<DiagnosticInfo>();
@@ -83,6 +85,7 @@ internal static class AccessorModelBuilder
     private static (Dictionary<string, string> SqlMap, HashSet<string> Collided) BuildSqlMap(
         ImmutableArray<(string Path, string Text)> sqlFiles)
     {
+        // SDA0402: 同じ {Class}.{Method} キーに解決される .sql が複数あると衝突する。
         // SDA0402: multiple .sql files resolving to the same {Class}.{Method} key collide.
         var sqlMap = new Dictionary<string, string>(StringComparer.Ordinal);
         var collidedKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -100,10 +103,12 @@ internal static class AccessorModelBuilder
         return (sqlMap, collidedKeys);
     }
 
-    // P3 SQL stage: resolve each method's .sql file, apply SQL-file conflict diagnostics
-    // (SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound), parse 2-way SQL into the method's emit
-    // fields (dropping methods on SQL errors), evaluate SDA0013's SQL half, and gather /*!using*/
-    // directives to validate. Compilation-free → cacheable.
+    // SQL ステージ：各メソッドの .sql を解決し、SQL ファイル衝突診断（SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound）を出し、
+    // 2-way SQL を解析してメソッドの emit フィールドへ格納し（SQL エラー時はそのメソッドを落とす）、SDA0013 の SQL 側を評価し、
+    // 検証用に /*!using*/ ディレクティブを集める。Compilation 非依存なのでキャッシュ可能。
+    // SQL stage: resolve each method's .sql file, apply SQL-file conflict diagnostics (SDA0402 / SDA0403 / SDA0405 /
+    // SDA0404 / SqlNotFound), parse 2-way SQL into the method's emit fields (dropping a method on SQL errors), evaluate
+    // SDA0013's SQL half, and gather /*!using*/ directives to validate. Compilation-free, so cacheable.
     internal static Result<AccessorModel> CompleteModel(
         Result<AccessorModel> result,
         ImmutableArray<(string Path, string Text)> sqlFiles,
@@ -133,6 +138,7 @@ internal static class AccessorModelBuilder
 
             if (isDirectSql)
             {
+                // SDA0403: [DirectSql] は対応する .sql を持ってはならない。
                 // SDA0403: [DirectSql] must not have a corresponding .sql file.
                 if (sqlMap.ContainsKey(sqlKey))
                 {
@@ -175,11 +181,13 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
+            // .sql を持たない Builder / Procedure — そのまま維持する。
             // Builder / Procedure without a .sql file — keep as-is.
             keptMethods.Add(method);
         }
 
-        // SDA0013 (Info): [Inject] referenced neither in code (computed in the transform) nor in SQL.
+        // SDA0013 (Info): [Inject] がコード（transform で算出）でも SQL でも参照されていない。
+        // SDA0013 (Info): an [Inject] referenced neither in code (computed in the transform) nor in SQL.
         var sqlKeyPrefix = model.ClassName + ".";
         foreach (var inject in model.Injects)
         {
@@ -225,12 +233,15 @@ internal static class AccessorModelBuilder
             : null;
         var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
 
-        // spec §7.7: [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest
-        // converter-resolution scope. Resolved here (validation is reported later, see SDA0016/0147).
+        // [ExecuteConfig(typeof(P))] は P の [TypeHandler] 宣言を converter 解決の最下位スコープにする。ここで解決する
+        // （検証は後段で報告。SDA0016 / SDA0017 参照）。
+        // [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest converter-resolution scope. Resolved
+        // here (validation is reported later; see SDA0016 / SDA0017).
         var profileSymbol = MappingAttributeHelper.ResolveProfile(classSymbol);
 
-        // spec §7.5 / §7.7: class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for
-        // parameters of the mapped CLR type. Class scope takes precedence over the profile.
+        // class / profile スコープの [TypeMap] は、マップ対象 CLR 型のパラメータに既定の DbType（＋ Size）を与える。class スコープが profile より優先。
+        // Class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for parameters of the mapped CLR type;
+        // class scope takes precedence over the profile.
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(classSymbol, profileSymbol);
 
         var methods = new List<MethodModel>();
@@ -244,10 +255,11 @@ internal static class AccessorModelBuilder
 
             if (!member.IsPartialDefinition)
             {
-                // SDA0101: a method that carries a data-method attribute ([Execute] / [Query] /
-                // [ExecuteScalar] / [ExecuteReader] / [DirectSql] / [Procedure]) must be declared
-                // `partial` so the Generator can supply the implementation. Plain helper methods
-                // without such an attribute are intentionally ignored.
+                // SDA0101: データメソッド属性（[Execute] / [Query] / [ExecuteScalar] / [ExecuteReader] / [DirectSql] / [Procedure]）が
+                // 付いたメソッドは、Generator が実装を供給できるよう partial 宣言が必須。こうした属性の無い通常ヘルパーは意図的に無視する。
+                // SDA0101: a method carrying a data-method attribute ([Execute] / [Query] / [ExecuteScalar] / [ExecuteReader]
+                // / [DirectSql] / [Procedure]) must be declared `partial` so the Generator can supply the implementation.
+                // Plain helper methods without such an attribute are intentionally ignored.
                 if (HasDataMethodAttribute(member))
                 {
                     diagnostics.Add(new DiagnosticInfo(
@@ -258,7 +270,8 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0102: user-written partial implementation already exists for this declaration.
+            // SDA0102: この宣言に対するユーザー実装済みの partial が既に存在する。
+            // SDA0102: a user-written partial implementation already exists for this declaration.
             if (member.PartialImplementationPart is not null)
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -274,6 +287,7 @@ internal static class AccessorModelBuilder
             string? procedureName = null;
             var isDirectSql = false;
             var isExecuteNonScalar = false;
+            // SDA0103: 実行種別属性（A 群）は排他なので出現回数を数える。
             // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
             var executionKindCount = 0;
             foreach (var attr in member.GetAttributes())
@@ -301,9 +315,10 @@ internal static class AccessorModelBuilder
                 }
                 else if (IsQueryBuilderAttribute(attr.AttributeClass))
                 {
-                    // Design doc §4.5: a QueryBuilder-derived attribute ([Insert]/[Update]/…)
-                    // means the SQL is built by Builders.Generator's `{Method}__QueryBuilder`.
-                    // The core generator only needs the convention-derived helper name.
+                    // QueryBuilder 派生属性（[Insert]/[Update]/…）は、SQL を Builders.Generator の {Method}__QueryBuilder が組むことを意味する。
+                    // コア Generator は規約から導いたヘルパー名だけを必要とする。
+                    // A QueryBuilder-derived attribute ([Insert]/[Update]/...) means the SQL is built by Builders.Generator's
+                    // {Method}__QueryBuilder; the core generator only needs the convention-derived helper name.
                     builder = member.Name + QueryBuilderMethodSuffix;
                 }
                 else if ((fullName == MethodNameAttributeName) &&
@@ -312,6 +327,7 @@ internal static class AccessorModelBuilder
                     !String.IsNullOrEmpty(aliasValue))
                 {
                     sqlAlias = aliasValue;
+                    // SDA0106: 同一クラス内で [MethodName("X")] が重複している。
                     // SDA0106: [MethodName("X")] is duplicated within the same class.
                     if (seenMethodNames.ContainsKey(aliasValue))
                     {
@@ -332,6 +348,7 @@ internal static class AccessorModelBuilder
                 {
                     procedureName = procName;
                     kind ??= "Execute";
+                    // SDA0204: [Procedure("")] 手続き名が空 → 警告。
                     // SDA0204: [Procedure("")] empty stored procedure name -> warning.
                     if (String.IsNullOrEmpty(procName))
                     {
@@ -343,8 +360,9 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // [DirectSql] short-circuits SQL file lookup; the first `string` parameter
-            // (after connection/transaction/CT) supplies cmd.CommandText at runtime.
+            // [DirectSql] は SQL ファイル探索を省略する。conn/tx/CT を除いた最初の string 引数が実行時に cmd.CommandText を供給する。
+            // [DirectSql] short-circuits SQL file lookup; the first `string` parameter (after connection/transaction/CT)
+            // supplies cmd.CommandText at runtime.
             if (isDirectSql)
             {
                 kind = "DirectSql";
@@ -355,6 +373,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
+            // SDA0103: 同一メソッドに実行種別属性（A 群）が複数（排他違反）。
             // SDA0103: more than one execution-kind attribute (A-group) on the same method (exclusive).
             if (executionKindCount >= 2)
             {
@@ -365,6 +384,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
+            // SDA0104: [Procedure] と [DirectSql] の併用（B 群コマンドソースは排他）。
             // SDA0104: [Procedure] combined with [DirectSql] (B-group command sources are exclusive).
             if (isDirectSql && (procedureName is not null))
             {
@@ -375,8 +395,9 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0105: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql]
-            // (the SQL source is ambiguous; the SQL-file combinations are SDA0405 / SDA0404 / SDA0403).
+            // SDA0105: QueryBuilder 属性は [Procedure] / [DirectSql] と併用できない（SQL ソースが曖昧。SQL ファイル併用は SDA0405 / SDA0404 / SDA0403）。
+            // SDA0105: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql] (the SQL source is
+            // ambiguous; the SQL-file combinations are SDA0405 / SDA0404 / SDA0403).
             if ((builder is not null) && (isDirectSql || (procedureName is not null)))
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -386,12 +407,14 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // spec §7.11 (P3): SQL-file resolution + its conflict diagnostics (SDA0402 / SDA0403 /
-            // SDA0405 / SDA0404 / SqlNotFound) and the 2-way-SQL parse run in the output stage
-            // (they need the .sql files). Here we keep only the symbol-derived checks.
+            // SQL ファイルの解決とその衝突診断（SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound）、および 2-way SQL の解析は
+            // .sql を要するため出力段で行う。ここでは symbol 由来のチェックだけを行う。
+            // SQL-file resolution + its conflict diagnostics (SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound) and the
+            // 2-way-SQL parse run in the output stage (they need the .sql files); here we keep only the symbol-derived checks.
             if (isDirectSql)
             {
-                // SDA0203: first parameter (after conn/tx/CT) must be `string`.
+                // SDA0203: （conn/tx/CT を除いた）最初の引数は string でなければならない。
+                // SDA0203: the first parameter (after conn/tx/CT) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(p =>
                     (p.Type.ToDisplayString() != CancellationTokenTypeName) &&
                     !IsDbConnectionType(p.Type) &&
@@ -407,6 +430,7 @@ internal static class AccessorModelBuilder
                 }
             }
 
+            // SDA0201: パラメータ上の [Name("X")] 重複を（このメソッド内で）検出する。
             // SDA0201: detect duplicate [Name("X")] on parameters (within this method).
             var seenParamNames = new Dictionary<string, IParameterSymbol>(StringComparer.Ordinal);
             var sawNameDuplicate = false;
@@ -471,14 +495,15 @@ internal static class AccessorModelBuilder
                         var ctorVal = pa.ConstructorArguments[0].Value;
                         if ((ctorVal is not null) && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
                         {
+                            // enum 値の式を組み立てる：(global::Ns.Enum)42。
                             // Build the enum-value expression: `(global::Ns.Enum)42`.
                             var rawVal = Convert.ToInt64(ctorVal, CultureInfo.InvariantCulture)
                                 .ToString(CultureInfo.InvariantCulture);
                             var enumValueExpr = $"({enumFqn}){rawVal}";
                             if (routeAsBclDbType)
                             {
-                                // System.Data.DbType: route through the existing DbTypeExpr path,
-                                // equivalent to a non-generic [DbType(DbType)] attribute.
+                                // System.Data.DbType の場合は既存の DbTypeExpr パスへ流す（非ジェネリックな [DbType(DbType)] 属性と等価）。
+                                // System.Data.DbType: route through the existing DbTypeExpr path, equivalent to a non-generic [DbType(DbType)] attribute.
                                 dbTypeExpr = enumValueExpr;
                             }
                             else
@@ -526,8 +551,10 @@ internal static class AccessorModelBuilder
                         p.Name));
                 }
 
-                // spec §5.6: OUT / InputOutput parameters need a concrete DbType (else sql_variant).
-                // Infer from the CLR type when no explicit [DbType] / provider DbType is present.
+                // OUT / InputOutput パラメータは具体的な DbType を必要とする（無いと sql_variant 扱いになる）。
+                // 明示的な [DbType] / プロバイダ DbType が無ければ CLR 型から推論する。
+                // OUT / InputOutput parameters need a concrete DbType (otherwise sql_variant).
+                // Infer it from the CLR type when no explicit [DbType] / provider DbType is present.
                 if ((dbTypeExpr is null) && (providerParamTypeFqn is null) &&
                     (direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput))
                 {
@@ -544,9 +571,10 @@ internal static class AccessorModelBuilder
                 var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
                 var isNullableEnumParam = enumInfo?.IsNullable ?? false;
 
-                // spec §7.4 / §7.7: resolve a [TypeHandler<>] for this parameter across the
-                // member → method → class → profile scope chain. When present, the bound value is
-                // written via TConverter.ToDb(...). Structural parameters never carry a converter.
+                // このパラメータの [TypeHandler<>] を member → method → class → profile のスコープ鎖で解決する。
+                // 解決できれば束縛値は TConverter.ToDb(...) 経由で書き込む。構造パラメータは converter を持たない。
+                // Resolve a [TypeHandler<>] for this parameter across the member -> method -> class -> profile scope chain.
+                // When present, the bound value is written via TConverter.ToDb(...). Structural parameters never carry a converter.
                 string? converterFqn = null;
                 var converterNullableValue = false;
                 string? converterDbFqn = null;
@@ -565,9 +593,10 @@ internal static class AccessorModelBuilder
                     }
                 }
 
-                // spec §7.5 / §7.7: a class/profile [TypeMap] supplies the DbType when no explicit
-                // [DbType]/[AnsiString], provider DbType, or converter applies (a converter rewrites
-                // the value to TDb, so its DbType is governed by the converter, not the CLR type).
+                // 明示的な [DbType]/[AnsiString]、プロバイダ DbType、converter のいずれも効かないとき、class/profile の [TypeMap] が DbType を与える
+                // （converter は値を TDb に書き換えるので、その DbType は CLR 型ではなく converter が決める）。
+                // A class/profile [TypeMap] supplies the DbType when no explicit [DbType]/[AnsiString], provider DbType, or
+                // converter applies (a converter rewrites the value to TDb, so its DbType is governed by the converter, not the CLR type).
                 if ((dbTypeExpr is null) && (converterFqn is null) && (providerParamTypeFqn is null) &&
                     MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var typeMap))
                 {
@@ -575,9 +604,10 @@ internal static class AccessorModelBuilder
                     size ??= typeMap.Size;
                 }
 
-                // spec §5.6: a POCO argument on a [Procedure]/[DirectSql] method expands into one
-                // parameter per public property (the argument itself is not bound). 2-way SQL methods
-                // reference POCO members via /*@ arg.Prop */ instead, so expansion is limited here.
+                // [Procedure]/[DirectSql] メソッドの POCO 引数は public プロパティ 1 つにつき 1 パラメータへ展開される（引数自体は束縛しない）。
+                // 2-way SQL メソッドは POCO メンバを /*@ arg.Prop */ で参照するので、ここでの展開は限定的。
+                // A POCO argument on a [Procedure]/[DirectSql] method expands into one parameter per public property (the
+                // argument itself is not bound). 2-way SQL methods reference POCO members via /*@ arg.Prop */ instead, so expansion is limited here.
                 IReadOnlyList<PocoBindProperty>? pocoProperties = null;
                 if (((procedureName is not null) || isDirectSql) &&
                     (p.RefKind == RefKind.None) &&
@@ -586,8 +616,8 @@ internal static class AccessorModelBuilder
                     pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
                 }
 
-                // SDA0510: mirror the old HasPublicMember semantics — public property/field on the
-                // type and its bases, plus properties from implemented interfaces.
+                // SDA0510: 旧 HasPublicMember の意味論に合わせる — 型とその基底の public プロパティ/フィールド、加えて実装インタフェースのプロパティ。
+                // SDA0510: mirror the old HasPublicMember semantics — public property/field on the type and its bases, plus properties from implemented interfaces.
                 var memberNames = new HashSet<string>(StringComparer.Ordinal);
                 for (var mt = p.Type; mt is not null; mt = mt.BaseType)
                 {
@@ -634,6 +664,7 @@ internal static class AccessorModelBuilder
                     new EquatableArray<string>(memberNames.ToArray()));
             }).ToList();
 
+            // Pattern A/B 判定：DbConnection / DbTransaction パラメータの有無を走査する。
             // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
             var connectionParam = parameters.FirstOrDefault(p => p.IsDbConnection);
             var transactionParam = parameters.FirstOrDefault(p => p.IsDbTransaction);
@@ -651,7 +682,8 @@ internal static class AccessorModelBuilder
                 connectionPattern = ConnectionPatternLegacy.None;
             }
 
-            // Method-level [CommandTimeout(N)] / [Timeout(N)]
+            // メソッドレベルの [CommandTimeout(N)] / [Timeout(N)]。
+            // Method-level [CommandTimeout(N)] / [Timeout(N)].
             int? commandTimeout = null;
             foreach (var ma in member.GetAttributes())
             {
@@ -671,8 +703,10 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0302: [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
-            // (Does not apply to [ExecuteScalar], which supports arbitrary scalar T.)
+            // SDA0302: [Execute] の戻り値型は int/void/Task/Task<int>/ValueTask/ValueTask<int> のいずれかでなければならない
+            // （任意のスカラー T を許す [ExecuteScalar] には適用しない）。
+            // SDA0302: an [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
+            // (Does not apply to [ExecuteScalar], which supports an arbitrary scalar T.)
             if ((kind == "Execute") && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -683,7 +717,8 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0303 Error / SDA0304 Info: [ExecuteReader] return shape validation (spec §1.4 F3 / §11.4).
+            // SDA0303 Error / SDA0304 Info: [ExecuteReader] の戻り値シェイプを検証する。
+            // SDA0303 Error / SDA0304 Info: [ExecuteReader] return-shape validation.
             if (kind == "ExecuteReader")
             {
                 if (!IsReaderShape(shape.Value))
@@ -701,7 +736,8 @@ internal static class AccessorModelBuilder
                     member.Name));
             }
 
-            // §7.8.1 F13 / SDA0305: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
+            // SDA0305: IAsyncEnumerable<T> は CT パラメータに [EnumeratorCancellation] を要求する。
+            // SDA0305: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
             if (shape == ReturnShapeLegacy.AsyncEnumerable)
             {
                 var ctParam = member.Parameters.FirstOrDefault(p => p.Type.ToDisplayString() == CancellationTokenTypeName);
@@ -716,7 +752,8 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // For Query kind, list/asyncenum must have a mappable element type.
+            // Query 種別では、list/asyncenum はマッピング可能な要素型を持たねばならない。
+            // For the Query kind, a list/asyncenum must have a mappable element type.
             IReadOnlyList<ColumnInfo>? queryColumns = null;
             var useRecordPrimaryCtor = false;
             if (kind == "Query")
@@ -732,7 +769,8 @@ internal static class AccessorModelBuilder
                 useRecordPrimaryCtor = ctorPath;
                 if (ctorPath)
                 {
-                    // spec §7.8 / §7.10.5: inform the user that the record primary ctor path was selected.
+                    // record の primary ctor パスが選択されたことをユーザーに知らせる。
+                    // Inform the user that the record primary-constructor path was selected.
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.RecordPrimaryConstructorPath,
                         member.Locations.FirstOrDefault(),
@@ -743,6 +781,7 @@ internal static class AccessorModelBuilder
 
             var methodMarker = ResolveBindMarker(member.GetAttributes()) ?? classMarker ?? DefaultBindMarker;
 
+            // リテラル SQL が与えられている場合（Builder 無し）に SQL をトークナイズして emit する。
             // Tokenize & emit SQL when a literal SQL is provided (no Builder).
             string? sqlEmitCode = null;
             string? staticSqlText = null;
@@ -751,7 +790,8 @@ internal static class AccessorModelBuilder
             IReadOnlyList<UsingDirective> methodUsings = Array.Empty<UsingDirective>();
             string? directSqlParameterName = null;
 
-            // SDA0205: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3).
+            // SDA0205: 非同期 [Procedure] は out/ref パラメータを使えない。
+            // SDA0205: an async [Procedure] cannot use out/ref parameters.
             if ((procedureName is not null) && IsAsyncShape(shape.Value))
             {
                 foreach (var ms in member.Parameters)
@@ -767,9 +807,12 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // SDA0208 / SDA0209: [Direction] consistency checks (spec §1.4 F4 / §11.3).
+            // SDA0208 / SDA0209: [Direction] の整合性チェック。
+            //  - SDA0208: [Direction] と RefKind の不一致。
+            //  - SDA0209: [Procedure] / [Execute] / [DirectSql] 以外のメソッド種別で [Direction] を使用。
+            // SDA0208 / SDA0209: [Direction] consistency checks.
             //  - SDA0208: [Direction] vs. RefKind mismatch.
-            //  - SDA0209: [Direction] used on method kinds other than [Procedure] / [Execute] / [DirectSql].
+            //  - SDA0209: [Direction] used on a method kind other than [Procedure] / [Execute] / [DirectSql].
             var directionAllowedKind = (kind == "Execute") || (kind == "DirectSql");
             foreach (var ms in member.Parameters)
             {
@@ -793,8 +836,8 @@ internal static class AccessorModelBuilder
                 }
                 if (pm.Direction == ParameterDirectionKindLegacy.ReturnValue)
                 {
-                    // spec §5.6: [Direction(ReturnValue)] is retired; the stored-procedure RETURN value
-                    // maps to the method's scalar return value instead.
+                    // [Direction(ReturnValue)] は廃止。ストアドの RETURN 値はメソッドのスカラー戻り値へマップする。
+                    // [Direction(ReturnValue)] is retired; the stored-procedure RETURN value maps to the method's scalar return value instead.
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.ReturnValueDirectionNotAllowed,
                         ms.Locations.FirstOrDefault(),
@@ -828,7 +871,8 @@ internal static class AccessorModelBuilder
 
             if (isDirectSql)
             {
-                // First `string` parameter (excluding conn/tx/CT) is the SQL source.
+                // （conn/tx/CT を除いた）最初の string パラメータが SQL ソース。
+                // The first `string` parameter (excluding conn/tx/CT) is the SQL source.
                 var sqlParam = parameters.FirstOrDefault(p =>
                     !p.IsCancellationToken &&
                     !p.IsDbConnection &&
@@ -836,8 +880,10 @@ internal static class AccessorModelBuilder
                     (p.TypeFullName == "string"));
                 directSqlParameterName = sqlParam?.Name;
 
-                // spec §1.4 F14: SDA0211 — [Direction] on the SQL-source string parameter is invalid.
-                // ([Direction(ReturnValue)] anywhere is reported generally above, SDA0210 / §5.6.)
+                // SDA0211 — SQL ソースの string パラメータに [Direction] を付けるのは無効
+                // （[Direction(ReturnValue)] はどこに付いても上で一律 SDA0210 として報告済み）。
+                // SDA0211 — [Direction] on the SQL-source string parameter is invalid.
+                // ([Direction(ReturnValue)] anywhere is reported generally above as SDA0210.)
                 foreach (var ms in member.Parameters)
                 {
                     var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
@@ -855,9 +901,10 @@ internal static class AccessorModelBuilder
                     }
                 }
 
-                // Output bindings for OUT / InOut parameters (skip the SQL source param and
-                // any erroneous ReturnValue assignments — those have already been reported).
-                // POCO-argument output properties (spec §5.6) are added via PocoOutputBindings.
+                // OUT / InOut パラメータの出力束縛（SQL ソース引数と、誤った ReturnValue 指定はスキップ — 既に報告済み）。
+                // POCO 引数の出力プロパティは PocoOutputBindings 経由で追加する。
+                // Output bindings for OUT / InOut parameters (skip the SQL-source param and any erroneous ReturnValue
+                // assignments — those have already been reported). POCO-argument output properties are added via PocoOutputBindings.
                 outputBindings = parameters
                     .Where(p => (p.PocoProperties is null) && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
@@ -871,8 +918,8 @@ internal static class AccessorModelBuilder
             }
             else if (procedureName is not null)
             {
-                // Procedure: bindings are derived from method parameters with non-Input Direction,
-                // plus POCO-argument output properties (spec §5.6).
+                // Procedure：束縛は Input 以外の Direction を持つメソッドパラメータと、POCO 引数の出力プロパティから導く。
+                // Procedure: bindings are derived from method parameters with a non-Input Direction, plus POCO-argument output properties.
                 outputBindings = parameters
                     .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionKindLegacy.Input))
                     .Select(p => new OutputBinding(
@@ -883,12 +930,13 @@ internal static class AccessorModelBuilder
                     .ToList();
             }
 
-            // QueryBuilder method (`{Method}__QueryBuilder`) is fully generated by
-            // Builders.Generator (design doc §4.6); no user-declared method to validate.
+            // QueryBuilder メソッド（{Method}__QueryBuilder）は Builders.Generator が完全生成するので、検証すべきユーザー宣言メソッドは無い。
+            // The QueryBuilder method ({Method}__QueryBuilder) is fully generated by Builders.Generator; there is no user-declared method to validate.
 
-            // spec §7.4 / §7.7: resolve a [TypeHandler<>] for the scalar return value across the
-            // [return:] → method → class → profile scope chain. Only genuine scalar shapes carry a
-            // candidate type; entity/POCO returns never match a converter TClr so resolution is null.
+            // スカラー戻り値の [TypeHandler<>] を [return:] → method → class → profile のスコープ鎖で解決する。
+            // 候補型を持つのは真のスカラーシェイプだけ。entity/POCO 戻り値は converter の TClr に一致しないので解決は null。
+            // Resolve a [TypeHandler<>] for the scalar return value across the [return:] -> method -> class -> profile scope chain.
+            // Only genuine scalar shapes carry a candidate type; entity/POCO returns never match a converter TClr, so resolution is null.
             string? scalarConverterFqn = null;
             string? scalarConverterDbType = null;
             var scalarSymbol = shape.Value switch
@@ -908,8 +956,8 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // spec §5.6: a [Procedure] with a scalar return maps the stored-procedure RETURN value to
-            // the method's return value (via an auto-added ReturnValue parameter).
+            // スカラー戻り値を持つ [Procedure] は、ストアドの RETURN 値を（自動追加した ReturnValue パラメータ経由で）メソッドの戻り値へマップする。
+            // A [Procedure] with a scalar return maps the stored-procedure RETURN value to the method's return value (via an auto-added ReturnValue parameter).
             var mapsProcedureReturnValue = (procedureName is not null) &&
                 (shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar);
 
@@ -954,6 +1002,7 @@ internal static class AccessorModelBuilder
             ? string.Empty
             : classSymbol.ContainingNamespace.ToDisplayString();
 
+        // クラスレベル属性を読む：[Inject(...)] / [Provider("...")] / [ExecuteConfig(...)]。
         // Read class-level attributes: [Inject(...)], [Provider("...")], [ExecuteConfig(...)].
         string? providerName = null;
         var injects = new List<InjectModel>();
@@ -967,6 +1016,7 @@ internal static class AccessorModelBuilder
                 (attr.ConstructorArguments[1].Value is string injectName) &&
                 !String.IsNullOrEmpty(injectName))
             {
+                // SDA0010: 同一クラス内で [Inject] の Name が重複している。
                 // SDA0010: duplicate [Inject] Name within the same class.
                 if (!seenInjectNames.Add(injectName))
                 {
@@ -978,7 +1028,9 @@ internal static class AccessorModelBuilder
                     continue;
                 }
 
-                // SDA0011: [Inject] Name collides with an existing field/property in the (partial) class
+                // SDA0011: [Inject] の Name が（partial）クラス内の既存フィールド/プロパティ、または予約済みプロバイダ ctor 引数
+                // （dbProvider / providerSelector）と衝突している。
+                // SDA0011: an [Inject] Name collides with an existing field/property in the (partial) class
                 // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
                 if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || (injectName is "dbProvider" or "providerSelector"))
                 {
@@ -1009,6 +1061,7 @@ internal static class AccessorModelBuilder
                 (attr.ConstructorArguments[0].Value is string pName))
             {
                 providerName = pName;
+                // SDA0014: [Provider("")] 名前が空 → 警告。
                 // SDA0014: [Provider("")] empty name -> warning.
                 if (String.IsNullOrEmpty(pName))
                 {
@@ -1022,7 +1075,8 @@ internal static class AccessorModelBuilder
                 (attr.ConstructorArguments.Length >= 1) &&
                 (attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType))
             {
-                // SDA0016: target type must carry [AccessorProfile].
+                // SDA0016: 対象型は [AccessorProfile] を持たねばならない。
+                // SDA0016: the target type must carry [AccessorProfile].
                 var profileAttrs = profileType.GetAttributes();
                 var hasProfile = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == AccessorProfileAttributeName);
                 if (!hasProfile)
@@ -1033,6 +1087,7 @@ internal static class AccessorModelBuilder
                         classSymbol.Name,
                         profileType.ToDisplayString()));
                 }
+                // SDA0017: profile 自身は [ExecuteConfig] を持ってはならない（循環参照になる）。
                 // SDA0017: the profile itself must not have [ExecuteConfig] (would be circular).
                 var profileHasConfig = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName);
                 if (profileHasConfig)
@@ -1047,6 +1102,7 @@ internal static class AccessorModelBuilder
 
         var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
 
+        // SDA0015: [Provider] が設定されているのに、IDbProviderSelector.GetProvider(name) を消費する Pattern B メソッドが無い。
         // SDA0015: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
         if ((providerName is not null) && (methods.Count > 0) && !requiresFactory)
         {
@@ -1057,9 +1113,10 @@ internal static class AccessorModelBuilder
                 providerName));
         }
 
-        // spec §7.11 (P3) / SDA0013: compute the code-reference half here (symbol-derived). The
-        // SQL-file-reference half and the SDA0013 diagnostic itself are evaluated at the output stage
-        // (which has the .sql files); the result is carried on InjectModel.ReferencedInCode.
+        // SDA0013: コード参照側の判定をここで（symbol 由来で）計算する。SQL ファイル参照側と SDA0013 診断本体は
+        // .sql を持つ出力段で評価する。結果は InjectModel.ReferencedInCode に載せて運ぶ。
+        // SDA0013: compute the code-reference half here (symbol-derived). The SQL-file-reference half and the SDA0013
+        // diagnostic itself are evaluated at the output stage (which has the .sql files); the result is carried on InjectModel.ReferencedInCode.
         for (var i = 0; i < injects.Count; i++)
         {
             var injectedName = injects[i].Name;
@@ -1120,8 +1177,8 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    // SDA0013: whole-word occurrence of `name` in arbitrary text (SQL), with identifier-char
-    // boundaries so e.g. inject "log" does not match "dialog".
+    // SDA0013: 任意テキスト（SQL）内で name が単語単位で出現するか。識別子文字境界を見るので、例えば inject "log" は "dialog" に一致しない。
+    // SDA0013: whole-word occurrence of `name` in arbitrary text (SQL), with identifier-char boundaries so e.g. inject "log" does not match "dialog".
     private static bool ReferencesIdentifier(string text, string name)
     {
         if (String.IsNullOrEmpty(name))
@@ -1147,8 +1204,8 @@ internal static class AccessorModelBuilder
 
     private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
     {
-        // SDA0012: warn for value types or unconstructed open generics, since
-        // IServiceProvider.GetService typically returns null for these.
+        // SDA0012: 値型や未構築のオープンジェネリックは警告する。IServiceProvider.GetService がこれらに対して通常 null を返すため。
+        // SDA0012: warn for value types or unconstructed open generics, since IServiceProvider.GetService typically returns null for these.
         if (type.IsValueType)
         {
             return false;
@@ -1196,13 +1253,12 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    /// <summary>
-    /// spec §1.4 F15 / §5.3.1: provider enum whitelist. Returns <c>true</c> with the
-    /// matching provider <c>DbParameter</c> derived type and its native DbType property name
-    /// for whitelisted enum types. The BCL <c>System.Data.DbType</c> sets
-    /// <paramref name="routeAsBclDbType"/> to <c>true</c> so the caller routes it through
-    /// the existing <c>DbTypeExpr</c> emission path instead of emitting a provider cast.
-    /// </summary>
+    // プロバイダ enum のホワイトリスト。許可された enum 型については true を返し、対応するプロバイダの DbParameter 派生型と
+    // そのネイティブ DbType プロパティ名を出力する。BCL の System.Data.DbType の場合は routeAsBclDbType を true にして、
+    // 呼び出し側がプロバイダキャストを出さず既存の DbTypeExpr 出力パスへ流すようにする。
+    // Provider enum whitelist. Returns true with the matching provider DbParameter-derived type and its native DbType
+    // property name for whitelisted enum types. The BCL System.Data.DbType sets routeAsBclDbType to true so the caller
+    // routes it through the existing DbTypeExpr emission path instead of emitting a provider cast.
     private static bool TryGetProviderDbTypeMapping(
         string enumFullyQualifiedName,
         out string providerParameterTypeFullName,
@@ -1264,8 +1320,8 @@ internal static class AccessorModelBuilder
             return ReturnShapeLegacy.Void;
         }
 
-        // §1.4.4: T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / anonymous types
-        // are permanently retired as return types (SDA0301).
+        // T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / 匿名型は戻り値型として恒久的に廃止（SDA0301）。
+        // T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / anonymous types are permanently retired as return types (SDA0301).
         if (IsDisallowedReturnType(returnType))
         {
             return null;
@@ -1281,7 +1337,8 @@ internal static class AccessorModelBuilder
         {
             var fq = named.ConstructedFrom.ToDisplayString();
 
-            // Task / ValueTask (non-generic)
+            // Task / ValueTask（非ジェネリック）。
+            // Task / ValueTask (non-generic).
             if (fq == "System.Threading.Tasks.Task")
             {
                 return ReturnShapeLegacy.Task;
@@ -1341,7 +1398,8 @@ internal static class AccessorModelBuilder
                     elementSymbol = arg as INamedTypeSymbol;
                     return ReturnShapeLegacy.AsyncEnumerable;
                 }
-                // §7.8.1: IEnumerable<T> is an iterator (Generator emits yield return directly).
+                // IEnumerable<T> はイテレータ（Generator が yield return を直接 emit する）。
+                // IEnumerable<T> is an iterator (the Generator emits yield return directly).
                 if (fq == "System.Collections.Generic.IEnumerable<T>")
                 {
                     elementFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -1355,11 +1413,13 @@ internal static class AccessorModelBuilder
             }
         }
 
-        // Plain scalar (int, string, etc.) or a single mapped entity (QueryFirst → T / T?).
-        // For a non-primitive named type, mirror the Task<T> branch so a sync single-POCO
-        // Query resolves its element symbol (the emit side already supports
-        // ReturnShapeLegacy.Scalar for Query). Primitive scalars (SpecialType set) keep
-        // elementSymbol null so [ExecuteScalar]/scalar paths are unaffected.
+        // 単純スカラー（int, string 等）、または単一のマップ済みエンティティ（QueryFirst → T / T?）。
+        // 非プリミティブの名前付き型では Task<T> 分岐と同じ扱いにし、同期の単一 POCO Query が要素 symbol を解決できるようにする
+        // （emit 側は Query の ReturnShapeLegacy.Scalar を既にサポート）。プリミティブスカラー（SpecialType 集合）は
+        // elementSymbol を null のままにし、[ExecuteScalar]/スカラーのパスに影響を与えない。
+        // Plain scalar (int, string, etc.) or a single mapped entity (QueryFirst -> T / T?). For a non-primitive named
+        // type, mirror the Task<T> branch so a sync single-POCO Query resolves its element symbol (the emit side already
+        // supports ReturnShapeLegacy.Scalar for Query). Primitive scalars (the SpecialType set) keep elementSymbol null, so [ExecuteScalar]/scalar paths are unaffected.
         scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if ((returnType.SpecialType == SpecialType.None) && (returnType is INamedTypeSymbol scalarNamed))
         {
@@ -1369,7 +1429,8 @@ internal static class AccessorModelBuilder
         return ReturnShapeLegacy.Scalar;
     }
 
-    // §1.4.4 / §7.8.1: types permanently retired as return types.
+    // 戻り値型として恒久的に廃止された型かどうか。
+    // Types permanently retired as return types.
     private static bool IsDisallowedReturnType(ITypeSymbol type)
     {
         if (type is IArrayTypeSymbol)
@@ -1390,6 +1451,7 @@ internal static class AccessorModelBuilder
             {
                 return true;
             }
+            // Tuple / ValueTuple はアリティのサフィックスが付く（System.Tuple<T1>、System.ValueTuple<T1, T2>、…）。
             // Tuple / ValueTuple are arity-suffixed (`System.Tuple<T1>`, `System.ValueTuple<T1, T2>`, ...).
             if (fq.StartsWith("System.Tuple<", StringComparison.Ordinal)
                 || fq.StartsWith("System.ValueTuple<", StringComparison.Ordinal))
@@ -1409,8 +1471,8 @@ internal static class AccessorModelBuilder
             return false;
         }
         var fq = named.ConstructedFrom.ToDisplayString();
-        // §7.8.1: BufferList shape — List<T> / IList<T> / IReadOnlyList<T>.
-        // IEnumerable<T> is handled separately as IteratorEnumerable.
+        // BufferList シェイプ — List<T> / IList<T> / IReadOnlyList<T>。IEnumerable<T> は IteratorEnumerable として別扱い。
+        // BufferList shape — List<T> / IList<T> / IReadOnlyList<T>. IEnumerable<T> is handled separately as IteratorEnumerable.
         if (fq is "System.Collections.Generic.List<T>"
             or "System.Collections.Generic.IList<T>"
             or "System.Collections.Generic.IReadOnlyList<T>"
@@ -1434,9 +1496,10 @@ internal static class AccessorModelBuilder
     {
         var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
 
-        // spec §7.4 / §7.7 / §7.10: resolve+validate the [TypeHandler<>] for a property across the
-        // member → method → class → profile scope chain and, on success, build the reader-side
-        // binding (TDb read method + converter FQN). Returns null when absent/invalid.
+        // プロパティの [TypeHandler<>] を member → method → class → profile のスコープ鎖で解決・検証し、成功時は reader 側の
+        // 束縛（TDb 読み取りメソッド ＋ converter FQN）を組む。無い／無効なときは null を返す。
+        // Resolve + validate the [TypeHandler<>] for a property across the member -> method -> class -> profile scope chain
+        // and, on success, build the reader-side binding (TDb read method + converter FQN). Returns null when absent/invalid.
         ConverterReadBinding? ResolveConverterBinding(ISymbol member, ITypeSymbol type)
         {
             var conv = ConverterResolver.Resolve(diagnostics, method, member.Name, member.GetAttributes(), type, scope);
@@ -1451,9 +1514,10 @@ internal static class AccessorModelBuilder
                 tdbReader);
         }
 
-        // SDA0307 (Info): a non-nullable reference-type column read as DB NULL falls through as
-        // default! (i.e. null), an NRT hole. [NotNullColumn] opts out; converter-bound and value-type
-        // columns are excluded (a value-type default is benign).
+        // SDA0307 (Info): 非 null の参照型カラムが DB NULL として読まれると default!（＝ null）に落ち、NRT の穴になる。
+        // [NotNullColumn] でオプトアウト可。converter 束縛および値型のカラムは除外（値型の default は無害）。
+        // SDA0307 (Info): a non-nullable reference-type column read as DB NULL falls through as default! (i.e. null), an
+        // NRT hole. [NotNullColumn] opts out; converter-bound and value-type columns are excluded (a value-type default is benign).
         void CheckNonNullableDbNull(ITypeSymbol type, string propName, bool skipNullCheck, ConverterReadBinding? converter)
         {
             if ((converter is null) && !skipNullCheck &&
@@ -1467,11 +1531,12 @@ internal static class AccessorModelBuilder
             }
         }
 
-        // spec §7.8 / §7.10.5: record with a primary constructor binds via positional
-        // ctor invocation (`new T(name: ..., ...)`). The ordinal cache and column reads
-        // are built from the primary ctor parameter list (in declaration order);
-        // `[property: Name(...)]` and `[property: Ignore]` flow through the synthesized
-        // property's attribute list.
+        // primary constructor を持つ record は位置引数の ctor 呼び出し（new T(name: ..., ...)）で束縛する。
+        // 序数キャッシュとカラム読み取りは primary ctor のパラメータ列（宣言順）から組む。
+        // [property: Name(...)] と [property: Ignore] は合成プロパティの属性リストを通って伝わる。
+        // A record with a primary constructor binds via a positional ctor invocation (`new T(name: ..., ...)`). The ordinal
+        // cache and column reads are built from the primary ctor parameter list (in declaration order); `[property: Name(...)]`
+        // and `[property: Ignore]` flow through the synthesized property's attribute list.
         if (entity.IsRecord && TryGetRecordPrimaryConstructor(entity, out var primaryCtor))
         {
             var ctorInfos = new List<ColumnInfo>();
@@ -1508,7 +1573,8 @@ internal static class AccessorModelBuilder
             }
             var propAttrs = prop.GetAttributes();
             var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(prop);
-            // [Ignore] now means exclude everywhere (phase 2 §2.3).
+            // [Ignore] は現在どこでも「除外」を意味する。
+            // [Ignore] now means exclude everywhere.
             if (isIgnored)
             {
                 continue;
@@ -1524,12 +1590,12 @@ internal static class AccessorModelBuilder
         return (infos, false);
     }
 
-    /// <summary>
-    /// Locates the primary constructor of a record by checking whether any of the
-    /// instance ctor's DeclaringSyntaxReferences points to a <c>RecordDeclarationSyntax</c>
-    /// (i.e., the ctor is synthesized from the positional record declaration itself, not
-    /// from a separate <c>ConstructorDeclarationSyntax</c>).
-    /// </summary>
+    // record の primary constructor を特定する。インスタンス ctor の DeclaringSyntaxReferences のいずれかが
+    // RecordDeclarationSyntax を指すか（＝その ctor が別個の ConstructorDeclarationSyntax からではなく、位置引数
+    // record 宣言そのものから合成された）で判定する。
+    // Locates the primary constructor of a record by checking whether any of the instance ctor's DeclaringSyntaxReferences
+    // points to a RecordDeclarationSyntax (i.e., the ctor is synthesized from the positional record declaration itself,
+    // not from a separate ConstructorDeclarationSyntax).
     private static bool TryGetRecordPrimaryConstructor(INamedTypeSymbol entity, out IMethodSymbol primaryCtor)
     {
         foreach (var ctor in entity.InstanceConstructors)
@@ -1551,13 +1617,12 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    /// <summary>
-    /// Maps a CLR property type to its concrete <c>DbDataReader.GetXxx</c> method, or returns
-    /// <c>null</c> when no built-in fast path exists (in which case the emit falls back to
-    /// <c>ExecuteHelper.GetValue&lt;T&gt;</c>). Unwraps <c>Nullable&lt;T&gt;</c>; the underlying type
-    /// drives the dispatch. For Enum types, returns the underlying primitive's <c>GetXxx</c> method
-    /// plus the enum's FQN so the caller can emit an explicit cast (spec §7.9 / §7.10.3).
-    /// </summary>
+    // CLR プロパティ型を具体的な DbDataReader.GetXxx メソッドへ対応付ける。組み込みの高速パスが無ければ null を返す
+    // （その場合 emit は ExecuteHelper.GetValue<T> にフォールバックする）。Nullable<T> はアンラップし、基底型でディスパッチする。
+    // Enum 型では基底プリミティブの GetXxx メソッドと enum の FQN を返し、呼び出し側が明示キャストを emit できるようにする。
+    // Maps a CLR property type to its concrete DbDataReader.GetXxx method, or returns null when no built-in fast path
+    // exists (in which case the emit falls back to ExecuteHelper.GetValue<T>). Unwraps Nullable<T>; the underlying type
+    // drives the dispatch. For Enum types, returns the underlying primitive's GetXxx method plus the enum's FQN so the caller can emit an explicit cast.
     private static (string? TypedReader, bool IsValueType, bool IsNullable, string? EnumCastFullName, string? EnumUnderlyingCast) ClassifyColumnType(ITypeSymbol propertyType)
     {
         var isNullable = propertyType.NullableAnnotation == NullableAnnotation.Annotated;
@@ -1571,10 +1636,12 @@ internal static class AccessorModelBuilder
 
         var isValueType = underlying.IsValueType;
 
-        // Enum: read the same-size signed primitive then cast back to the enum (spec §7.9 / §7.10.3).
-        // DbDataReader exposes no GetSByte / GetUInt16/32/64, so unsigned (and sbyte) underlyings read
-        // the signed counterpart and add an intermediate bit-preserving cast to the unsigned/sbyte
-        // underlying — e.g. (MyEnum)(uint)reader.GetInt32(ord) — avoiding the boxing GetValue<T> path.
+        // Enum：同サイズの符号付きプリミティブを読んでから enum へキャストし直す。DbDataReader には GetSByte /
+        // GetUInt16/32/64 が無いので、符号無し（および sbyte）の基底型は符号付きの相方を読み、符号無し/sbyte 基底への
+        // ビット保存の中間キャストを挟む — 例 (MyEnum)(uint)reader.GetInt32(ord) — ことでボクシングを伴う GetValue<T> パスを避ける。
+        // Enum: read the same-size signed primitive then cast back to the enum. DbDataReader exposes no GetSByte /
+        // GetUInt16/32/64, so unsigned (and sbyte) underlyings read the signed counterpart and add an intermediate
+        // bit-preserving cast to the unsigned/sbyte underlying — e.g. (MyEnum)(uint)reader.GetInt32(ord) — avoiding the boxing GetValue<T> path.
         if ((underlying is INamedTypeSymbol enumSym) && (enumSym.TypeKind == TypeKind.Enum))
         {
             var underlyingTyped = enumSym.EnumUnderlyingType?.SpecialType switch
@@ -1585,8 +1652,8 @@ internal static class AccessorModelBuilder
                 SpecialType.System_Int64 or SpecialType.System_UInt64 => "GetInt64",
                 _ => null
             };
-            // Intermediate bit-preserving cast for unsigned / sbyte underlyings (the reader returns the
-            // signed counterpart). null for signed underlyings (no intermediate cast needed).
+            // 符号無し / sbyte 基底向けのビット保存中間キャスト（reader は符号付きの相方を返す）。符号付き基底では null（中間キャスト不要）。
+            // Intermediate bit-preserving cast for unsigned / sbyte underlyings (the reader returns the signed counterpart). null for signed underlyings (no intermediate cast needed).
             var underlyingCast = enumSym.EnumUnderlyingType?.SpecialType switch
             {
                 SpecialType.System_SByte => "sbyte",
@@ -1626,9 +1693,10 @@ internal static class AccessorModelBuilder
         return (typed, isValueType, isNullable, null, null);
     }
 
-    // spec §5.6: a parameter is a POCO argument (expanded into one DB parameter per public property)
-    // when its type is a user-defined class/record/struct — not a BCL scalar, enum, array, or
-    // connection/transaction/cancellation token.
+    // パラメータが POCO 引数（public プロパティ 1 つにつき 1 DB パラメータへ展開）になるのは、その型がユーザー定義の
+    // class/record/struct のとき。BCL スカラー、enum、配列、connection/transaction/cancellation token は対象外。
+    // A parameter is a POCO argument (expanded into one DB parameter per public property) when its type is a user-defined
+    // class/record/struct — not a BCL scalar, enum, array, or connection/transaction/cancellation token.
     private static bool IsPocoParameter(ITypeSymbol type)
     {
         if ((type is not INamedTypeSymbol nt) || (nt.TypeKind is not (TypeKind.Class or TypeKind.Struct)))
@@ -1652,12 +1720,15 @@ internal static class AccessorModelBuilder
             .Any(static p => (p.DeclaredAccessibility == Accessibility.Public) && !p.IsStatic && (p.GetMethod is not null));
     }
 
-    // spec §5.6: expand a POCO argument's public properties into bind metadata. Default Input;
-    // [Direction(Output/InputOutput)] makes a property an output. [Name]/[DbType]/[SqlSize]/[AnsiString]
-    // honoured per property. [Ignore] excludes. ([Direction(ReturnValue)] is retired → treated as Input.)
-    // spec §5.6: OUT / InputOutput parameters need a concrete DbType — SQL Server otherwise creates a
-    // sql_variant parameter that cannot implicitly convert to the procedure's typed OUT parameter.
-    // Infers a DbType expression from the CLR type (Nullable<T> / enum unwrapped); null when unknown.
+    // POCO 引数の public プロパティを束縛メタデータへ展開する。既定は Input。[Direction(Output/InputOutput)] で出力になる。
+    // [Name]/[DbType]/[SqlSize]/[AnsiString] はプロパティ単位で尊重。[Ignore] は除外（[Direction(ReturnValue)] は廃止 → Input 扱い）。
+    // OUT / InputOutput パラメータは具体的な DbType を必要とする — さもないと SQL Server は sql_variant パラメータを作り、
+    // 手続きの型付き OUT パラメータへ暗黙変換できない。DbType 式は CLR 型（Nullable<T> / enum はアンラップ）から推論し、不明なら null。
+    // Expand a POCO argument's public properties into bind metadata. Default Input; [Direction(Output/InputOutput)] makes
+    // a property an output. [Name]/[DbType]/[SqlSize]/[AnsiString] honoured per property. [Ignore] excludes.
+    // ([Direction(ReturnValue)] is retired -> treated as Input.) OUT / InputOutput parameters need a concrete DbType —
+    // SQL Server otherwise creates a sql_variant parameter that cannot implicitly convert to the procedure's typed OUT
+    // parameter. Infers a DbType expression from the CLR type (Nullable<T> / enum unwrapped); null when unknown.
     private static string? InferDbTypeExpr(ITypeSymbol type)
     {
         var t = ConverterScopeHelper.UnwrapNullable(type);
@@ -1748,9 +1819,10 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // spec §7.4 / §7.7: a [TypeHandler<>] on the property (or method/class/profile scope)
-            // converts the value: input via ToDb, OUT read as TDb then FromDb. The DB parameter's
-            // DbType is then governed by TDb, not the CLR property type.
+            // プロパティ（または method/class/profile スコープ）の [TypeHandler<>] が値を変換する：入力は ToDb 経由、
+            // OUT は TDb として読んでから FromDb。DB パラメータの DbType は CLR プロパティ型ではなく TDb が決める。
+            // A [TypeHandler<>] on the property (or method/class/profile scope) converts the value: input via ToDb, OUT
+            // read as TDb then FromDb. The DB parameter's DbType is then governed by TDb, not the CLR property type.
             string? converterFqn = null;
             string? converterDbTypeFqn = null;
             string? converterClrTypeFqn = null;
@@ -1766,8 +1838,9 @@ internal static class AccessorModelBuilder
                     (pnt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T);
             }
 
-            // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is
-            // inferred from TDb (the DB-side type), otherwise from the CLR property type.
+            // OUT / InputOutput は具体的な DbType を必要とする（InferDbTypeExpr 参照）。converter があれば TDb（DB 側の型）から、
+            // 無ければ CLR プロパティ型から推論する。
+            // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is inferred from TDb (the DB-side type), otherwise from the CLR property type.
             if ((dbTypeExpr is null) && (direction != ParameterDirectionKindLegacy.Input))
             {
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
@@ -1794,8 +1867,8 @@ internal static class AccessorModelBuilder
         return list;
     }
 
-    // spec §5.6: the OUT/InputOutput bindings contributed by POCO arguments (writeback target =
-    // {argName}.{property}).
+    // POCO 引数が寄与する OUT/InputOutput 束縛（書き戻し先 = {argName}.{property}）。
+    // The OUT/InputOutput bindings contributed by POCO arguments (writeback target = {argName}.{property}).
     private static IEnumerable<OutputBinding> PocoOutputBindings(IReadOnlyList<ParameterModel> parameters) =>
         parameters
             .Where(static p => p.PocoProperties is not null)
@@ -1806,12 +1879,13 @@ internal static class AccessorModelBuilder
                     pp.HandleName,
                     pp.Direction,
                     $"{p.Name}.{pp.PropertyName}",
+                    // converter があれば OUT 値は TDb として読む（その後 FromDb）。無ければ TClr として読む。
                     // With a converter the OUT value is read as TDb (then FromDb); otherwise as TClr.
                     pp.ConverterTypeFullName is null ? pp.TypeFullName : pp.ConverterDbTypeFullName!,
                     pp.ConverterTypeFullName)));
 
-    // SDA0101: the attributes that establish a method as a generated data method. A non-partial
-    // method carrying one of these is a user error (must be `partial`).
+    // SDA0101: メソッドを生成対象データメソッドとして確立する属性群。これらを持つ非 partial メソッドはユーザーエラー（partial 必須）。
+    // SDA0101: the attributes that establish a method as a generated data method. A non-partial method carrying one of these is a user error (must be `partial`).
     private static bool HasDataMethodAttribute(IMethodSymbol method)
     {
         foreach (var attr in method.GetAttributes())
@@ -1830,8 +1904,9 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    // Design doc §4.5: a method carries a QueryBuilder-derived attribute ([Insert]/[Update]/…)
-    // when any of its attribute classes inherits from Smart.Data.Accessor.Builders.QueryBuilderAttribute.
+    // メソッドが QueryBuilder 派生属性（[Insert]/[Update]/…）を持つのは、その属性クラスのいずれかが
+    // Smart.Data.Accessor.Builders.QueryBuilderAttribute を継承するとき。
+    // A method carries a QueryBuilder-derived attribute ([Insert]/[Update]/...) when any of its attribute classes inherits from Smart.Data.Accessor.Builders.QueryBuilderAttribute.
     private static bool IsQueryBuilderAttribute(INamedTypeSymbol? attributeClass)
     {
         for (var current = attributeClass; current is not null; current = current.BaseType)
@@ -1852,7 +1927,8 @@ internal static class AccessorModelBuilder
     private static bool IsReaderShape(ReturnShapeLegacy s) =>
         s is ReturnShapeLegacy.Reader or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
     //--------------------------------------------------------------------------------
-    // 2-way SQL tokenization + emit (Phase 2 §3.1)
+    // 2-way SQL のトークナイズ＋ emit。
+    // 2-way SQL tokenization + emit.
     //--------------------------------------------------------------------------------
 
     private static (string Code, string? StaticSqlText, string? StaticParameterCode, IReadOnlyList<OutputBinding> OutputBindings, IReadOnlyList<UsingDirective> Usings) BuildSqlEmitCode(
@@ -1895,6 +1971,7 @@ internal static class AccessorModelBuilder
             return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
+        // SDA0505: 解析後も残った未知のプラグマ '/*!xxx */' を報告する。
         // SDA0505: report any unknown pragmas '/*!xxx */' that survived parsing.
         foreach (var pragmaName in unknownPragmas)
         {
@@ -1905,9 +1982,10 @@ internal static class AccessorModelBuilder
                 pragmaName));
         }
 
-        // SDA0506 / SDA0507: the /*% %/ code blocks are emitted verbatim, so unbalanced braces would
-        // otherwise surface as a confusing C# error. Report at the SQL location and skip emission
-        // (matches the tokenizer-error path; the Error fails the build either way).
+        // SDA0506 / SDA0507: /*% %/ コードブロックはそのまま出力されるので、波括弧の不均衡は放置すると分かりにくい C# エラーとして
+        // 表面化する。SQL の位置で報告して出力をスキップする（トークナイザエラーのパスと同様。Error なのでどちらにせよビルドは失敗する）。
+        // SDA0506 / SDA0507: the /*% %/ code blocks are emitted verbatim, so unbalanced braces would otherwise surface as
+        // a confusing C# error. Report at the SQL location and skip emission (matches the tokenizer-error path; the Error fails the build either way).
         switch (NodeBuilder.CheckBraceBalance(nodes))
         {
             case NodeBuilder.BraceBalance.UnclosedBlock:
@@ -1920,9 +1998,10 @@ internal static class AccessorModelBuilder
                 return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
-        // spec §1.4 F12 / §6.3: extract /*!helper */ and /*!using */ pragmas (UsingNodes are aggregated
-        // at file-header emission). Existence is NOT validated (案C: SDA0186/0187 retired) — an invalid
-        // namespace/type surfaces as a C# error on the generated `using` line.
+        // /*!helper */ と /*!using */ プラグマを抽出する（UsingNode はファイルヘッダ出力時に集約）。
+        // 存在検証は行わない（SDA0186/0187 は廃止）— 無効な namespace/型は生成された using 行で C# エラーとして表面化する。
+        // Extract /*!helper */ and /*!using */ pragmas (UsingNodes are aggregated at file-header emission). Existence is
+        // NOT validated (SDA0186/0187 retired) — an invalid namespace/type surfaces as a C# error on the generated `using` line.
         var usings = new List<UsingDirective>();
         foreach (var node in nodes)
         {
@@ -1980,6 +2059,7 @@ internal static class AccessorModelBuilder
             diagnostics.Add(new DiagnosticInfo(Diagnostics.UndefinedSqlParameter, location, methodName, u));
         }
 
+        // SDA0510: ドット付き /*@ root.Prop */ 参照 — Prop が root のパラメータ型に存在するか検証する。
         // SDA0510: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
         var reportedProperty = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
@@ -2000,6 +2080,7 @@ internal static class AccessorModelBuilder
             {
                 continue; // SDA0508 already reported this root mismatch.
             }
+            // ネストしたドット以降は落とし、最初のホップだけを検証する。
             // Strip any nested dotted suffix; only validate the first hop.
             var firstHop = rest;
             var nextDot = rest.IndexOf('.');
@@ -2023,7 +2104,8 @@ internal static class AccessorModelBuilder
             }
         }
 
-        // SDA0509: method parameter not referenced in SQL (Info only).
+        // SDA0509: SQL で参照されないメソッドパラメータ（Info のみ）。
+        // SDA0509: a method parameter not referenced in SQL (Info only).
         var referenced = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
@@ -2036,6 +2118,7 @@ internal static class AccessorModelBuilder
                     referenced.Add(ExtractRoot(rn.Source));
                     break;
                 case CodeNode cn:
+                    // ベストエフォート：パラメータ名に一致する単語単位の識別子があればカウントする。
                     // Best-effort: any whole-word identifier matching a parameter name counts.
                     foreach (var p in parameters)
                     {

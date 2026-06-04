@@ -8,17 +8,12 @@ using System.Text;
 
 using Smart.Data.Accessor.Converters;
 
-/// <summary>
-/// Static helpers used by Source-Generator-emitted accessor code.
-/// </summary>
-/// <remarks>
-/// All members are <c>static</c>, allocation-light, and marked
-/// <c>[MethodImpl(MethodImplOptions.AggressiveInlining)]</c> so the JIT can fold them
-/// into the caller. Methods whose body would just be a single ADO.NET call
-/// (<c>cmd.ExecuteNonQuery()</c> / <c>cmd.ExecuteScalar()</c> / their async siblings)
-/// are emitted inline by the Source Generator — only logic that actually deserves
-/// centralisation (scalar/output conversion, parameter binding) lives here.
-/// </remarks>
+// Static helpers used by Source-Generator-emitted accessor code.
+// All members are static, allocation-light, and marked [MethodImpl(MethodImplOptions.AggressiveInlining)]
+// so the JIT can fold them into the caller. Methods whose body would just be a single ADO.NET call
+// (cmd.ExecuteNonQuery() / cmd.ExecuteScalar() / their async siblings) are emitted inline by the
+// Source Generator — only logic that actually deserves centralisation (scalar/output conversion,
+// parameter binding) lives here.
 public static class ExecuteHelper
 {
     //--------------------------------------------------------------------------------
@@ -59,10 +54,8 @@ public static class ExecuteHelper
         return p;
     }
 
-    /// <summary>
-    /// Generic input-parameter helper. Avoids the enumerator-boxing that the non-generic overload
-    /// pays when iterating value-typed collections (e.g. <c>List&lt;int&gt;</c> uses its struct enumerator).
-    /// </summary>
+    // Generic input-parameter helper. Avoids the enumerator-boxing that the non-generic overload pays
+    // when iterating value-typed collections (e.g. List<int> uses its struct enumerator).
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter<T>(DbCommand cmd, string name, T value, DbType? type = null, int? size = null)
     {
@@ -74,14 +67,11 @@ public static class ExecuteHelper
         return p;
     }
 
-    /// <summary>
-    /// spec §7.7 (P8 / 改善2): converter-sharing input-parameter overload. The static abstract
-    /// <see cref="IValueConverter{TDb, TClr}.ToDb"/> is reached through the generic constraint, so the
-    /// Source Generator emits no inline <c>ToDb</c> value expression and the null/DBNull handling is
-    /// centralised here (a null reference TClr binds DBNull). This <c>TClr value</c> form covers
-    /// non-nullable value types and reference types; P6 confirmed the JIT devirtualises + inlines it to
-    /// the same native code as a direct call (no shared-generics overhead).
-    /// </summary>
+    // Converter-sharing input-parameter overload. The static abstract IValueConverter<TDb, TClr>.ToDb
+    // is reached through the generic constraint, so the Source Generator emits no inline ToDb value
+    // expression and the null/DBNull handling is centralised here (a null reference TClr binds DBNull).
+    // This TClr value form covers non-nullable value types and reference types; the JIT devirtualises +
+    // inlines it to the same native code as a direct call (no shared-generics overhead).
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter<TConverter, TDb, TClr>(DbCommand cmd, string name, TClr value, DbType? type = null, int? size = null)
         where TConverter : IValueConverter<TDb, TClr>
@@ -90,12 +80,9 @@ public static class ExecuteHelper
         return AddInParameter(cmd, name, converted, type, size);
     }
 
-    /// <summary>
-    /// spec §7.7 (P8): converter-sharing overload for a <see cref="Nullable{TClr}"/> input — null binds
-    /// DBNull, otherwise <c>TConverter.ToDb(value.Value)</c>. Split from the <c>TClr value</c> form
-    /// because differing only by a <c>struct</c> constraint would collide (CS0111); the parameter types
-    /// (<c>TClr</c> vs <c>TClr?</c>) differ, so both overloads coexist.
-    /// </summary>
+    // Converter-sharing overload for a Nullable<TClr> input — null binds DBNull, otherwise
+    // TConverter.ToDb(value.Value). Split from the TClr value form because differing only by a struct
+    // constraint would collide (CS0111); the parameter types (TClr vs TClr?) differ, so both overloads coexist.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter<TConverter, TDb, TClr>(DbCommand cmd, string name, TClr? value, DbType? type = null, int? size = null)
         where TConverter : IValueConverter<TDb, TClr>
@@ -105,11 +92,9 @@ public static class ExecuteHelper
         return AddInParameter(cmd, name, converted, type, size);
     }
 
-    /// <summary>
-    /// Expands a generic <see cref="IEnumerable{T}"/> into multiple positional parameters (for SQL IN clauses).
-    /// Returns the parenthesised, comma-separated parameter-marker string (e.g. <c>"(@p_0,@p_1)"</c>).
-    /// If <paramref name="values"/> is null or empty, returns <c>"(NULL)"</c> so the resulting SQL stays valid.
-    /// </summary>
+    // Expands a generic IEnumerable<T> into multiple positional parameters (for SQL IN clauses).
+    // Returns the parenthesised, comma-separated parameter-marker string (e.g. "(@p_0,@p_1)").
+    // If values is null or empty, returns "(NULL)" so the resulting SQL stays valid.
     public static string AddInParameters<T>(DbCommand cmd, string namePrefix, IEnumerable<T>? values, DbType? type = null)
     {
         if (values is null)

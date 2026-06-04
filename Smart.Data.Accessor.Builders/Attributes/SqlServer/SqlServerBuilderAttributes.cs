@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 // from QueryBuilderAttribute so the core generator emits the {Method}__QueryBuilder call, and the
 // SqlServer generator emits the dialect-specific helper body. Mirrors the core [Insert] shape.
 
-/// <summary>SQL Server <c>INSERT</c> builder.</summary>
+// SQL Server INSERT builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
@@ -25,7 +25,7 @@ public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server <c>UPDATE</c> builder.</summary>
+// SQL Server UPDATE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
@@ -44,7 +44,7 @@ public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server <c>DELETE</c> builder.</summary>
+// SQL Server DELETE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
@@ -63,7 +63,7 @@ public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server <c>SELECT COUNT(*)</c> builder.</summary>
+// SQL Server SELECT COUNT(*) builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerCountAttribute : QueryBuilderAttribute
@@ -82,7 +82,7 @@ public sealed class SqlServerCountAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server full-scan <c>SELECT</c> builder (supports [Limit]/[Offset] paging).</summary>
+// SQL Server full-scan SELECT builder (supports [Limit]/[Offset] paging).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
@@ -101,7 +101,7 @@ public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server keyed <c>SELECT</c> builder (WHERE from value parameters).</summary>
+// SQL Server keyed SELECT builder (WHERE from value parameters).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
@@ -120,7 +120,7 @@ public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
     }
 }
 
-/// <summary>SQL Server <c>TRUNCATE TABLE</c> builder.</summary>
+// SQL Server TRUNCATE TABLE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerTruncateAttribute : QueryBuilderAttribute

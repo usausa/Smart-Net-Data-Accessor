@@ -2,11 +2,9 @@ namespace Smart.Data.Accessor.Resolver;
 
 using Smart.Resolver;
 
-/// <summary>
-/// Multi-source provider selector (Pattern B with <c>[Provider("name")]</c>). The generated accessor
-/// calls <c>providerSelector.GetProvider("name")</c>; this resolves the keyed
-/// <see cref="IDbProvider"/> from the Smart.Resolver container (<c>resolver.Get&lt;IDbProvider&gt;(name)</c>).
-/// </summary>
+// Multi-source provider selector (Pattern B with [Provider("name")]). The generated accessor calls
+// providerSelector.GetProvider("name"); this resolves the keyed IDbProvider from the Smart.Resolver
+// container (resolver.Get<IDbProvider>(name)).
 public sealed class ResolverDbProviderSelector : IDbProviderSelector
 {
     private readonly IResolver resolver;

@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Builders.Generator.Models;
 
-// spec §7.11 (P4): a method value parameter (excludes connection / transaction / CancellationToken)
-// resolved in the FAWMN transform. Used for the generated __QueryBuilder signature and for WHERE /
-// VALUES / paging bindings. Method parameters bind via DbType/enum only (no converter), matching the
-// existing ParameterEmitter behaviour.
+// A method value parameter (excludes connection / transaction / CancellationToken) resolved in the
+// FAWMN transform. Used for the generated __QueryBuilder signature and for WHERE / VALUES / paging
+// bindings. Method parameters bind via DbType/enum only (no converter), matching the existing
+// ParameterEmitter behaviour.
 internal sealed record BuilderValueParam(
     string Name,
     string TypeFullName,
@@ -11,7 +11,7 @@ internal sealed record BuilderValueParam(
     string ColumnName,
     bool IsLimit,
     bool IsOffset,
-    // spec §7.9: underlying primitive FQN when the parameter type is an enum (or Nullable<enum>); null otherwise.
+    // underlying primitive FQN when the parameter type is an enum (or Nullable<enum>); null otherwise.
     string? EnumUnderlyingFullName,
     bool IsNullableEnum,
     // p.DbType / p.Size from a [TypeMap] default; null when none.

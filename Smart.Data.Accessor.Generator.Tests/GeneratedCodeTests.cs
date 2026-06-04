@@ -45,7 +45,7 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void UsingAndHelperPragmasEmitFileHeaderUsings()
     {
-        // spec §1.4 F12 / §6.3: /*!using N */ → `using N;`, /*!helper T */ → `using static T;`.
+        // /*!using N */ → `using N;`, /*!helper T */ → `using static T;`.
         // The pragmas are aggregated as UsingDirective and emitted as file-header directives.
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -68,7 +68,7 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void OutputDirectionParameterInTwoWaySqlEmitsAddOutParameter()
     {
-        // spec §1.4 F4: [Direction(Output)] is allowed on [Execute] (not only [Procedure]). An OUT
+        // [Direction(Output)] is allowed on [Execute] (not only [Procedure]). An OUT
         // parameter referenced as a /*@ marker */ in 2-way SQL drives NodeEmitter's OUT binding path.
         const string source = """
             using System.Data;
@@ -497,7 +497,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
 
-        // spec §7.10.5: positional record → ctor invocation `new Row(Id: ..., Name: ...)`.
+        // Positional record → ctor invocation `new Row(Id: ..., Name: ...)`.
         Assert.Contains("new global::Row(", text, StringComparison.Ordinal);
         Assert.Contains("Id: ", text, StringComparison.Ordinal);
     }
@@ -529,7 +529,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, St, Age from T")).AllGeneratedText;
 
-        // spec §7.9: enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード。
+        // enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード。
         Assert.Contains("(global::Status)__reader.GetInt32(", text, StringComparison.Ordinal);
         Assert.Contains("IsDBNull(__o.Age)", text, StringComparison.Ordinal);
     }
@@ -553,7 +553,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        // spec §5.6: OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpr）。
+        // OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpr）。
         Assert.Contains("AddOutParameter(cmd, \"@total\", global::System.Data.DbType.Int32)", text, StringComparison.Ordinal);
     }
 
@@ -574,7 +574,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set N = /*@ name */0 where Id = /*@ id */0")).AllGeneratedText;
 
-        // spec §1.4 F15 / §5.3.1: provider enum whitelist → SqlParameter.SqlDbType への代入。
+        // provider enum whitelist → SqlParameter.SqlDbType への代入。
         Assert.Contains(".SqlDbType = ", text, StringComparison.Ordinal);
     }
 }

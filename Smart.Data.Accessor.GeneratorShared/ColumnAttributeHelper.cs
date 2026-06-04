@@ -2,12 +2,11 @@ namespace Smart.Data.Accessor.GeneratorShared;
 
 using Microsoft.CodeAnalysis;
 
-// 改善2 / §4.3: shared (linked source) reader for an entity property's column-mapping attributes
-// ([Name] / [Key] / [DatabaseManaged] / [Ignore]). Both generators enumerate entity properties and build
-// their OWN equatable Model from the result (core ColumnInfo for result mapping; Builder EntityColumn
-// for INSERT/UPDATE) — only the per-property attribute *reading* is shared, not the Model. The result
-// is a small value-equatable Info, per §4.3's "a Model-member's info MAY be shared via a helper return
-// value, named XxxInfo (not XxxModel)".
+// Shared (linked source) reader for an entity property's column-mapping attributes ([Name] / [Key] /
+// [DatabaseManaged] / [Ignore]). Both generators enumerate entity properties and build their OWN
+// equatable Model from the result (core ColumnInfo for result mapping; Builder EntityColumn for
+// INSERT/UPDATE) — only the per-property attribute reading is shared, not the Model. The result is a
+// small value-equatable Info (named XxxInfo, not XxxModel).
 internal static class ColumnAttributeHelper
 {
     private const string NameAttributeFq = "Smart.Data.Accessor.Attributes.NameAttribute";
@@ -46,6 +45,6 @@ internal static class ColumnAttributeHelper
     }
 }
 
-// 改善2 / §4.3: equatable result of column-mapping attribute reading (an Info shared as a Model member,
-// not a generator Mapping Model).
+// Equatable result of column-mapping attribute reading (an Info shared as a Model member, not a
+// generator Mapping Model).
 internal readonly record struct ColumnAttributeInfo(string ColumnName, bool IsKey, bool IsDatabaseManaged, bool IsIgnored);

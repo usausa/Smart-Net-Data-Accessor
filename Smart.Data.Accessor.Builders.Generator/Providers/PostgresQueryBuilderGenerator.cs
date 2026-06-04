@@ -4,12 +4,9 @@ using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Builders.Generator.Engine;
 
-/// <summary>
-/// PostgreSQL QueryBuilder generator: emits the <c>{Method}__QueryBuilder</c> helper for methods
-/// carrying the <c>[PostgresInsert]</c>/…/<c>[PostgresTruncate]</c> attributes, using double-quote
-/// quoting and LIMIT/OFFSET paging. Registers on <c>[DataAccessor]</c>; all transform + emit logic is
-/// the shared <see cref="QueryBuilderEngine"/>.
-/// </summary>
+// PostgreSQL QueryBuilder generator: emits the {Method}__QueryBuilder helper for methods carrying the
+// [PostgresInsert]/…/[PostgresTruncate] attributes, using double-quote quoting and LIMIT/OFFSET paging.
+// Registers on [DataAccessor]; all transform + emit logic is the shared QueryBuilderEngine.
 [Generator]
 public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
 {

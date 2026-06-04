@@ -2,14 +2,10 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Provider-specific DbType attribute (spec §1.4 F15 / §5.3 / §5.3.1).
-/// Pair with a provider-specific enum like <c>Microsoft.Data.SqlClient.SqlDbType</c>,
-/// <c>MySql.Data.MySqlClient.MySqlDbType</c>, <c>NpgsqlTypes.NpgsqlDbType</c>,
-/// or <c>Oracle.ManagedDataAccess.Client.OracleDbType</c>. The Generator casts the
-/// underlying <see cref="System.Data.Common.DbParameter"/> to the matching provider
-/// parameter type and sets its native property.
-/// </summary>
+// Provider-specific DbType attribute. Pair with a provider-specific enum like
+// Microsoft.Data.SqlClient.SqlDbType, MySql.Data.MySqlClient.MySqlDbType, NpgsqlTypes.NpgsqlDbType,
+// or Oracle.ManagedDataAccess.Client.OracleDbType. The Generator casts the underlying DbParameter
+// to the matching provider parameter type and sets its native property.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 public sealed class DbTypeAttribute<TEnum> : Attribute

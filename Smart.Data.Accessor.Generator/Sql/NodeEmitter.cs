@@ -10,25 +10,17 @@ internal static class NodeEmitter
 {
     public sealed class EmitResult
     {
-        /// <summary>
-        /// SQL build code lines (StringBuilderPool path), one statement per line, with no
-        /// leading indentation. The caller indents each line via SourceBuilder at its
-        /// current IndentLevel.
-        /// </summary>
+        // SQL build code lines (StringBuilderPool path), one statement per line, with no leading
+        // indentation. The caller indents each line via SourceBuilder at its current IndentLevel.
         public string Code { get; }
 
-        /// <summary>
-        /// Non-null when the SQL has no dynamic branches (no CodeNode / RawSqlNode and
-        /// no multi-value /*@ list */ parameter). In that case the literal SQL text is
-        /// pre-built at code-gen time and emitted as `cmd.CommandText = "..."`,
-        /// bypassing <c>StringBuilderPool.Rent</c> / <c>Return</c> at runtime.
-        /// </summary>
+        // Non-null when the SQL has no dynamic branches (no CodeNode / RawSqlNode and no multi-value
+        // /*@ list */ parameter). In that case the literal SQL text is pre-built at code-gen time and
+        // emitted as `cmd.CommandText = "..."`, bypassing StringBuilderPool.Rent / Return at runtime.
         public string? StaticSqlText { get; }
 
-        /// <summary>
-        /// Parameter setup code lines used when <see cref="StaticSqlText"/> is non-null.
-        /// One statement per line, with no leading indentation; caller controls indent.
-        /// </summary>
+        // Parameter setup code lines used when StaticSqlText is non-null. One statement per line,
+        // with no leading indentation; caller controls indent.
         public string StaticParameterCode { get; }
 
         public IReadOnlyList<string> UndefinedParameters { get; }
@@ -54,12 +46,12 @@ internal static class NodeEmitter
         }
     }
 
-    /// <summary>Output / InOut / ReturnValue binding captured during emission.
-    /// The Generator pre-declares the handle variable before the SQL build try-block
-    /// and uses it after Execute to write the parameter value back to out/ref args.</summary>
+    // Output / InOut / ReturnValue binding captured during emission. The Generator pre-declares the
+    // handle variable before the SQL build try-block and uses it after Execute to write the parameter
+    // value back to out/ref args.
     public sealed record OutputBinding(string ParameterName, string HandleName, Direction Direction);
 
-    /// <summary>Per-parameter attribute metadata gathered from method parameters.</summary>
+    // Per-parameter attribute metadata gathered from method parameters.
     public sealed class ParameterAttributes
     {
         public string? DbTypeExpr { get; init; }   // e.g. "global::System.Data.DbType.AnsiString" or null
@@ -67,27 +59,26 @@ internal static class NodeEmitter
         public Direction Direction { get; init; } = Direction.Input;
         public string? OutputHandleName { get; init; }   // optional local variable name to capture DbParameter handle
 
-        /// <summary>FQN of the enum's underlying primitive when this parameter is an enum (or
-        /// <c>Nullable&lt;enum&gt;</c>); used to emit an explicit cast so <c>AssignValue</c>'s
-        /// runtime <c>Convert.ChangeType</c> is bypassed (spec §7.9). Only applied when the
-        /// SQL marker references the bare parameter name (no member access path).</summary>
+        // FQN of the enum's underlying primitive when this parameter is an enum (or Nullable<enum>);
+        // used to emit an explicit cast so AssignValue's runtime Convert.ChangeType is bypassed. Only
+        // applied when the SQL marker references the bare parameter name (no member access path).
         public string? EnumUnderlyingFullName { get; init; }
 
         public bool IsNullableEnum { get; init; }
 
-        // spec §1.4 F15 / §5.3.1: provider-specific DbType assignment emitted after the
+        // provider-specific DbType assignment emitted after the
         // AddInParameter/AddOutParameter/AddInOutParameter call.
         public string? ProviderParameterTypeFullName { get; init; }
         public string? ProviderPropertyName { get; init; }
         public string? ProviderValueExpr { get; init; }
 
-        // spec §7.4 / §7.7: non-null when a [TypeHandler<>] applies to this parameter; the bound
-        // value is written via TConverter.ToDb(...). Applied only to a bare parameter marker
-        // (no member-access path). ConverterValueIsNullable adds a HasValue guard for Nullable<TClr>.
+        // non-null when a [TypeHandler<>] applies to this parameter; the bound value is written via
+        // TConverter.ToDb(...). Applied only to a bare parameter marker (no member-access path).
+        // ConverterValueIsNullable adds a HasValue guard for Nullable<TClr>.
         public string? ConverterTypeFullName { get; init; }
         public bool ConverterValueIsNullable { get; init; }
 
-        // spec §7.7 (改善2): the converter's IValueConverter<TDb, TClr> type-argument FQNs, for emitting
+        // the converter's IValueConverter<TDb, TClr> type-argument FQNs, for emitting
         // ExecuteHelper.AddInParameter<TConverter, TDb, TClr>. Meaningful only with ConverterTypeFullName.
         public string? ConverterDbTypeFullName { get; init; }
         public string? ConverterClrTypeFullName { get; init; }
@@ -156,17 +147,17 @@ internal static class NodeEmitter
                     var attrs = attrLookup(root);
                     var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
                     var direction = attrs?.Direction ?? Direction.Input;
-                    // Apply the spec §7.4/§7.7 converter (ToDb) or the §7.9 enum-cast only when the
-                    // SQL token is the bare parameter (no member access) — for `entity.X` the leaf
-                    // type is unknown to this layer. A converter takes priority over the enum cast.
+                    // Apply the converter (ToDb) or the enum-cast only when the SQL token is the bare
+                    // parameter (no member access) — for `entity.X` the leaf type is unknown to this
+                    // layer. A converter takes priority over the enum cast.
                     var valueExpr = p.Name;
                     var inMethod = "AddInParameter";
                     if (!p.Name.Contains('.'))
                     {
                         if (attrs?.ConverterTypeFullName is { } converter)
                         {
-                            // 改善2: bind via the converter-sharing overload; valueExpr stays raw (the
-                            // helper calls TConverter.ToDb + handles null/Nullable).
+                            // Bind via the converter-sharing overload; valueExpr stays raw (the helper
+                            // calls TConverter.ToDb + handles null/Nullable).
                             inMethod = CodeExpressionHelper.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
                         }
                         else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
@@ -255,9 +246,9 @@ internal static class NodeEmitter
                     sb.Append(c.Code).Append('\n');
                     break;
 
-                // UsingNode is consumed by DataAccessorGenerator at the accessor level
-                // (aggregated and emitted as file-header `using` directives, spec
-                // §1.4 F12 / §6.3). Skip it here to avoid duplicating in the method body.
+                // UsingNode is consumed by DataAccessorGenerator at the accessor level (aggregated and
+                // emitted as file-header `using` directives). Skip it here to avoid duplicating in the
+                // method body.
             }
         }
 

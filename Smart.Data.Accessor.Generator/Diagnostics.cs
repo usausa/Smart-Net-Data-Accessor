@@ -2,22 +2,21 @@ namespace Smart.Data.Accessor.Generator;
 
 using Microsoft.CodeAnalysis;
 
-// Core DataAccessor generator diagnostics. IDs follow a phase-based banding aligned with the pipeline
-// and with spec §11:
-//   SDA00xx  class-level        (BuildClassResult: class structure + class attributes [Inject]/[Provider]/[ExecuteConfig])  → spec §11.1
-//   SDA01xx  method structure   (method partial / command-source exclusivity A-group・B-group)                              → spec §11.2
-//   SDA02xx  parameter/direction(parameter attributes, [Direction], [DirectSql] param)                                     → spec §11.3
-//   SDA03xx  return/mapping     (return-type shapes, reader, converter, [TypeHandler])                                     → spec §11.4
-//   SDA04xx  SQL-file resolution(CompleteModel: SQL-file conflicts)                                                        → spec §11.5
-//   SDA05xx  2-way SQL parse    (BuildSqlEmitCode: tokenizer / pragma / parameter checks)                                  → spec §11.6
-// Builder generator diagnostics use the SDA1xxx band (see BuilderDiagnostics, spec §11.7).
+// Core DataAccessor generator diagnostics. IDs follow a phase-based banding aligned with the pipeline:
+//   SDA00xx  class-level        (BuildClassResult: class structure + class attributes [Inject]/[Provider]/[ExecuteConfig])
+//   SDA01xx  method structure   (method partial / command-source exclusivity A-group・B-group)
+//   SDA02xx  parameter/direction(parameter attributes, [Direction], [DirectSql] param)
+//   SDA03xx  return/mapping     (return-type shapes, reader, converter, [TypeHandler])
+//   SDA04xx  SQL-file resolution(CompleteModel: SQL-file conflicts)
+//   SDA05xx  2-way SQL parse    (BuildSqlEmitCode: tokenizer / pragma / parameter checks)
+// Builder generator diagnostics use the SDA1xxx band (see BuilderDiagnostics).
 // Retired IDs (not re-used): SDA0141 ConverterTypeNotSupported, SDA0149 EnumUnderlyingMismatch,
 // SDA0150/SDA0220-0223 user-declared Builder method validation, SDA0186/0187 /*!helper*//*!using*/ existence
 // checks. History is tracked in AnalyzerReleases.
 internal static class Diagnostics
 {
     // ==================================================================
-    // SDA00xx — class-level (spec §11.1)
+    // SDA00xx — class-level
     // ==================================================================
 
     public static readonly DiagnosticDescriptor InvalidClass = new(
@@ -109,7 +108,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ==================================================================
-    // SDA01xx — method structure / command-source exclusivity (spec §11.2)
+    // SDA01xx — method structure / command-source exclusivity
     // ==================================================================
 
     public static readonly DiagnosticDescriptor InvalidMethod = new(
@@ -128,7 +127,7 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    // spec §11.2: the execution-kind attributes (A-group) are mutually exclusive.
+    // The execution-kind attributes (A-group) are mutually exclusive.
     public static readonly DiagnosticDescriptor ExecutionKindDuplicated = new(
         id: "SDA0103",
         title: "Multiple execution-kind attributes on the same method",
@@ -137,8 +136,8 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    // spec §11.2: [Procedure] and [DirectSql] (B-group command sources) are mutually exclusive. The
-    // QueryBuilder combinations are SDA0105 (core) / SDA1002 (builder); this fills the remaining gap.
+    // [Procedure] and [DirectSql] (B-group command sources) are mutually exclusive. The QueryBuilder
+    // combinations are SDA0105 (core) / SDA1002 (builder); this fills the remaining gap.
     public static readonly DiagnosticDescriptor ProcedureDirectSqlConflict = new(
         id: "SDA0104",
         title: "[Procedure] combined with [DirectSql]",
@@ -164,7 +163,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ==================================================================
-    // SDA02xx — parameter / direction (spec §11.3)
+    // SDA02xx — parameter / direction
     // ==================================================================
 
     public static readonly DiagnosticDescriptor NameDuplicated = new(
@@ -248,12 +247,12 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ==================================================================
-    // SDA03xx — return shape / mapping / converter (spec §11.4)
+    // SDA03xx — return shape / mapping / converter
     //
-    // Mapping / converter validation (spec §7.4 / §7.10) is wired by ConverterResolver, invoked from
-    // AccessorModelBuilder.BuildColumnInfos. Spike result (spec §15 #7): Roslyn surfaces `static abstract`
-    // interface members as IsAbstract && IsStatic; SDA0310 instead checks that the converter exposes
-    // accessible static FromDb/ToDb (implicit interface implementation) so `TConverter.FromDb(...)` binds.
+    // Mapping / converter validation is wired by ConverterResolver, invoked from
+    // AccessorModelBuilder.BuildColumnInfos. Roslyn surfaces `static abstract` interface members as
+    // IsAbstract && IsStatic; SDA0310 instead checks that the converter exposes accessible static
+    // FromDb/ToDb (implicit interface implementation) so `TConverter.FromDb(...)` binds.
     // ==================================================================
 
     public static readonly DiagnosticDescriptor UnsupportedReturn = new(
@@ -347,7 +346,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ==================================================================
-    // SDA04xx — SQL-file resolution (spec §11.5)
+    // SDA04xx — SQL-file resolution
     // ==================================================================
 
     public static readonly DiagnosticDescriptor SqlNotFound = new(
@@ -391,7 +390,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     // ==================================================================
-    // SDA05xx — 2-way SQL parse (spec §11.6)
+    // SDA05xx — 2-way SQL parse
     // ==================================================================
 
     public static readonly DiagnosticDescriptor SqlTokenizeFailed = new(
