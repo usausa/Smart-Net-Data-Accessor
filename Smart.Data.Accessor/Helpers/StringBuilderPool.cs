@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Helpers;
 
 using System.Text;
 
-// Lightweight thread-local StringBuilder pool used by BuilderScope. BuilderContext wraps a pooled
-// StringBuilder instead of allocating one per method invocation.
+// Lightweight thread-local StringBuilder pool. Generated accessor code rents a StringBuilder for the
+// dynamic-SQL build path (Rent -> build cmd.CommandText -> Return) instead of allocating one per call.
 public static class StringBuilderPool
 {
     private const int DefaultCapacity = 256;
