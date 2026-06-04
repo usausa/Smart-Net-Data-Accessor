@@ -12,7 +12,6 @@ public sealed class DataAccessorFactoryBuilder
     /// </summary>
     public DataAccessorFactoryBuilder UseDbProvider(IDbProvider provider)
     {
-        ArgumentNullException.ThrowIfNull(provider);
         dbProvider = provider;
         return this;
     }
@@ -23,7 +22,6 @@ public sealed class DataAccessorFactoryBuilder
     /// </summary>
     public DataAccessorFactoryBuilder UseDbProviderSelector(IDbProviderSelector selector)
     {
-        ArgumentNullException.ThrowIfNull(selector);
         providerSelector = selector;
         return this;
     }

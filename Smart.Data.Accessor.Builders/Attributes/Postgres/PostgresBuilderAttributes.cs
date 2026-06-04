@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Postgres;
+namespace Smart.Data.Accessor.Attributes.Postgres;
 
 using System.Diagnostics.CodeAnalysis;
 

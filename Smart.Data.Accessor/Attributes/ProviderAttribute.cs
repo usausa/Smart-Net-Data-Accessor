@@ -10,7 +10,6 @@ public sealed class ProviderAttribute : Attribute
 
     public ProviderAttribute(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         Name = name;
     }
 }

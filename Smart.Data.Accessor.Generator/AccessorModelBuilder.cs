@@ -42,7 +42,7 @@ internal static class AccessorModelBuilder
     private const string ProcedureAttributeName = "Smart.Data.Accessor.Attributes.ProcedureAttribute";
     private const string ExecuteConfigAttributeName = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
     private const string AccessorProfileAttributeName = "Smart.Data.Accessor.Attributes.AccessorProfileAttribute";
-    private const string QueryBuilderAttributeName = "Smart.Data.Accessor.Builders.QueryBuilderAttribute";
+    private const string QueryBuilderAttributeName = "Smart.Data.Accessor.Attributes.QueryBuilderAttribute";
     private const string QueryBuilderMethodSuffix = "__QueryBuilder";
     private const char DefaultBindMarker = '@';
     private const string CancellationTokenTypeName = "System.Threading.CancellationToken";

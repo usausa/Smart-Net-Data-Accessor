@@ -13,13 +13,11 @@ public sealed class ResolverDbProviderSelector : IDbProviderSelector
 
     public ResolverDbProviderSelector(IResolver resolver)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
         this.resolver = resolver;
     }
 
     public IDbProvider GetProvider(object parameter)
     {
-        ArgumentNullException.ThrowIfNull(parameter);
         return resolver.Get<IDbProvider>((string)parameter);
     }
 }

@@ -6,7 +6,6 @@ using System.Data.Common;
 using Example.ConsoleApplication.Models;
 
 using Smart.Data.Accessor.Attributes;
-using Smart.Data.Accessor.Builders;
 
 [DataAccessor]
 internal sealed partial class ExampleAccessor

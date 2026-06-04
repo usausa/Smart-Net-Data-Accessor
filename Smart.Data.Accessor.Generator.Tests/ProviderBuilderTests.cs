@@ -35,7 +35,6 @@ public sealed class ProviderBuilderTests
         using System.Collections.Generic;
         using {{ns}};
         using Smart.Data.Accessor.Attributes;
-        using Smart.Data.Accessor.Builders;
 
         {{Entity}}
 
@@ -51,42 +50,42 @@ public sealed class ProviderBuilderTests
     [Fact]
     public void SqlServerInsertUsesBracketQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.SqlServer", "SqlServerInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.SqlServer", "SqlServerInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlInsertUsesBacktickQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.MySql", "MySqlInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.MySql", "MySqlInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresInsertUsesDoubleQuoteQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.Postgres", "PostgresInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.Postgres", "PostgresInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void SqlServerSelectPagingUsesOffsetFetch()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.SqlServer", "SqlServerSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.SqlServer", "SqlServerSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlSelectPagingUsesLimitOffset()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.MySql", "MySqlSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.MySql", "MySqlSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresSelectPagingUsesLimitOffset()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.Postgres", "PostgresSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.Postgres", "PostgresSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 }

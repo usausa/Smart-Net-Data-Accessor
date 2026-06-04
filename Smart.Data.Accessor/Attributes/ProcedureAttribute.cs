@@ -10,7 +10,6 @@ public sealed class ProcedureAttribute : Attribute
 
     public ProcedureAttribute(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         Name = name;
     }
 }

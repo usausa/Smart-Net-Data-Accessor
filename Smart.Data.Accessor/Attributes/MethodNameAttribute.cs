@@ -10,7 +10,6 @@ public sealed class MethodNameAttribute : Attribute
 
     public MethodNameAttribute(string name)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
         Name = name;
     }
 }

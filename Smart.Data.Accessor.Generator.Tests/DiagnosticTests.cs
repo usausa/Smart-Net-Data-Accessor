@@ -307,7 +307,6 @@ public sealed class DiagnosticTests
         // SDA0405: a QueryBuilder attribute and a SQL file for the same method are ambiguous.
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {
@@ -383,7 +382,6 @@ public sealed class DiagnosticTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {
@@ -409,7 +407,6 @@ public sealed class DiagnosticTests
         // SDA1003: [Insert] with neither an entity type nor a Table name.
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             [DataAccessor]
             internal sealed partial class Accessor
@@ -430,7 +427,6 @@ public sealed class DiagnosticTests
         // SDA1004: [Select] with only a Table name cannot determine the column list.
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             [DataAccessor]
             internal sealed partial class Accessor
@@ -451,7 +447,6 @@ public sealed class DiagnosticTests
         // SDA1002: more than one QueryBuilder attribute on a single method.
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {

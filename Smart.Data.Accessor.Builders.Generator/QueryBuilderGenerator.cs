@@ -15,7 +15,7 @@ using Smart.Data.Accessor.Builders.Generator.Engine;
 [Generator]
 public sealed class QueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Builders.";
+    private const string Ns = "Smart.Data.Accessor.Attributes.";
 
     private static readonly (string Attribute, QueryBuilderEngine.BuilderKind Kind)[] Targets =
     [

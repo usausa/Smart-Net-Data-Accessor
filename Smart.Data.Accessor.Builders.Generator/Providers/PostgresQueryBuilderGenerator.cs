@@ -13,7 +13,7 @@ using Smart.Data.Accessor.Builders.Generator.Engine;
 [Generator]
 public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Builders.Postgres.Postgres";
+    private const string Ns = "Smart.Data.Accessor.Attributes.Postgres.Postgres";
 
     private static readonly (string Attribute, QueryBuilderEngine.BuilderKind Kind)[] Targets =
     [

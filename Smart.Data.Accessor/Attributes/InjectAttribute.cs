@@ -12,8 +12,6 @@ public sealed class InjectAttribute : Attribute
 
     public InjectAttribute(Type type, string name)
     {
-        ArgumentNullException.ThrowIfNull(type);
-        ArgumentException.ThrowIfNullOrEmpty(name);
         Type = type;
         Name = name;
     }

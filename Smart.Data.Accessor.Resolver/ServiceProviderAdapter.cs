@@ -14,7 +14,6 @@ public sealed class ServiceProviderAdapter : IServiceProvider
 
     public ServiceProviderAdapter(IResolver resolver)
     {
-        ArgumentNullException.ThrowIfNull(resolver);
         this.resolver = resolver;
     }
 

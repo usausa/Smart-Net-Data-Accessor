@@ -9,7 +9,6 @@ public sealed class BuilderScopeGeneratedCodeTests
     private const string Preamble = """
         using System;
         using Smart.Data.Accessor.Attributes;
-        using Smart.Data.Accessor.Builders;
         using Smart.Data.Accessor.Converters;
 
         internal sealed class ClassConv : IValueConverter<long, DateTime>
@@ -110,7 +109,6 @@ public sealed class BuilderScopeGeneratedCodeTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {
@@ -167,7 +165,6 @@ public sealed class BuilderScopeGeneratedCodeTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {

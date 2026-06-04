@@ -13,7 +13,7 @@ using Smart.Data.Accessor.Builders.Generator.Engine;
 [Generator]
 public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Builders.MySql.MySql";
+    private const string Ns = "Smart.Data.Accessor.Attributes.MySql.MySql";
 
     private static readonly (string Attribute, QueryBuilderEngine.BuilderKind Kind)[] Targets =
     [

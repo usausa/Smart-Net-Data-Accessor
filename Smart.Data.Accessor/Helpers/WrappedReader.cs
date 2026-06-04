@@ -20,8 +20,6 @@ public sealed class WrappedReader : DbDataReader
 
     public WrappedReader(DbCommand command, DbDataReader reader, DbConnection? ownedConnection)
     {
-        ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(reader);
         this.command = command;
         this.reader = reader;
         this.ownedConnection = ownedConnection;

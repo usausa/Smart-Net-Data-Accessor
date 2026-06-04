@@ -17,7 +17,6 @@ public sealed class BuilderIncrementalCacheTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Builders;
 
             internal sealed class Entity
             {

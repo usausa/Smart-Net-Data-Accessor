@@ -13,7 +13,7 @@ using Smart.Data.Accessor.Builders.Generator.Engine;
 [Generator]
 public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Builders.SqlServer.SqlServer";
+    private const string Ns = "Smart.Data.Accessor.Attributes.SqlServer.SqlServer";
 
     private static readonly (string Attribute, QueryBuilderEngine.BuilderKind Kind)[] Targets =
     [

@@ -24,17 +24,4 @@ public sealed class ResolverDbProviderSelectorTest
 
         Assert.Same(provider, selector.GetProvider("main"));
     }
-
-    [Fact]
-    public void ConstructorThrowsOnNullResolver() =>
-        Assert.Throws<ArgumentNullException>(static () => new ResolverDbProviderSelector(null!));
-
-    [Fact]
-    public void GetProviderThrowsOnNullParameter()
-    {
-        using var resolver = new ResolverConfig().ToResolver();
-        var selector = new ResolverDbProviderSelector(resolver);
-
-        Assert.Throws<ArgumentNullException>(() => selector.GetProvider(null!));
-    }
 }

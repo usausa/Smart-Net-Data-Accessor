@@ -3,7 +3,6 @@ namespace Smart.Data.Accessor.Tests.Accessors;
 using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
-using Smart.Data.Accessor.Builders;
 using Smart.Data.Accessor.Tests.Models;
 
 [DataAccessor]

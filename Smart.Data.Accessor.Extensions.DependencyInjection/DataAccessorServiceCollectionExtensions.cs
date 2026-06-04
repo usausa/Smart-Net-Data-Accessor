@@ -14,7 +14,6 @@ public static class DataAccessorServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddDataAccessors(this IServiceCollection services)
     {
-        ArgumentNullException.ThrowIfNull(services);
         foreach (var serviceType in DataAccessorRegistry.RegisteredServiceTypes)
         {
             services.AddSingleton(serviceType, sp => DataAccessorRegistry.Create(serviceType, sp));

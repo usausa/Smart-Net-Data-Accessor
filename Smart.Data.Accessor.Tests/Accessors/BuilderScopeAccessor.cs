@@ -4,7 +4,6 @@ using System.Data;
 using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
-using Smart.Data.Accessor.Builders;
 using Smart.Data.Accessor.Tests.Models;
 
 // Entity for Builder scope tests (Phase R3):

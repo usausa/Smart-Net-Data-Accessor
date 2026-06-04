@@ -413,7 +413,7 @@ internal static class AccessorSourceBuilder
         }
         else if (m.BuilderMethodName is not null)
         {
-            builder.Indent().Append("var ctx = new global::Smart.Data.Accessor.Builders.BuilderContext(cmd);").NewLine();
+            builder.Indent().Append("var ctx = new global::Smart.Data.Accessor.BuilderContext(cmd);").NewLine();
             // design doc §4.3: value parameters = method params excluding DbConnection / DbTransaction / CancellationToken.
             // Both generators must apply the identical exclusion so the call and the generated
             // `{Method}__QueryBuilder` signature line up.
