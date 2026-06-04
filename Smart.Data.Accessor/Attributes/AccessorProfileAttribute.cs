@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 [AttributeUsage(AttributeTargets.Class)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage]
 public sealed class AccessorProfileAttribute : Attribute
 {
 }

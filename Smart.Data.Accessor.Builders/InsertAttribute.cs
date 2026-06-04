@@ -1,14 +1,14 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Builds an <c>INSERT</c> statement. Entity mode (<c>[Insert(typeof(T))]</c>) derives columns
 /// from the entity type; parameter mode (<c>[Insert(Table = "...")]</c>) derives columns from
 /// the method's value parameters (design doc §4.4).
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+[ExcludeFromCodeCoverage]
 public sealed class InsertAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

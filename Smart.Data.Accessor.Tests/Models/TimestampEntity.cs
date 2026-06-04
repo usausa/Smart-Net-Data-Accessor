@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Tests.Models;
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 using Smart.Data.Accessor.Attributes;

@@ -2,7 +2,6 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.Generator;
 using Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;

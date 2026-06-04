@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Helpers;
 
 using System.Text;
-using System.Threading;
 
 /// <summary>
 /// Lightweight thread-local <see cref="StringBuilder"/> pool used by <see cref="BuilderScope"/>.

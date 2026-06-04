@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Class)]
+[ExcludeFromCodeCoverage]
 public sealed class ProviderAttribute : Attribute
 {
     public string Name { get; }
@@ -11,6 +11,6 @@ public sealed class ProviderAttribute : Attribute
     public ProviderAttribute(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        this.Name = name;
+        Name = name;
     }
 }

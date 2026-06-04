@@ -1,5 +1,6 @@
 namespace Smart.Data.Accessor.GeneratorShared;
 
+using System.Globalization;
 using System.Text;
 
 // 改善2 ②: gen-time expression builders shared (as linked source) by the core
@@ -36,7 +37,7 @@ internal static class CodeExpressionHelper
             return string.Empty;
         }
         return size is { } sz
-            ? $", {dbTypeExpr}, {sz.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+            ? $", {dbTypeExpr}, {sz.ToString(CultureInfo.InvariantCulture)}"
             : $", {dbTypeExpr}";
     }
 

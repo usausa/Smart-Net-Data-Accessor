@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System;
-
 using Xunit;
 
 // Phase R2 (spec §7.7): verifies the generated source for the [TypeHandler<>] scope chain —

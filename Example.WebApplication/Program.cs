@@ -1,8 +1,5 @@
 namespace Example.WebApplication;
 
-using System;
-using System.IO;
-
 using Example.WebApplication.Accessor;
 
 using Microsoft.AspNetCore.Builder;

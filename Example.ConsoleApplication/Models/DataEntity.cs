@@ -1,5 +1,7 @@
 namespace Example.ConsoleApplication.Models;
 
+using System.Data;
+
 using Smart.Data.Accessor.Attributes;
 
 internal enum DataKind
@@ -25,5 +27,5 @@ internal sealed class DataEntity
 internal sealed record DataRecord(
     long Id,
     string Name,
-    [property: DbType<System.Data.DbType>(System.Data.DbType.Int32)] int Type,
+    [property: DbType<DbType>(DbType.Int32)] int Type,
     DataKind Kind);

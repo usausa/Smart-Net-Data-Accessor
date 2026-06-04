@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage]
 public sealed class InjectAttribute : Attribute
 {
     public Type Type { get; }
@@ -14,7 +14,7 @@ public sealed class InjectAttribute : Attribute
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentException.ThrowIfNullOrEmpty(name);
-        this.Type = type;
-        this.Name = name;
+        Type = type;
+        Name = name;
     }
 }

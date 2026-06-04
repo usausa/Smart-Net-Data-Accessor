@@ -1,10 +1,7 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;

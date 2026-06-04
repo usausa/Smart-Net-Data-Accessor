@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Resolver;
 
-using System;
-
-using Smart.Data;
 using Smart.Resolver;
 
 /// <summary>

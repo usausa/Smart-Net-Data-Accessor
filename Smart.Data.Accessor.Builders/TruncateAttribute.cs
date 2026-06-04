@@ -1,13 +1,13 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Builds a <c>TRUNCATE TABLE t</c> statement. The entity type / table supplies the table name only
 /// (design doc §4.4). SQLite users should use raw SQL (DELETE FROM) instead.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+[ExcludeFromCodeCoverage]
 public sealed class TruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

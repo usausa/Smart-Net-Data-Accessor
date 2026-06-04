@@ -1,19 +1,17 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 using Smart.Data.Accessor.Builders.Generator;
+using Smart.Data.Accessor.Builders.MySql.Generator;
+using Smart.Data.Accessor.Builders.Postgres.Generator;
+using Smart.Data.Accessor.Builders.SqlServer.Generator;
 
 // Runs the two Smart.Data.Accessor source generators (core DataAccessorGenerator +
 // Builders QueryBuilderGenerator) together in-memory and exposes the reported diagnostics
@@ -71,9 +69,9 @@ internal static class GeneratorTestHelper
             [
                 new DataAccessorGenerator().AsSourceGenerator(),
                 new QueryBuilderGenerator().AsSourceGenerator(),
-                new global::Smart.Data.Accessor.Builders.SqlServer.Generator.SqlServerQueryBuilderGenerator().AsSourceGenerator(),
-                new global::Smart.Data.Accessor.Builders.MySql.Generator.MySqlQueryBuilderGenerator().AsSourceGenerator(),
-                new global::Smart.Data.Accessor.Builders.Postgres.Generator.PostgresQueryBuilderGenerator().AsSourceGenerator()
+                new SqlServerQueryBuilderGenerator().AsSourceGenerator(),
+                new MySqlQueryBuilderGenerator().AsSourceGenerator(),
+                new PostgresQueryBuilderGenerator().AsSourceGenerator()
             ],
             additionalTexts: additionalTexts,
             parseOptions: parseOptions);

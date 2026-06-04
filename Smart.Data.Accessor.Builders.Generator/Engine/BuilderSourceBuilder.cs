@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Builders.Generator.Engine;
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 using Smart.Data.Accessor.Builders.Generator.Models;

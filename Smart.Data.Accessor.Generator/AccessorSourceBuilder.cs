@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Text;
 
 using Smart.Data.Accessor.Generator.Models;
@@ -82,7 +80,7 @@ internal static class AccessorSourceBuilder
         var paramName = bindMarker + pp.ParamName;
         var valueExpr = BuildPocoValueExpr(argName, pp);
         var dbTypeExprOrDefault = pp.DbTypeExpr ?? "global::System.Data.DbType.Object";
-        var sizeArg = pp.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+        var sizeArg = pp.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
 
         switch (pp.Direction)
         {
@@ -401,7 +399,7 @@ internal static class AccessorSourceBuilder
 
         if (m.CommandTimeoutSeconds is { } cts)
         {
-            builder.Indent().Append("cmd.CommandTimeout = ").Append(cts.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(";").NewLine();
+            builder.Indent().Append("cmd.CommandTimeout = ").Append(cts.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
         }
 
         // SQL / parameter setup
@@ -532,7 +530,7 @@ internal static class AccessorSourceBuilder
 
             var paramName = m.BindMarker + p.Name;
             var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
-            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
             var hasProvider = p.ProviderParameterTypeFullName is not null;
 
             switch (p.Direction)
@@ -559,7 +557,7 @@ internal static class AccessorSourceBuilder
                     if (hasProvider)
                     {
                         var providerSizeArg = p.Size is { } iSz
-                            ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                            ? ", size: " + iSz.ToString(CultureInfo.InvariantCulture)
                             : string.Empty;
                         var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()
@@ -623,7 +621,7 @@ internal static class AccessorSourceBuilder
 
             var paramName = m.BindMarker + p.Name;
             var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
-            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
             var hasProvider = p.ProviderParameterTypeFullName is not null;
 
             switch (p.Direction)
@@ -654,7 +652,7 @@ internal static class AccessorSourceBuilder
                     if (hasProvider)
                     {
                         var providerSizeArg = p.Size is { } iSz
-                            ? ", size: " + iSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                            ? ", size: " + iSz.ToString(CultureInfo.InvariantCulture)
                             : string.Empty;
                         var (inMethod, inValue) = BuildInParameterCall(p);
                         builder.Indent()

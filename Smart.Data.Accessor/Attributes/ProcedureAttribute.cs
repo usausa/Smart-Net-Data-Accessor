@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+[ExcludeFromCodeCoverage]
 public sealed class ProcedureAttribute : Attribute
 {
     public string Name { get; }
@@ -11,6 +11,6 @@ public sealed class ProcedureAttribute : Attribute
     public ProcedureAttribute(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        this.Name = name;
+        Name = name;
     }
 }

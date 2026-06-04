@@ -1,9 +1,6 @@
 namespace Smart.Data.Accessor.Tests.Accessors;
 
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Threading;
-using System.Threading.Tasks;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Tests.Models;

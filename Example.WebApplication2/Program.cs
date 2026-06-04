@@ -1,13 +1,8 @@
 namespace Example.WebApplication2;
 
-using System.IO;
-
 using Example.WebApplication2.Accessor;
 
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 using Smart.Data;
 using Smart.Data.Accessor.Resolver;

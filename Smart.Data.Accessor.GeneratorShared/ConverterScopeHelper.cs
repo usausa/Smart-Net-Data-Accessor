@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.GeneratorShared;
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 using Microsoft.CodeAnalysis;
 

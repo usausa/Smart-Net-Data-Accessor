@@ -1,8 +1,10 @@
 namespace Smart.Data.Accessor.Generator.Sql;
 
+using System.Globalization;
 using System.Text;
 
 using Smart.Data.Accessor.Generator.Sql.Nodes;
+using Smart.Data.Accessor.GeneratorShared;
 
 internal static class NodeEmitter
 {
@@ -152,7 +154,7 @@ internal static class NodeEmitter
                     }
                     var pname = bindMarker + "p" + counter++;
                     var attrs = attrLookup(root);
-                    var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+                    var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
                     var direction = attrs?.Direction ?? Direction.Input;
                     // Apply the spec §7.4/§7.7 converter (ToDb) or the §7.9 enum-cast only when the
                     // SQL token is the bare parameter (no member access) — for `entity.X` the leaf
@@ -165,11 +167,11 @@ internal static class NodeEmitter
                         {
                             // 改善2: bind via the converter-sharing overload; valueExpr stays raw (the
                             // helper calls TConverter.ToDb + handles null/Nullable).
-                            inMethod = Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
+                            inMethod = CodeExpressionHelper.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
                         }
                         else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
                         {
-                            valueExpr = Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
+                            valueExpr = CodeExpressionHelper.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
                         }
                     }
                     var hasProvider = attrs?.ProviderParameterTypeFullName is not null
@@ -185,7 +187,7 @@ internal static class NodeEmitter
                             .Append(pname)
                             .Append("\", ")
                             .Append(p.Name)
-                            .Append(Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, null))
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, null))
                             .Append("));\n");
                     }
                     else if (direction == Direction.Input)
@@ -198,7 +200,7 @@ internal static class NodeEmitter
                             // will set the native typed property. Use named arg for size to
                             // keep the call unambiguous.
                             var providerSizeArg = attrs?.Size is { } pSz
-                                ? ", size: " + pSz.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                ? ", size: " + pSz.ToString(CultureInfo.InvariantCulture)
                                 : string.Empty;
                             EmitParamLine(
                                 $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
@@ -206,7 +208,7 @@ internal static class NodeEmitter
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{Smart.Data.Accessor.GeneratorShared.CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, attrs?.Size)});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, attrs?.Size)});");
                         }
                     }
                     else
@@ -256,8 +258,6 @@ internal static class NodeEmitter
                 // UsingNode is consumed by DataAccessorGenerator at the accessor level
                 // (aggregated and emitted as file-header `using` directives, spec
                 // §1.4 F12 / §6.3). Skip it here to avoid duplicating in the method body.
-                default:
-                    break;
             }
         }
 

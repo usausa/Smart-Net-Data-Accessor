@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Tests;
 
-using System.Collections.Generic;
-
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 

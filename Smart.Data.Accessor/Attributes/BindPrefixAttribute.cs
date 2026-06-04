@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage]
 public sealed class BindPrefixAttribute : Attribute
 {
     public char Marker { get; }

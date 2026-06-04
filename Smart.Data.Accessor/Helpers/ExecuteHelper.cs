@@ -1,11 +1,10 @@
 namespace Smart.Data.Accessor.Helpers;
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 using Smart.Data.Accessor.Converters;
 
@@ -118,7 +117,7 @@ public static class ExecuteHelper
             return "(NULL)";
         }
 
-        var sb = new System.Text.StringBuilder("(");
+        var sb = new StringBuilder("(");
         var index = 0;
         foreach (var v in values)
         {

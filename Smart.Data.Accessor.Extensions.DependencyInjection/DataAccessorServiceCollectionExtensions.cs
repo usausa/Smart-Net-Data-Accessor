@@ -1,9 +1,6 @@
 #pragma warning disable IDE0130 // Namespace does not match folder structure (M.E.DI extension method convention).
 namespace Microsoft.Extensions.DependencyInjection;
 #pragma warning restore IDE0130
-
-using System;
-
 using Smart.Data.Accessor;
 
 public static class DataAccessorServiceCollectionExtensions

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System;
-
 using Xunit;
 
 // spec §5.6: POCO-argument parameter aggregation for [Procedure] / [DirectSql] — properties expand

@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 [AttributeUsage(

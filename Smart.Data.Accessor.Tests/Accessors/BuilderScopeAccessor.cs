@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Tests.Accessors;
 
-using System;
+using System.Data;
 using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
@@ -15,7 +15,7 @@ internal sealed class BuilderScopeEntity
     [Key]
     public long Id { get; set; }
 
-    [DbType(System.Data.DbType.AnsiString)]
+    [DbType(DbType.AnsiString)]
     public string Name { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }

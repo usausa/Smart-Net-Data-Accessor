@@ -1,8 +1,6 @@
 namespace Smart.Data.Accessor.Tests;
 
 using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
 
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Data.Accessor.Tests.Mock;

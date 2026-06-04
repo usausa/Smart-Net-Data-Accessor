@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System;
-
 using Xunit;
 
 // Phase R3: verifies the Builder generator honours the spec §7.7 [TypeHandler<>] scope chain

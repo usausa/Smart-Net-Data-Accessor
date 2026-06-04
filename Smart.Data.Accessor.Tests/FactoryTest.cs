@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Tests;
 
-using System;
-
-using Smart.Data;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;

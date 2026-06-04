@@ -1,8 +1,7 @@
 namespace Example.ConsoleApplication.Models;
 
-using System;
-
 using Example.ConsoleApplication.Converters;
+
 using Smart.Data.Accessor.Attributes;
 
 // Demonstrates a custom [TypeHandler<>] (spec §7.4): OccurredAt is stored as Int64 ticks in the DB.

@@ -1,6 +1,5 @@
 namespace Example.ConsoleApplication.Converters;
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 

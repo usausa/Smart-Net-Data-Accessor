@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Opts the property out of the per-column <c>IsDBNull</c> null check in generated
@@ -15,7 +15,7 @@ using System;
 /// SDA0307 default! fall-through.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage]
 public sealed class NotNullColumnAttribute : Attribute
 {
 }

@@ -1,9 +1,7 @@
 namespace Smart.Data.Accessor.Resolver;
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 
-using Smart.Data;
 using Smart.Resolver;
 
 public static class ResolverConfigExtensions

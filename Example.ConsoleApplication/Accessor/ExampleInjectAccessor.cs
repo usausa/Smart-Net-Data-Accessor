@@ -1,7 +1,5 @@
 namespace Example.ConsoleApplication.Accessor;
 
-using System.Collections.Generic;
-
 using Example.ConsoleApplication.Models;
 
 using Smart.Data.Accessor.Attributes;
@@ -20,11 +18,11 @@ internal sealed partial class ExampleInjectAccessor
     [Query]
     public partial IReadOnlyList<DataEntity> QueryAll();
 
-    public string GetLoggerTypeName() => this.logger.GetType().Name;
+    public string GetLoggerTypeName() => logger.GetType().Name;
 
     public int CallLoggerAndCount(string message)
     {
-        this.logger.Log(message);
-        return this.logger.Count;
+        logger.Log(message);
+        return logger.Count;
     }
 }

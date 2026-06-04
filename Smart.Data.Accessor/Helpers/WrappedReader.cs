@@ -1,13 +1,10 @@
 namespace Smart.Data.Accessor.Helpers;
 
-using System;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 [SuppressMessage("Design", "CA1010:Collections should implement generic interface", Justification = "Inherits IEnumerable via DbDataReader base class; matches DbDataReader semantics.")]
 public sealed class WrappedReader : DbDataReader
@@ -34,20 +31,20 @@ public sealed class WrappedReader : DbDataReader
     {
         if (disposing)
         {
-            this.reader.Dispose();
-            this.command.Dispose();
-            this.ownedConnection?.Dispose();
+            reader.Dispose();
+            command.Dispose();
+            ownedConnection?.Dispose();
         }
         base.Dispose(disposing);
     }
 
     public override async ValueTask DisposeAsync()
     {
-        await this.reader.DisposeAsync().ConfigureAwait(false);
-        await this.command.DisposeAsync().ConfigureAwait(false);
-        if (this.ownedConnection is not null)
+        await reader.DisposeAsync().ConfigureAwait(false);
+        await command.DisposeAsync().ConfigureAwait(false);
+        if (ownedConnection is not null)
         {
-            await this.ownedConnection.DisposeAsync().ConfigureAwait(false);
+            await ownedConnection.DisposeAsync().ConfigureAwait(false);
         }
         await base.DisposeAsync().ConfigureAwait(false);
     }
@@ -55,146 +52,146 @@ public sealed class WrappedReader : DbDataReader
     public override int Depth
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.Depth;
+        get => reader.Depth;
     }
 
     public override int FieldCount
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.FieldCount;
+        get => reader.FieldCount;
     }
 
     public override bool HasRows
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.HasRows;
+        get => reader.HasRows;
     }
 
     public override bool IsClosed
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.IsClosed;
+        get => reader.IsClosed;
     }
 
     public override int RecordsAffected
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.RecordsAffected;
+        get => reader.RecordsAffected;
     }
 
     public override int VisibleFieldCount
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader.VisibleFieldCount;
+        get => reader.VisibleFieldCount;
     }
 
     public override object this[int ordinal]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader[ordinal];
+        get => reader[ordinal];
     }
 
     public override object this[string name]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => this.reader[name];
+        get => reader[name];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override bool GetBoolean(int ordinal) => this.reader.GetBoolean(ordinal);
+    public override bool GetBoolean(int ordinal) => reader.GetBoolean(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override byte GetByte(int ordinal) => this.reader.GetByte(ordinal);
+    public override byte GetByte(int ordinal) => reader.GetByte(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override long GetBytes(int ordinal, long dataOffset, byte[]? buffer, int bufferOffset, int length)
-        => this.reader.GetBytes(ordinal, dataOffset, buffer, bufferOffset, length);
+        => reader.GetBytes(ordinal, dataOffset, buffer, bufferOffset, length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override char GetChar(int ordinal) => this.reader.GetChar(ordinal);
+    public override char GetChar(int ordinal) => reader.GetChar(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override long GetChars(int ordinal, long dataOffset, char[]? buffer, int bufferOffset, int length)
-        => this.reader.GetChars(ordinal, dataOffset, buffer, bufferOffset, length);
+        => reader.GetChars(ordinal, dataOffset, buffer, bufferOffset, length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override string GetDataTypeName(int ordinal) => this.reader.GetDataTypeName(ordinal);
+    public override string GetDataTypeName(int ordinal) => reader.GetDataTypeName(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override DateTime GetDateTime(int ordinal) => this.reader.GetDateTime(ordinal);
+    public override DateTime GetDateTime(int ordinal) => reader.GetDateTime(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override decimal GetDecimal(int ordinal) => this.reader.GetDecimal(ordinal);
+    public override decimal GetDecimal(int ordinal) => reader.GetDecimal(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override double GetDouble(int ordinal) => this.reader.GetDouble(ordinal);
+    public override double GetDouble(int ordinal) => reader.GetDouble(ordinal);
 
-    public override IEnumerator GetEnumerator() => ((IEnumerable)this.reader).GetEnumerator();
+    public override IEnumerator GetEnumerator() => ((IEnumerable)reader).GetEnumerator();
 
     [UnconditionalSuppressMessage("Trimming", "IL2046", Justification = "GetFieldType forwards to DbDataReader; trim safety matches the inner reader.")]
     [UnconditionalSuppressMessage("Trimming", "IL2093", Justification = "DbDataReader.GetFieldType does not have DynamicallyAccessedMembers; mismatch is intentional.")]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Type GetFieldType(int ordinal) => this.reader.GetFieldType(ordinal);
+    public override Type GetFieldType(int ordinal) => reader.GetFieldType(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override float GetFloat(int ordinal) => this.reader.GetFloat(ordinal);
+    public override float GetFloat(int ordinal) => reader.GetFloat(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Guid GetGuid(int ordinal) => this.reader.GetGuid(ordinal);
+    public override Guid GetGuid(int ordinal) => reader.GetGuid(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override short GetInt16(int ordinal) => this.reader.GetInt16(ordinal);
+    public override short GetInt16(int ordinal) => reader.GetInt16(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override int GetInt32(int ordinal) => this.reader.GetInt32(ordinal);
+    public override int GetInt32(int ordinal) => reader.GetInt32(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override long GetInt64(int ordinal) => this.reader.GetInt64(ordinal);
+    public override long GetInt64(int ordinal) => reader.GetInt64(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override string GetName(int ordinal) => this.reader.GetName(ordinal);
+    public override string GetName(int ordinal) => reader.GetName(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override int GetOrdinal(string name) => this.reader.GetOrdinal(name);
+    public override int GetOrdinal(string name) => reader.GetOrdinal(name);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override string GetString(int ordinal) => this.reader.GetString(ordinal);
+    public override string GetString(int ordinal) => reader.GetString(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override object GetValue(int ordinal) => this.reader.GetValue(ordinal);
+    public override object GetValue(int ordinal) => reader.GetValue(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override int GetValues(object[] values) => this.reader.GetValues(values);
+    public override int GetValues(object[] values) => reader.GetValues(values);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override bool IsDBNull(int ordinal) => this.reader.IsDBNull(ordinal);
+    public override bool IsDBNull(int ordinal) => reader.IsDBNull(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override bool NextResult() => this.reader.NextResult();
+    public override bool NextResult() => reader.NextResult();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override bool Read() => this.reader.Read();
+    public override bool Read() => reader.Read();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Task<bool> ReadAsync(CancellationToken cancellationToken) => this.reader.ReadAsync(cancellationToken);
+    public override Task<bool> ReadAsync(CancellationToken cancellationToken) => reader.ReadAsync(cancellationToken);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Task<bool> NextResultAsync(CancellationToken cancellationToken) => this.reader.NextResultAsync(cancellationToken);
+    public override Task<bool> NextResultAsync(CancellationToken cancellationToken) => reader.NextResultAsync(cancellationToken);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Task<bool> IsDBNullAsync(int ordinal, CancellationToken cancellationToken) => this.reader.IsDBNullAsync(ordinal, cancellationToken);
+    public override Task<bool> IsDBNullAsync(int ordinal, CancellationToken cancellationToken) => reader.IsDBNullAsync(ordinal, cancellationToken);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken) => this.reader.GetFieldValueAsync<T>(ordinal, cancellationToken);
+    public override Task<T> GetFieldValueAsync<T>(int ordinal, CancellationToken cancellationToken) => reader.GetFieldValueAsync<T>(ordinal, cancellationToken);
 
     [UnconditionalSuppressMessage("Trimming", "IL2046", Justification = "GetFieldValue forwards to DbDataReader; trim safety matches the inner reader.")]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override T GetFieldValue<T>(int ordinal) => this.reader.GetFieldValue<T>(ordinal);
+    public override T GetFieldValue<T>(int ordinal) => reader.GetFieldValue<T>(ordinal);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override DataTable? GetSchemaTable() => this.reader.GetSchemaTable();
+    public override DataTable? GetSchemaTable() => reader.GetSchemaTable();
 
-    public override void Close() => this.reader.Close();
+    public override void Close() => reader.Close();
 
-    public override Task CloseAsync() => this.reader.CloseAsync();
+    public override Task CloseAsync() => reader.CloseAsync();
 }

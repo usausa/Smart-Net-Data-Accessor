@@ -1,6 +1,6 @@
 namespace Example.ConsoleApplication.Accessor;
 
-using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 
 using Example.ConsoleApplication.Models;
@@ -23,7 +23,7 @@ internal sealed partial class ExampleAccessor
 
     [Query]
     public partial IReadOnlyList<DataEntity> QueryByType(
-        [DbType<System.Data.DbType>(System.Data.DbType.Int32)] int type);
+        [DbType<DbType>(DbType.Int32)] int type);
 
     [Query]
     public partial IReadOnlyList<DataEntity> QueryAllWithConnection(DbConnection conn);
@@ -59,7 +59,7 @@ internal sealed partial class ExampleAccessor
     public partial DbDataReader QueryReader();
 
     [DirectSql(SuppressWarning = true)]
-    public partial int ExecuteDirect(string sql, [Direction(System.Data.ParameterDirection.Output)] out int rows);
+    public partial int ExecuteDirect(string sql, [Direction(ParameterDirection.Output)] out int rows);
 
     [Count(typeof(DataEntity), Table = "Data")]
     [ExecuteScalar]

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System.Linq;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 

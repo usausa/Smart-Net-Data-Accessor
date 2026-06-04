@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Sql;
 
+using System.Diagnostics.CodeAnalysis;
+
 public enum SqlTokenizerErrorKind
 {
     Unknown,
@@ -7,7 +9,8 @@ public enum SqlTokenizerErrorKind
     QuoteNotClosed
 }
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 [Serializable]
 public sealed class SqlTokenizerException : Exception
 {

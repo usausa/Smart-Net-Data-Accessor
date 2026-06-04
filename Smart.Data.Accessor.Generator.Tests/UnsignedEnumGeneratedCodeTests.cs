@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System;
-
 using Xunit;
 
 // spec §7.9: enums with unsigned / sbyte underlying types read the same-size signed reader method

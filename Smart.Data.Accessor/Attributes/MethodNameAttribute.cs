@@ -1,9 +1,9 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+[ExcludeFromCodeCoverage]
 public sealed class MethodNameAttribute : Attribute
 {
     public string Name { get; }
@@ -11,6 +11,6 @@ public sealed class MethodNameAttribute : Attribute
     public MethodNameAttribute(string name)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        this.Name = name;
+        Name = name;
     }
 }

@@ -1,9 +1,5 @@
 namespace Example.ConsoleApplication;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
 using Example.ConsoleApplication.Accessor;
 using Example.ConsoleApplication.Models;
 

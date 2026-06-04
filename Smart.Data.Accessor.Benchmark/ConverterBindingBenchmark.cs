@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -9,7 +8,6 @@ using BenchmarkDotNet.Attributes;
 
 using Smart.Data.Accessor.Converters;
 using Smart.Data.Accessor.Helpers;
-
 using Smart.Mock.Data;
 
 // 改善2 (P6 gate + P8 post-impl): benchmark for the converter-sharing overload

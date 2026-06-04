@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 using Smart.Data.Accessor.Generator.Sql;
@@ -132,13 +130,13 @@ public sealed class SqlPipelineTests
     // ----------------------------------------------------------------------------
 
     [Theory]
-    [InlineData("/*foo*/", new TokenType[] { TokenType.Blank })]                                // plain → just whitespace
-    [InlineData("/**/", new TokenType[] { TokenType.Blank })]                                   // empty → just whitespace
-    [InlineData("/*+ HINT */", new TokenType[] { TokenType.Hint })]                             // hint
-    [InlineData("/*!helper System.Math */", new TokenType[] { TokenType.Comment })]             // pragma
-    [InlineData("/*@ id */", new TokenType[] { TokenType.Comment })]                            // parameter
-    [InlineData("/*# raw */", new TokenType[] { TokenType.Comment })]                           // raw
-    [InlineData("/*% if (x) { */", new TokenType[] { TokenType.Comment })]                      // code
+    [InlineData("/*foo*/", new[] { TokenType.Blank })]                                // plain → just whitespace
+    [InlineData("/**/", new[] { TokenType.Blank })]                                   // empty → just whitespace
+    [InlineData("/*+ HINT */", new[] { TokenType.Hint })]                             // hint
+    [InlineData("/*!helper System.Math */", new[] { TokenType.Comment })]             // pragma
+    [InlineData("/*@ id */", new[] { TokenType.Comment })]                            // parameter
+    [InlineData("/*# raw */", new[] { TokenType.Comment })]                           // raw
+    [InlineData("/*% if (x) { */", new[] { TokenType.Comment })]                      // code
     public void TokenizerClassifiesCommentsByMarker(string input, TokenType[] expectedTypes)
     {
         var tokens = new SqlTokenizer(input).Tokenize();

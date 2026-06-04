@@ -1,12 +1,9 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;

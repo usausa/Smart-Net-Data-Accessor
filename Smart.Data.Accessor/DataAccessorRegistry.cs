@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor;
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 
 public static class DataAccessorRegistry

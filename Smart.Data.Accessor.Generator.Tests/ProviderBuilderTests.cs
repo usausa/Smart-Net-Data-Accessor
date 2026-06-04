@@ -52,41 +52,41 @@ public sealed class ProviderBuilderTests
     public void SqlServerInsertUsesBracketQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.SqlServer", "SqlServerInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlInsertUsesBacktickQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.MySql", "MySqlInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresInsertUsesDoubleQuoteQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Builders.Postgres", "PostgresInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void SqlServerSelectPagingUsesOffsetFetch()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.SqlServer", "SqlServerSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlSelectPagingUsesLimitOffset()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.MySql", "MySqlSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresSelectPagingUsesLimitOffset()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Builders.Postgres", "PostgresSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 }

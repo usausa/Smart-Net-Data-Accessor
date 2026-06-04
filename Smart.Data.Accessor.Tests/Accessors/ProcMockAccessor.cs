@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Tests.Accessors;
 
-using System;
 using System.Data;
 using System.Data.Common;
 

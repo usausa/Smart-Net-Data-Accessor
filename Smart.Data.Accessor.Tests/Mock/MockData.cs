@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Tests.Mock;
 
-using System.Collections.Generic;
-using System.Linq;
-
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 

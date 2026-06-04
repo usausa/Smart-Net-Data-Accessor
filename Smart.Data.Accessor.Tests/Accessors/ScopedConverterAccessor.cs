@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Tests.Accessors;
 
-using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
@@ -51,7 +50,7 @@ internal sealed partial class ProfileScopeConverterAccessor
 // Class-scope [TypeMap] (spec §7.5 / §7.7): supplies DbType.AnsiString for string parameters when
 // no explicit [DbType]/[AnsiString] is present.
 [DataAccessor]
-[TypeMap(typeof(string), System.Data.DbType.AnsiString)]
+[TypeMap(typeof(string), DbType.AnsiString)]
 internal sealed partial class TypeMapScopeAccessor
 {
     [Execute]

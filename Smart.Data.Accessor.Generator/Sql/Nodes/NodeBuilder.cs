@@ -2,8 +2,6 @@ namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
 using System.Text;
 
-using Smart.Data.Accessor.Generator.Sql;
-
 public sealed class NodeBuilder
 {
     private readonly IReadOnlyList<Token> tokens;

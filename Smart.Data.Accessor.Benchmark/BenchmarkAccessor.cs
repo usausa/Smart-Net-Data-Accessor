@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 

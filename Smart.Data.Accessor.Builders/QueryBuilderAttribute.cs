@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Builders;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Marker base for all query-builder attributes (Insert / Update / Delete / Count /
@@ -8,8 +8,8 @@ using System;
 /// Generator only checks whether a method attribute derives from this type. Each derived
 /// attribute declares the metadata (EntityType / Table) it needs (design doc §4.1).
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+[ExcludeFromCodeCoverage]
 public abstract class QueryBuilderAttribute : Attribute
 {
 }

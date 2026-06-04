@@ -1,10 +1,5 @@
 namespace Smart.Data.Accessor;
 
-using System;
-using System.Collections.Generic;
-
-using Smart.Data;
-
 public sealed class DataAccessorFactoryBuilder
 {
     private readonly Dictionary<Type, object> singletons = [];

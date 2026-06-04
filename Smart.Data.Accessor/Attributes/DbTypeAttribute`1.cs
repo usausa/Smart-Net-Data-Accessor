@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Attributes;
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Provider-specific DbType attribute (spec §1.4 F15 / §5.3 / §5.3.1).
@@ -11,7 +11,7 @@ using System;
 /// parameter type and sets its native property.
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
-[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+[ExcludeFromCodeCoverage]
 public sealed class DbTypeAttribute<TEnum> : Attribute
     where TEnum : struct, Enum
 {

@@ -1,10 +1,8 @@
 namespace Smart.Data.Accessor.Generator;
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Threading;
+using System.Data;
+using System.Globalization;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -492,8 +490,8 @@ internal static class AccessorModelBuilder
                         if (ctorVal is not null && TryGetProviderDbTypeMapping(rawEnumFqn, out var providerFqn, out var propName, out var routeAsBclDbType))
                         {
                             // Build the enum-value expression: `(global::Ns.Enum)42`.
-                            var rawVal = Convert.ToInt64(ctorVal, System.Globalization.CultureInfo.InvariantCulture)
-                                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            var rawVal = Convert.ToInt64(ctorVal, CultureInfo.InvariantCulture)
+                                .ToString(CultureInfo.InvariantCulture);
                             var enumValueExpr = $"({enumFqn}){rawVal}";
                             if (routeAsBclDbType)
                             {
@@ -528,11 +526,11 @@ internal static class AccessorModelBuilder
                     }
                     else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
                     {
-                        direction = (System.Data.ParameterDirection)dirRaw switch
+                        direction = (ParameterDirection)dirRaw switch
                         {
-                            System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
-                            System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
-                            System.Data.ParameterDirection.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
+                            ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
+                            ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
+                            ParameterDirection.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
                             _ => ParameterDirectionKindLegacy.Input
                         };
                     }
@@ -1759,10 +1757,10 @@ internal static class AccessorModelBuilder
                 }
                 else if (an == DirectionAttributeName && pa.ConstructorArguments.Length > 0 && pa.ConstructorArguments[0].Value is int dirRaw)
                 {
-                    direction = (System.Data.ParameterDirection)dirRaw switch
+                    direction = (ParameterDirection)dirRaw switch
                     {
-                        System.Data.ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
-                        System.Data.ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
+                        ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
+                        ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
                         _ => ParameterDirectionKindLegacy.Input
                     };
                 }

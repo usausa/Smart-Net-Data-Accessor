@@ -1,6 +1,5 @@
 namespace Smart.Data.Accessor.Tests;
 
-using Smart.Data;
 using Smart.Data.Accessor.Resolver;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Data.Accessor.Tests.Mock;
