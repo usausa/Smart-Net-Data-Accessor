@@ -647,10 +647,10 @@ internal static class AccessorModelBuilder
                     p.Type.ToDisplayString() == CancellationTokenTypeName,
                     IsDbConnectionType(p.Type),
                     IsDbTransactionType(p.Type),
-                    dbTypeExpr,
-                    size,
                     direction,
                     refKind,
+                    dbTypeExpr,
+                    size,
                     enumUnderlyingFq,
                     isNullableEnumParam,
                     providerParamTypeFqn,
@@ -964,28 +964,28 @@ internal static class AccessorModelBuilder
             methods.Add(new MethodModel(
                 member.Name,
                 kind,
+                member.DeclaredAccessibility,
                 member.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 shape.Value,
                 scalarFq,
                 elementFq,
-                member.DeclaredAccessibility,
                 parameters.ToArray(),
+                connectionPattern,
+                connectionParam?.Name,
+                transactionParam?.Name,
+                methodMarker,
                 builder,
+                procedureName,
+                directSqlParameterName,
+                sqlAlias,
                 null,
                 sqlEmitCode,
                 staticSqlText,
                 staticParameterCode,
                 queryColumns is { } qc ? new EquatableArray<ColumnInfo>(qc.ToArray()) : (EquatableArray<ColumnInfo>?)null,
-                commandTimeout,
-                connectionPattern,
-                connectionParam?.Name,
-                transactionParam?.Name,
-                methodMarker,
-                sqlAlias,
                 outputBindings.ToArray(),
-                procedureName,
-                directSqlParameterName,
                 useRecordPrimaryCtor,
+                commandTimeout,
                 methodUsings.ToArray(),
                 scalarConverterFqn,
                 scalarConverterDbType,
@@ -1559,7 +1559,7 @@ internal static class AccessorModelBuilder
                     || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
                 var converter = ResolveConverterBinding(prop, param.Type);
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
-                ctorInfos.Add(new ColumnInfo(param.Name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+                ctorInfos.Add(new ColumnInfo(param.Name, column, typeName, isValueType, isNullable, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
             return (ctorInfos, true);
         }
@@ -1585,7 +1585,7 @@ internal static class AccessorModelBuilder
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
             var converter = ResolveConverterBinding(prop, prop.Type);
             CheckNonNullableDbNull(prop.Type, name, skipNullCheck, converter);
-            infos.Add(new ColumnInfo(name, column, typeName, typedReader, isValueType, isNullable, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+            infos.Add(new ColumnInfo(name, column, typeName, isValueType, isNullable, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
         }
         return (infos, false);
     }

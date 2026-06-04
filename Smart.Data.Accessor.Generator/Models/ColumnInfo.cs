@@ -8,9 +8,9 @@ internal sealed record ColumnInfo(
     string PropertyName,
     string ColumnName,
     string TypeFullName,
-    string? TypedReaderMethod,
     bool IsValueType,
     bool IsNullable,
+    string? TypedReaderMethod,
     string? EnumCastTypeFullName,
     // Opt-in via [NotNullColumn]: Generator skips IsDBNull and calls Get{Type}() directly.
     // The provider throws InvalidCastException if the column is actually DB NULL.

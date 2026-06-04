@@ -24,10 +24,10 @@ internal sealed record ParameterModel(
     bool IsCancellationToken,
     bool IsDbConnection,
     bool IsDbTransaction,
-    string? DbTypeExpr,     // e.g. "global::System.Data.DbType.AnsiString"
-    int? Size,
     ParameterDirectionKindLegacy Direction,
     RefKindLegacy RefKind,
+    string? DbTypeExpr,     // e.g. "global::System.Data.DbType.AnsiString"
+    int? Size,
     string? EnumUnderlyingFullName,    // FQN of underlying primitive when parameter type is enum (or Nullable<enum>); null otherwise
     bool IsNullableEnum,
     // provider-specific DbType from `[DbType<TEnum>(value)]`.

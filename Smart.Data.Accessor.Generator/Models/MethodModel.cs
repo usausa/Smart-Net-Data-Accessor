@@ -31,13 +31,20 @@ internal enum ConnectionPatternLegacy
 internal sealed record MethodModel(
     string Name,
     string MethodKind, // "Execute" | "Query" | "ExecuteReader" | "DirectSql"
+    Accessibility Accessibility,
     string ReturnTypeFullName,
     ReturnShapeLegacy ReturnShapeLegacy,
     string? ScalarTypeFullName,    // inner T for Scalar / TaskScalar / ValueTaskScalar
     string? ElementTypeFullName,   // element T for List/TaskList/AsyncEnumerable
-    Accessibility Accessibility,
     EquatableArray<ParameterModel> Parameters,
+    ConnectionPatternLegacy ConnectionPattern,
+    string? ConnectionParameterName,
+    string? TransactionParameterName,
+    char BindMarker,
     string? BuilderMethodName,
+    string? ProcedureName,
+    string? DirectSqlParameterName,  // name of the `string` parameter that holds the SQL text
+    string? SqlAlias,
     string? EmbeddedSql,
     string? SqlEmitCode,
     // Non-null when SQL has no dynamic branches: literal SQL text and parameter setup
@@ -45,16 +52,9 @@ internal sealed record MethodModel(
     string? StaticSqlText,
     string? StaticParameterCode,
     EquatableArray<ColumnInfo>? QueryColumns,
-    int? CommandTimeoutSeconds,
-    ConnectionPatternLegacy ConnectionPattern,
-    string? ConnectionParameterName,
-    string? TransactionParameterName,
-    char BindMarker,
-    string? SqlAlias,
     EquatableArray<OutputBinding> OutputBindings,
-    string? ProcedureName,
-    string? DirectSqlParameterName,  // name of the `string` parameter that holds the SQL text
     bool UseRecordPrimaryConstructor,  // emit `new T(name: ...)` via record primary ctor
+    int? CommandTimeoutSeconds,
     EquatableArray<UsingDirective> Usings,  // /*!helper */ / /*!using */ pragmas
     // non-null when a [TypeHandler<>] applies to the scalar return ([return:] / method / class /
     // profile scope). The scalar is read as ScalarConverterDbTypeFullName then converted via
