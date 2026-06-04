@@ -2,6 +2,8 @@ namespace Smart.Data.Accessor.Tests.Accessors;
 
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Tests.Models;
@@ -20,6 +22,9 @@ internal sealed partial class ExecuteAccessor
 
     [ExecuteReader]
     public partial DbDataReader ReadAll(DbConnection con);
+
+    [ExecuteReader]
+    public partial Task<DbDataReader> ReadAllAsync(DbConnection con, CancellationToken cancel = default);
 
     [Query]
     public partial IReadOnlyList<DataRecord> QueryRecords(DbConnection con);

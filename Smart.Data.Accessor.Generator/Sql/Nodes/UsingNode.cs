@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
-public sealed class UsingNode : INode
+public sealed class UsingNode : NodeBase
 {
     public bool IsStatic { get; }
 
@@ -11,6 +11,4 @@ public sealed class UsingNode : INode
         IsStatic = isStatic;
         Name = name;
     }
-
-    public void Visit(INodeVisitor visitor) => visitor.Visit(this);
 }

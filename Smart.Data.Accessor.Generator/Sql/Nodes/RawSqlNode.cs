@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
-public sealed class RawSqlNode : INode
+public sealed class RawSqlNode : NodeBase
 {
     public string Source { get; }
 
@@ -8,6 +8,4 @@ public sealed class RawSqlNode : INode
     {
         Source = source;
     }
-
-    public void Visit(INodeVisitor visitor) => visitor.Visit(this);
 }

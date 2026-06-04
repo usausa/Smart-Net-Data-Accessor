@@ -204,4 +204,331 @@ public sealed class GeneratedCodeTests
 
         Assert.Contains("AddInParameter(cmd, \"@p0\", (object?)(int)status)", text, System.StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ExecuteReaderEmitsWrappedReader()
+    {
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [ExecuteReader]
+                public partial DbDataReader Read(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Read", "select * from T")).AllGeneratedText;
+
+        Assert.Contains("cmd.ExecuteReader(", text, System.StringComparison.Ordinal);
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.WrappedReader", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AsyncExecuteReaderEmitsExecuteReaderAsync()
+    {
+        const string source = """
+            using System.Data.Common;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [ExecuteReader]
+                public partial Task<DbDataReader> ReadAsync(DbConnection con, CancellationToken cancel = default);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.ReadAsync", "select * from T")).AllGeneratedText;
+
+        Assert.Contains("await cmd.ExecuteReaderAsync(", text, System.StringComparison.Ordinal);
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.WrappedReader", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void QueryListEmitsBufferedReadLoop()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess)", text, System.StringComparison.Ordinal);
+        Assert.Contains("while (__reader.Read())", text, System.StringComparison.Ordinal);
+        Assert.Contains("__list.Add(", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AsyncQueryListEmitsReadAsyncLoop()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial Task<IReadOnlyList<Row>> ListAsync(DbConnection con, CancellationToken cancel = default);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.ListAsync", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess", text, System.StringComparison.Ordinal);
+        Assert.Contains("while (await __reader.ReadAsync(", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void QueryFirstEmitsSingleReadAndDefault()
+    {
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [QueryFirst]
+                public partial Row? First(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.First", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("if (__reader.Read())", text, System.StringComparison.Ordinal);
+        Assert.Contains("return default!;", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExecuteScalarEmitsConvertScalar()
+    {
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [ExecuteScalar]
+                public partial long Count(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Count", "select count(*) from T")).AllGeneratedText;
+
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<long>(cmd.ExecuteScalar())", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DirectSqlEmitsCommandTextFromParameter()
+    {
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [DirectSql(SuppressWarning = true)]
+                public partial int Exec(DbConnection con, string sql, int id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.CommandText = sql;", text, System.StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(cmd, \"@id\", id", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProcedureEmitsStoredProcedureCommandType()
+    {
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Procedure("usp_Do")]
+                [Execute]
+                public partial int Do(DbConnection con, int id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.CommandType = global::System.Data.CommandType.StoredProcedure;", text, System.StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = \"usp_Do\";", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PatternBEmitsProviderCreateConnection()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List();
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("this.dbProvider.CreateConnection()", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProviderPatternBEmitsSelectorGetProvider()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            [Provider("main")]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List();
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("this.providerSelector.GetProvider(\"main\").CreateConnection()", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RecordEntityMapsViaPrimaryConstructor()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed record Row(long Id, string Name);
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
+
+        // spec §7.10.5: positional record → ctor invocation `new Row(Id: ..., Name: ...)`.
+        Assert.Contains("new global::Row(", text, System.StringComparison.Ordinal);
+        Assert.Contains("Id: ", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EnumAndNullableColumnsMapWithCastAndGuard()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal enum Status { A, B }
+
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+                public Status St { get; set; }
+                public int? Age { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, St, Age from T")).AllGeneratedText;
+
+        // spec §7.9: enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード。
+        Assert.Contains("(global::Status)__reader.GetInt32(", text, System.StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(__o.Age)", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutParameterInfersDbTypeFromClrType()
+    {
+        const string source = """
+            using System.Data;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Procedure("usp")]
+                [Execute]
+                public partial void Run(DbConnection con, [Direction(ParameterDirection.Output)] out int total);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        // spec §5.6: OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpr）。
+        Assert.Contains("AddOutParameter(cmd, \"@total\", global::System.Data.DbType.Int32)", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProviderDbTypeEmitsProviderSpecificCast()
+    {
+        const string source = """
+            using System.Data;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Touch([DbType<SqlDbType>(SqlDbType.NVarChar)] string name, int id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set N = /*@ name */0 where Id = /*@ id */0")).AllGeneratedText;
+
+        // spec §1.4 F15 / §5.3.1: provider enum whitelist → SqlParameter.SqlDbType への代入。
+        Assert.Contains(".SqlDbType = ", text, System.StringComparison.Ordinal);
+    }
 }

@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
-public sealed class CodeNode : INode
+public sealed class CodeNode : NodeBase
 {
     public string Code { get; }
 
@@ -8,6 +8,4 @@ public sealed class CodeNode : INode
     {
         Code = code;
     }
-
-    public void Visit(INodeVisitor visitor) => visitor.Visit(this);
 }

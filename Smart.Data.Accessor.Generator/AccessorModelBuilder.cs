@@ -1889,7 +1889,7 @@ internal static class AccessorModelBuilder
             return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
-        IReadOnlyList<INode> nodes;
+        IReadOnlyList<NodeBase> nodes;
         IReadOnlyList<string> unknownPragmas;
         try
         {

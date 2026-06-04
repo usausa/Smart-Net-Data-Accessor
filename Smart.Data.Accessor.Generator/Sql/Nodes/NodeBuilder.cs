@@ -8,9 +8,9 @@ public sealed class NodeBuilder
 {
     private readonly IReadOnlyList<Token> tokens;
 
-    private readonly List<INode> pragmaNodes = [];
+    private readonly List<NodeBase> pragmaNodes = [];
 
-    private readonly List<INode> bodyNodes = [];
+    private readonly List<NodeBase> bodyNodes = [];
 
     private readonly List<string> unknownPragmas = [];
 
@@ -39,7 +39,7 @@ public sealed class NodeBuilder
     /// otherwise surface as a confusing C# compile error in generated code. Braces inside string /
     /// char literals and <c>//</c> line comments within a block are ignored.
     /// </summary>
-    public static BraceBalance CheckBraceBalance(IReadOnlyList<INode> nodes)
+    public static BraceBalance CheckBraceBalance(IReadOnlyList<NodeBase> nodes)
     {
         var depth = 0;
         foreach (var node in nodes)
@@ -110,19 +110,19 @@ public sealed class NodeBuilder
         }
     }
 
-    private void AddPragmaNode(INode node)
+    private void AddPragmaNode(NodeBase node)
     {
         Flush();
         pragmaNodes.Add(node);
     }
 
-    private void AddBody(INode node)
+    private void AddBody(NodeBase node)
     {
         Flush();
         bodyNodes.Add(node);
     }
 
-    public IReadOnlyList<INode> Build()
+    public IReadOnlyList<NodeBase> Build()
     {
         while (current < tokens.Count)
         {

@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
-public sealed class ParameterNode : INode
+public sealed class ParameterNode : NodeBase
 {
     public string Name { get; }
 
@@ -29,6 +29,4 @@ public sealed class ParameterNode : INode
         ParameterName = parameterName;
         IsMultiple = isMultiple;
     }
-
-    public void Visit(INodeVisitor visitor) => visitor.Visit(this);
 }

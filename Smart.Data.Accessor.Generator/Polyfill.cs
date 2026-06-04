@@ -6,24 +6,19 @@
 
 namespace System.Runtime.CompilerServices
 {
+    using System.Diagnostics.CodeAnalysis;
+
+    [ExcludeFromCodeCoverage]
     internal sealed class IsExternalInit
     {
-    }
-
-    internal static class RuntimeHelpers
-    {
-        public static T[] GetSubArray<T>(T[] array, System.Range range)
-        {
-            var (offset, length) = range.GetOffsetAndLength(array.Length);
-            var result = new T[length];
-            System.Array.Copy(array, offset, result, 0, length);
-            return result;
-        }
     }
 }
 
 namespace System
 {
+    using System.Diagnostics.CodeAnalysis;
+
+    [ExcludeFromCodeCoverage]
     internal readonly struct Index
     {
         private readonly int value;

@@ -99,17 +99,17 @@ internal static class NodeEmitter
         ReturnValue
     }
 
-    public static EmitResult Emit(IReadOnlyList<INode> nodes, ISet<string> knownParameters)
+    public static EmitResult Emit(IReadOnlyList<NodeBase> nodes, ISet<string> knownParameters)
         => Emit(nodes, knownParameters, _ => null, '@');
 
     public static EmitResult Emit(
-        IReadOnlyList<INode> nodes,
+        IReadOnlyList<NodeBase> nodes,
         ISet<string> knownParameters,
         Func<string, ParameterAttributes?> attrLookup)
         => Emit(nodes, knownParameters, attrLookup, '@');
 
     public static EmitResult Emit(
-        IReadOnlyList<INode> nodes,
+        IReadOnlyList<NodeBase> nodes,
         ISet<string> knownParameters,
         Func<string, ParameterAttributes?> attrLookup,
         char bindMarker)
