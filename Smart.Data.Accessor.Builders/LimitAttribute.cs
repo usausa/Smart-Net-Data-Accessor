@@ -7,6 +7,7 @@ using System;
 /// generator emits the dialect-specific paging clause (e.g. <c>FETCH NEXT</c> / <c>LIMIT</c>).
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class LimitAttribute : Attribute
 {
 }

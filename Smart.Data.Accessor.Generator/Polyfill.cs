@@ -33,6 +33,7 @@ namespace System
         public int GetOffset(int length) => value < 0 ? length + ~value + 1 : value;
     }
 
+    [ExcludeFromCodeCoverage]
     internal readonly struct Range
     {
         public Index Start { get; }

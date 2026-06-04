@@ -9,6 +9,7 @@ using System;
 /// attribute declares the metadata (EntityType / Table) it needs (design doc §4.1).
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public abstract class QueryBuilderAttribute : Attribute
 {
 }

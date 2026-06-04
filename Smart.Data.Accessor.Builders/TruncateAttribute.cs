@@ -7,6 +7,7 @@ using System;
 /// (design doc §4.4). SQLite users should use raw SQL (DELETE FROM) instead.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class TruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

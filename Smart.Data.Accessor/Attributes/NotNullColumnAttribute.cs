@@ -15,6 +15,7 @@ using System;
 /// SDA0307 default! fall-through.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class NotNullColumnAttribute : Attribute
 {
 }

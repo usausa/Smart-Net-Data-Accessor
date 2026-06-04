@@ -109,6 +109,46 @@ public sealed class DiagnosticTests
     }
 
     [Fact]
+    public void SqlCommentNotClosedWhenBlockCommentUnterminated()
+    {
+        // SqlTokenizer throws SqlTokenizerException(CommentNotClosed); BuildSqlEmitCode catches it → SDA0503.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete();
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data /* oops"));
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0503");
+    }
+
+    [Fact]
+    public void SqlQuoteNotClosedWhenStringLiteralUnterminated()
+    {
+        // SqlTokenizer throws SqlTokenizerException(QuoteNotClosed); BuildSqlEmitCode catches it → SDA0504.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete();
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data where Name = 'oops"));
+
+        Assert.Contains(diagnostics, d => d.Id == "SDA0504");
+    }
+
+    [Fact]
     public void DataAccessorClassNested()
     {
         const string source = """

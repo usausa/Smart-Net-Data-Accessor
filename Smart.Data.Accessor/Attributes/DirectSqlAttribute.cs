@@ -6,6 +6,7 @@ using System;
 // at runtime; remaining parameters are bound as normal SQL parameters.
 // Set SuppressWarning = true to silence the SDA0202 SQL Injection advisory.
 [AttributeUsage(AttributeTargets.Method)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class DirectSqlAttribute : Attribute
 {
     public bool SuppressWarning { get; set; }

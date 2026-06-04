@@ -11,6 +11,7 @@ using System;
 /// parameter type and sets its native property.
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class DbTypeAttribute<TEnum> : Attribute
     where TEnum : struct, Enum
 {

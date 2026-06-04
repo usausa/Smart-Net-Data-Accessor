@@ -7,6 +7,7 @@ public enum SqlTokenizerErrorKind
     QuoteNotClosed
 }
 
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 [Serializable]
 public sealed class SqlTokenizerException : Exception
 {

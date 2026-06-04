@@ -8,6 +8,7 @@ using System;
 /// the method's value parameters (design doc §4.4).
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class InsertAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

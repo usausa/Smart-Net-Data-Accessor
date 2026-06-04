@@ -43,6 +43,52 @@ public sealed class GeneratedCodeTests
     }
 
     [Fact]
+    public void UsingAndHelperPragmasEmitFileHeaderUsings()
+    {
+        // spec §1.4 F12 / §6.3: /*!using N */ → `using N;`, /*!helper T */ → `using static T;`.
+        // The pragmas are aggregated as UsingDirective and emitted as file-header directives.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Touch();
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update Data set N = /*!using System.Text */ /*!helper System.Math */ 1"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("using System.Text;", text, System.StringComparison.Ordinal);
+        Assert.Contains("using static System.Math;", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutputDirectionParameterInTwoWaySqlEmitsAddOutParameter()
+    {
+        // spec §1.4 F4: [Direction(Output)] is allowed on [Execute] (not only [Procedure]). An OUT
+        // parameter referenced as a /*@ marker */ in 2-way SQL drives NodeEmitter's OUT binding path.
+        const string source = """
+            using System.Data;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial void Touch([Direction(ParameterDirection.Output)] out int total);
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update Data set Total = /*@ total */0"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("AddOutParameter(cmd,", text, System.StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ConditionalSqlUsesStringBuilderPool()
     {
         const string source = """

@@ -4,6 +4,7 @@ using System;
 using System.Data;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class TypeMapAttribute : Attribute
 {
     public Type ClrType { get; }
