@@ -175,14 +175,6 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectSqlInjectionWarning = new(
-        id: "SDA0202",
-        title: "[DirectSql] passes raw SQL (SQL injection responsibility is the caller's)",
-        messageFormat: "Method=[{0}]: [DirectSql] binds the first parameter directly to cmd.CommandText, so preventing SQL injection is the caller's responsibility; set [DirectSql(SuppressWarning = true)] to silence (spec §5.2 / §1.4 F6)",
-        category: "Usage",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
     public static readonly DiagnosticDescriptor DirectSqlFirstParamNotString = new(
         id: "SDA0203",
         title: "[DirectSql] method first parameter must be string",

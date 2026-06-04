@@ -91,7 +91,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [DirectSql(SuppressWarning = true)]
+                [DirectSql]
                 public partial void Run(string sql, Bag bag);
             }
             """;

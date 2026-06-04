@@ -273,7 +273,6 @@ internal static class AccessorModelBuilder
             string? sqlAlias = null;
             string? procedureName = null;
             var isDirectSql = false;
-            var directSqlSuppressWarning = false;
             var isExecuteNonScalar = false;
             // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
             var executionKindCount = 0;
@@ -294,13 +293,6 @@ internal static class AccessorModelBuilder
                 else if (fullName == DirectSqlAttributeName)
                 {
                     isDirectSql = true;
-                    foreach (var na in attr.NamedArguments)
-                    {
-                        if ((na.Key == "SuppressWarning") && (na.Value.Value is bool suppress))
-                        {
-                            directSqlSuppressWarning = suppress;
-                        }
-                    }
                 }
                 else if ((fullName == QueryAttributeName) || (fullName == QueryFirstAttributeName))
                 {
@@ -399,16 +391,6 @@ internal static class AccessorModelBuilder
             // (they need the .sql files). Here we keep only the symbol-derived checks.
             if (isDirectSql)
             {
-                // SDA0202: [DirectSql] binds raw SQL to cmd.CommandText; SQL-injection safety is the
-                // caller's responsibility. Always advised unless [DirectSql(SuppressWarning = true)].
-                if (!directSqlSuppressWarning)
-                {
-                    diagnostics.Add(new DiagnosticInfo(
-                        Diagnostics.DirectSqlInjectionWarning,
-                        member.Locations.FirstOrDefault(),
-                        member.Name));
-                }
-
                 // SDA0203: first parameter (after conn/tx/CT) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(p =>
                     (p.Type.ToDisplayString() != CancellationTokenTypeName) &&

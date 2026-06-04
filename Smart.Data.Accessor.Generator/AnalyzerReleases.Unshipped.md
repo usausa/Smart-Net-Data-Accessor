@@ -23,7 +23,6 @@ SDA0104 | Builder  | Error    | [Procedure] combined with [DirectSql] (ambiguous
 SDA0105 | Builder  | Error    | QueryBuilder attribute combined with [Procedure] / [DirectSql]
 SDA0106 | Usage    | Error    | [MethodName] is duplicated within the class
 SDA0201 | Usage    | Error    | Duplicate [Name] on parameters or properties
-SDA0202 | Usage    | Warning  | [DirectSql] passes raw SQL; SQL injection is the caller's responsibility
 SDA0203 | Usage    | Error    | [DirectSql] method first parameter must be string
 SDA0204 | Usage    | Warning  | [Procedure] stored procedure name is empty
 SDA0205 | Usage    | Error    | async [Procedure] cannot use out/ref parameters

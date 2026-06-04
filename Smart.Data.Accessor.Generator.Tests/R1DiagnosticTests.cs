@@ -2,48 +2,9 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R1 diagnostics: SDA0202 ([DirectSql] injection advisory), SDA0013 ([Inject] unreferenced),
-// SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
+// Phase R1 diagnostics: SDA0013 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
 public sealed class R1DiagnosticTests
 {
-    [Fact]
-    public void DirectSqlEmitsInjectionWarning()
-    {
-        const string source = """
-            using Smart.Data.Accessor.Attributes;
-
-            [DataAccessor]
-            internal sealed partial class Accessor
-            {
-                [DirectSql]
-                public partial int Exec(string sql);
-            }
-            """;
-
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
-
-        Assert.Contains(diagnostics, d => d.Id == "SDA0202");
-    }
-
-    [Fact]
-    public void DirectSqlSuppressWarningSilencesInjectionWarning()
-    {
-        const string source = """
-            using Smart.Data.Accessor.Attributes;
-
-            [DataAccessor]
-            internal sealed partial class Accessor
-            {
-                [DirectSql(SuppressWarning = true)]
-                public partial int Exec(string sql);
-            }
-            """;
-
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
-
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0202");
-    }
-
     [Fact]
     public void UnreferencedInjectReportsInfo()
     {

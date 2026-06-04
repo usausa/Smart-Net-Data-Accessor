@@ -399,7 +399,7 @@ public sealed class GeneratedCodeTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [DirectSql(SuppressWarning = true)]
+                [DirectSql]
                 public partial int Exec(DbConnection con, string sql, int id);
             }
             """;
