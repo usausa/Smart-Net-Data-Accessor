@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 using Xunit;
 
 // Verifies that the source generators report each wired diagnostic for the offending input,
-// and that the newly wired SDA0002 does not false-positive on ordinary helper methods.
+// and that the newly wired SDA0101 does not false-positive on ordinary helper methods.
 public sealed class DiagnosticTests
 {
     // ---- Core generator (SDA) ---------------------------------------------------------------
@@ -28,7 +28,7 @@ public sealed class DiagnosticTests
     [Fact]
     public void InvalidMethodWhenDataMethodNotPartial()
     {
-        // SDA0002: a method carrying a data-method attribute must be declared `partial`.
+        // SDA0101: a method carrying a data-method attribute must be declared `partial`.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -42,14 +42,14 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0002");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0101");
     }
 
     [Fact]
     public void NoInvalidMethodForPlainHelper()
     {
-        // Regression guard for the SDA0002 wiring: a plain helper method (no data-method
-        // attribute) next to a valid generated method must NOT trigger SDA0002.
+        // Regression guard for the SDA0101 wiring: a plain helper method (no data-method
+        // attribute) next to a valid generated method must NOT trigger SDA0101.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -65,7 +65,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0002");
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0101");
         Assert.Empty(diagnostics);
     }
 
@@ -86,7 +86,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0003");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0401");
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "   "));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0101");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0502");
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0170");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0002");
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0171");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0003");
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0172");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0102");
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Same", "select Value from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0185");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0106");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0180");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0010");
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0134");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0302");
     }
 
     [Fact]
@@ -258,13 +258,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Read", "select * from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0193");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0303");
     }
 
     [Fact]
     public void BuilderAndSqlBothPresent()
     {
-        // SDA0152: a QueryBuilder attribute and a SQL file for the same method are ambiguous.
+        // SDA0405: a QueryBuilder attribute and a SQL file for the same method are ambiguous.
         const string source = """
             using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
@@ -285,13 +285,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Insert", "insert into Data default values"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0152");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0405");
     }
 
     [Fact]
     public void ExecutionKindDuplicated()
     {
-        // SDA0136: [Execute] and [Query] (both A-group) on the same method are mutually exclusive.
+        // SDA0103: [Execute] and [Query] (both A-group) on the same method are mutually exclusive.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -312,13 +312,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Go", "select Id from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0136");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0103");
     }
 
     [Fact]
     public void ProcedureDirectSqlConflict()
     {
-        // SDA0158: [Procedure] and [DirectSql] (both B-group command sources) are mutually exclusive.
+        // SDA0104: [Procedure] and [DirectSql] (both B-group command sources) are mutually exclusive.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -333,7 +333,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0158");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0104");
     }
 
     // ---- Builders generator (SDB) -----------------------------------------------------------
@@ -360,13 +360,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDB0002");
+        Assert.Contains(diagnostics, d => d.Id == "SDA1001");
     }
 
     [Fact]
     public void BuilderMissingTable()
     {
-        // SDB0004: [Insert] with neither an entity type nor a Table name.
+        // SDA1003: [Insert] with neither an entity type nor a Table name.
         const string source = """
             using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
@@ -381,13 +381,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDB0004");
+        Assert.Contains(diagnostics, d => d.Id == "SDA1003");
     }
 
     [Fact]
     public void BuilderSelectColumnsUnresolvable()
     {
-        // SDB0005: [Select] with only a Table name cannot determine the column list.
+        // SDA1004: [Select] with only a Table name cannot determine the column list.
         const string source = """
             using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
@@ -402,13 +402,13 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDB0005");
+        Assert.Contains(diagnostics, d => d.Id == "SDA1004");
     }
 
     [Fact]
     public void BuilderQueryBuilderDuplicated()
     {
-        // SDB0006: more than one QueryBuilder attribute on a single method.
+        // SDA1002: more than one QueryBuilder attribute on a single method.
         const string source = """
             using Smart.Data.Accessor.Attributes;
             using Smart.Data.Accessor.Builders;
@@ -432,6 +432,6 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDB0006");
+        Assert.Contains(diagnostics, d => d.Id == "SDA1002");
     }
 }

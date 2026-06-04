@@ -222,7 +222,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
     }
 
     [Fact]
-    public void ReturnValueDirectionOnArgumentReportsSda0200()
+    public void ReturnValueDirectionOnArgumentReportsSDA0210()
     {
         const string source = """
             using System.Data;
@@ -240,6 +240,6 @@ public sealed class ProcedurePocoGeneratedCodeTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // spec §5.6: [Direction(ReturnValue)] is retired everywhere.
-        Assert.Contains(diagnostics, d => d.Id == "SDA0200");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0210");
     }
 }

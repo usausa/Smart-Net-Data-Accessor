@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R4: SDA0105 / SDA0106 — brace-balance of /*% %/ code blocks (spec §11.2).
+// Phase R4: SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks (spec §11.6).
 public sealed class R4DiagnosticTests
 {
     private const string Source = """
@@ -17,7 +17,7 @@ public sealed class R4DiagnosticTests
         """;
 
     [Fact]
-    public void UnclosedCodeBlockBraceReportsSda0105()
+    public void UnclosedCodeBlockBraceReportsSDA0506()
     {
         // The if-block opens '{' but is never closed.
         const string sql = """
@@ -28,11 +28,11 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0105");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0506");
     }
 
     [Fact]
-    public void ExtraClosingBraceReportsSda0106()
+    public void ExtraClosingBraceReportsSDA0507()
     {
         // A '}' appears with no matching '{'.
         const string sql = """
@@ -43,7 +43,7 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0106");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0507");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0105" or "SDA0106");
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0506" or "SDA0507");
     }
 
     [Fact]
@@ -74,6 +74,6 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0105" or "SDA0106");
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0506" or "SDA0507");
     }
 }

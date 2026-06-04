@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Verifies the reader-side [TypeHandler<>] converter validation (SDA0140–SDA0145) wired through
+// Verifies the reader-side [TypeHandler<>] converter validation (SDA0307–SDA0311) wired through
 // ConverterResolver. Each accessor is a [Query] (backed by a SQL file) so column mapping — and
 // thus converter resolution — runs.
 public sealed class ConverterDiagnosticTests
@@ -10,7 +10,7 @@ public sealed class ConverterDiagnosticTests
     [Fact]
     public void ConverterNotIValueConverter()
     {
-        // SDA0143: the referenced converter type does not implement IValueConverter<,>.
+        // SDA0309: the referenced converter type does not implement IValueConverter<,>.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -35,13 +35,13 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0143");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0309");
     }
 
     [Fact]
     public void ConverterTClrMismatch()
     {
-        // SDA0142: converter TClr (int) does not match the property type (string).
+        // SDA0308: converter TClr (int) does not match the property type (string).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -69,13 +69,13 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0142");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0308");
     }
 
     [Fact]
     public void ConverterStaticAbstractMissing()
     {
-        // SDA0144: converter implements the interface only via explicit static members, so the
+        // SDA0310: converter implements the interface only via explicit static members, so the
         // generated `TConverter.FromDb(...)` call cannot bind.
         const string source = """
             using System.Collections.Generic;
@@ -104,13 +104,13 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0144");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0310");
     }
 
     [Fact]
     public void TypeHandlerDuplicated()
     {
-        // SDA0145: more than one [TypeHandler] on the same property (first wins).
+        // SDA0311: more than one [TypeHandler] on the same property (first wins).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -145,13 +145,13 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0145");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0311");
     }
 
     [Fact]
     public void NonNullableReferenceColumnReportsInfo()
     {
-        // SDA0140 (Info): a non-nullable reference-type column may receive DB NULL.
+        // SDA0307 (Info): a non-nullable reference-type column may receive DB NULL.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -171,7 +171,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Name from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0140");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0307");
     }
 
     [Fact]

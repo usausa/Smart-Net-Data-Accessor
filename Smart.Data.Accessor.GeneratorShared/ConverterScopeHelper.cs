@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 // 改善2 ②: shared (linked source) TypeHandler resolution primitives used by both generators — pure
 // symbol→symbol/type functions. The scope-chain *ordering* (member→method→class→profile) and the
-// core's converter *validation* (SDA0142-0145) stay per-generator; only the duplicated building
+// core's converter *validation* (SDA0308-0145) stay per-generator; only the duplicated building
 // blocks live here. Compiled `internal` into each generator assembly (no DLL; §1.4.4 と両立).
 internal static class ConverterScopeHelper
 {
@@ -94,17 +94,17 @@ internal static class ConverterScopeHelper
 
     // --- "can this converter be used in this context?" predicates (shared) ---------------------------
     // These are pure judgements only; the *diagnostic reporting* stays per-generator. The core generator
-    // reports SDA0142/0144 from these; the Builder generator (which sees the same [DataAccessor] class)
+    // reports SDA0308/0144 from these; the Builder generator (which sees the same [DataAccessor] class)
     // must NOT re-report them — sharing the predicate avoids duplicating the *logic* without duplicating
     // the *warning*.
 
     // True when the converter's IValueConverter<TDb, TClr> TClr matches the bound value type
-    // (Nullable<T> compares against T). The judgement behind SDA0142 (member-scope TClr mismatch).
+    // (Nullable<T> compares against T). The judgement behind SDA0308 (member-scope TClr mismatch).
     public static bool ClrMatchesValueType(ITypeSymbol clrType, ITypeSymbol valueType) =>
         SymbolEqualityComparer.Default.Equals(clrType, UnwrapNullable(valueType));
 
     // True when the converter exposes FromDb and ToDb as accessible static methods (the generated code
-    // calls them directly — implicit interface implementation, not explicit). The judgement behind SDA0144.
+    // calls them directly — implicit interface implementation, not explicit). The judgement behind SDA0310.
     public static bool HasCallableConversionMethods(INamedTypeSymbol converter) =>
         HasCallableStatic(converter, "FromDb") && HasCallableStatic(converter, "ToDb");
 

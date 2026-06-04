@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R1 diagnostics: SDA0127 ([DirectSql] injection advisory), SDA0182 ([Inject] unreferenced),
-// SDA0157 (QueryBuilder + [Procedure]/[DirectSql] conflict).
+// Phase R1 diagnostics: SDA0202 ([DirectSql] injection advisory), SDA0013 ([Inject] unreferenced),
+// SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
 public sealed class R1DiagnosticTests
 {
     [Fact]
@@ -22,7 +22,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0127");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0202");
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0127");
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0202");
     }
 
     [Fact]
@@ -66,13 +66,13 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0182");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0013");
     }
 
     [Fact]
     public void ReferencedInjectNoInfo()
     {
-        // 'svc' is referenced in user code → no SDA0182. (CS0103 on the not-yet-generated field is
+        // 'svc' is referenced in user code → no SDA0013. (CS0103 on the not-yet-generated field is
         // irrelevant; the harness only inspects generator diagnostics.)
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -94,7 +94,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0182");
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0013");
     }
 
     [Fact]
@@ -121,6 +121,6 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0157");
+        Assert.Contains(diagnostics, d => d.Id == "SDA0105");
     }
 }

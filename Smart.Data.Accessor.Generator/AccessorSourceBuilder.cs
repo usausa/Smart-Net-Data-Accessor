@@ -553,7 +553,7 @@ internal static class AccessorSourceBuilder
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
                 case ParameterDirectionKindLegacy.ReturnValue:
-                    // SDA0200 already reported in BuildAccessorModel; skip emission.
+                    // SDA0210 already reported in BuildAccessorModel; skip emission.
                     break;
                 default:
                     if (hasProvider)
@@ -906,7 +906,7 @@ internal static class AccessorSourceBuilder
             case ReturnShapeLegacy.AsyncEnumerable:
                 // §7.8.1 F13: emit `await ReadAsync` + `yield return` directly.
                 // The user's CancellationToken parameter must be annotated [EnumeratorCancellation]
-                // (SDA0198 warns when missing).
+                // (SDA0305 warns when missing).
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
@@ -990,7 +990,7 @@ internal static class AccessorSourceBuilder
                 {
                     if (!col.SkipNullCheck)
                     {
-                        // spec §7.10.1: non-nullable property receiving DB NULL falls through as default! (SDA0140).
+                        // spec §7.10.1: non-nullable property receiving DB NULL falls through as default! (SDA0307).
                         // [NotNullColumn] opts out of this check; provider throws InvalidCastException on actual NULL.
                         sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
                           .Append(" ? default! : ");

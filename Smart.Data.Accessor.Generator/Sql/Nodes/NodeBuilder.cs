@@ -25,12 +25,12 @@ public sealed class NodeBuilder
 
     public IReadOnlyList<string> UnknownPragmas => unknownPragmas;
 
-    /// <summary>Outcome of the <c>/*% %/</c> code-block brace-balance check (spec §11.2).</summary>
+    /// <summary>Outcome of the <c>/*% %/</c> code-block brace-balance check (spec §11.6).</summary>
     public enum BraceBalance
     {
         Balanced,
-        UnclosedBlock,   // SDA0105: more '{' than '}' across code blocks (a block is never closed)
-        ExtraClose // SDA0106: a '}' appears with no matching '{'
+        UnclosedBlock,   // SDA0506: more '{' than '}' across code blocks (a block is never closed)
+        ExtraClose // SDA0507: a '}' appears with no matching '{'
     }
 
     /// <summary>
@@ -209,7 +209,7 @@ public sealed class NodeBuilder
             return;
         }
 
-        // SDA0104: unknown pragma '/*!xxx */'
+        // SDA0505: unknown pragma '/*!xxx */'
         if (value.StartsWith("!", StringComparison.Ordinal))
         {
             var pragmaToken = value[1..];

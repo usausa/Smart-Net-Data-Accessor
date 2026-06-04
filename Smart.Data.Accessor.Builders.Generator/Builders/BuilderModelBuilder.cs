@@ -72,14 +72,14 @@ internal static class BuilderModelBuilder
 
             var location = method.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null;
 
-            // SDB0002: the container is not a partial class, so the helper cannot be emitted.
+            // SDA1001: the container is not a partial class, so the helper cannot be emitted.
             if (!isPartial)
             {
                 diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.InvalidContainer, location, container.Name));
                 continue;
             }
 
-            // SDB0006: more than one of this generator's QueryBuilder attributes on the same method.
+            // SDA1002: more than one of this generator's QueryBuilder attributes on the same method.
             if (matched.Count > 1)
             {
                 diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.QueryBuilderDuplicated, location, method.Name));
@@ -127,7 +127,7 @@ internal static class BuilderModelBuilder
         var tableName = table ?? entityType?.Name;
         if (tableName is null)
         {
-            // SDB0004: neither an entity type nor a Table name was supplied.
+            // SDA1003: neither an entity type nor a Table name was supplied.
             diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.MissingTable, location, method.Name));
             return null;
         }
@@ -165,7 +165,7 @@ internal static class BuilderModelBuilder
             case QueryBuilderEngine.BuilderKind.Update:
                 if (!hasEntityType || entityParam is null)
                 {
-                    // SDB0005: cannot resolve the column list (no entity instance).
+                    // SDA1004: cannot resolve the column list (no entity instance).
                     diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, location, method.Name));
                 }
                 else if (!columns.Any(static c => c.IsKey))
@@ -254,7 +254,7 @@ internal static class BuilderModelBuilder
         var handler = MappingResolver.ResolveTypeHandler(prop, method, container, profile);
         var explicitDbType = MappingAttributeHelper.ResolvePropertyDbType(prop);
 
-        // SDA0148: a [TypeHandler] wins over a [TypeMap] for the same type; warn the [TypeMap] is dead.
+        // SDA1006: a [TypeHandler] wins over a [TypeMap] for the same type; warn the [TypeMap] is dead.
         if (handler is not null && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out _))
         {
             diagnostics.Add(new DiagnosticInfo(

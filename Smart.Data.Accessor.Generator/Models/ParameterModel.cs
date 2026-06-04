@@ -50,7 +50,7 @@ internal sealed record ParameterModel(
     // Its public properties are expanded into DB parameters; the parameter itself is not bound. The
     // method signature still declares the POCO argument.
     EquatableArray<PocoBindProperty>? PocoProperties = null,
-    // spec §7.11 (P3) / SDA0112: public member names of this parameter's type (incl. inherited),
+    // spec §7.11 (P3) / SDA0510: public member names of this parameter's type (incl. inherited),
     // captured in the transform so the SQL stage can validate dotted /*@ root.Prop */ references
     // without symbols.
     EquatableArray<string> MemberNames = default);

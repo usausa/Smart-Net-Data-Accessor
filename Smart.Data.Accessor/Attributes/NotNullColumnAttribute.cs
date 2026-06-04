@@ -12,7 +12,7 @@ using System;
 /// Use this when the DB column is known to be NOT NULL (e.g. backed by a CHECK
 /// constraint or NOT NULL declaration) and the property type is non-nullable.
 /// Eliminates one virtual call + branch per column per row at the cost of the
-/// SDA0140 default! fall-through.
+/// SDA0307 default! fall-through.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotNullColumnAttribute : Attribute

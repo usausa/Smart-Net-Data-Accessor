@@ -85,7 +85,7 @@ internal static class AccessorModelBuilder
     private static (Dictionary<string, string> SqlMap, HashSet<string> Collided) BuildSqlMap(
         ImmutableArray<(string Path, string Text)> sqlFiles)
     {
-        // SDA0173: multiple .sql files resolving to the same {Class}.{Method} key collide.
+        // SDA0402: multiple .sql files resolving to the same {Class}.{Method} key collide.
         var sqlMap = new Dictionary<string, string>(StringComparer.Ordinal);
         var collidedKeys = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in sqlFiles)
@@ -103,8 +103,8 @@ internal static class AccessorModelBuilder
     }
 
     // P3 SQL stage: resolve each method's .sql file, apply SQL-file conflict diagnostics
-    // (SDA0173 / SDA0129 / SDA0152 / SDA0190 / SqlNotFound), parse 2-way SQL into the method's emit
-    // fields (dropping methods on SQL errors), evaluate SDA0182's SQL half, and gather /*!using*/
+    // (SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound), parse 2-way SQL into the method's emit
+    // fields (dropping methods on SQL errors), evaluate SDA0013's SQL half, and gather /*!using*/
     // directives to validate. Compilation-free → cacheable.
     internal static Result<AccessorModel> CompleteModel(
         Result<AccessorModel> result,
@@ -135,7 +135,7 @@ internal static class AccessorModelBuilder
 
             if (isDirectSql)
             {
-                // SDA0129: [DirectSql] must not have a corresponding .sql file.
+                // SDA0403: [DirectSql] must not have a corresponding .sql file.
                 if (sqlMap.ContainsKey(sqlKey))
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.DirectSqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
@@ -181,7 +181,7 @@ internal static class AccessorModelBuilder
             keptMethods.Add(method);
         }
 
-        // SDA0182 (Info): [Inject] referenced neither in code (computed in the transform) nor in SQL.
+        // SDA0013 (Info): [Inject] referenced neither in code (computed in the transform) nor in SQL.
         var sqlKeyPrefix = model.ClassName + ".";
         foreach (var inject in model.Injects)
         {
@@ -228,7 +228,7 @@ internal static class AccessorModelBuilder
         var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
 
         // spec §7.7: [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest
-        // converter-resolution scope. Resolved here (validation is reported later, see SDA0146/0147).
+        // converter-resolution scope. Resolved here (validation is reported later, see SDA0016/0147).
         var profileSymbol = MappingAttributeHelper.ResolveProfile(classSymbol);
 
         // spec §7.5 / §7.7: class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for
@@ -246,7 +246,7 @@ internal static class AccessorModelBuilder
 
             if (!member.IsPartialDefinition)
             {
-                // SDA0002: a method that carries a data-method attribute ([Execute] / [Query] /
+                // SDA0101: a method that carries a data-method attribute ([Execute] / [Query] /
                 // [ExecuteScalar] / [ExecuteReader] / [DirectSql] / [Procedure]) must be declared
                 // `partial` so the Generator can supply the implementation. Plain helper methods
                 // without such an attribute are intentionally ignored.
@@ -260,7 +260,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0172: user-written partial implementation already exists for this declaration.
+            // SDA0102: user-written partial implementation already exists for this declaration.
             if (member.PartialImplementationPart is not null)
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -277,7 +277,7 @@ internal static class AccessorModelBuilder
             var isDirectSql = false;
             var directSqlSuppressWarning = false;
             var isExecuteNonScalar = false;
-            // SDA0136: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
+            // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
             var executionKindCount = 0;
             foreach (var attr in member.GetAttributes())
             {
@@ -322,7 +322,7 @@ internal static class AccessorModelBuilder
                     !string.IsNullOrEmpty(aliasValue))
                 {
                     sqlAlias = aliasValue;
-                    // SDA0185: [MethodName("X")] is duplicated within the same class.
+                    // SDA0106: [MethodName("X")] is duplicated within the same class.
                     if (seenMethodNames.ContainsKey(aliasValue))
                     {
                         diagnostics.Add(new DiagnosticInfo(
@@ -342,7 +342,7 @@ internal static class AccessorModelBuilder
                 {
                     procedureName = procName;
                     kind ??= "Execute";
-                    // SDA0192: [Procedure("")] empty stored procedure name -> warning.
+                    // SDA0204: [Procedure("")] empty stored procedure name -> warning.
                     if (string.IsNullOrEmpty(procName))
                     {
                         diagnostics.Add(new DiagnosticInfo(
@@ -365,7 +365,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0136: more than one execution-kind attribute (A-group) on the same method (exclusive).
+            // SDA0103: more than one execution-kind attribute (A-group) on the same method (exclusive).
             if (executionKindCount >= 2)
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -375,7 +375,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0158: [Procedure] combined with [DirectSql] (B-group command sources are exclusive).
+            // SDA0104: [Procedure] combined with [DirectSql] (B-group command sources are exclusive).
             if (isDirectSql && procedureName is not null)
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -385,8 +385,8 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0157: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql]
-            // (the SQL source is ambiguous; the SQL-file combinations are SDA0152 / SDA0190 / SDA0129).
+            // SDA0105: a QueryBuilder attribute cannot be combined with [Procedure] / [DirectSql]
+            // (the SQL source is ambiguous; the SQL-file combinations are SDA0405 / SDA0404 / SDA0403).
             if (builder is not null && (isDirectSql || procedureName is not null))
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -396,12 +396,12 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // spec §7.11 (P3): SQL-file resolution + its conflict diagnostics (SDA0173 / SDA0129 /
-            // SDA0152 / SDA0190 / SqlNotFound) and the 2-way-SQL parse run in the output stage
+            // spec §7.11 (P3): SQL-file resolution + its conflict diagnostics (SDA0402 / SDA0403 /
+            // SDA0405 / SDA0404 / SqlNotFound) and the 2-way-SQL parse run in the output stage
             // (they need the .sql files). Here we keep only the symbol-derived checks.
             if (isDirectSql)
             {
-                // SDA0127: [DirectSql] binds raw SQL to cmd.CommandText; SQL-injection safety is the
+                // SDA0202: [DirectSql] binds raw SQL to cmd.CommandText; SQL-injection safety is the
                 // caller's responsibility. Always advised unless [DirectSql(SuppressWarning = true)].
                 if (!directSqlSuppressWarning)
                 {
@@ -411,7 +411,7 @@ internal static class AccessorModelBuilder
                         member.Name));
                 }
 
-                // SDA0128: first parameter (after conn/tx/CT) must be `string`.
+                // SDA0203: first parameter (after conn/tx/CT) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(p =>
                     p.Type.ToDisplayString() != CancellationTokenTypeName &&
                     !IsDbConnectionType(p.Type) &&
@@ -427,7 +427,7 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // SDA0132: detect duplicate [Name("X")] on parameters (within this method).
+            // SDA0201: detect duplicate [Name("X")] on parameters (within this method).
             var seenParamNames = new Dictionary<string, IParameterSymbol>(StringComparer.Ordinal);
             var sawNameDuplicate = false;
             foreach (var p in member.Parameters)
@@ -606,7 +606,7 @@ internal static class AccessorModelBuilder
                     pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)p.Type, p.Name);
                 }
 
-                // SDA0112: mirror the old HasPublicMember semantics — public property/field on the
+                // SDA0510: mirror the old HasPublicMember semantics — public property/field on the
                 // type and its bases, plus properties from implemented interfaces.
                 var memberNames = new HashSet<string>(StringComparer.Ordinal);
                 for (var mt = p.Type; mt is not null; mt = mt.BaseType)
@@ -691,7 +691,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0134: [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
+            // SDA0302: [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
             // (Does not apply to [ExecuteScalar], which supports arbitrary scalar T.)
             if (kind == "Execute" && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
             {
@@ -703,7 +703,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            // SDA0193 Error / SDA0194 Info: [ExecuteReader] return shape validation (spec §1.4 F3 / §11.3.2).
+            // SDA0303 Error / SDA0304 Info: [ExecuteReader] return shape validation (spec §1.4 F3 / §11.4).
             if (kind == "ExecuteReader")
             {
                 if (!IsReaderShape(shape.Value))
@@ -721,7 +721,7 @@ internal static class AccessorModelBuilder
                     member.Name));
             }
 
-            // §7.8.1 F13 / SDA0198: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
+            // §7.8.1 F13 / SDA0305: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
             if (shape == ReturnShapeLegacy.AsyncEnumerable)
             {
                 var ctParam = member.Parameters.FirstOrDefault(p => p.Type.ToDisplayString() == CancellationTokenTypeName);
@@ -771,7 +771,7 @@ internal static class AccessorModelBuilder
             IReadOnlyList<UsingDirective> methodUsings = Array.Empty<UsingDirective>();
             string? directSqlParameterName = null;
 
-            // SDA0191: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3.2).
+            // SDA0205: async [Procedure] cannot use out/ref parameters (spec §1.4 F2 / §11.3).
             if (procedureName is not null && IsAsyncShape(shape.Value))
             {
                 foreach (var ms in member.Parameters)
@@ -787,9 +787,9 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // SDA0195 / SDA0197: [Direction] consistency checks (spec §1.4 F4 / §11.3.2).
-            //  - SDA0195: [Direction] vs. RefKind mismatch.
-            //  - SDA0197: [Direction] used on method kinds other than [Procedure] / [Execute] / [DirectSql].
+            // SDA0208 / SDA0209: [Direction] consistency checks (spec §1.4 F4 / §11.3).
+            //  - SDA0208: [Direction] vs. RefKind mismatch.
+            //  - SDA0209: [Direction] used on method kinds other than [Procedure] / [Execute] / [DirectSql].
             var directionAllowedKind = kind == "Execute" || kind == "DirectSql";
             foreach (var ms in member.Parameters)
             {
@@ -856,8 +856,8 @@ internal static class AccessorModelBuilder
                     p.TypeFullName == "string");
                 directSqlParameterName = sqlParam?.Name;
 
-                // spec §1.4 F14: SDA0201 — [Direction] on the SQL-source string parameter is invalid.
-                // ([Direction(ReturnValue)] anywhere is reported generally above, SDA0200 / §5.6.)
+                // spec §1.4 F14: SDA0211 — [Direction] on the SQL-source string parameter is invalid.
+                // ([Direction(ReturnValue)] anywhere is reported generally above, SDA0210 / §5.6.)
                 foreach (var ms in member.Parameters)
                 {
                     var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
@@ -987,7 +987,7 @@ internal static class AccessorModelBuilder
                 attr.ConstructorArguments[1].Value is string injectName &&
                 !string.IsNullOrEmpty(injectName))
             {
-                // SDA0180: duplicate [Inject] Name within the same class.
+                // SDA0010: duplicate [Inject] Name within the same class.
                 if (!seenInjectNames.Add(injectName))
                 {
                     diagnostics.Add(new DiagnosticInfo(
@@ -998,7 +998,7 @@ internal static class AccessorModelBuilder
                     continue;
                 }
 
-                // SDA0188: [Inject] Name collides with an existing field/property in the (partial) class
+                // SDA0011: [Inject] Name collides with an existing field/property in the (partial) class
                 // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
                 if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || injectName is "dbProvider" or "providerSelector")
                 {
@@ -1029,7 +1029,7 @@ internal static class AccessorModelBuilder
                 attr.ConstructorArguments[0].Value is string pName)
             {
                 providerName = pName;
-                // SDA0183: [Provider("")] empty name -> warning.
+                // SDA0014: [Provider("")] empty name -> warning.
                 if (string.IsNullOrEmpty(pName))
                 {
                     diagnostics.Add(new DiagnosticInfo(
@@ -1042,7 +1042,7 @@ internal static class AccessorModelBuilder
                 attr.ConstructorArguments.Length >= 1 &&
                 attr.ConstructorArguments[0].Value is INamedTypeSymbol profileType)
             {
-                // SDA0146: target type must carry [AccessorProfile].
+                // SDA0016: target type must carry [AccessorProfile].
                 var profileAttrs = profileType.GetAttributes();
                 var hasProfile = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == AccessorProfileAttributeName);
                 if (!hasProfile)
@@ -1053,7 +1053,7 @@ internal static class AccessorModelBuilder
                         classSymbol.Name,
                         profileType.ToDisplayString()));
                 }
-                // SDA0147: the profile itself must not have [ExecuteConfig] (would be circular).
+                // SDA0017: the profile itself must not have [ExecuteConfig] (would be circular).
                 var profileHasConfig = profileAttrs.Any(a => a.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName);
                 if (profileHasConfig)
                 {
@@ -1067,7 +1067,7 @@ internal static class AccessorModelBuilder
 
         var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
 
-        // SDA0184: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
+        // SDA0015: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
         if (providerName is not null && methods.Count > 0 && !requiresFactory)
         {
             diagnostics.Add(new DiagnosticInfo(
@@ -1077,8 +1077,8 @@ internal static class AccessorModelBuilder
                 providerName));
         }
 
-        // spec §7.11 (P3) / SDA0182: compute the code-reference half here (symbol-derived). The
-        // SQL-file-reference half and the SDA0182 diagnostic itself are evaluated at the output stage
+        // spec §7.11 (P3) / SDA0013: compute the code-reference half here (symbol-derived). The
+        // SQL-file-reference half and the SDA0013 diagnostic itself are evaluated at the output stage
         // (which has the .sql files); the result is carried on InjectModel.ReferencedInCode.
         for (var i = 0; i < injects.Count; i++)
         {
@@ -1140,7 +1140,7 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    // SDA0182: whole-word occurrence of `name` in arbitrary text (SQL), with identifier-char
+    // SDA0013: whole-word occurrence of `name` in arbitrary text (SQL), with identifier-char
     // boundaries so e.g. inject "log" does not match "dialog".
     private static bool ReferencesIdentifier(string text, string name)
     {
@@ -1167,7 +1167,7 @@ internal static class AccessorModelBuilder
 
     private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
     {
-        // SDA0181: warn for value types or unconstructed open generics, since
+        // SDA0012: warn for value types or unconstructed open generics, since
         // IServiceProvider.GetService typically returns null for these.
         if (type.IsValueType)
         {
@@ -1285,7 +1285,7 @@ internal static class AccessorModelBuilder
         }
 
         // §1.4.4: T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / anonymous types
-        // are permanently retired as return types (SDA0004).
+        // are permanently retired as return types (SDA0301).
         if (IsDisallowedReturnType(returnType))
         {
             return null;
@@ -1471,7 +1471,7 @@ internal static class AccessorModelBuilder
                 tdbReader);
         }
 
-        // SDA0140 (Info): a non-nullable reference-type column read as DB NULL falls through as
+        // SDA0307 (Info): a non-nullable reference-type column read as DB NULL falls through as
         // default! (i.e. null), an NRT hole. [NotNullColumn] opts out; converter-bound and value-type
         // columns are excluded (a value-type default is benign).
         void CheckNonNullableDbNull(ITypeSymbol type, string propName, bool skipNullCheck, ConverterReadBinding? converter)
@@ -1830,7 +1830,7 @@ internal static class AccessorModelBuilder
                     pp.ConverterTypeFullName is null ? pp.TypeFullName : pp.ConverterDbTypeFullName!,
                     pp.ConverterTypeFullName)));
 
-    // SDA0002: the attributes that establish a method as a generated data method. A non-partial
+    // SDA0101: the attributes that establish a method as a generated data method. A non-partial
     // method carrying one of these is a user error (must be `partial`).
     private static bool HasDataMethodAttribute(IMethodSymbol method)
     {
@@ -1915,7 +1915,7 @@ internal static class AccessorModelBuilder
             return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 
-        // SDA0104: report any unknown pragmas '/*!xxx */' that survived parsing.
+        // SDA0505: report any unknown pragmas '/*!xxx */' that survived parsing.
         foreach (var pragmaName in unknownPragmas)
         {
             diagnostics.Add(new DiagnosticInfo(
@@ -1925,7 +1925,7 @@ internal static class AccessorModelBuilder
                 pragmaName));
         }
 
-        // SDA0105 / SDA0106: the /*% %/ code blocks are emitted verbatim, so unbalanced braces would
+        // SDA0506 / SDA0507: the /*% %/ code blocks are emitted verbatim, so unbalanced braces would
         // otherwise surface as a confusing C# error. Report at the SQL location and skip emission
         // (matches the tokenizer-error path; the Error fails the build either way).
         switch (NodeBuilder.CheckBraceBalance(nodes))
@@ -2000,7 +2000,7 @@ internal static class AccessorModelBuilder
             diagnostics.Add(new DiagnosticInfo(Diagnostics.UndefinedSqlParameter, location, methodName, u));
         }
 
-        // SDA0112: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
+        // SDA0510: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
         var reportedProperty = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
@@ -2018,7 +2018,7 @@ internal static class AccessorModelBuilder
             var paramModel = parameters.FirstOrDefault(p => string.Equals(p.Name, root, StringComparison.Ordinal));
             if (paramModel is null)
             {
-                continue; // SDA0110 already reported this root mismatch.
+                continue; // SDA0508 already reported this root mismatch.
             }
             // Strip any nested dotted suffix; only validate the first hop.
             var firstHop = rest;
@@ -2043,7 +2043,7 @@ internal static class AccessorModelBuilder
             }
         }
 
-        // SDA0111: method parameter not referenced in SQL (Info only).
+        // SDA0509: method parameter not referenced in SQL (Info only).
         var referenced = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
