@@ -1,8 +1,6 @@
-// Polyfills for netstandard2.0.
 #pragma warning disable IDE0130
-#pragma warning disable CA1812
-#pragma warning disable SA1402
 #pragma warning disable SA1403
+[assembly: CLSCompliant(false)]
 
 namespace System.Runtime.CompilerServices
 {
