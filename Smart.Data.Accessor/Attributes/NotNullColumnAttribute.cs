@@ -14,8 +14,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Eliminates one virtual call + branch per column per row at the cost of the
 /// SDA0307 default! fall-through.
 /// </remarks>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotNullColumnAttribute : Attribute
 {
 }

@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Class)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Class)]
 public sealed class ExecuteConfigAttribute : Attribute
 {
     public Type ProfileType { get; }

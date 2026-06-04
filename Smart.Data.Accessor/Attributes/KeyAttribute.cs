@@ -4,8 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 
 // Marks a property as a primary-key column. Used by UpdateBuilder/DeleteBuilder/SelectBuilder
 // to derive the WHERE clause automatically.
-[AttributeUsage(AttributeTargets.Property)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Property)]
 public sealed class KeyAttribute : Attribute
 {
     public int Order { get; }

@@ -7,8 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 // SqlServer generator emits the dialect-specific helper body. Mirrors the core [Insert] shape.
 
 /// <summary>SQL Server <c>INSERT</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -26,8 +26,8 @@ public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server <c>UPDATE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -45,8 +45,8 @@ public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server <c>DELETE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -64,8 +64,8 @@ public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server <c>SELECT COUNT(*)</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerCountAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -83,8 +83,8 @@ public sealed class SqlServerCountAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server full-scan <c>SELECT</c> builder (supports [Limit]/[Offset] paging).</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -102,8 +102,8 @@ public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server keyed <c>SELECT</c> builder (WHERE from value parameters).</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -121,8 +121,8 @@ public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
 }
 
 /// <summary>SQL Server <c>TRUNCATE TABLE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class SqlServerTruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

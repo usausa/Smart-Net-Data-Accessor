@@ -3,8 +3,8 @@ namespace Smart.Data.Accessor.Attributes;
 using System.Diagnostics.CodeAnalysis;
 
 // Alias for TimeoutAttribute, kept for legacy parity.
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class CommandTimeoutAttribute : Attribute
 {
     public int Seconds { get; }

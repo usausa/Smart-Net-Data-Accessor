@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Builds a <c>DELETE</c> statement. WHERE keys come from the method's scalar value parameters;
 /// the entity type / table supplies metadata only (design doc §4.4).
 /// </summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class DeleteAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

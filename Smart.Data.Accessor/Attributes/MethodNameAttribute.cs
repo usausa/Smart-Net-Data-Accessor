@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class MethodNameAttribute : Attribute
 {
     public string Name { get; }

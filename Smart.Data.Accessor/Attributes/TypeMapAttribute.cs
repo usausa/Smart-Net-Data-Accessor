@@ -3,8 +3,8 @@ namespace Smart.Data.Accessor.Attributes;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class TypeMapAttribute : Attribute
 {
     public Type ClrType { get; }

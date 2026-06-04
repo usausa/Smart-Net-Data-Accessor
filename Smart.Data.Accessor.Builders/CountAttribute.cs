@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Builds a <c>SELECT COUNT(*)</c> statement. The entity type / table supplies the table name only
 /// (design doc §4.4).
 /// </summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class CountAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

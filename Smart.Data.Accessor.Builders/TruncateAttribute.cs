@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Builds a <c>TRUNCATE TABLE t</c> statement. The entity type / table supplies the table name only
 /// (design doc §4.4). SQLite users should use raw SQL (DELETE FROM) instead.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class TruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

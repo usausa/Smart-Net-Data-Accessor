@@ -5,8 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 // PostgreSQL dialect QueryBuilder attributes (double-quote quoting, LIMIT/OFFSET paging).
 
 /// <summary>PostgreSQL <c>INSERT</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresInsertAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -24,8 +24,8 @@ public sealed class PostgresInsertAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL <c>UPDATE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresUpdateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -43,8 +43,8 @@ public sealed class PostgresUpdateAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL <c>DELETE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresDeleteAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -62,8 +62,8 @@ public sealed class PostgresDeleteAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL <c>SELECT COUNT(*)</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresCountAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -81,8 +81,8 @@ public sealed class PostgresCountAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL full-scan <c>SELECT</c> builder (supports [Limit]/[Offset] paging).</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresSelectAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -100,8 +100,8 @@ public sealed class PostgresSelectAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL keyed <c>SELECT</c> builder (WHERE from value parameters).</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresSelectSingleAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
@@ -119,8 +119,8 @@ public sealed class PostgresSelectSingleAttribute : QueryBuilderAttribute
 }
 
 /// <summary>PostgreSQL <c>TRUNCATE TABLE</c> builder.</summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class PostgresTruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

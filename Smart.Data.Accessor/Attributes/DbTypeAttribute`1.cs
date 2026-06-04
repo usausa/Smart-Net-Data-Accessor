@@ -10,8 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 /// underlying <see cref="System.Data.Common.DbParameter"/> to the matching provider
 /// parameter type and sets its native property.
 /// </summary>
-[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 public sealed class DbTypeAttribute<TEnum> : Attribute
     where TEnum : struct, Enum
 {

@@ -10,7 +10,6 @@ public enum SqlTokenizerErrorKind
 }
 
 [ExcludeFromCodeCoverage]
-[AttributeUsage(AttributeTargets.Method)]
 [Serializable]
 public sealed class SqlTokenizerException : Exception
 {

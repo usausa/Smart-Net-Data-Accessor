@@ -8,8 +8,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Generator only checks whether a method attribute derives from this type. Each derived
 /// attribute declares the metadata (EntityType / Table) it needs (design doc §4.1).
 /// </summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public abstract class QueryBuilderAttribute : Attribute
 {
 }

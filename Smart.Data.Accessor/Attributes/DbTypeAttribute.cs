@@ -3,8 +3,8 @@ namespace Smart.Data.Accessor.Attributes;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 public sealed class DbTypeAttribute : Attribute
 {
     public DbType DbType { get; }

@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class IgnoreAttribute : Attribute
 {
 }

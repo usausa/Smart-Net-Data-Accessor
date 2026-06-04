@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
+[ExcludeFromCodeCoverage]
 [AttributeUsage(
     AttributeTargets.Class |
     AttributeTargets.Method |
@@ -11,12 +12,12 @@ using System.Diagnostics.CodeAnalysis;
     AllowMultiple = true,
     Inherited = false)]
 [SuppressMessage("Microsoft.Performance", "CA1813:Avoid unsealed attributes", Justification = "Intentionally inheritable for derived marker attributes (spec §7.4.1).")]
-[ExcludeFromCodeCoverage]
 public class TypeHandlerAttribute<TConverter> : Attribute
 {
     public Type ConverterType => typeof(TConverter);
 }
 
+[ExcludeFromCodeCoverage]
 [AttributeUsage(
     AttributeTargets.Class |
     AttributeTargets.Method |
@@ -25,7 +26,6 @@ public class TypeHandlerAttribute<TConverter> : Attribute
     AttributeTargets.Property,
     AllowMultiple = true,
     Inherited = false)]
-[ExcludeFromCodeCoverage]
 public sealed class TypeHandlerAttribute : Attribute
 {
     public Type ConverterType { get; }

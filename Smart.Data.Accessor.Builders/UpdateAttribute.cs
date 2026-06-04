@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 /// Builds an <c>UPDATE</c> statement (SET non-key columns, WHERE key columns). Entity mode
 /// (<c>[Update(typeof(T))]</c>) or parameter mode (<c>[Update(Table = "...")]</c>), design doc §4.4.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class UpdateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }

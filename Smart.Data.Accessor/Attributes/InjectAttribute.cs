@@ -2,8 +2,8 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 [ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public sealed class InjectAttribute : Attribute
 {
     public Type Type { get; }
