@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Generator.Sql;
 using System.Globalization;
 using System.Text;
 
+using Smart.Data.Accessor.Generator.Helpers;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
 using Smart.Data.Accessor.GeneratorShared;
 
@@ -138,7 +139,7 @@ internal static class NodeEmitter
 
                 case ParameterNode p:
                 {
-                    var root = ExtractRoot(p.Name);
+                    var root = StringHelper.ExtractRoot(p.Name);
                     if (!knownParameters.Contains(root))
                     {
                         undefined.Add(p.Name);
@@ -259,12 +260,6 @@ internal static class NodeEmitter
             undefined,
             requiresIEnumerable,
             outputBindings);
-    }
-
-    private static string ExtractRoot(string name)
-    {
-        var dot = name.IndexOf('.');
-        return dot < 0 ? name : name[..dot];
     }
 
     private static string Escape(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");

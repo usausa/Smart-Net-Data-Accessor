@@ -12,7 +12,6 @@ using SourceGenerateHelper;
 internal static class BuilderModelBuilder
 {
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
-    private const string CancellationTokenTypeName = "System.Threading.CancellationToken";
     private const string LimitAttributeName = "Smart.Data.Accessor.Attributes.LimitAttribute";
     private const string OffsetAttributeName = "Smart.Data.Accessor.Attributes.OffsetAttribute";
 
@@ -148,7 +147,7 @@ internal static class BuilderModelBuilder
         // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。各々の束縛メタデータを解決する。
         // Value parameters = method parameters excluding DbConnection / DbTransaction / CancellationToken; resolve each one's binding metadata.
         var valueParamSymbols = method.Parameters
-            .Where(p => !IsCancellationToken(p.Type) && !IsDbConnection(p.Type) && !IsDbTransaction(p.Type))
+            .Where(p => (p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !p.Type.IsDbConnection() && !p.Type.IsDbTransaction())
             .ToList();
         var valueParams = valueParamSymbols.Select(p => ResolveValueParam(p, typeMaps)).ToArray();
 
@@ -365,26 +364,6 @@ internal static class BuilderModelBuilder
     // Whether the given attribute is present on the parameter.
     private static bool HasAttribute(IParameterSymbol p, string attributeName)
         => p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == attributeName);
-
-    // conn/tx/CancellationToken 判定（値パラメータから除外するため）。DbConnection/DbTransaction は基底型まで遡って判定する。
-    // conn/tx/CancellationToken checks (to exclude them from value parameters). DbConnection/DbTransaction are matched by walking up the base types.
-    private static bool IsCancellationToken(ITypeSymbol type) => type.ToDisplayString() == CancellationTokenTypeName;
-
-    private static bool IsDbConnection(ITypeSymbol type) => InheritsFrom(type, "System.Data.Common.DbConnection");
-
-    private static bool IsDbTransaction(ITypeSymbol type) => InheritsFrom(type, "System.Data.Common.DbTransaction");
-
-    private static bool InheritsFrom(ITypeSymbol type, string baseFullName)
-    {
-        for (var current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
-        {
-            if (current.ToDisplayString() == baseFullName)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private readonly record struct EntityColumn(string Column, string PropertyName, bool IsKey, bool IsDatabaseManaged, IPropertySymbol Symbol);
 }
