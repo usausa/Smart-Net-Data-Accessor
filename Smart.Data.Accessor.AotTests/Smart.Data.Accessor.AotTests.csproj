@@ -38,6 +38,6 @@
        suppressed (left visible by policy). -->
 
   <!-- spec §3.2: pull **\Sql\*.sql into AdditionalFiles so the generator resolves SQL by filename. -->
-  <Import Project="..\Smart.Data.Accessor\buildTransitive\Smart.Data.Accessor.targets" />
+  <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

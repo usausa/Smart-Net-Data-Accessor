@@ -24,6 +24,6 @@
        (default folder name `Sql`) into AdditionalFiles via the .targets that
        Smart.Data.Accessor ships in buildTransitive/. Direct <Import> mirrors
        what NuGet consumers get automatically. -->
-  <Import Project="..\Smart.Data.Accessor\buildTransitive\Smart.Data.Accessor.targets" />
+  <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

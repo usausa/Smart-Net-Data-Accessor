@@ -30,6 +30,6 @@
   </ItemGroup>
 
   <!-- Pull **\Sql\*.sql into AdditionalFiles so the generator resolves SQL by filename (spec §3.2). -->
-  <Import Project="..\Smart.Data.Accessor\buildTransitive\Smart.Data.Accessor.targets" />
+  <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

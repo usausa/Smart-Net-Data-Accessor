@@ -12,6 +12,7 @@
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="Smart.Data.Accessor.sln.DotSettings" />
+    <File Path="Smart.Data.Accessor.targets" />
     <File Path="test.runsettings" />
   </Folder>
   <Folder Name="/Library/">
