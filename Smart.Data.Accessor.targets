@@ -1,13 +1,5 @@
 <Project>
 
-  <!--
-    spec §3.2 / Sprint F #41: when this package is consumed (via NuGet or via
-    direct <Import>), every project-wide `**\{SqlFolder}\*.sql` file is added
-    to AdditionalFiles so the source generator can resolve SQL by filename.
-
-    Override the folder via <SmartDataAccessor_SqlFolder>Queries</SmartDataAccessor_SqlFolder>.
-  -->
-
   <PropertyGroup>
     <SmartDataAccessor_SqlFolder Condition="'$(SmartDataAccessor_SqlFolder)' == ''">Sql</SmartDataAccessor_SqlFolder>
   </PropertyGroup>
