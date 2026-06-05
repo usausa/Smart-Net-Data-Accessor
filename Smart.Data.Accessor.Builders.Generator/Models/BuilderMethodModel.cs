@@ -2,10 +2,11 @@ namespace Smart.Data.Accessor.Builders.Generator.Models;
 
 using SourceGenerateHelper;
 
-// Base of the per-attribute Builder method models. Fully equatable (string / bool / EquatableArray
-// only) so the FAWMN transform output participates in incremental caching. The concrete subtype
-// encodes the BuilderKind; the output stage type-switches on it (no enum / no symbol). Per-method
-// diagnostics live on the owning BuilderClassModel (collected in the transform, replayed at output).
+// Shared base of every provider's per-kind Builder method models. Fully equatable (string / bool /
+// EquatableArray only) so the FAWMN transform output participates in incremental caching. Each provider
+// derives its own concrete kind models (e.g. AnsiInsertModel / SqlServerInsertModel) from this base and
+// type-switches on them in its own emit stage — there is no shared closed enum and no symbol on the model.
+// Per-method diagnostics live on the owning BuilderClassModel (collected in the transform, replayed at output).
 //
 // ValueParams is the full ordered list of method value parameters (entity instance + WHERE/VALUES keys
 // + [Limit]/[Offset]); the __QueryBuilder signature is rendered from it. Bind parameters are derived at
@@ -14,64 +15,3 @@ internal abstract record BuilderMethodModel(
     string MethodName,
     string TableName,
     EquatableArray<BuilderValueParam> ValueParams);
-
-// INSERT. Entity mode when EntityParamName is set (columns from Columns, excluding [DatabaseManaged]);
-// otherwise parameter mode (columns / values from the bind parameters).
-internal sealed record InsertModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    string? EntityParamName)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// UPDATE <table> SET <non-key, non-auto columns> WHERE <key columns>. Entity mode only.
-internal sealed record UpdateModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    string? EntityParamName,
-    bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// DELETE FROM <table> WHERE <bind params, keyed to key columns when an entity type is present>.
-internal sealed record DeleteModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// SELECT COUNT(*) FROM <table>.
-internal sealed record CountModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// TRUNCATE TABLE <table>.
-internal sealed record TruncateModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// SELECT <columns> FROM <table> [provider paging]. Entity required; paging from [Limit]/[Offset] params.
-internal sealed record SelectModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
-
-// SELECT <columns> FROM <table> WHERE <bind params, keyed to key columns>. Entity required.
-internal sealed record SelectSingleModel(
-    string MethodName,
-    string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);

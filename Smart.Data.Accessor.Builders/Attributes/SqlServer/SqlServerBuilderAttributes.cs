@@ -2,24 +2,29 @@ namespace Smart.Data.Accessor.Attributes.SqlServer;
 
 using System.Diagnostics.CodeAnalysis;
 
-// SQL Server dialect QueryBuilder attributes (bracket quoting, OFFSET/FETCH paging). Each derives
-// from QueryBuilderAttribute so the core generator emits the {Method}__QueryBuilder call, and the
-// SqlServer generator emits the dialect-specific helper body. Mirrors the core [Insert] shape.
+// SQL Server dialect QueryBuilder attributes (bracket quoting, OFFSET/FETCH paging). Named with the Sql prefix. Each
+// derives from QueryBuilderAttribute so the core generator emits the {Method}__QueryBuilder call, and the SqlServer
+// generator emits the dialect-specific helper body. Mirrors the core [Insert] shape.
 
 // SQL Server INSERT builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
+public sealed class SqlInsertAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerInsertAttribute()
+    // OUTPUT 句で INSERTED 擬似表から返す列（カンマ区切り）。生成される識別子などの取得に使う。未指定なら OUTPUT 句なし。
+    // Columns to return from the INSERTED pseudo-table via an OUTPUT clause (comma-separated), e.g. a generated identity.
+    // No OUTPUT clause when null.
+    public string? Output { get; set; }
+
+    public SqlInsertAttribute()
     {
     }
 
-    public SqlServerInsertAttribute(Type entityType)
+    public SqlInsertAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -28,17 +33,21 @@ public sealed class SqlServerInsertAttribute : QueryBuilderAttribute
 // SQL Server UPDATE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
+public sealed class SqlUpdateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerUpdateAttribute()
+    // OUTPUT 句で INSERTED 擬似表から返す列（カンマ区切り）。未指定なら OUTPUT 句なし。
+    // Columns to return from the INSERTED pseudo-table via an OUTPUT clause (comma-separated). No OUTPUT clause when null.
+    public string? Output { get; set; }
+
+    public SqlUpdateAttribute()
     {
     }
 
-    public SqlServerUpdateAttribute(Type entityType)
+    public SqlUpdateAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -47,17 +56,21 @@ public sealed class SqlServerUpdateAttribute : QueryBuilderAttribute
 // SQL Server DELETE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
+public sealed class SqlDeleteAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerDeleteAttribute()
+    // OUTPUT 句で DELETED 擬似表から返す列（カンマ区切り）。未指定なら OUTPUT 句なし。
+    // Columns to return from the DELETED pseudo-table via an OUTPUT clause (comma-separated). No OUTPUT clause when null.
+    public string? Output { get; set; }
+
+    public SqlDeleteAttribute()
     {
     }
 
-    public SqlServerDeleteAttribute(Type entityType)
+    public SqlDeleteAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -66,17 +79,17 @@ public sealed class SqlServerDeleteAttribute : QueryBuilderAttribute
 // SQL Server SELECT COUNT(*) builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerCountAttribute : QueryBuilderAttribute
+public sealed class SqlCountAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerCountAttribute()
+    public SqlCountAttribute()
     {
     }
 
-    public SqlServerCountAttribute(Type entityType)
+    public SqlCountAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -85,17 +98,17 @@ public sealed class SqlServerCountAttribute : QueryBuilderAttribute
 // SQL Server full-scan SELECT builder (supports [Limit]/[Offset] paging).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
+public sealed class SqlSelectAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerSelectAttribute()
+    public SqlSelectAttribute()
     {
     }
 
-    public SqlServerSelectAttribute(Type entityType)
+    public SqlSelectAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -104,17 +117,17 @@ public sealed class SqlServerSelectAttribute : QueryBuilderAttribute
 // SQL Server keyed SELECT builder (WHERE from value parameters).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
+public sealed class SqlSelectSingleAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerSelectSingleAttribute()
+    public SqlSelectSingleAttribute()
     {
     }
 
-    public SqlServerSelectSingleAttribute(Type entityType)
+    public SqlSelectSingleAttribute(Type entityType)
     {
         EntityType = entityType;
     }
@@ -123,17 +136,37 @@ public sealed class SqlServerSelectSingleAttribute : QueryBuilderAttribute
 // SQL Server TRUNCATE TABLE builder.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerTruncateAttribute : QueryBuilderAttribute
+public sealed class SqlTruncateAttribute : QueryBuilderAttribute
 {
     public Type? EntityType { get; }
 
     public string? Table { get; set; }
 
-    public SqlServerTruncateAttribute()
+    public SqlTruncateAttribute()
     {
     }
 
-    public SqlServerTruncateAttribute(Type entityType)
+    public SqlTruncateAttribute(Type entityType)
+    {
+        EntityType = entityType;
+    }
+}
+
+// SQL Server MERGE-based UPSERT builder. Matches on [Key] columns; WHEN MATCHED updates the non-key,
+// non-[DatabaseManaged] columns and WHEN NOT MATCHED inserts. Entity mode only.
+[ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class SqlMergeAttribute : QueryBuilderAttribute
+{
+    public Type? EntityType { get; }
+
+    public string? Table { get; set; }
+
+    public SqlMergeAttribute()
+    {
+    }
+
+    public SqlMergeAttribute(Type entityType)
     {
         EntityType = entityType;
     }

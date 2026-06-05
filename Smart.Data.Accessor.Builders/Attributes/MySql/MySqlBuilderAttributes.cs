@@ -136,3 +136,61 @@ public sealed class MySqlTruncateAttribute : QueryBuilderAttribute
         EntityType = entityType;
     }
 }
+
+// MySQL upsert builder: INSERT ... ON DUPLICATE KEY UPDATE. Inserts the entity; on a duplicate key it updates the
+// non-key, non-[DatabaseManaged] columns. Entity mode only.
+[ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MySqlUpsertAttribute : QueryBuilderAttribute
+{
+    public Type? EntityType { get; }
+
+    public string? Table { get; set; }
+
+    public MySqlUpsertAttribute()
+    {
+    }
+
+    public MySqlUpsertAttribute(Type entityType)
+    {
+        EntityType = entityType;
+    }
+}
+
+// MySQL REPLACE INTO builder. Same column/value shape as INSERT; deletes-then-inserts on a duplicate key.
+[ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MySqlReplaceAttribute : QueryBuilderAttribute
+{
+    public Type? EntityType { get; }
+
+    public string? Table { get; set; }
+
+    public MySqlReplaceAttribute()
+    {
+    }
+
+    public MySqlReplaceAttribute(Type entityType)
+    {
+        EntityType = entityType;
+    }
+}
+
+// MySQL INSERT IGNORE builder. Same column/value shape as INSERT; silently skips rows that violate a unique key.
+[ExcludeFromCodeCoverage]
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MySqlInsertIgnoreAttribute : QueryBuilderAttribute
+{
+    public Type? EntityType { get; }
+
+    public string? Table { get; set; }
+
+    public MySqlInsertIgnoreAttribute()
+    {
+    }
+
+    public MySqlInsertIgnoreAttribute(Type entityType)
+    {
+        EntityType = entityType;
+    }
+}

@@ -8,6 +8,6 @@ Rule ID | Category | Severity | Notes
 SDA1001 | Usage    | Error    | QueryBuilder attribute container class must be partial
 SDA1002 | Builder  | Error    | Multiple QueryBuilder attributes on one method
 SDA1003 | Builder  | Error    | QueryBuilder attribute needs an entity type or a table name
-SDA1004 | Builder  | Error    | Select/SelectSingle columns cannot be determined
-SDA1005 | Builder  | Warning  | Entity has no [Key] for Update/Delete/SelectSingle builder
+SDA1004 | Builder  | Error    | Builder columns cannot be determined without an entity type
+SDA1005 | Builder  | Warning  | Entity has no [Key] for the builder's WHERE/ON clause
 SDA1006 | Mapping  | Warning  | [TypeMap] DbType conflicts with [TypeHandler]

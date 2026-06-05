@@ -4,8 +4,8 @@ using Microsoft.CodeAnalysis;
 
 // QueryBuilder generator diagnostics. Shared across providers (linked source); each generator assembly
 // tracks them in its AnalyzerReleases. IDs use the SDA1xxx band so the reporting generator is
-// identifiable from the number (the core generator owns SDA0xxx). Ordered by the BuilderModelBuilder
-// pipeline: container → attribute → table → columns → key → mapping.
+// identifiable from the number (the core generator owns SDA0xxx). Ordered by the BuilderClassScanner /
+// MethodResolver / per-provider transform pipeline: container → attribute → table → columns → key → mapping.
 internal static class BuilderDiagnostics
 {
     public static readonly DiagnosticDescriptor InvalidContainer = new(
@@ -32,18 +32,20 @@ internal static class BuilderDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // Raised by the column-listing kinds (Select / SelectSingle / Update / Merge / Upsert) when no entity type is given.
     public static readonly DiagnosticDescriptor SelectColumnsUnresolvable = new(
         id: "SDA1004",
-        title: "Select/SelectSingle columns cannot be determined",
-        messageFormat: "Method=[{0}]: [Select]/[SelectSingle] needs an entity type to determine the column list; specify [Select(typeof(T))]",
+        title: "Builder columns cannot be determined without an entity type",
+        messageFormat: "Method=[{0}]: this QueryBuilder needs an entity type (typeof(T)) to determine the column list",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // Raised by the keyed kinds (Update / Delete / SelectSingle / Merge / Upsert) when the entity has no [Key].
     public static readonly DiagnosticDescriptor NoKeyForBuilder = new(
         id: "SDA1005",
-        title: "Entity has no [Key] for Update/Delete/SelectSingle builder",
-        messageFormat: "Entity '{0}' has no property marked [Key]; Update/Delete/SelectSingle builder cannot emit a WHERE clause for method=[{1}]",
+        title: "Entity has no [Key] for the builder's WHERE/ON clause",
+        messageFormat: "Entity '{0}' has no property marked [Key]; the QueryBuilder cannot build its WHERE/ON clause for method=[{1}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
