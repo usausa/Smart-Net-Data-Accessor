@@ -12,8 +12,6 @@ using SourceGenerateHelper;
 // Emit for the MySQL builder: per-kind SQL assembly (backtick quoting, LIMIT/OFFSET, ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE).
 internal static class MySqlSourceBuilder
 {
-    private static readonly SqlDialect Dialect = new MySqlDialect();
-
     // 1 メソッド分のヘルパーを出力する。シグネチャと cmd 取得・スコープ開閉は共有の SqlEmit、種別毎の本体はこのプロバイダーが持つ。
     // Emit one method's helper. The signature, cmd acquisition and scope open/close come from the shared SqlEmit; the
     // per-kind body is owned by this provider.
@@ -33,10 +31,10 @@ internal static class MySqlSourceBuilder
                 EmitDelete(builder, m);
                 break;
             case MySqlCountModel m:
-                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Dialect.Quote(m.TableName));
+                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Quote(m.TableName));
                 break;
             case MySqlTruncateModel m:
-                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Dialect.Quote(m.TableName));
+                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Quote(m.TableName));
                 break;
             case MySqlSelectModel m:
                 EmitSelect(builder, m);
@@ -83,9 +81,9 @@ internal static class MySqlSourceBuilder
         if (entityParamName is not null)
         {
             var cols = columns.Where(static c => !c.IsDatabaseManaged).ToList();
-            var colSql = String.Join(", ", cols.Select(c => Dialect.Quote(c.ColumnName)));
+            var colSql = String.Join(", ", cols.Select(c => Quote(c.ColumnName)));
             var valSql = String.Join(", ", cols.Select(c => SqlEmit.Marker + c.PropertyName));
-            SqlEmit.EmitCommandText(builder, $"{verb} {Dialect.Quote(tableName)} ({colSql}) VALUES ({valSql})");
+            SqlEmit.EmitCommandText(builder, $"{verb} {Quote(tableName)} ({colSql}) VALUES ({valSql})");
             foreach (var c in cols)
             {
                 SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + c.PropertyName, $"{entityParamName}.{c.PropertyName}", c);
@@ -94,9 +92,9 @@ internal static class MySqlSourceBuilder
         else
         {
             var bindParams = SqlEmit.BindParams(model);
-            var colSql = String.Join(", ", bindParams.Select(p => Dialect.Quote(p.ColumnName)));
+            var colSql = String.Join(", ", bindParams.Select(p => Quote(p.ColumnName)));
             var valSql = String.Join(", ", bindParams.Select(p => SqlEmit.Marker + p.Name));
-            SqlEmit.EmitCommandText(builder, $"{verb} {Dialect.Quote(tableName)} ({colSql}) VALUES ({valSql})");
+            SqlEmit.EmitCommandText(builder, $"{verb} {Quote(tableName)} ({colSql}) VALUES ({valSql})");
             foreach (var p in bindParams)
             {
                 SqlEmit.EmitValueParamBinding(builder, p);
@@ -125,10 +123,10 @@ internal static class MySqlSourceBuilder
             updates = cols;
         }
 
-        var colSql = String.Join(", ", cols.Select(c => Dialect.Quote(c.ColumnName)));
+        var colSql = String.Join(", ", cols.Select(c => Quote(c.ColumnName)));
         var valSql = String.Join(", ", cols.Select(c => SqlEmit.Marker + c.PropertyName));
-        var updateSql = String.Join(", ", updates.Select(c => $"{Dialect.Quote(c.ColumnName)} = VALUES({Dialect.Quote(c.ColumnName)})"));
-        SqlEmit.EmitCommandText(builder, $"INSERT INTO {Dialect.Quote(m.TableName)} ({colSql}) VALUES ({valSql}) ON DUPLICATE KEY UPDATE {updateSql}");
+        var updateSql = String.Join(", ", updates.Select(c => $"{Quote(c.ColumnName)} = VALUES({Quote(c.ColumnName)})"));
+        SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(m.TableName)} ({colSql}) VALUES ({valSql}) ON DUPLICATE KEY UPDATE {updateSql}");
 
         foreach (var c in cols)
         {
@@ -144,7 +142,7 @@ internal static class MySqlSourceBuilder
     {
         if (!m.HasEntityType || (m.EntityParamName is null))
         {
-            SqlEmit.EmitCommandText(builder, "UPDATE " + Dialect.Quote(m.TableName) + " SET ");
+            SqlEmit.EmitCommandText(builder, "UPDATE " + Quote(m.TableName) + " SET ");
             return;
         }
 
@@ -153,14 +151,14 @@ internal static class MySqlSourceBuilder
         var keys = columns.Where(static c => c.IsKey).ToList();
 
         var sql = new StringBuilder();
-        sql.Append("UPDATE ").Append(Dialect.Quote(m.TableName)).Append(" SET ");
+        sql.Append("UPDATE ").Append(Quote(m.TableName)).Append(" SET ");
         for (var i = 0; i < settable.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append(Dialect.Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
+            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
         }
         if (keys.Count > 0)
         {
@@ -171,7 +169,7 @@ internal static class MySqlSourceBuilder
                 {
                     sql.Append(" AND ");
                 }
-                sql.Append(Dialect.Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
+                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
             }
         }
 
@@ -195,7 +193,7 @@ internal static class MySqlSourceBuilder
         var bindParams = SqlEmit.BindParams(m);
 
         var sql = new StringBuilder();
-        sql.Append("DELETE FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("DELETE FROM ").Append(Quote(m.TableName));
         if (bindParams.Count > 0)
         {
             sql.Append(" WHERE ");
@@ -206,7 +204,7 @@ internal static class MySqlSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Dialect.Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
             }
         }
 
@@ -225,12 +223,12 @@ internal static class MySqlSourceBuilder
     {
         if (!m.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Dialect.Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
             return;
         }
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Dialect.Quote(c.ColumnName)))).Append(" FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
 
         // [Limit]/[Offset] パラメータがある場合のみ、プロバイダのページング句を付加する（パラメータ束縛は offset→limit の順）。
         // Append the provider's paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
@@ -239,7 +237,7 @@ internal static class MySqlSourceBuilder
         var offsetParam = valueParams.FirstOrDefault(static p => p.IsOffset);
         if ((limitParam is not null) || (offsetParam is not null))
         {
-            Dialect.AppendPaging(
+            AppendPaging(
                 sql,
                 limitParam is null ? null : SqlEmit.Marker + limitParam.Name,
                 offsetParam is null ? null : SqlEmit.Marker + offsetParam.Name);
@@ -263,7 +261,7 @@ internal static class MySqlSourceBuilder
     {
         if (!m.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Dialect.Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
             return;
         }
 
@@ -271,7 +269,7 @@ internal static class MySqlSourceBuilder
         var bindParams = SqlEmit.BindParams(m);
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Dialect.Quote(c.ColumnName)))).Append(" FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
         if (bindParams.Count > 0)
         {
             sql.Append(" WHERE ");
@@ -282,7 +280,7 @@ internal static class MySqlSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Dialect.Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
             }
         }
 
@@ -291,6 +289,28 @@ internal static class MySqlSourceBuilder
         foreach (var p in bindParams)
         {
             SqlEmit.EmitValueParamBinding(builder, p);
+        }
+    }
+
+    // 識別子をバッククォートでクォートする（バッククォートは 2 重化してエスケープ）。
+    // Quote an identifier with backticks (a backtick is escaped by doubling it).
+    private static string Quote(string identifier) => "`" + identifier.Replace("`", "``") + "`";
+
+    // LIMIT/OFFSET ページングを付加する。MySQL は OFFSET 単独に LIMIT が要るため、その場合は最大行数センチネルを補う。
+    // Append LIMIT/OFFSET paging. MySQL requires a LIMIT for a bare OFFSET, so supply the documented max-row sentinel then.
+    private static void AppendPaging(StringBuilder sql, string? limitMarker, string? offsetMarker)
+    {
+        if (limitMarker is not null)
+        {
+            sql.Append(" LIMIT ").Append(limitMarker);
+            if (offsetMarker is not null)
+            {
+                sql.Append(" OFFSET ").Append(offsetMarker);
+            }
+        }
+        else if (offsetMarker is not null)
+        {
+            sql.Append(" LIMIT 18446744073709551615 OFFSET ").Append(offsetMarker);
         }
     }
 }

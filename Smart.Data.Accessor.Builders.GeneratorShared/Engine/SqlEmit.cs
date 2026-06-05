@@ -8,8 +8,8 @@ using Smart.Data.Accessor.GeneratorShared;
 using SourceGenerateHelper;
 
 // SQL-emit primitives shared by every provider's QueryBuilder output in this generator assembly. Each provider composes
-// these atoms (together with its SqlDialect) to build its own per-kind SQL; the per-kind clause assembly itself lives
-// per provider so providers can diverge.
+// these atoms (together with its own identifier-quoting and paging) to build its own per-kind SQL; the per-kind clause
+// assembly itself lives per provider so providers can diverge.
 internal static class SqlEmit
 {
     public const string QueryBuilderMethodSuffix = "__QueryBuilder";

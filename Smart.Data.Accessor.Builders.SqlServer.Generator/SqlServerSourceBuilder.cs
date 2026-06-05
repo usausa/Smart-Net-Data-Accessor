@@ -12,8 +12,6 @@ using SourceGenerateHelper;
 // Emit for the SQL Server builder: per-kind SQL assembly (bracket quoting, OFFSET/FETCH paging, MERGE/OUTPUT). Primitives via the shared SqlEmit.
 internal static class SqlServerSourceBuilder
 {
-    private static readonly SqlDialect Dialect = new SqlServerDialect();
-
     // 1 メソッド分のヘルパーを出力する。シグネチャと cmd 取得・スコープ開閉は共有の SqlEmit、種別毎の本体はこのプロバイダーが持つ。
     // Emit one method's helper. The signature, cmd acquisition and scope open/close come from the shared SqlEmit; the
     // per-kind body is owned by this provider.
@@ -33,10 +31,10 @@ internal static class SqlServerSourceBuilder
                 EmitDelete(builder, m);
                 break;
             case SqlServerCountModel m:
-                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Dialect.Quote(m.TableName));
+                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Quote(m.TableName));
                 break;
             case SqlServerTruncateModel m:
-                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Dialect.Quote(m.TableName));
+                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Quote(m.TableName));
                 break;
             case SqlServerSelectModel m:
                 EmitSelect(builder, m);
@@ -63,9 +61,9 @@ internal static class SqlServerSourceBuilder
             // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
             // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
             var cols = m.Columns.Where(static c => !c.IsDatabaseManaged).ToList();
-            var colSql = String.Join(", ", cols.Select(c => Dialect.Quote(c.ColumnName)));
+            var colSql = String.Join(", ", cols.Select(c => Quote(c.ColumnName)));
             var valSql = String.Join(", ", cols.Select(c => SqlEmit.Marker + c.PropertyName));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Dialect.Quote(m.TableName)} ({colSql}){OutputClause(m.OutputColumns, "INSERTED")} VALUES ({valSql})");
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(m.TableName)} ({colSql}){OutputClause(m.OutputColumns, "INSERTED")} VALUES ({valSql})");
             foreach (var c in cols)
             {
                 SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + c.PropertyName, $"{m.EntityParamName}.{c.PropertyName}", c);
@@ -76,9 +74,9 @@ internal static class SqlServerSourceBuilder
             // パラメータモード：列・値はバインドパラメータから組む。
             // Parameter mode: columns / values come from the bind parameters.
             var bindParams = SqlEmit.BindParams(m);
-            var colSql = String.Join(", ", bindParams.Select(p => Dialect.Quote(p.ColumnName)));
+            var colSql = String.Join(", ", bindParams.Select(p => Quote(p.ColumnName)));
             var valSql = String.Join(", ", bindParams.Select(p => SqlEmit.Marker + p.Name));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Dialect.Quote(m.TableName)} ({colSql}){OutputClause(m.OutputColumns, "INSERTED")} VALUES ({valSql})");
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(m.TableName)} ({colSql}){OutputClause(m.OutputColumns, "INSERTED")} VALUES ({valSql})");
             foreach (var p in bindParams)
             {
                 SqlEmit.EmitValueParamBinding(builder, p);
@@ -94,7 +92,7 @@ internal static class SqlServerSourceBuilder
     {
         if (!m.HasEntityType || (m.EntityParamName is null))
         {
-            SqlEmit.EmitCommandText(builder, "UPDATE " + Dialect.Quote(m.TableName) + " SET ");
+            SqlEmit.EmitCommandText(builder, "UPDATE " + Quote(m.TableName) + " SET ");
             return;
         }
 
@@ -103,14 +101,14 @@ internal static class SqlServerSourceBuilder
         var keys = columns.Where(static c => c.IsKey).ToList();
 
         var sql = new StringBuilder();
-        sql.Append("UPDATE ").Append(Dialect.Quote(m.TableName)).Append(" SET ");
+        sql.Append("UPDATE ").Append(Quote(m.TableName)).Append(" SET ");
         for (var i = 0; i < settable.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append(Dialect.Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
+            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
         }
         sql.Append(OutputClause(m.OutputColumns, "INSERTED"));
         if (keys.Count > 0)
@@ -122,7 +120,7 @@ internal static class SqlServerSourceBuilder
                 {
                     sql.Append(" AND ");
                 }
-                sql.Append(Dialect.Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
+                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
             }
         }
 
@@ -146,7 +144,7 @@ internal static class SqlServerSourceBuilder
         var bindParams = SqlEmit.BindParams(m);
 
         var sql = new StringBuilder();
-        sql.Append("DELETE FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("DELETE FROM ").Append(Quote(m.TableName));
         sql.Append(OutputClause(m.OutputColumns, "DELETED"));
         if (bindParams.Count > 0)
         {
@@ -158,7 +156,7 @@ internal static class SqlServerSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Dialect.Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
             }
         }
 
@@ -177,12 +175,12 @@ internal static class SqlServerSourceBuilder
     {
         if (!m.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Dialect.Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
             return;
         }
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Dialect.Quote(c.ColumnName)))).Append(" FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
 
         // [Limit]/[Offset] パラメータがある場合のみ、プロバイダのページング句を付加する（パラメータ束縛は offset→limit の順）。
         // Append the provider's paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
@@ -191,7 +189,7 @@ internal static class SqlServerSourceBuilder
         var offsetParam = valueParams.FirstOrDefault(static p => p.IsOffset);
         if ((limitParam is not null) || (offsetParam is not null))
         {
-            Dialect.AppendPaging(
+            AppendPaging(
                 sql,
                 limitParam is null ? null : SqlEmit.Marker + limitParam.Name,
                 offsetParam is null ? null : SqlEmit.Marker + offsetParam.Name);
@@ -215,7 +213,7 @@ internal static class SqlServerSourceBuilder
     {
         if (!m.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Dialect.Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
             return;
         }
 
@@ -223,7 +221,7 @@ internal static class SqlServerSourceBuilder
         var bindParams = SqlEmit.BindParams(m);
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Dialect.Quote(c.ColumnName)))).Append(" FROM ").Append(Dialect.Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
         if (bindParams.Count > 0)
         {
             sql.Append(" WHERE ");
@@ -234,7 +232,7 @@ internal static class SqlServerSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Dialect.Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
             }
         }
 
@@ -265,14 +263,14 @@ internal static class SqlServerSourceBuilder
         var updates = m.Columns.Where(static c => !c.IsKey && !c.IsDatabaseManaged).ToList();
 
         var sql = new StringBuilder();
-        sql.Append("MERGE INTO ").Append(Dialect.Quote(m.TableName)).Append(" AS T USING (SELECT ");
+        sql.Append("MERGE INTO ").Append(Quote(m.TableName)).Append(" AS T USING (SELECT ");
         for (var i = 0; i < cols.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append(SqlEmit.Marker).Append(cols[i].PropertyName).Append(" AS ").Append(Dialect.Quote(cols[i].ColumnName));
+            sql.Append(SqlEmit.Marker).Append(cols[i].PropertyName).Append(" AS ").Append(Quote(cols[i].ColumnName));
         }
         sql.Append(") AS S ON (");
         for (var i = 0; i < keys.Count; i++)
@@ -281,7 +279,7 @@ internal static class SqlServerSourceBuilder
             {
                 sql.Append(" AND ");
             }
-            sql.Append("T.").Append(Dialect.Quote(keys[i].ColumnName)).Append(" = S.").Append(Dialect.Quote(keys[i].ColumnName));
+            sql.Append("T.").Append(Quote(keys[i].ColumnName)).Append(" = S.").Append(Quote(keys[i].ColumnName));
         }
         sql.Append(')');
         if (updates.Count > 0)
@@ -293,7 +291,7 @@ internal static class SqlServerSourceBuilder
                 {
                     sql.Append(", ");
                 }
-                sql.Append("T.").Append(Dialect.Quote(updates[i].ColumnName)).Append(" = S.").Append(Dialect.Quote(updates[i].ColumnName));
+                sql.Append("T.").Append(Quote(updates[i].ColumnName)).Append(" = S.").Append(Quote(updates[i].ColumnName));
             }
         }
         sql.Append(" WHEN NOT MATCHED THEN INSERT (");
@@ -303,7 +301,7 @@ internal static class SqlServerSourceBuilder
             {
                 sql.Append(", ");
             }
-            sql.Append(Dialect.Quote(cols[i].ColumnName));
+            sql.Append(Quote(cols[i].ColumnName));
         }
         sql.Append(") VALUES (");
         for (var i = 0; i < cols.Count; i++)
@@ -312,7 +310,7 @@ internal static class SqlServerSourceBuilder
             {
                 sql.Append(", ");
             }
-            sql.Append("S.").Append(Dialect.Quote(cols[i].ColumnName));
+            sql.Append("S.").Append(Quote(cols[i].ColumnName));
         }
         sql.Append(");");
 
@@ -339,6 +337,21 @@ internal static class SqlServerSourceBuilder
             return string.Empty;
         }
 
-        return " OUTPUT " + String.Join(", ", parts.Select(c => pseudoTable + "." + Dialect.Quote(c)));
+        return " OUTPUT " + String.Join(", ", parts.Select(c => pseudoTable + "." + Quote(c)));
+    }
+
+    // 識別子を角括弧でクォートする（] は ]] にエスケープ）。
+    // Quote an identifier with brackets (escaping ] as ]]).
+    private static string Quote(string identifier) => "[" + identifier.Replace("]", "]]") + "]";
+
+    // OFFSET/FETCH ページングを付加する。OFFSET/FETCH は ORDER BY を要するため、未指定時は正規の no-op 並びを補う。
+    // Append OFFSET/FETCH paging. OFFSET/FETCH requires an ORDER BY, so supply the canonical no-op ordering when none is given.
+    private static void AppendPaging(StringBuilder sql, string? limitMarker, string? offsetMarker)
+    {
+        sql.Append(" ORDER BY (SELECT NULL) OFFSET ").Append(offsetMarker ?? "0").Append(" ROWS");
+        if (limitMarker is not null)
+        {
+            sql.Append(" FETCH NEXT ").Append(limitMarker).Append(" ROWS ONLY");
+        }
     }
 }

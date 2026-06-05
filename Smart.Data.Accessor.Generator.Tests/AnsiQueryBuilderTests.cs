@@ -35,7 +35,7 @@ public sealed class AnsiQueryBuilderTests
 
         Assert.Contains("partial class Accessor", text, StringComparison.Ordinal);
         Assert.Contains("private static void Insert__QueryBuilder(", text, StringComparison.Ordinal);
-        // AnsiSqlDialect double-quotes identifiers; StringLiteral escapes the quotes in the C# literal.
+        // The standard builder double-quotes identifiers; StringLiteral escapes the quotes in the C# literal.
         Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)", text, StringComparison.Ordinal);
         Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
         Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
