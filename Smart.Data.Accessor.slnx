@@ -1,4 +1,22 @@
 <Solution>
+  <Folder Name="/Library/Builder/">
+    <Project Path="Smart.Data.Accessor.Builders.Generator/Smart.Data.Accessor.Builders.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.MySql.Generator/Smart.Data.Accessor.Builders.MySql.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.MySql/Smart.Data.Accessor.Builders.MySql.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.Postgres.Generator/Smart.Data.Accessor.Builders.Postgres.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.Postgres/Smart.Data.Accessor.Builders.Postgres.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.SqlServer.Generator/Smart.Data.Accessor.Builders.SqlServer.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders.SqlServer/Smart.Data.Accessor.Builders.SqlServer.csproj" />
+    <Project Path="Smart.Data.Accessor.Builders/Smart.Data.Accessor.Builders.csproj" />
+  </Folder>
+  <Folder Name="/Library/Core/">
+    <Project Path="Smart.Data.Accessor.Generator/Smart.Data.Accessor.Generator.csproj" />
+    <Project Path="Smart.Data.Accessor/Smart.Data.Accessor.csproj" />
+  </Folder>
+  <Folder Name="/Library/DependencyInjection/">
+    <Project Path="Smart.Data.Accessor.Extensions.DependencyInjection/Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
+    <Project Path="Smart.Data.Accessor.Resolver/Smart.Data.Accessor.Resolver.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
@@ -15,14 +33,7 @@
     <File Path="Smart.Data.Accessor.targets" />
     <File Path="test.runsettings" />
   </Folder>
-  <Folder Name="/Library/">
-    <Project Path="Smart.Data.Accessor/Smart.Data.Accessor.csproj" />
-    <Project Path="Smart.Data.Accessor.Builders/Smart.Data.Accessor.Builders.csproj" />
-    <Project Path="Smart.Data.Accessor.Generator/Smart.Data.Accessor.Generator.csproj" />
-    <Project Path="Smart.Data.Accessor.Builders.Generator/Smart.Data.Accessor.Builders.Generator.csproj" />
-    <Project Path="Smart.Data.Accessor.Extensions.DependencyInjection/Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
-    <Project Path="Smart.Data.Accessor.Resolver/Smart.Data.Accessor.Resolver.csproj" />
-  </Folder>
+  <Folder Name="/Library/" />
   <Folder Name="/Test/">
     <Project Path="Smart.Data.Accessor.Generator.Tests/Smart.Data.Accessor.Generator.Tests.csproj" />
     <Project Path="Smart.Data.Accessor.Tests/Smart.Data.Accessor.Tests.csproj" />

@@ -2,9 +2,10 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase 7: verifies the per-provider QueryBuilder generators emit provider-correct SQL (identifier
-// quoting + paging), driven by the shared dialect-parameterized engine. Pure string assertions on
-// the generated {Method}__QueryBuilder helper — no database.
+// Verifies the per-provider QueryBuilder generators emit provider-correct SQL (identifier quoting + paging) and the
+// provider-specific kinds (MERGE / OUTPUT / ON DUPLICATE KEY / REPLACE / INSERT IGNORE / ON CONFLICT / RETURNING).
+// All provider attributes live in the flat Smart.Data.Accessor.Attributes namespace (Sql*/MySql*/Pg* prefixes).
+// Pure string assertions on the generated {Method}__QueryBuilder helper — no database.
 public sealed class ProviderBuilderTests
 {
     private const string Entity = """
@@ -16,8 +17,7 @@ public sealed class ProviderBuilderTests
         }
         """;
 
-    private static string InsertAccessor(string ns, string attr) => $$"""
-        using {{ns}};
+    private static string InsertAccessor(string attr) => $$"""
         using Smart.Data.Accessor.Attributes;
 
         {{Entity}}
@@ -31,9 +31,8 @@ public sealed class ProviderBuilderTests
         }
         """;
 
-    private static string PageAccessor(string ns, string attr) => $$"""
+    private static string PageAccessor(string attr) => $$"""
         using System.Collections.Generic;
-        using {{ns}};
         using Smart.Data.Accessor.Attributes;
 
         {{Entity}}
@@ -50,42 +49,42 @@ public sealed class ProviderBuilderTests
     [Fact]
     public void SqlServerInsertUsesBracketQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.SqlServer", "SqlInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("SqlInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlInsertUsesBacktickQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.MySql", "MySqlInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("MySqlInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresInsertUsesDoubleQuoteQuoting()
     {
-        var text = GeneratorTestHelper.Run(InsertAccessor("Smart.Data.Accessor.Attributes.Postgres", "PgInsert")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(InsertAccessor("PgInsert")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void SqlServerSelectPagingUsesOffsetFetch()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.SqlServer", "SqlSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("SqlSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlSelectPagingUsesLimitOffset()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.MySql", "MySqlSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("MySqlSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresSelectPagingUsesLimitOffset()
     {
-        var text = GeneratorTestHelper.Run(PageAccessor("Smart.Data.Accessor.Attributes.Postgres", "PgSelect")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(PageAccessor("PgSelect")).AllGeneratedText;
         Assert.Contains("cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
@@ -95,7 +94,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.SqlServer;
 
             internal sealed class Entity
             {
@@ -130,7 +128,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.SqlServer;
 
             internal sealed class Entity
             {
@@ -159,7 +156,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.MySql;
 
             internal sealed class Entity
             {
@@ -189,7 +185,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.MySql;
 
             internal sealed class Entity
             {
@@ -218,7 +213,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.MySql;
 
             internal sealed class Entity
             {
@@ -247,7 +241,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.Postgres;
 
             internal sealed class Entity
             {
@@ -277,7 +270,6 @@ public sealed class ProviderBuilderTests
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
-            using Smart.Data.Accessor.Attributes.Postgres;
 
             internal sealed class Entity
             {

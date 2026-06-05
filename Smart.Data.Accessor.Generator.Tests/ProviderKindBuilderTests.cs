@@ -5,7 +5,8 @@ using Xunit;
 // C1: per-kind end-to-end coverage of the three non-default providers (SqlServer / MySql / Postgres), confirming each
 // dialect's identifier quoting is applied across every standard builder kind — not just Insert/Select (ProviderBuilderTests).
 // Doubles as the B1 drift guard: the standard kinds share one SQL shape across providers, differing only by quoting.
-// C3: the without-entity fallback shapes (SELECT * / UPDATE SET) per provider.
+// C3: the without-entity fallback shapes (SELECT * / UPDATE SET) per provider. All provider attributes are in the flat
+// Smart.Data.Accessor.Attributes namespace; the per-row prefix (Sql / MySql / Pg) selects the provider.
 public sealed class ProviderKindBuilderTests
 {
     // Escape a raw SQL string the way the generator renders it into a C# string literal, then assert the whole
@@ -20,13 +21,12 @@ public sealed class ProviderKindBuilderTests
     // === C1: standard kinds × 3 providers ===
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "UPDATE [Data] SET [Name] = @Name, [Age] = @Age WHERE [Id] = @k_Id")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "UPDATE `Data` SET `Name` = @Name, `Age` = @Age WHERE `Id` = @k_Id")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "UPDATE \"Data\" SET \"Name\" = @Name, \"Age\" = @Age WHERE \"Id\" = @k_Id")]
-    public void ProviderUpdateQuotesAllIdentifiers(string ns, string attr, string expected)
+    [InlineData("Sql", "UPDATE [Data] SET [Name] = @Name, [Age] = @Age WHERE [Id] = @k_Id")]
+    [InlineData("MySql", "UPDATE `Data` SET `Name` = @Name, `Age` = @Age WHERE `Id` = @k_Id")]
+    [InlineData("Pg", "UPDATE \"Data\" SET \"Name\" = @Name, \"Age\" = @Age WHERE \"Id\" = @k_Id")]
+    public void ProviderUpdateQuotesAllIdentifiers(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -49,13 +49,12 @@ public sealed class ProviderKindBuilderTests
     }
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "DELETE FROM [Data] WHERE [Id] = @id")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "DELETE FROM `Data` WHERE `Id` = @id")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "DELETE FROM \"Data\" WHERE \"Id\" = @id")]
-    public void ProviderDeleteQuotesAllIdentifiers(string ns, string attr, string expected)
+    [InlineData("Sql", "DELETE FROM [Data] WHERE [Id] = @id")]
+    [InlineData("MySql", "DELETE FROM `Data` WHERE `Id` = @id")]
+    [InlineData("Pg", "DELETE FROM \"Data\" WHERE \"Id\" = @id")]
+    public void ProviderDeleteQuotesAllIdentifiers(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -76,13 +75,12 @@ public sealed class ProviderKindBuilderTests
     }
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "SELECT [Id], [Name] FROM [Data] WHERE [Id] = @id")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "SELECT `Id`, `Name` FROM `Data` WHERE `Id` = @id")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "SELECT \"Id\", \"Name\" FROM \"Data\" WHERE \"Id\" = @id")]
-    public void ProviderSelectSingleQuotesAllIdentifiers(string ns, string attr, string expected)
+    [InlineData("Sql", "SELECT [Id], [Name] FROM [Data] WHERE [Id] = @id")]
+    [InlineData("MySql", "SELECT `Id`, `Name` FROM `Data` WHERE `Id` = @id")]
+    [InlineData("Pg", "SELECT \"Id\", \"Name\" FROM \"Data\" WHERE \"Id\" = @id")]
+    public void ProviderSelectSingleQuotesAllIdentifiers(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -104,13 +102,12 @@ public sealed class ProviderKindBuilderTests
     }
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "SELECT COUNT(*) FROM [Data]")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "SELECT COUNT(*) FROM `Data`")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "SELECT COUNT(*) FROM \"Data\"")]
-    public void ProviderCountQuotesTable(string ns, string attr, string expected)
+    [InlineData("Sql", "SELECT COUNT(*) FROM [Data]")]
+    [InlineData("MySql", "SELECT COUNT(*) FROM `Data`")]
+    [InlineData("Pg", "SELECT COUNT(*) FROM \"Data\"")]
+    public void ProviderCountQuotesTable(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -130,13 +127,12 @@ public sealed class ProviderKindBuilderTests
     }
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "TRUNCATE TABLE [Data]")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "TRUNCATE TABLE `Data`")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "TRUNCATE TABLE \"Data\"")]
-    public void ProviderTruncateQuotesTable(string ns, string attr, string expected)
+    [InlineData("Sql", "TRUNCATE TABLE [Data]")]
+    [InlineData("MySql", "TRUNCATE TABLE `Data`")]
+    [InlineData("Pg", "TRUNCATE TABLE \"Data\"")]
+    public void ProviderTruncateQuotesTable(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -158,14 +154,13 @@ public sealed class ProviderKindBuilderTests
     // === C3: without-entity fallback shapes × 3 providers (these also raise SDA1004; the source is still generated) ===
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "SELECT * FROM [Data]")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "SELECT * FROM `Data`")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "SELECT * FROM \"Data\"")]
-    public void ProviderSelectWithoutEntityEmitsSelectStar(string ns, string attr, string expected)
+    [InlineData("Sql", "SELECT * FROM [Data]")]
+    [InlineData("MySql", "SELECT * FROM `Data`")]
+    [InlineData("Pg", "SELECT * FROM \"Data\"")]
+    public void ProviderSelectWithoutEntityEmitsSelectStar(string attr, string expected)
     {
         var source = $$"""
             using System.Collections.Generic;
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             internal sealed class Entity
@@ -185,13 +180,12 @@ public sealed class ProviderKindBuilderTests
     }
 
     [Theory]
-    [InlineData("Smart.Data.Accessor.Attributes.SqlServer", "Sql", "UPDATE [Data] SET ")]
-    [InlineData("Smart.Data.Accessor.Attributes.MySql", "MySql", "UPDATE `Data` SET ")]
-    [InlineData("Smart.Data.Accessor.Attributes.Postgres", "Pg", "UPDATE \"Data\" SET ")]
-    public void ProviderUpdateWithoutEntityEmitsSetStub(string ns, string attr, string expected)
+    [InlineData("Sql", "UPDATE [Data] SET ")]
+    [InlineData("MySql", "UPDATE `Data` SET ")]
+    [InlineData("Pg", "UPDATE \"Data\" SET ")]
+    public void ProviderUpdateWithoutEntityEmitsSetStub(string attr, string expected)
     {
         var source = $$"""
-            using {{ns}};
             using Smart.Data.Accessor.Attributes;
 
             [DataAccessor]
