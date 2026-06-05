@@ -1,11 +1,13 @@
 namespace Smart.Data.Accessor;
 
+using System.Collections.Concurrent;
+
 public sealed class DataAccessorFactory : IServiceProvider
 {
     private readonly IDbProvider? dbProvider;
     private readonly IDbProviderSelector? providerSelector;
     private readonly Dictionary<Type, object> singletons;
-    private readonly Dictionary<Type, object> accessorCache = [];
+    private readonly ConcurrentDictionary<Type, object> accessorCache = new();
 
     internal DataAccessorFactory(
         IDbProvider? dbProvider,
@@ -19,14 +21,7 @@ public sealed class DataAccessorFactory : IServiceProvider
 
     public T Create<T>()
         where T : class
-    {
-        if (!accessorCache.TryGetValue(typeof(T), out var accessor))
-        {
-            accessor = DataAccessorRegistry.Create(typeof(T), this);
-            accessorCache[typeof(T)] = accessor;
-        }
-        return (T)accessor;
-    }
+        => (T)accessorCache.GetOrAdd(typeof(T), static (t, self) => DataAccessorRegistry.Create(t, self), this);
 
     public object? GetService(Type serviceType)
     {

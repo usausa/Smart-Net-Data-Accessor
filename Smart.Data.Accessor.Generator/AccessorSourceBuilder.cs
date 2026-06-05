@@ -226,14 +226,27 @@ internal static class AccessorSourceBuilder
         builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
         builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(String.Join(", ", ctorParams)).Append(")").NewLine();
         builder.BeginScope();
+
+        // 注入された必須依存（プロバイダ / [Inject]）が null のとき、最初の DB 呼び出しまで遅延させずコンストラクタで即座に失敗させる。
+        // 失敗箇所がアクセサ生成時に固定され、未登録依存の原因を追いやすくなる。
+        // Fail fast in the constructor when an injected required dependency (provider / [Inject]) is null, instead of
+        // deferring to the first DB call. The failure is pinned to accessor creation, making an unregistered dependency easy to trace.
+        var accessorName = String.IsNullOrEmpty(model.Namespace)
+            ? model.ClassName
+            : model.Namespace + "." + model.ClassName;
         if (hasProvider)
         {
-            builder.Indent().Append(multiProvider
-                ? "this.providerSelector = providerSelector;"
-                : "this.dbProvider = dbProvider;").NewLine();
+            var providerField = multiProvider ? "providerSelector" : "dbProvider";
+            var providerType = multiProvider ? "Smart.Data.IDbProviderSelector" : "Smart.Data.IDbProvider";
+            builder.Indent()
+                .Append("this.").Append(providerField).Append(" = ").Append(providerField)
+                .Append(" ?? throw new global::System.ArgumentNullException(nameof(").Append(providerField)
+                .Append("), \"DataAccessor '").Append(accessorName).Append("' requires a registered ").Append(providerType).Append(".\");")
+                .NewLine();
         }
         foreach (var inject in model.Injects)
         {
+            builder.Indent().Append("global::System.ArgumentNullException.ThrowIfNull(").Append(inject.Name).Append(");").NewLine();
             builder.Indent().Append("this.").Append(inject.Name).Append(" = ").Append(inject.Name).Append(";").NewLine();
         }
         builder.EndScope();

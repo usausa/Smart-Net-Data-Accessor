@@ -8,7 +8,7 @@ using Smart.Data.Accessor.Builders.Generator.Engine;
 // PostgreSQL; SQL Server has its own provider package).
 internal sealed class AnsiSqlDialect : SqlDialect
 {
-    public override string Quote(string identifier) => "\"" + identifier + "\"";
+    public override string Quote(string identifier) => "\"" + identifier.Replace("\"", "\"\"") + "\"";
 
     public override void AppendPaging(StringBuilder sql, string? limitMarker, string? offsetMarker)
     {
