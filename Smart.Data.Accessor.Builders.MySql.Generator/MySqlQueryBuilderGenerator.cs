@@ -28,7 +28,7 @@ public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator
         (Ns + "TruncateAttribute", MySqlOperation.Truncate),
         (Ns + "UpsertAttribute", MySqlOperation.Upsert),
         (Ns + "ReplaceAttribute", MySqlOperation.Replace),
-        (Ns + "InsertIgnoreAttribute", MySqlOperation.InsertIgnore),
+        (Ns + "InsertIgnoreAttribute", MySqlOperation.InsertIgnore)
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

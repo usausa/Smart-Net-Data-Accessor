@@ -6,7 +6,7 @@ internal enum DataType
 {
     Unknown = 0,
     Small = 1,
-    Large = 2,
+    Large = 2
 }
 
 internal sealed class DataEntity

@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
+#pragma warning disable CA1813
 [ExcludeFromCodeCoverage]
 [AttributeUsage(
     AttributeTargets.Class |
@@ -11,11 +12,11 @@ using System.Diagnostics.CodeAnalysis;
     AttributeTargets.Property,
     AllowMultiple = true,
     Inherited = false)]
-[SuppressMessage("Microsoft.Performance", "CA1813:Avoid unsealed attributes", Justification = "Intentionally inheritable for derived marker attributes (spec §7.4.1).")]
 public class TypeHandlerAttribute<TConverter> : Attribute
 {
     public Type ConverterType => typeof(TConverter);
 }
+#pragma warning restore CA1813
 
 [ExcludeFromCodeCoverage]
 [AttributeUsage(

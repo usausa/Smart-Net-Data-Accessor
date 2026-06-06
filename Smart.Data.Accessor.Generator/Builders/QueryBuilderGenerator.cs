@@ -25,7 +25,7 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
         (Ns + "CountAttribute", Operation.Count),
         (Ns + "SelectAttribute", Operation.Select),
         (Ns + "SelectSingleAttribute", Operation.SelectSingle),
-        (Ns + "TruncateAttribute", Operation.Truncate),
+        (Ns + "TruncateAttribute", Operation.Truncate)
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

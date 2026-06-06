@@ -152,7 +152,7 @@ public sealed class ExecuteTest
                 new MockColumn(typeof(decimal), "De"),
                 new MockColumn(typeof(string), "Str"),
                 new MockColumn(typeof(Guid), "G"),
-                new MockColumn(typeof(DateTime), "Dt"),
+                new MockColumn(typeof(DateTime), "Dt")
             ],
             [[true, (byte)1, (short)2, 3, 4L, 1.5f, 2.5d, 3.5m, "x", guid, dt]])));
 

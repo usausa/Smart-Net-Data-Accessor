@@ -1,11 +1,10 @@
 namespace Example.ConsoleApplication.Converters;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Converters;
 
-[SuppressMessage("Microsoft.Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Never instantiated; static abstract interface impl host (spec §7.4).")]
+#pragma warning disable CA1812
 internal sealed class DateTimeToTicksConverter : IValueConverter<long, DateTime>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -14,3 +13,4 @@ internal sealed class DateTimeToTicksConverter : IValueConverter<long, DateTime>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static long ToDb(DateTime clrValue) => clrValue.Ticks;
 }
+#pragma warning restore CA1812

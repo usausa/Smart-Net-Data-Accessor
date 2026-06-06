@@ -14,5 +14,5 @@ internal enum PostgresOperation
     Select,
     SelectSingle,
     Truncate,
-    Upsert,
+    Upsert
 }

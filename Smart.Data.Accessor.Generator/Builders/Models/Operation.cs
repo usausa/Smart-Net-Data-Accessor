@@ -12,5 +12,5 @@ internal enum Operation
     Count,
     Select,
     SelectSingle,
-    Truncate,
+    Truncate
 }

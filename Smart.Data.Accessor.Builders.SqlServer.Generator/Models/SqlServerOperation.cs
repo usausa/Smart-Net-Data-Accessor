@@ -14,5 +14,5 @@ internal enum SqlServerOperation
     Select,
     SelectSingle,
     Truncate,
-    Merge,
+    Merge
 }

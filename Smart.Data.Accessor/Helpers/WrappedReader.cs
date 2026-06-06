@@ -6,19 +6,14 @@ using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-[SuppressMessage("Design", "CA1010:Collections should implement generic interface", Justification = "Inherits IEnumerable via DbDataReader base class; matches DbDataReader semantics.")]
+#pragma warning disable CA1010
 public sealed class WrappedReader : DbDataReader
 {
     private readonly DbCommand command;
     private readonly DbDataReader reader;
     private readonly DbConnection? ownedConnection;
 
-    public WrappedReader(DbCommand command, DbDataReader reader)
-        : this(command, reader, null)
-    {
-    }
-
-    public WrappedReader(DbCommand command, DbDataReader reader, DbConnection? ownedConnection)
+    public WrappedReader(DbCommand command, DbDataReader reader, DbConnection? ownedConnection = null)
     {
         this.command = command;
         this.reader = reader;
@@ -193,3 +188,4 @@ public sealed class WrappedReader : DbDataReader
 
     public override Task CloseAsync() => reader.CloseAsync();
 }
+#pragma warning restore CA1010

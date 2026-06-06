@@ -16,5 +16,5 @@ internal enum MySqlOperation
     Truncate,
     Upsert,
     Replace,
-    InsertIgnore,
+    InsertIgnore
 }

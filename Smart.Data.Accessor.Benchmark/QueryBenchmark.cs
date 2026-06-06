@@ -14,7 +14,6 @@ using Dapper;
 
 using Smart.Mock.Data;
 
-[SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet requires benchmark configuration types to be public.")]
 public class BenchmarkConfig : ManualConfig
 {
     public BenchmarkConfig()
@@ -38,9 +37,8 @@ public class BenchmarkConfig : ManualConfig
     }
 }
 
+#pragma warning disable CA1001
 [Config(typeof(BenchmarkConfig))]
-[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Mock connections are disposed in [GlobalCleanup]; BenchmarkDotNet manages benchmark instance lifecycle.")]
-[SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet requires benchmark classes to be public.")]
 public class QueryBenchmark
 {
     private const int RowCount = 100;
@@ -53,16 +51,15 @@ public class QueryBenchmark
     private BenchmarkAccessor accessor = default!;
 
     [GlobalSetup]
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "MockDataReader ownership is transferred to MockRepeatDbConnection; readers are disposed transitively when the mock connections are disposed in [GlobalCleanup].")]
     public void Setup()
     {
         mockInt = new MockRepeatDbConnection(new MockDataReader(
             [
-                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(long), "Id")
             ],
             Enumerable.Range(1, RowCount).Select(static x => new object[]
             {
-                (long)x,
+                (long)x
             })));
 
         mockWide = new MockRepeatDbConnection(new MockDataReader(
@@ -76,7 +73,7 @@ public class QueryBenchmark
                 new MockColumn(typeof(string), "Description"),
                 new MockColumn(typeof(int), "Category"),
                 new MockColumn(typeof(string), "Tag"),
-                new MockColumn(typeof(double), "Weight"),
+                new MockColumn(typeof(double), "Weight")
             ],
             Enumerable.Range(1, RowCount).Select(static x => new object[]
             {
@@ -89,32 +86,32 @@ public class QueryBenchmark
                 $"Description-{x}",
                 x % 8,
                 $"Tag-{x}",
-                x * 0.25,
+                x * 0.25
             })));
 
         mockEnum = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
                 new MockColumn(typeof(string), "Name"),
-                new MockColumn(typeof(int), "Status"),
+                new MockColumn(typeof(int), "Status")
             ],
             Enumerable.Range(1, RowCount).Select(static x => new object[]
             {
                 (long)x,
                 $"Name-{x}",
-                x % 4,
+                x % 4
             })));
 
         var baseTicks = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
         mockTicks = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
-                new MockColumn(typeof(long), "Created"),
+                new MockColumn(typeof(long), "Created")
             ],
             Enumerable.Range(1, RowCount).Select(x => new object[]
             {
                 (long)x,
-                baseTicks + (x * TimeSpan.TicksPerSecond),
+                baseTicks + (x * TimeSpan.TicksPerSecond)
             })));
 
         accessor = new BenchmarkAccessor();
@@ -191,7 +188,7 @@ public class QueryBenchmark
                 Description = reader.GetString(ordDescription),
                 Category = reader.GetInt32(ordCategory),
                 Tag = reader.GetString(ordTag),
-                Weight = reader.GetDouble(ordWeight),
+                Weight = reader.GetDouble(ordWeight)
             });
         }
         return list;
@@ -223,7 +220,7 @@ public class QueryBenchmark
             {
                 Id = reader.GetInt64(ordId),
                 Name = reader.GetString(ordName),
-                Status = (BenchStatus)reader.GetInt32(ordStatus),
+                Status = (BenchStatus)reader.GetInt32(ordStatus)
             });
         }
         return list;
@@ -253,9 +250,10 @@ public class QueryBenchmark
             list.Add(new BenchTicksRow
             {
                 Id = reader.GetInt64(ordId),
-                Created = new DateTime(reader.GetInt64(ordCreated), DateTimeKind.Utc),
+                Created = new DateTime(reader.GetInt64(ordCreated), DateTimeKind.Utc)
             });
         }
         return list;
     }
 }
+#pragma warning restore CA1001

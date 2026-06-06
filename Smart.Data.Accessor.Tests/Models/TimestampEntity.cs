@@ -1,3 +1,4 @@
+#pragma warning disable CA1812
 namespace Smart.Data.Accessor.Tests.Models;
 
 using System.Diagnostics.CodeAnalysis;
@@ -7,7 +8,6 @@ using Smart.Data.Accessor.Converters;
 
 // Stores a DateTime as Int64 ticks in the DB. The reader side calls FromDb to map the column
 // (long) back to the CLR property (DateTime); the write side would call ToDb.
-[SuppressMessage("Microsoft.Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Never instantiated; static abstract interface impl host (spec §7.4).")]
 internal sealed class TicksConverter : IValueConverter<long, DateTime>
 {
     public static DateTime FromDb(long dbValue) => new(dbValue, DateTimeKind.Utc);

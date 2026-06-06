@@ -9,7 +9,7 @@ internal enum Permission : uint
 {
     None = 0,
     Write = 2,
-    All = 4000000000,
+    All = 4000000000
 }
 
 internal sealed class PermEntity

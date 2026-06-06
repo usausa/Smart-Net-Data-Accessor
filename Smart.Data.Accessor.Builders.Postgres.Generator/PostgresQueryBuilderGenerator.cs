@@ -25,7 +25,7 @@ public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
         (Ns + "SelectAttribute", PostgresOperation.Select),
         (Ns + "SelectSingleAttribute", PostgresOperation.SelectSingle),
         (Ns + "TruncateAttribute", PostgresOperation.Truncate),
-        (Ns + "UpsertAttribute", PostgresOperation.Upsert),
+        (Ns + "UpsertAttribute", PostgresOperation.Upsert)
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

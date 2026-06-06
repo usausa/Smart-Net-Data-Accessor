@@ -15,7 +15,7 @@ public sealed class ConverterTest
         var columns = new[]
         {
             new MockColumn(typeof(long), "Id"),
-            new MockColumn(typeof(long), "CreatedAt"),
+            new MockColumn(typeof(long), "CreatedAt")
         };
         var rows = new List<object[]> { new object[] { 1L, expected.Ticks } };
 

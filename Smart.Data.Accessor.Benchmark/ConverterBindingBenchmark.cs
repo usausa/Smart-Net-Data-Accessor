@@ -22,9 +22,8 @@ using Smart.Mock.Data;
 //            non-regression): inline ToDb + AddInParameter(object?) vs AddInParameter<TConverter,TDb,TClr>.
 //
 // Run: dotnet run -c Release --project Smart.Data.Accessor.Benchmark -- --filter *ConverterBinding*
+#pragma warning disable CA1001
 [Config(typeof(BenchmarkConfig))]
-[SuppressMessage("Design", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet requires benchmark classes to be public.")]
-[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The mock connection is disposed in [GlobalCleanup]; BenchmarkDotNet manages the benchmark instance lifecycle.")]
 public class ConverterBindingBenchmark
 {
     private const int Ops = 1024;
@@ -34,11 +33,12 @@ public class ConverterBindingBenchmark
     private DbCommand cmd = default!;
 
     [GlobalSetup]
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "MockDataReader ownership is transferred to MockRepeatDbConnection; disposed transitively in [GlobalCleanup].")]
     public void Setup()
     {
         seed = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+#pragma warning disable CA2000
         mock = new MockRepeatDbConnection(new MockDataReader([new MockColumn(typeof(long), "X")], []));
+#pragma warning restore CA2000
         cmd = mock.CreateCommand();
     }
 
@@ -101,3 +101,4 @@ public class ConverterBindingBenchmark
         where TConverter : IValueConverter<TDb, TClr>
         => TConverter.ToDb(value);
 }
+#pragma warning restore CA1001

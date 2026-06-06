@@ -25,7 +25,7 @@ public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
         (Ns + "SelectAttribute", SqlServerOperation.Select),
         (Ns + "SelectSingleAttribute", SqlServerOperation.SelectSingle),
         (Ns + "TruncateAttribute", SqlServerOperation.Truncate),
-        (Ns + "MergeAttribute", SqlServerOperation.Merge),
+        (Ns + "MergeAttribute", SqlServerOperation.Merge)
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

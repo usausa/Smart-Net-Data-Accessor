@@ -18,12 +18,12 @@ public sealed class UnsignedEnumTest
         var columns = new[]
         {
             new MockColumn(typeof(long), "Id"),
-            new MockColumn(typeof(int), "Perm"),
+            new MockColumn(typeof(int), "Perm")
         };
         var rows = new List<object[]>
         {
             new object[] { 1L, allAsInt },
-            new object[] { 2L, 2 },
+            new object[] { 2L, 2 }
         };
 
         using var con = new MockDbConnection();

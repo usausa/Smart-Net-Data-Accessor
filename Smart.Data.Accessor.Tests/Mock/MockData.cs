@@ -11,7 +11,7 @@ internal static class MockData
         new MockColumn(typeof(long), "Id"),
         new MockColumn(typeof(string), "Name"),
         new MockColumn(typeof(int), "Type"),
-        new MockColumn(typeof(int), "Kind"),
+        new MockColumn(typeof(int), "Kind")
     ];
 
     public static MockDataReader DataReader(params DataEntity[] rows) =>
