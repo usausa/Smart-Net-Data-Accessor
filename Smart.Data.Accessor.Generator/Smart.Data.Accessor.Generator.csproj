@@ -18,9 +18,8 @@
     <!-- 改善2 ②: gen-time expression builders shared with the provider Builder generators (linked source, no DLL). -->
     <Compile Include="..\Smart.Data.Accessor.GeneratorShared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
     <!-- Builder generator mechanics (Engine/Models) for the in-core standard QueryBuilder generator; the same linked
-         source is shared by the provider generators. Polyfill.cs is excluded because this assembly's Assembly.cs
-         already defines IsExternalInit (avoids a duplicate type). -->
-    <Compile Include="..\Smart.Data.Accessor.Builders.GeneratorShared\**\*.cs" Exclude="..\Smart.Data.Accessor.Builders.GeneratorShared\Polyfill.cs" Link="GeneratorShared\%(RecursiveDir)%(Filename)%(Extension)" />
+         source is shared by the provider generators. IsExternalInit is provided by this assembly's Assembly.cs. -->
+    <Compile Include="..\Smart.Data.Accessor.Builders.GeneratorShared\**\*.cs" Link="GeneratorShared\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
