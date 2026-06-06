@@ -20,7 +20,6 @@ internal enum ParameterRefKind
 internal sealed record ParameterModel(
     string Name,
     string TypeFullName,
-    bool IsNullable,
     bool IsCancellationToken,
     bool IsDbConnection,
     bool IsDbTransaction,

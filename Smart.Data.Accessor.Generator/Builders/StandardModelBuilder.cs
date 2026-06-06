@@ -47,7 +47,7 @@ internal static class StandardModelBuilder
                 {
                     c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
                 }
-                return new DeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new DeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns);
 
             case Operation.Count:
                 return new CountModel(r.MethodName, r.TableName, r.ValueParams);

@@ -10,6 +10,5 @@ internal sealed record MySqlDeleteModel(
     string MethodName,
     string TableName,
     EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType)
+    EquatableArray<BuilderColumn> Columns)
     : BuilderMethodModel(MethodName, TableName, ValueParams);

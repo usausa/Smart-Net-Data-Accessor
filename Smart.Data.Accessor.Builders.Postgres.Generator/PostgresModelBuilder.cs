@@ -49,7 +49,7 @@ internal static class PostgresModelBuilder
                 {
                     c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
                 }
-                return new PostgresDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType, ReadReturningColumns(c.Attr));
+                return new PostgresDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, ReadReturningColumns(c.Attr));
 
             case PostgresOperation.Count:
                 return new PostgresCountModel(r.MethodName, r.TableName, r.ValueParams);

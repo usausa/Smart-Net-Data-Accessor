@@ -11,6 +11,5 @@ internal sealed record SqlServerDeleteModel(
     string TableName,
     EquatableArray<BuilderValueParam> ValueParams,
     EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType,
     string? OutputColumns)
     : BuilderMethodModel(MethodName, TableName, ValueParams);

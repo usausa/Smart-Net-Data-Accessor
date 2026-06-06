@@ -50,7 +50,7 @@ internal static class NodeEmitter
     // Output / InOut / ReturnValue binding captured during emission. The Generator pre-declares the
     // handle variable before the SQL build try-block and uses it after Execute to write the parameter
     // value back to out/ref args.
-    public sealed record OutputBinding(string ParameterName, string HandleName, Direction Direction);
+    public sealed record OutputBinding(string ParameterName, string HandleName);
 
     // Per-parameter attribute metadata gathered from method parameters.
     public sealed class ParameterAttributes
@@ -208,7 +208,7 @@ internal static class NodeEmitter
                         // OUT / InOut / ReturnValue — DbType is required.
                         var dbTypeExpr = attrs?.DbTypeExpr ?? "global::System.Data.DbType.Object";
                         var handle = attrs?.OutputHandleName ?? $"__op_{p.Name}";
-                        outputBindings.Add(new OutputBinding(p.Name, handle, direction));
+                        outputBindings.Add(new OutputBinding(p.Name, handle));
                         sb.Append("__sb.Append(\"").Append(pname).Append("\");\n");
                         staticSql.Append(pname);
                         switch (direction)

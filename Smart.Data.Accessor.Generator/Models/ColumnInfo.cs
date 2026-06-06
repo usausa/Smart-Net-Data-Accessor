@@ -8,8 +8,6 @@ internal sealed record ColumnInfo(
     string PropertyName,
     string ColumnName,
     string TypeFullName,
-    bool IsValueType,
-    bool IsNullable,
     string? TypedReaderMethod,
     string? EnumCastTypeFullName,
     // Opt-in via [NotNullColumn]: Generator skips IsDBNull and calls Get{Type}() directly.

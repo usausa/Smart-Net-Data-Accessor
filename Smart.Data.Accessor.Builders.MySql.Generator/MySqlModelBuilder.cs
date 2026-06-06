@@ -46,7 +46,7 @@ internal static class MySqlModelBuilder
                 {
                     c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
                 }
-                return new MySqlDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new MySqlDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns);
 
             case MySqlOperation.Count:
                 return new MySqlCountModel(r.MethodName, r.TableName, r.ValueParams);

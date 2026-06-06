@@ -68,7 +68,6 @@ internal sealed record MethodModel(
     string? ProcedureName,
     string? DirectSqlParameterName,  // name of the `string` parameter that holds the SQL text
     string? SqlAlias,
-    string? EmbeddedSql,
     string? SqlEmitCode,
     // Non-null when SQL has no dynamic branches: literal SQL text and parameter setup
     // code (8-space indented) that bypass StringBuilderPool.

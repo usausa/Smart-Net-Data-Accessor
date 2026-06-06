@@ -49,7 +49,7 @@ internal static class SqlServerModelBuilder
                 {
                     c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
                 }
-                return new SqlServerDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType, ReadOutputColumns(c.Attr));
+                return new SqlServerDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, ReadOutputColumns(c.Attr));
 
             case SqlServerOperation.Count:
                 return new SqlServerCountModel(r.MethodName, r.TableName, r.ValueParams);

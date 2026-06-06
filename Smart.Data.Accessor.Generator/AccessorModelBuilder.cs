@@ -648,7 +648,6 @@ internal static class AccessorModelBuilder
                 return new ParameterModel(
                     p.Name,
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    p.NullableAnnotation == NullableAnnotation.Annotated,
                     p.Type.ToDisplayString() == WellKnownTypeNames.CancellationToken,
                     p.Type.InheritsFrom(WellKnownTypeNames.DbConnection),
                     p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction),
@@ -916,8 +915,7 @@ internal static class AccessorModelBuilder
                     .Where(p => p.Direction is ParameterDirectionType.Output or ParameterDirectionType.InputOutput)
                     .Select(p => new OutputBinding(
                         p.Name,
-                        $"__op_{p.Name}",
-                        p.Direction))
+                        $"__op_{p.Name}"))
                     .Concat(PocoOutputBindings(parameters))
                     .ToList();
             }
@@ -929,8 +927,7 @@ internal static class AccessorModelBuilder
                     .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionType.Input))
                     .Select(p => new OutputBinding(
                         p.Name,
-                        $"__op_{p.Name}",
-                        p.Direction))
+                        $"__op_{p.Name}"))
                     .Concat(PocoOutputBindings(parameters))
                     .ToList();
             }
@@ -991,7 +988,6 @@ internal static class AccessorModelBuilder
                 procedureName,
                 directSqlParameterName,
                 sqlAlias,
-                null,
                 sqlEmitCode,
                 staticSqlText,
                 staticParameterCode,
@@ -1426,7 +1422,7 @@ internal static class AccessorModelBuilder
     {
         elementFq = null;
         elementSymbol = null;
-        if ((type is not INamedTypeSymbol { IsGenericType: true } named))
+        if (type is not INamedTypeSymbol { IsGenericType: true } named)
         {
             return false;
         }
@@ -1467,7 +1463,7 @@ internal static class AccessorModelBuilder
             {
                 return null;
             }
-            var (tdbReader, _, _, _, _) = ClassifyColumnType(conv.DbType);
+            var (tdbReader, _, _) = ClassifyColumnType(conv.DbType);
             return new ConverterReadBinding(
                 conv.ConverterTypeFullName,
                 conv.DbType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -1514,12 +1510,12 @@ internal static class AccessorModelBuilder
                     continue;
                 }
                 var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
+                var (typedReader, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
                     || param.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
                 var converter = ResolveConverterBinding(prop, param.Type);
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
-                ctorInfos.Add(new ColumnInfo(param.Name, column, typeName, isValueType, isNullable, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+                ctorInfos.Add(new ColumnInfo(param.Name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
             return (ctorInfos, true);
         }
@@ -1541,11 +1537,11 @@ internal static class AccessorModelBuilder
             }
             var name = prop.Name;
             var typeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var (typedReader, isValueType, isNullable, enumCast, enumUnderlyingCast) = ClassifyColumnType(prop.Type);
+            var (typedReader, enumCast, enumUnderlyingCast) = ClassifyColumnType(prop.Type);
             var skipNullCheck = propAttrs.Any(a => a.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
             var converter = ResolveConverterBinding(prop, prop.Type);
             CheckNonNullableDbNull(prop.Type, name, skipNullCheck, converter);
-            infos.Add(new ColumnInfo(name, column, typeName, isValueType, isNullable, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+            infos.Add(new ColumnInfo(name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
         }
         return (infos, false);
     }
@@ -1556,18 +1552,14 @@ internal static class AccessorModelBuilder
     // Maps a CLR property type to its concrete DbDataReader.GetXxx method, or returns null when no built-in fast path
     // exists (in which case the emit falls back to ExecuteHelper.GetValue<T>). Unwraps Nullable<T>; the underlying type
     // drives the dispatch. For Enum types, returns the underlying primitive's GetXxx method plus the enum's FQN so the caller can emit an explicit cast.
-    private static (string? TypedReader, bool IsValueType, bool IsNullable, string? EnumCastFullName, string? EnumUnderlyingCast) ClassifyColumnType(ITypeSymbol propertyType)
+    private static (string? TypedReader, string? EnumCastFullName, string? EnumUnderlyingCast) ClassifyColumnType(ITypeSymbol propertyType)
     {
-        var isNullable = propertyType.NullableAnnotation == NullableAnnotation.Annotated;
         var underlying = propertyType;
         if ((propertyType is INamedTypeSymbol nt) && nt.IsGenericType &&
             (nt.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T))
         {
             underlying = nt.TypeArguments[0];
-            isNullable = true;
         }
-
-        var isValueType = underlying.IsValueType;
 
         // Enum：同サイズの符号付きプリミティブを読んでから enum へキャストし直す。DbDataReader には GetSByte /
         // GetUInt16/32/64 が無いので、符号無し（および sbyte）の基底型は符号付きの相方を読み、符号無し/sbyte 基底への
@@ -1597,10 +1589,10 @@ internal static class AccessorModelBuilder
             };
             if (underlyingTyped is null)
             {
-                return (null, isValueType, isNullable, null, null);
+                return (null, null, null);
             }
             var enumFqn = enumSym.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return (underlyingTyped, isValueType, isNullable, enumFqn, underlyingCast);
+            return (underlyingTyped, enumFqn, underlyingCast);
         }
 
         var typed = underlying.SpecialType switch
@@ -1623,7 +1615,7 @@ internal static class AccessorModelBuilder
             typed = "GetGuid";
         }
 
-        return (typed, isValueType, isNullable, null, null);
+        return (typed, null, null);
     }
 
     // パラメータが POCO 引数（public プロパティ 1 つにつき 1 DB パラメータへ展開）になるのは、その型がユーザー定義の
@@ -1810,7 +1802,6 @@ internal static class AccessorModelBuilder
                 .Select(pp => new OutputBinding(
                     pp.ParamName,
                     pp.HandleName,
-                    pp.Direction,
                     $"{p.Name}.{pp.PropertyName}",
                     // converter があれば OUT 値は TDb として読む（その後 FromDb）。無ければ TClr として読む。
                     // With a converter the OUT value is read as TDb (then FromDb); otherwise as TClr.
@@ -2076,16 +2067,8 @@ internal static class AccessorModelBuilder
         }
 
         var bindings = result.OutputBindings
-            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToParameterDirectionType(b.Direction)))
+            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName))
             .ToList();
         return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
     }
-
-    private static ParameterDirectionType ToParameterDirectionType(NodeEmitter.Direction d) => d switch
-    {
-        NodeEmitter.Direction.Output => ParameterDirectionType.Output,
-        NodeEmitter.Direction.InputOutput => ParameterDirectionType.InputOutput,
-        NodeEmitter.Direction.ReturnValue => ParameterDirectionType.ReturnValue,
-        _ => ParameterDirectionType.Input
-    };
 }

@@ -11,6 +11,5 @@ internal sealed record PostgresDeleteModel(
     string TableName,
     EquatableArray<BuilderValueParam> ValueParams,
     EquatableArray<BuilderColumn> Columns,
-    bool HasEntityType,
     string? ReturningColumns)
     : BuilderMethodModel(MethodName, TableName, ValueParams);
