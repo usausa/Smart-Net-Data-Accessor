@@ -1,6 +1,7 @@
 #pragma warning disable IDE0130 // Namespace does not match folder structure (M.E.DI extension method convention).
+// ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
-#pragma warning restore IDE0130
+
 using Smart.Data.Accessor;
 
 public static class DataAccessorServiceCollectionExtensions
