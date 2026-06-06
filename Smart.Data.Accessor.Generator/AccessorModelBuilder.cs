@@ -11,7 +11,7 @@ using Smart.Data.Accessor.Generator.Helpers;
 using Smart.Data.Accessor.Generator.Models;
 using Smart.Data.Accessor.Generator.Sql;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
-using Smart.Data.Accessor.GeneratorShared;
+using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 

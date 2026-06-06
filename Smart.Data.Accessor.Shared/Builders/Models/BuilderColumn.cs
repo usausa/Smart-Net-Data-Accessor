@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.GeneratorShared.Models;
+namespace Smart.Data.Accessor.Shared.Builders.Models;
 
 // An entity column resolved in the FAWMN transform (symbol stage). Carries the column/property names
 // + key/auto flags AND the fully-resolved parameter-binding metadata (converter / DbType / enum) so

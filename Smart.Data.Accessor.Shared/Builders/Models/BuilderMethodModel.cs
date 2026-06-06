@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.GeneratorShared.Models;
+namespace Smart.Data.Accessor.Shared.Builders.Models;
 
 using SourceGenerateHelper;
 

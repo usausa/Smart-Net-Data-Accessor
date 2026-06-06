@@ -2,9 +2,8 @@ namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
 using Smart.Data.Accessor.Builders.Postgres.Generator.Models;
+using Smart.Data.Accessor.Shared.Builders.Engine;
 
 // PostgreSQL QueryBuilder ジェネレータ（配線）。[PgInsert]/…/[PgTruncate]/[PgUpsert] が付いたメソッドに {Method}__QueryBuilder
 // ヘルパーを生成する（二重引用符、LIMIT/OFFSET、ON CONFLICT、RETURNING）。走査は共有 BuilderClassScanner、transform は

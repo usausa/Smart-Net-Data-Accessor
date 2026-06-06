@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.GeneratorShared.Models;
+namespace Smart.Data.Accessor.Shared.Builders.Models;
 
 // A method value parameter (excludes connection / transaction / CancellationToken) resolved in the
 // FAWMN transform. Used for the generated __QueryBuilder signature and for WHERE / VALUES / paging

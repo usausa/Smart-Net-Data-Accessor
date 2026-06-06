@@ -1,11 +1,9 @@
 namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 
 using Microsoft.CodeAnalysis;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 using Smart.Data.Accessor.Builders.Postgres.Generator.Models;
-
+using Smart.Data.Accessor.Shared.Builders.Engine;
+using Smart.Data.Accessor.Shared.Builders.Models;
 using SourceGenerateHelper;
 
 // PostgreSQL Builder の transform。共通解決（テーブル名・値パラメータ・列）は MethodResolver に委譲し、ここでは PostgresOperation 別の

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.GeneratorShared;
+namespace Smart.Data.Accessor.Shared.Helpers;
 
 using Microsoft.CodeAnalysis;
 

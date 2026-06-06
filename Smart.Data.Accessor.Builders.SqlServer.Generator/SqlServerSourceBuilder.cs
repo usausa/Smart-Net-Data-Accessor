@@ -1,11 +1,9 @@
 namespace Smart.Data.Accessor.Builders.SqlServer.Generator;
 
 using System.Text;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 using Smart.Data.Accessor.Builders.SqlServer.Generator.Models;
-
+using Smart.Data.Accessor.Shared.Builders.Engine;
+using Smart.Data.Accessor.Shared.Builders.Models;
 using SourceGenerateHelper;
 
 // SQL Server Builder の emit：種別毎の SQL 組み立て（bracket クォート、OFFSET/FETCH ページング、MERGE/OUTPUT）。プリミティブは共有 SqlEmit。

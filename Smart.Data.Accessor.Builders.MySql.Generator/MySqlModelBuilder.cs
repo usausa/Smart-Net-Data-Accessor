@@ -1,9 +1,8 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator;
 
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 using Smart.Data.Accessor.Builders.MySql.Generator.Models;
-
+using Smart.Data.Accessor.Shared.Builders.Engine;
+using Smart.Data.Accessor.Shared.Builders.Models;
 using SourceGenerateHelper;
 
 // MySQL Builder の transform。共通解決（テーブル名・値パラメータ・列）は MethodResolver に委譲し、ここでは MySqlOperation 別の Model

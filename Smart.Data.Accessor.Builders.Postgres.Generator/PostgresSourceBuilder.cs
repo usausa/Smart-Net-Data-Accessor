@@ -1,11 +1,9 @@
 namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 
 using System.Text;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 using Smart.Data.Accessor.Builders.Postgres.Generator.Models;
-
+using Smart.Data.Accessor.Shared.Builders.Engine;
+using Smart.Data.Accessor.Shared.Builders.Models;
 using SourceGenerateHelper;
 
 // PostgreSQL Builder の emit：種別毎の SQL 組み立て（二重引用符、LIMIT/OFFSET、ON CONFLICT、RETURNING）。プリミティブは共有 SqlEmit。

@@ -2,9 +2,8 @@ namespace Smart.Data.Accessor.Generator.Builders;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
 using Smart.Data.Accessor.Generator.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders.Engine;
 
 // 標準（既定）QueryBuilder ジェネレータ（配線）。コアの [Insert]/[Update]/[Delete]/[Count]/[Select]/[SelectSingle]/[Truncate] が
 // 付いたメソッドに {Method}__QueryBuilder ヘルパーを生成する。[DataAccessor] で登録し、走査は共有 BuilderClassScanner、transform は

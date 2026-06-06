@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 
 using Smart.Data.Accessor.Generator.Models;
-using Smart.Data.Accessor.GeneratorShared;
+using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 

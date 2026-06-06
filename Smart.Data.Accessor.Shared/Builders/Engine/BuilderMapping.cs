@@ -1,8 +1,8 @@
-namespace Smart.Data.Accessor.Builders.GeneratorShared.Engine;
+namespace Smart.Data.Accessor.Shared.Builders.Engine;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.GeneratorShared;
+using Smart.Data.Accessor.Shared.Helpers;
 
 // Resolves the [TypeHandler<TConverter>] scope chain (member (property) → method → accessor class →
 // [ExecuteConfig] profile) for Builder entity columns, reusing the shared ConverterScopeHelper

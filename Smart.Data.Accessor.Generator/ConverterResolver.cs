@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.GeneratorShared;
+using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 

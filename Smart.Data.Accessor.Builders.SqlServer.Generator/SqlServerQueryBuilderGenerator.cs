@@ -2,9 +2,8 @@ namespace Smart.Data.Accessor.Builders.SqlServer.Generator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
 using Smart.Data.Accessor.Builders.SqlServer.Generator.Models;
+using Smart.Data.Accessor.Shared.Builders.Engine;
 
 // SQL Server QueryBuilder ジェネレータ（配線）。[SqlInsert]/…/[SqlTruncate]/[SqlMerge] が付いたメソッドに {Method}__QueryBuilder
 // ヘルパーを生成する（角括弧クォート、OFFSET/FETCH ページング、MERGE/OUTPUT）。走査は共有 BuilderClassScanner、transform は

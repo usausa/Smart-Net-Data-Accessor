@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Builders.Postgres.Generator.Models;
 
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
+using Smart.Data.Accessor.Shared.Builders.Models;
 
 using SourceGenerateHelper;
 

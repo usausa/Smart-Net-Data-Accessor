@@ -2,9 +2,8 @@ namespace Smart.Data.Accessor.Builders.MySql.Generator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
 using Smart.Data.Accessor.Builders.MySql.Generator.Models;
+using Smart.Data.Accessor.Shared.Builders.Engine;
 
 // MySQL QueryBuilder ジェネレータ（配線）。[MySqlInsert]/…/[MySqlInsertIgnore] が付いたメソッドに {Method}__QueryBuilder ヘルパーを
 // 生成する（バッククォート、LIMIT/OFFSET、ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE）。走査は共有 BuilderClassScanner、

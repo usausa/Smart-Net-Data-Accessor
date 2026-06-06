@@ -15,10 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- gen-time expression builders shared with the core generator (linked source, no DLL). -->
-    <Compile Include="..\Smart.Data.Accessor.GeneratorShared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
-    <!-- Builder generator mechanics shared across all provider generators (linked source, no DLL). -->
-    <Compile Include="..\Smart.Data.Accessor.Builders.GeneratorShared\**\*.cs" Link="GeneratorShared\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Shared generator source (linked, no DLL): Helpers/ helpers shared with the core generator + Builders/ the
+         standard QueryBuilder engine shared across all builder generators. -->
+    <Compile Include="..\Smart.Data.Accessor.Shared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

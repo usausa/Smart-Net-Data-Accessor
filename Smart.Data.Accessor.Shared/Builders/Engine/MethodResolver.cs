@@ -1,9 +1,9 @@
-namespace Smart.Data.Accessor.Builders.GeneratorShared.Engine;
+namespace Smart.Data.Accessor.Shared.Builders.Engine;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.Builders.GeneratorShared.Models;
-using Smart.Data.Accessor.GeneratorShared;
+using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 
