@@ -17,16 +17,16 @@ public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
 {
     private const string Ns = "Smart.Data.Accessor.Attributes.Sql";
 
-    private static readonly (string Attribute, SqlServerKind Kind)[] Targets =
+    private static readonly (string Attribute, SqlServerOperation Operation)[] Targets =
     [
-        (Ns + "InsertAttribute", SqlServerKind.Insert),
-        (Ns + "UpdateAttribute", SqlServerKind.Update),
-        (Ns + "DeleteAttribute", SqlServerKind.Delete),
-        (Ns + "CountAttribute", SqlServerKind.Count),
-        (Ns + "SelectAttribute", SqlServerKind.Select),
-        (Ns + "SelectSingleAttribute", SqlServerKind.SelectSingle),
-        (Ns + "TruncateAttribute", SqlServerKind.Truncate),
-        (Ns + "MergeAttribute", SqlServerKind.Merge),
+        (Ns + "InsertAttribute", SqlServerOperation.Insert),
+        (Ns + "UpdateAttribute", SqlServerOperation.Update),
+        (Ns + "DeleteAttribute", SqlServerOperation.Delete),
+        (Ns + "CountAttribute", SqlServerOperation.Count),
+        (Ns + "SelectAttribute", SqlServerOperation.Select),
+        (Ns + "SelectSingleAttribute", SqlServerOperation.SelectSingle),
+        (Ns + "TruncateAttribute", SqlServerOperation.Truncate),
+        (Ns + "MergeAttribute", SqlServerOperation.Merge),
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

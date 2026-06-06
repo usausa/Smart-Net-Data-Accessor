@@ -2,12 +2,12 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// C1: per-kind end-to-end coverage of the three non-default providers (SqlServer / MySql / Postgres), confirming each
-// dialect's identifier quoting is applied across every standard builder kind — not just Insert/Select (ProviderBuilderTests).
-// Doubles as the B1 drift guard: the standard kinds share one SQL shape across providers, differing only by quoting.
+// C1: per-operation end-to-end coverage of the three non-default providers (SqlServer / MySql / Postgres), confirming each
+// dialect's identifier quoting is applied across every standard builder operation — not just Insert/Select (ProviderBuilderTests).
+// Doubles as the B1 drift guard: the standard operations share one SQL shape across providers, differing only by quoting.
 // C3: the without-entity fallback shapes (SELECT * / UPDATE SET) per provider. All provider attributes are in the flat
 // Smart.Data.Accessor.Attributes namespace; the per-row prefix (Sql / MySql / Pg) selects the provider.
-public sealed class ProviderKindBuilderTests
+public sealed class ProviderOperationBuilderTests
 {
     // Escape a raw SQL string the way the generator renders it into a C# string literal, then assert the whole
     // `cmd.CommandText = "...";` line is present. SqlServer brackets / MySql backticks need no escaping; Postgres
@@ -18,7 +18,7 @@ public sealed class ProviderKindBuilderTests
         Assert.Contains(literal, generatedText, StringComparison.Ordinal);
     }
 
-    // === C1: standard kinds × 3 providers ===
+    // === C1: standard operations × 3 providers ===
 
     [Theory]
     [InlineData("Sql", "UPDATE [Data] SET [Name] = @Name, [Age] = @Age WHERE [Id] = @k_Id")]

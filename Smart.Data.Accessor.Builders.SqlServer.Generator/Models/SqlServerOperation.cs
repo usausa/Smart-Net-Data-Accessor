@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Builders.SqlServer.Generator.Models;
 // The QueryBuilder kinds for the SQL Server provider. Per the restructure this provider owns its own kind enum + model
 // set (no shared closed enum), including provider-specific kinds such as MERGE; the models live in this folder, split one
 // file per kind.
-internal enum SqlServerKind
+internal enum SqlServerOperation
 {
     Insert,
     Update,

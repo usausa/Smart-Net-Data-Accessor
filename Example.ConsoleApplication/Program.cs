@@ -44,9 +44,9 @@ internal static class Program
 
         accessor.Create();
 
-        accessor.Insert(new DataEntity { Name = "Alice", Type = 1, Kind = DataKind.Small });
-        accessor.Insert(new DataEntity { Name = "Bob", Type = 2, Kind = DataKind.Large });
-        accessor.Insert(new DataEntity { Name = "Carol", Type = 3, Kind = DataKind.Large });
+        accessor.Insert(new DataEntity { Name = "Alice", Type = 1, Kind = DataType.Small });
+        accessor.Insert(new DataEntity { Name = "Bob", Type = 2, Kind = DataType.Large });
+        accessor.Insert(new DataEntity { Name = "Carol", Type = 3, Kind = DataType.Large });
 
         var list = accessor.QueryDataList();
         foreach (var item in list)
@@ -57,7 +57,7 @@ internal static class Program
         var type2 = accessor.QueryByType(2);
         Console.WriteLine($"QueryByType(2) -> {type2.Count} row(s)");
 
-        var byKind = accessor.QueryByKind(DataKind.Large);
+        var byKind = accessor.QueryByKind(DataType.Large);
         Console.WriteLine($"QueryByKind(Large) -> {byKind.Count} row(s)");
 
         var ids = new List<long>();
@@ -87,7 +87,7 @@ internal static class Program
         var selectAll = accessor.SelectAll();
         Console.WriteLine($"SelectAll -> {selectAll.Count} row(s)");
 
-        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11, Kind = DataKind.Unknown };
+        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11, Kind = DataType.Unknown };
         var updated = accessor.UpdateEntity(upd);
         Console.WriteLine($"UpdateEntity -> {updated} row(s) updated");
 

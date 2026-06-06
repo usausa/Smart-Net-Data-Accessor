@@ -21,7 +21,7 @@ public sealed class BuilderTest
         });
 
         var accessor = new BuilderAccessor();
-        var affected = accessor.Insert(con, new DataEntity { Name = "Alice", Type = 1, Kind = DataKind.Small });
+        var affected = accessor.Insert(con, new DataEntity { Name = "Alice", Type = 1, Kind = DataType.Small });
 
         Assert.Equal(1, affected);
     }
@@ -38,7 +38,7 @@ public sealed class BuilderTest
         });
 
         var accessor = new BuilderAccessor();
-        var affected = accessor.Update(con, new DataEntity { Id = 9, Name = "Bob", Type = 2, Kind = DataKind.Large });
+        var affected = accessor.Update(con, new DataEntity { Id = 9, Name = "Bob", Type = 2, Kind = DataType.Large });
 
         Assert.Equal(1, affected);
     }
@@ -82,7 +82,7 @@ public sealed class BuilderTest
             cmd.Executing = static c => Assert.Equal(
                 "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\"", c.CommandText);
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataKind.Small }));
+                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small }));
         });
 
         var accessor = new BuilderAccessor();
@@ -101,7 +101,7 @@ public sealed class BuilderTest
             cmd.Executing = static c => Assert.Equal(
                 "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\" WHERE \"Id\" = @id", c.CommandText);
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 9, Name = "Bob", Type = 2, Kind = DataKind.Large }));
+                new DataEntity { Id = 9, Name = "Bob", Type = 2, Kind = DataType.Large }));
         });
 
         var accessor = new BuilderAccessor();

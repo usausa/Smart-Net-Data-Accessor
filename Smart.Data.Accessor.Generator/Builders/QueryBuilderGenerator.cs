@@ -18,15 +18,15 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
 {
     private const string Ns = "Smart.Data.Accessor.Attributes.";
 
-    private static readonly (string Attribute, Kind Kind)[] Targets =
+    private static readonly (string Attribute, Operation Operation)[] Targets =
     [
-        (Ns + "InsertAttribute", Kind.Insert),
-        (Ns + "UpdateAttribute", Kind.Update),
-        (Ns + "DeleteAttribute", Kind.Delete),
-        (Ns + "CountAttribute", Kind.Count),
-        (Ns + "SelectAttribute", Kind.Select),
-        (Ns + "SelectSingleAttribute", Kind.SelectSingle),
-        (Ns + "TruncateAttribute", Kind.Truncate),
+        (Ns + "InsertAttribute", Operation.Insert),
+        (Ns + "UpdateAttribute", Operation.Update),
+        (Ns + "DeleteAttribute", Operation.Delete),
+        (Ns + "CountAttribute", Operation.Count),
+        (Ns + "SelectAttribute", Operation.Select),
+        (Ns + "SelectSingleAttribute", Operation.SelectSingle),
+        (Ns + "TruncateAttribute", Operation.Truncate),
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

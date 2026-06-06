@@ -18,18 +18,18 @@ public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator
 {
     private const string Ns = "Smart.Data.Accessor.Attributes.MySql";
 
-    private static readonly (string Attribute, MySqlKind Kind)[] Targets =
+    private static readonly (string Attribute, MySqlOperation Operation)[] Targets =
     [
-        (Ns + "InsertAttribute", MySqlKind.Insert),
-        (Ns + "UpdateAttribute", MySqlKind.Update),
-        (Ns + "DeleteAttribute", MySqlKind.Delete),
-        (Ns + "CountAttribute", MySqlKind.Count),
-        (Ns + "SelectAttribute", MySqlKind.Select),
-        (Ns + "SelectSingleAttribute", MySqlKind.SelectSingle),
-        (Ns + "TruncateAttribute", MySqlKind.Truncate),
-        (Ns + "UpsertAttribute", MySqlKind.Upsert),
-        (Ns + "ReplaceAttribute", MySqlKind.Replace),
-        (Ns + "InsertIgnoreAttribute", MySqlKind.InsertIgnore),
+        (Ns + "InsertAttribute", MySqlOperation.Insert),
+        (Ns + "UpdateAttribute", MySqlOperation.Update),
+        (Ns + "DeleteAttribute", MySqlOperation.Delete),
+        (Ns + "CountAttribute", MySqlOperation.Count),
+        (Ns + "SelectAttribute", MySqlOperation.Select),
+        (Ns + "SelectSingleAttribute", MySqlOperation.SelectSingle),
+        (Ns + "TruncateAttribute", MySqlOperation.Truncate),
+        (Ns + "UpsertAttribute", MySqlOperation.Upsert),
+        (Ns + "ReplaceAttribute", MySqlOperation.Replace),
+        (Ns + "InsertIgnoreAttribute", MySqlOperation.InsertIgnore),
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

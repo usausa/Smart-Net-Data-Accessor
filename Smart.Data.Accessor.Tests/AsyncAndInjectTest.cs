@@ -16,8 +16,8 @@ public sealed class AsyncAndInjectTest
     {
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
-            new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataKind.Small },
-            new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataKind.Large })));
+            new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
+            new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large })));
 
         var accessor = new AsyncAccessor();
         var list = await accessor.QueryAllAsync(con, CancellationToken.None);

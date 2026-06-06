@@ -17,8 +17,8 @@ public sealed class QueryTest
         {
             cmd.Executing = static c => Assert.Equal("SELECT Id, Name, Type, Kind FROM Data ORDER BY Id", c.CommandText);
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataKind.Small },
-                new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataKind.Large }));
+                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
+                new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large }));
         });
 
         var accessor = new QueryAccessor();
@@ -27,7 +27,7 @@ public sealed class QueryTest
         Assert.Equal(2, list.Count);
         Assert.Equal(1, list[0].Id);
         Assert.Equal("Alice", list[0].Name);
-        Assert.Equal(DataKind.Large, list[1].Kind);
+        Assert.Equal(DataType.Large, list[1].Kind);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class QueryTest
     {
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
-            new DataEntity { Id = 7, Name = "Carol", Type = 3, Kind = DataKind.Small })));
+            new DataEntity { Id = 7, Name = "Carol", Type = 3, Kind = DataType.Small })));
 
         var accessor = new QueryAccessor();
         var entity = accessor.QueryFirst(con);

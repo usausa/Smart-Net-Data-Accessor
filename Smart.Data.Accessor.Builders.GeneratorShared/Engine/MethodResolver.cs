@@ -7,9 +7,9 @@ using Smart.Data.Accessor.GeneratorShared;
 
 using SourceGenerateHelper;
 
-// Resolution of the per-method data common to every QueryBuilder kind/provider, shared by the providers in this
+// Resolution of the per-method data common to every QueryBuilder operation/provider, shared by the providers in this
 // generator assembly: table name, value parameters, entity columns and their binding metadata (converter / DbType /
-// enum). Kind selection and kind-specific diagnostics stay in each provider's transform.
+// enum). Operation selection and operation-specific diagnostics stay in each provider's transform.
 internal static class MethodResolver
 {
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
@@ -19,7 +19,7 @@ internal static class MethodResolver
     // 属性からエンティティ型 / Table 名を取り、テーブル名・値パラメータ・エンティティ列を解決する。テーブル名を決められなければ
     // SDA1003 を出して null を返す（種別に依らない共通前処理）。
     // Read the entity type / Table name from the attribute and resolve the table name, value parameters and entity
-    // columns. Returns null (after raising SDA1003) when the table cannot be determined. Kind-independent.
+    // columns. Returns null (after raising SDA1003) when the table cannot be determined. Operation-independent.
     public static ResolvedMethod? Resolve(
         INamedTypeSymbol container,
         IMethodSymbol method,

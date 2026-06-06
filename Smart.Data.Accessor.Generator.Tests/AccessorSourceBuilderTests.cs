@@ -25,7 +25,7 @@ public sealed class AccessorSourceBuilderTests
             false,
             isDbConnection,
             false,
-            ParameterDirectionKind.Input,
+            ParameterDirectionType.Input,
             ParameterRefKind.None,
             null,
             null,
@@ -38,7 +38,8 @@ public sealed class AccessorSourceBuilderTests
     private static MethodModel ExecuteMethod() =>
         new(
             "Run",
-            "Execute",
+            MethodType.Execute,
+            SqlSource.TwoWaySql,
             Accessibility.Public,
             "int",
             ReturnShape.Scalar,

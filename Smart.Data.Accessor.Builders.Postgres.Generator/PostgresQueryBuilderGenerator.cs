@@ -17,16 +17,16 @@ public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
 {
     private const string Ns = "Smart.Data.Accessor.Attributes.Pg";
 
-    private static readonly (string Attribute, PostgresKind Kind)[] Targets =
+    private static readonly (string Attribute, PostgresOperation Operation)[] Targets =
     [
-        (Ns + "InsertAttribute", PostgresKind.Insert),
-        (Ns + "UpdateAttribute", PostgresKind.Update),
-        (Ns + "DeleteAttribute", PostgresKind.Delete),
-        (Ns + "CountAttribute", PostgresKind.Count),
-        (Ns + "SelectAttribute", PostgresKind.Select),
-        (Ns + "SelectSingleAttribute", PostgresKind.SelectSingle),
-        (Ns + "TruncateAttribute", PostgresKind.Truncate),
-        (Ns + "UpsertAttribute", PostgresKind.Upsert),
+        (Ns + "InsertAttribute", PostgresOperation.Insert),
+        (Ns + "UpdateAttribute", PostgresOperation.Update),
+        (Ns + "DeleteAttribute", PostgresOperation.Delete),
+        (Ns + "CountAttribute", PostgresOperation.Count),
+        (Ns + "SelectAttribute", PostgresOperation.Select),
+        (Ns + "SelectSingleAttribute", PostgresOperation.SelectSingle),
+        (Ns + "TruncateAttribute", PostgresOperation.Truncate),
+        (Ns + "UpsertAttribute", PostgresOperation.Upsert),
     ];
 
     public void Initialize(IncrementalGeneratorInitializationContext context)

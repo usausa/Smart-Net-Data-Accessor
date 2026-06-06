@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Builders.Postgres.Generator.Models;
 // The QueryBuilder kinds for the PostgreSQL provider. Per the restructure this provider owns its own kind enum + model
 // set (no shared closed enum), including provider-specific kinds such as ON CONFLICT / RETURNING; the models live in
 // this folder, split one file per kind.
-internal enum PostgresKind
+internal enum PostgresOperation
 {
     Insert,
     Update,

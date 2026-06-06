@@ -32,7 +32,7 @@ public sealed class ExecuteHelperTest
     public void ConvertScalarConvertsNumericType() => Assert.Equal(42L, ExecuteHelper.ConvertScalar<long>(42));
 
     [Fact]
-    public void ConvertScalarConvertsEnum() => Assert.Equal(DataKind.Large, ExecuteHelper.ConvertScalar<DataKind>(2));
+    public void ConvertScalarConvertsEnum() => Assert.Equal(DataType.Large, ExecuteHelper.ConvertScalar<DataType>(2));
 
     // ---- GetValue (typed-reader fallback) ----
 
@@ -57,7 +57,7 @@ public sealed class ExecuteHelperTest
     {
         using var reader = new MockDataReader([new MockColumn(typeof(int), "V")], Rows([2]));
         reader.Read();
-        Assert.Equal(DataKind.Large, ExecuteHelper.GetValue<DataKind>(reader, 0));
+        Assert.Equal(DataType.Large, ExecuteHelper.GetValue<DataType>(reader, 0));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class ExecuteHelperTest
         Assert.Equal(42L, ExecuteHelper.GetOutputValue<long>(p));   // int → long
 
         p.Value = 2;
-        Assert.Equal(DataKind.Large, ExecuteHelper.GetOutputValue<DataKind>(p));
+        Assert.Equal(DataType.Large, ExecuteHelper.GetOutputValue<DataType>(p));
 
         p.Value = DBNull.Value;
         Assert.Equal(0, ExecuteHelper.GetOutputValue<int>(p));
@@ -123,7 +123,7 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInParameter(cmd, "@p", DataKind.Large);
+        var p = ExecuteHelper.AddInParameter(cmd, "@p", DataType.Large);
 
         Assert.Equal(2, p.Value);   // enum → underlying int (AssignValue)
     }

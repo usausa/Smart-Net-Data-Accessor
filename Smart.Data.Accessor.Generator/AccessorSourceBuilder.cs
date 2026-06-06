@@ -82,12 +82,12 @@ internal static class AccessorSourceBuilder
 
         switch (pp.Direction)
         {
-            case ParameterDirectionKind.Output:
+            case ParameterDirectionType.Output:
                 builder.Indent().Append(pp.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                     .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
-            case ParameterDirectionKind.InputOutput:
+            case ParameterDirectionType.InputOutput:
                 builder.Indent().Append(pp.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
                     .Append(paramName).Append("\", ").Append(valueExpr).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
@@ -437,7 +437,7 @@ internal static class AccessorSourceBuilder
 
         // SQL とパラメータの準備。コマンドソース（DirectSql / ストアド / QueryBuilder / 2-way SQL）で分岐する。
         // SQL and parameter setup, branching on the command source (DirectSql / stored procedure / QueryBuilder / 2-way SQL).
-        if (m.MethodKind == "DirectSql")
+        if (m.SqlSource == SqlSource.DirectSql)
         {
             EmitDirectSqlSetup(builder, m);
         }
@@ -577,14 +577,14 @@ internal static class AccessorSourceBuilder
 
             switch (p.Direction)
             {
-                case ParameterDirectionKind.Output:
+                case ParameterDirectionType.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKind.InputOutput:
+                case ParameterDirectionType.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
@@ -592,7 +592,7 @@ internal static class AccessorSourceBuilder
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKind.ReturnValue:
+                case ParameterDirectionType.ReturnValue:
                     // SDA0210 は BuildAccessorModel で報告済みなので、ここでは出力しない。
                     // SDA0210 is already reported in BuildAccessorModel; skip emission here.
                     break;
@@ -678,14 +678,14 @@ internal static class AccessorSourceBuilder
 
             switch (p.Direction)
             {
-                case ParameterDirectionKind.Output:
+                case ParameterDirectionType.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKind.InputOutput:
+                case ParameterDirectionType.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
@@ -693,7 +693,7 @@ internal static class AccessorSourceBuilder
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKind.ReturnValue:
+                case ParameterDirectionType.ReturnValue:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
@@ -812,13 +812,13 @@ internal static class AccessorSourceBuilder
     {
         var hasOutputs = m.OutputBindings.Count > 0;
 
-        if ((m.MethodKind == "ExecuteReader") || IsReaderShape(m.ReturnShape))
+        if ((m.MethodType == MethodType.ExecuteReader) || IsReaderShape(m.ReturnShape))
         {
             EmitReaderInvocation(builder, m, ctExpr);
             return;
         }
 
-        if ((m.MethodKind == "Execute") || (m.MethodKind == "DirectSql"))
+        if ((m.MethodType == MethodType.Execute) || (m.MethodType == MethodType.ExecuteScalar))
         {
             switch (m.ReturnShape)
             {

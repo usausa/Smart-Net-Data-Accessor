@@ -18,7 +18,7 @@ public sealed class DynamicSqlTest
         {
             cmd.Executing = c => captured = c.CommandText;
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataKind.Small }));
+                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small }));
         });
 
         var accessor = new DynamicAccessor();
@@ -37,7 +37,7 @@ public sealed class DynamicSqlTest
         {
             cmd.Executing = c => captured = c.CommandText;
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 5, Name = "Bob", Type = 2, Kind = DataKind.Large }));
+                new DataEntity { Id = 5, Name = "Bob", Type = 2, Kind = DataType.Large }));
         });
 
         var accessor = new DynamicAccessor();
@@ -56,8 +56,8 @@ public sealed class DynamicSqlTest
         {
             cmd.Executing = c => captured = c.CommandText;
             cmd.SetupResult(MockData.DataReader(
-                new DataEntity { Id = 1, Name = "A", Type = 1, Kind = DataKind.Small },
-                new DataEntity { Id = 2, Name = "B", Type = 2, Kind = DataKind.Large }));
+                new DataEntity { Id = 1, Name = "A", Type = 1, Kind = DataType.Small },
+                new DataEntity { Id = 2, Name = "B", Type = 2, Kind = DataType.Large }));
         });
 
         var accessor = new DynamicAccessor();

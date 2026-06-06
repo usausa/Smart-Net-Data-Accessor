@@ -126,7 +126,7 @@ internal static class AccessorModelBuilder
             ct.ThrowIfCancellationRequested();
             var isBuilder = method.BuilderMethodName is not null;
             var isProcedure = method.ProcedureName is not null;
-            var isDirectSql = method.MethodKind == "DirectSql";
+            var isDirectSql = method.SqlSource == SqlSource.DirectSql;
             var sqlKey = $"{model.ClassName}.{method.SqlAlias ?? method.Name}";
 
             if (collidedKeys.Contains(sqlKey))
@@ -280,27 +280,30 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            string? kind = null;
+            MethodType? methodType = null;
             string? builder = null;
             string? sqlAlias = null;
             string? procedureName = null;
             var isDirectSql = false;
-            var isExecuteNonScalar = false;
             // SDA0103: 実行種別属性（A 群）は排他なので出現回数を数える。
             // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
             var executionKindCount = 0;
             foreach (var attr in member.GetAttributes())
             {
                 var fullName = attr.AttributeClass?.ToDisplayString();
-                if ((fullName == ExecuteAttributeName) || (fullName == ExecuteScalarAttributeName))
+                if (fullName == ExecuteAttributeName)
                 {
-                    kind = "Execute";
-                    isExecuteNonScalar = fullName == ExecuteAttributeName;
+                    methodType = MethodType.Execute;
+                    executionKindCount++;
+                }
+                else if (fullName == ExecuteScalarAttributeName)
+                {
+                    methodType = MethodType.ExecuteScalar;
                     executionKindCount++;
                 }
                 else if (fullName == ExecuteReaderAttributeName)
                 {
-                    kind = "ExecuteReader";
+                    methodType = MethodType.ExecuteReader;
                     executionKindCount++;
                 }
                 else if (fullName == DirectSqlAttributeName)
@@ -309,7 +312,7 @@ internal static class AccessorModelBuilder
                 }
                 else if ((fullName == QueryAttributeName) || (fullName == QueryFirstAttributeName))
                 {
-                    kind = "Query";
+                    methodType = MethodType.Query;
                     executionKindCount++;
                 }
                 else if (IsQueryBuilderAttribute(attr.AttributeClass))
@@ -346,7 +349,7 @@ internal static class AccessorModelBuilder
                     (attr.ConstructorArguments[0].Value is string procName))
                 {
                     procedureName = procName;
-                    kind ??= "Execute";
+                    methodType ??= MethodType.Execute;
                     // SDA0204: [Procedure("")] 手続き名が空 → 警告。
                     // SDA0204: [Procedure("")] empty stored procedure name -> warning.
                     if (String.IsNullOrEmpty(procName))
@@ -362,12 +365,15 @@ internal static class AccessorModelBuilder
             // [DirectSql] は SQL ファイル探索を省略する。conn/tx/CT を除いた最初の string 引数が実行時に cmd.CommandText を供給する。
             // [DirectSql] short-circuits SQL file lookup; the first `string` parameter (after connection/transaction/CT)
             // supplies cmd.CommandText at runtime.
+            // 実行種別を上書きせず、明示の A 群属性が無ければ Execute を既定にする（DirectSql×Query / ×ExecuteReader も成立）。
+            // Does NOT override the execution kind; absent an explicit A-group attribute it defaults to Execute
+            // (so DirectSql×Query / ×ExecuteReader are valid).
             if (isDirectSql)
             {
-                kind = "DirectSql";
+                methodType ??= MethodType.Execute;
             }
 
-            if (kind is null)
+            if (methodType is null)
             {
                 continue;
             }
@@ -467,7 +473,7 @@ internal static class AccessorModelBuilder
             {
                 string? dbTypeExpr = null;
                 int? size = null;
-                var direction = ParameterDirectionKind.Input;
+                var direction = ParameterDirectionType.Input;
                 string? providerParamTypeFqn = null;
                 string? providerPropertyName = null;
                 string? providerValueExpr = null;
@@ -534,10 +540,10 @@ internal static class AccessorModelBuilder
                     {
                         direction = (ParameterDirection)dirRaw switch
                         {
-                            ParameterDirection.Output => ParameterDirectionKind.Output,
-                            ParameterDirection.InputOutput => ParameterDirectionKind.InputOutput,
-                            ParameterDirection.ReturnValue => ParameterDirectionKind.ReturnValue,
-                            _ => ParameterDirectionKind.Input
+                            ParameterDirection.Output => ParameterDirectionType.Output,
+                            ParameterDirection.InputOutput => ParameterDirectionType.InputOutput,
+                            ParameterDirection.ReturnValue => ParameterDirectionType.ReturnValue,
+                            _ => ParameterDirectionType.Input
                         };
                     }
                 }
@@ -555,7 +561,7 @@ internal static class AccessorModelBuilder
                 // OUT / InputOutput parameters need a concrete DbType (otherwise sql_variant).
                 // Infer it from the CLR type when no explicit [DbType] / provider DbType is present.
                 if ((dbTypeExpr is null) && (providerParamTypeFqn is null) &&
-                    (direction is ParameterDirectionKind.Output or ParameterDirectionKind.InputOutput))
+                    (direction is ParameterDirectionType.Output or ParameterDirectionType.InputOutput))
                 {
                     dbTypeExpr = InferDbTypeExpr(p.Type);
                 }
@@ -706,7 +712,7 @@ internal static class AccessorModelBuilder
             // （任意のスカラー T を許す [ExecuteScalar] には適用しない）。
             // SDA0302: an [Execute] return type must be int/void/Task/Task<int>/ValueTask/ValueTask<int>.
             // (Does not apply to [ExecuteScalar], which supports an arbitrary scalar T.)
-            if ((kind == "Execute") && isExecuteNonScalar && !IsValidExecuteReturn(shape.Value, member.ReturnType))
+            if ((methodType == MethodType.Execute) && !IsValidExecuteReturn(shape.Value, member.ReturnType))
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.ExecuteReturnInvalid,
@@ -718,7 +724,7 @@ internal static class AccessorModelBuilder
 
             // SDA0303 Error / SDA0304 Info: [ExecuteReader] の戻り値シェイプを検証する。
             // SDA0303 Error / SDA0304 Info: [ExecuteReader] return-shape validation.
-            if (kind == "ExecuteReader")
+            if (methodType == MethodType.ExecuteReader)
             {
                 if (!IsReaderShape(shape.Value))
                 {
@@ -755,7 +761,7 @@ internal static class AccessorModelBuilder
             // For the Query kind, a list/asyncenum must have a mappable element type.
             IReadOnlyList<ColumnInfo>? queryColumns = null;
             var useRecordPrimaryCtor = false;
-            if (kind == "Query")
+            if (methodType == MethodType.Query)
             {
                 var mapTarget = elementFq is not null ? entitySymbol : null;
                 if (mapTarget is null)
@@ -812,7 +818,7 @@ internal static class AccessorModelBuilder
             // SDA0208 / SDA0209: [Direction] consistency checks.
             //  - SDA0208: [Direction] vs. RefKind mismatch.
             //  - SDA0209: [Direction] used on a method kind other than [Procedure] / [Execute] / [DirectSql].
-            var directionAllowedKind = (kind == "Execute") || (kind == "DirectSql");
+            var directionAllowed = (methodType is MethodType.Execute or MethodType.ExecuteScalar) || isDirectSql || (procedureName is not null);
             foreach (var ms in member.Parameters)
             {
                 var pm = parameters.FirstOrDefault(p => p.Name == ms.Name);
@@ -820,11 +826,11 @@ internal static class AccessorModelBuilder
                 {
                     continue;
                 }
-                if (pm.Direction == ParameterDirectionKind.Input)
+                if (pm.Direction == ParameterDirectionType.Input)
                 {
                     continue;
                 }
-                if (!directionAllowedKind)
+                if (!directionAllowed)
                 {
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.DirectionOnUnsupportedMethod,
@@ -833,7 +839,7 @@ internal static class AccessorModelBuilder
                         pm.Name));
                     continue;
                 }
-                if (pm.Direction == ParameterDirectionKind.ReturnValue)
+                if (pm.Direction == ParameterDirectionType.ReturnValue)
                 {
                     // [Direction(ReturnValue)] は廃止。ストアドの RETURN 値はメソッドのスカラー戻り値へマップする。
                     // [Direction(ReturnValue)] is retired; the stored-procedure RETURN value maps to the method's scalar return value instead.
@@ -846,8 +852,8 @@ internal static class AccessorModelBuilder
                 }
                 var refKindOk = pm.Direction switch
                 {
-                    ParameterDirectionKind.Output => pm.RefKind is ParameterRefKind.Out or ParameterRefKind.Ref,
-                    ParameterDirectionKind.InputOutput => pm.RefKind == ParameterRefKind.Ref,
+                    ParameterDirectionType.Output => pm.RefKind is ParameterRefKind.Out or ParameterRefKind.Ref,
+                    ParameterDirectionType.InputOutput => pm.RefKind == ParameterRefKind.Ref,
                     _ => true
                 };
                 if (!refKindOk)
@@ -890,7 +896,7 @@ internal static class AccessorModelBuilder
                     {
                         continue;
                     }
-                    if ((pm.Name == directSqlParameterName) && (pm.Direction != ParameterDirectionKind.Input))
+                    if ((pm.Name == directSqlParameterName) && (pm.Direction != ParameterDirectionType.Input))
                     {
                         diagnostics.Add(new DiagnosticInfo(
                             Diagnostics.DirectSqlCommandTextDirection,
@@ -907,7 +913,7 @@ internal static class AccessorModelBuilder
                 outputBindings = parameters
                     .Where(p => (p.PocoProperties is null) && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
-                    .Where(p => p.Direction is ParameterDirectionKind.Output or ParameterDirectionKind.InputOutput)
+                    .Where(p => p.Direction is ParameterDirectionType.Output or ParameterDirectionType.InputOutput)
                     .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
@@ -920,7 +926,7 @@ internal static class AccessorModelBuilder
                 // Procedure：束縛は Input 以外の Direction を持つメソッドパラメータと、POCO 引数の出力プロパティから導く。
                 // Procedure: bindings are derived from method parameters with a non-Input Direction, plus POCO-argument output properties.
                 outputBindings = parameters
-                    .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionKind.Input))
+                    .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionType.Input))
                     .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
@@ -960,9 +966,17 @@ internal static class AccessorModelBuilder
             var mapsProcedureReturnValue = (procedureName is not null) &&
                 (shape.Value is ReturnShape.Scalar or ReturnShape.TaskScalar or ReturnShape.ValueTaskScalar);
 
+            // SqlSource（クエリ構築方法）は MethodType と直交。同時成立しないこと（B 群）は SDA0104/0105/0405 が担保済み。
+            // SqlSource (how the SQL is built) is orthogonal to MethodType; B-group exclusivity is enforced by SDA0104/0105/0405.
+            var sqlSource = builder is not null ? SqlSource.QueryBuilder
+                : procedureName is not null ? SqlSource.Procedure
+                : isDirectSql ? SqlSource.DirectSql
+                : SqlSource.TwoWaySql;
+
             methods.Add(new MethodModel(
                 member.Name,
-                kind,
+                methodType.Value,
+                sqlSource,
                 member.DeclaredAccessibility,
                 member.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 shape.Value,
@@ -1706,7 +1720,7 @@ internal static class AccessorModelBuilder
 
             string? dbTypeExpr = null;
             int? size = null;
-            var direction = ParameterDirectionKind.Input;
+            var direction = ParameterDirectionType.Input;
             string? paramName = null;
             foreach (var pa in prop.GetAttributes())
             {
@@ -1731,9 +1745,9 @@ internal static class AccessorModelBuilder
                 {
                     direction = (ParameterDirection)dirRaw switch
                     {
-                        ParameterDirection.Output => ParameterDirectionKind.Output,
-                        ParameterDirection.InputOutput => ParameterDirectionKind.InputOutput,
-                        _ => ParameterDirectionKind.Input
+                        ParameterDirection.Output => ParameterDirectionType.Output,
+                        ParameterDirection.InputOutput => ParameterDirectionType.InputOutput,
+                        _ => ParameterDirectionType.Input
                     };
                 }
             }
@@ -1760,7 +1774,7 @@ internal static class AccessorModelBuilder
             // OUT / InputOutput は具体的な DbType を必要とする（InferDbTypeExpr 参照）。converter があれば TDb（DB 側の型）から、
             // 無ければ CLR プロパティ型から推論する。
             // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is inferred from TDb (the DB-side type), otherwise from the CLR property type.
-            if ((dbTypeExpr is null) && (direction != ParameterDirectionKind.Input))
+            if ((dbTypeExpr is null) && (direction != ParameterDirectionType.Input))
             {
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
@@ -1792,7 +1806,7 @@ internal static class AccessorModelBuilder
         parameters
             .Where(static p => p.PocoProperties is not null)
             .SelectMany(static p => p.PocoProperties!.Value
-                .Where(static pp => pp.Direction != ParameterDirectionKind.Input)
+                .Where(static pp => pp.Direction != ParameterDirectionType.Input)
                 .Select(pp => new OutputBinding(
                     pp.ParamName,
                     pp.HandleName,
@@ -1877,13 +1891,13 @@ internal static class AccessorModelBuilder
         }
         catch (SqlTokenizerException ex)
         {
-            var descriptor = ex.Kind switch
+            var descriptor = ex.Error switch
             {
-                SqlTokenizerErrorKind.CommentNotClosed => Diagnostics.SqlCommentNotClosed,
-                SqlTokenizerErrorKind.QuoteNotClosed => Diagnostics.SqlQuoteNotClosed,
+                SqlTokenizerError.CommentNotClosed => Diagnostics.SqlCommentNotClosed,
+                SqlTokenizerError.QuoteNotClosed => Diagnostics.SqlQuoteNotClosed,
                 _ => Diagnostics.SqlTokenizeFailed
             };
-            string[] args = ex.Kind == SqlTokenizerErrorKind.Unknown
+            string[] args = ex.Error == SqlTokenizerError.Unknown
                 ? [methodName, ex.Message]
                 : [methodName];
             diagnostics.Add(new DiagnosticInfo(descriptor, location, args));
@@ -1941,15 +1955,15 @@ internal static class AccessorModelBuilder
                 {
                     return null;
                 }
-                var dirKind = pm.Direction switch
+                var direction = pm.Direction switch
                 {
-                    ParameterDirectionKind.Output => NodeEmitter.Direction.Output,
-                    ParameterDirectionKind.InputOutput => NodeEmitter.Direction.InputOutput,
-                    ParameterDirectionKind.ReturnValue => NodeEmitter.Direction.ReturnValue,
+                    ParameterDirectionType.Output => NodeEmitter.Direction.Output,
+                    ParameterDirectionType.InputOutput => NodeEmitter.Direction.InputOutput,
+                    ParameterDirectionType.ReturnValue => NodeEmitter.Direction.ReturnValue,
                     _ => NodeEmitter.Direction.Input
                 };
                 if ((pm.DbTypeExpr is null) && (pm.Size is null) &&
-                    (dirKind == NodeEmitter.Direction.Input) && (pm.EnumUnderlyingFullName is null) &&
+                    (direction == NodeEmitter.Direction.Input) && (pm.EnumUnderlyingFullName is null) &&
                     (pm.ProviderParameterTypeFullName is null) && (pm.ConverterTypeFullName is null))
                 {
                     return null;
@@ -1958,8 +1972,8 @@ internal static class AccessorModelBuilder
                 {
                     DbTypeExpr = pm.DbTypeExpr,
                     Size = pm.Size,
-                    Direction = dirKind,
-                    OutputHandleName = dirKind == NodeEmitter.Direction.Input ? null : $"__op_{pm.Name}",
+                    Direction = direction,
+                    OutputHandleName = direction == NodeEmitter.Direction.Input ? null : $"__op_{pm.Name}",
                     EnumUnderlyingFullName = pm.EnumUnderlyingFullName,
                     IsNullableEnum = pm.IsNullableEnum,
                     ProviderParameterTypeFullName = pm.ProviderParameterTypeFullName,
@@ -2062,16 +2076,16 @@ internal static class AccessorModelBuilder
         }
 
         var bindings = result.OutputBindings
-            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToParameterDirectionKind(b.Direction)))
+            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToParameterDirectionType(b.Direction)))
             .ToList();
         return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
     }
 
-    private static ParameterDirectionKind ToParameterDirectionKind(NodeEmitter.Direction d) => d switch
+    private static ParameterDirectionType ToParameterDirectionType(NodeEmitter.Direction d) => d switch
     {
-        NodeEmitter.Direction.Output => ParameterDirectionKind.Output,
-        NodeEmitter.Direction.InputOutput => ParameterDirectionKind.InputOutput,
-        NodeEmitter.Direction.ReturnValue => ParameterDirectionKind.ReturnValue,
-        _ => ParameterDirectionKind.Input
+        NodeEmitter.Direction.Output => ParameterDirectionType.Output,
+        NodeEmitter.Direction.InputOutput => ParameterDirectionType.InputOutput,
+        NodeEmitter.Direction.ReturnValue => ParameterDirectionType.ReturnValue,
+        _ => ParameterDirectionType.Input
     };
 }

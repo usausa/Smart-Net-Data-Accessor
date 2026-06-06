@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Tests.Models;
 
 using Smart.Data.Accessor.Attributes;
 
-internal enum DataKind
+internal enum DataType
 {
     Unknown = 0,
     Small = 1,
@@ -19,11 +19,11 @@ internal sealed class DataEntity
 
     public int Type { get; set; }
 
-    public DataKind Kind { get; set; }
+    public DataType Kind { get; set; }
 }
 
 internal sealed record DataRecord(
     long Id,
     string Name,
     int Type,
-    DataKind Kind);
+    DataType Kind);

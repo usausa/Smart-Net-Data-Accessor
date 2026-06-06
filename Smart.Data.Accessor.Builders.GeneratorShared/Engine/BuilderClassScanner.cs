@@ -20,10 +20,10 @@ internal static class BuilderClassScanner
     // The incremental step name (so tests can observe the model being cached / reused). Common to every provider.
     public const string TrackingName = "BuilderClassModel";
 
-    public static BuilderClassModel Scan<TKind>(
+    public static BuilderClassModel Scan<TOperation>(
         GeneratorAttributeSyntaxContext ctx,
-        IReadOnlyList<(string Attribute, TKind Kind)> targets,
-        Func<MethodBuildContext<TKind>, BuilderMethodModel?> buildMethod,
+        IReadOnlyList<(string Attribute, TOperation Operation)> targets,
+        Func<MethodBuildContext<TOperation>, BuilderMethodModel?> buildMethod,
         CancellationToken ct)
     {
         // クラスの名前空間・アクセシビリティ・partial 有無を取得し、[TypeMap] の解決スコープ（class ＋ profile）を用意する。
@@ -51,7 +51,7 @@ internal static class BuilderClassScanner
 
             // このメソッドに付いた対象属性を集める（複数一致＝同一メソッドへの重複指定）。
             // Collect the target attributes present on this method (multiple matches = a duplicate specification on one method).
-            var matched = new List<(AttributeData Attr, TKind Kind)>();
+            var matched = new List<(AttributeData Attr, TOperation Operation)>();
             foreach (var attrData in method.GetAttributes())
             {
                 var fq = attrData.AttributeClass?.ToDisplayString();
@@ -59,7 +59,7 @@ internal static class BuilderClassScanner
                 {
                     if (target.Attribute == fq)
                     {
-                        matched.Add((attrData, target.Kind));
+                        matched.Add((attrData, target.Operation));
                         break;
                     }
                 }
@@ -88,8 +88,8 @@ internal static class BuilderClassScanner
                 continue;
             }
 
-            var model = buildMethod(new MethodBuildContext<TKind>(
-                container, method, matched[0].Attr, matched[0].Kind, typeMaps, profile, diagnostics, location));
+            var model = buildMethod(new MethodBuildContext<TOperation>(
+                container, method, matched[0].Attr, matched[0].Operation, typeMaps, profile, diagnostics, location));
             if (model is not null)
             {
                 methods.Add(model);
@@ -107,11 +107,11 @@ internal static class BuilderClassScanner
 
 // 1 メソッドの Model 構築 callback に渡す素材（transform 内で生成・消費する一時キャリア）。
 // The material passed to a provider's per-method build callback (a transient carrier created and consumed within the transform).
-internal readonly record struct MethodBuildContext<TKind>(
+internal readonly record struct MethodBuildContext<TOperation>(
     INamedTypeSymbol Container,
     IMethodSymbol Method,
     AttributeData Attr,
-    TKind Kind,
+    TOperation Operation,
     Dictionary<string, TypeMapInfo> TypeMaps,
     INamedTypeSymbol? Profile,
     List<DiagnosticInfo> Diagnostics,

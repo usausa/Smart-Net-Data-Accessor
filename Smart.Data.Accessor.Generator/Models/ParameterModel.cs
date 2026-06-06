@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;
 
-internal enum ParameterDirectionKind
+internal enum ParameterDirectionType
 {
     Input,
     Output,
@@ -24,7 +24,7 @@ internal sealed record ParameterModel(
     bool IsCancellationToken,
     bool IsDbConnection,
     bool IsDbTransaction,
-    ParameterDirectionKind Direction,
+    ParameterDirectionType Direction,
     ParameterRefKind RefKind,
     string? DbTypeExpr,     // e.g. "global::System.Data.DbType.AnsiString"
     int? Size,

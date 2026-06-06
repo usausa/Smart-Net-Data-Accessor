@@ -5,7 +5,7 @@ namespace Smart.Data.Accessor.Builders.MySql.Generator.Models;
 // The QueryBuilder kinds for the MySQL provider. Per the restructure this provider owns its own kind enum + model set
 // (no shared closed enum), including provider-specific kinds such as ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE;
 // the models live in this folder, split one file per kind.
-internal enum MySqlKind
+internal enum MySqlOperation
 {
     Insert,
     Update,

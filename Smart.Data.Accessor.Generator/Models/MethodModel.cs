@@ -28,9 +28,32 @@ internal enum ConnectionPattern
     TransactionArg // Pattern A: DbTransaction arg (also brings connection)
 }
 
+// 実行種別（どう実行し何を返すか）。クエリの構築方法（SqlSource）とは直交する。
+// Execution kind (how the command runs and what it returns). Orthogonal to how the SQL is built (SqlSource).
+internal enum MethodType
+{
+    Execute,        // [Execute] — ExecuteNonQuery（int/void/Task…）
+    ExecuteScalar,  // [ExecuteScalar] — ExecuteScalar（任意のスカラー T）
+    Query,          // [Query]/[QueryFirst] — 行を返す（list / 単一 / enumerable）
+    ExecuteReader   // [ExecuteReader] — DbDataReader を返す
+}
+
+// クエリの構築方法（cmd.CommandText をどこから得るか）。MethodType とは直交し、任意に組み合わせられる
+// （例: DirectSql×Execute、DirectSql×Query）。排他は B 群診断 SDA0104/0105/0403/0405 で担保。
+// How the command text is built (where cmd.CommandText comes from). Orthogonal to MethodType and freely combinable
+// (e.g. DirectSql×Execute, DirectSql×Query). Mutual exclusivity is enforced by the B-group diagnostics SDA0104/0105/0403/0405.
+internal enum SqlSource
+{
+    TwoWaySql,     // 既定：.sql ファイルの 2-way SQL（動的分岐あり得る）
+    DirectSql,     // [DirectSql] — string 引数の生 SQL
+    Procedure,     // [Procedure] — ストアド名
+    QueryBuilder   // [Insert]/[Update]/… — {Method}__QueryBuilder が組む
+}
+
 internal sealed record MethodModel(
     string Name,
-    string MethodKind, // "Execute" | "Query" | "ExecuteReader" | "DirectSql"
+    MethodType MethodType,   // 実行種別 / execution kind
+    SqlSource SqlSource,     // クエリ構築方法 / how the command text is built
     Accessibility Accessibility,
     string ReturnTypeFullName,
     ReturnShape ReturnShape,

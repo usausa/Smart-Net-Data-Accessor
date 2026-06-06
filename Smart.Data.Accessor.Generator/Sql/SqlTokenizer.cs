@@ -187,7 +187,7 @@ public sealed class SqlTokenizer
                 current++;
             }
 
-            throw new SqlTokenizerException(SqlTokenizerErrorKind.CommentNotClosed, "Invalid sql. Comment is not closed.");
+            throw new SqlTokenizerException(SqlTokenizerError.CommentNotClosed, "Invalid sql. Comment is not closed.");
         }
         else
         {
@@ -239,7 +239,7 @@ public sealed class SqlTokenizer
 
             if (!closed)
             {
-                throw new SqlTokenizerException(SqlTokenizerErrorKind.QuoteNotClosed, "Invalid sql. Quote is not closed.");
+                throw new SqlTokenizerException(SqlTokenizerError.QuoteNotClosed, "Invalid sql. Quote is not closed.");
             }
 
             AddToken(new Token(TokenType.Block, source[start..current]));

@@ -46,7 +46,7 @@ internal sealed partial class ExampleAccessor
     public partial int DeleteById(long id);
 
     [Query]
-    public partial IReadOnlyList<DataEntity> QueryByKind(DataKind kind);
+    public partial IReadOnlyList<DataEntity> QueryByKind(DataType kind);
 
     [Query]
     public partial IReadOnlyList<DataRecord> QueryAllAsRecord();

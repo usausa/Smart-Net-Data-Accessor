@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Sql;
 
 using System.Diagnostics.CodeAnalysis;
 
-public enum SqlTokenizerErrorKind
+public enum SqlTokenizerError
 {
     Unknown,
     CommentNotClosed,
@@ -13,7 +13,7 @@ public enum SqlTokenizerErrorKind
 [Serializable]
 public sealed class SqlTokenizerException : Exception
 {
-    public SqlTokenizerErrorKind Kind { get; }
+    public SqlTokenizerError Error { get; }
 
     public SqlTokenizerException()
     {
@@ -24,10 +24,10 @@ public sealed class SqlTokenizerException : Exception
     {
     }
 
-    public SqlTokenizerException(SqlTokenizerErrorKind kind, string message)
+    public SqlTokenizerException(SqlTokenizerError error, string message)
         : base(message)
     {
-        Kind = kind;
+        Error = error;
     }
 
     public SqlTokenizerException(string message, Exception innerException)

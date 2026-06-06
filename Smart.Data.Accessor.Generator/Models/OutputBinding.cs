@@ -3,7 +3,7 @@ namespace Smart.Data.Accessor.Generator.Models;
 internal sealed record OutputBinding(
     string ParameterName,
     string HandleName,
-    ParameterDirectionKind Direction,
+    ParameterDirectionType Direction,
     // settable C# location to write the OUT/InputOutput value back to. Null → the out/ref-argument
     // path (EmitOutputWriteback looks up the parameter by ParameterName). Non-null (e.g. "args.Count")
     // for POCO-argument properties; WritebackTypeFullName gives the read type.
