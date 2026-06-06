@@ -2,6 +2,7 @@ namespace Smart.Data.Accessor.Generator.Builders;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 using Smart.Data.Accessor.Generator.Builders.Models;
 using Smart.Data.Accessor.Shared.Builders.Engine;
 

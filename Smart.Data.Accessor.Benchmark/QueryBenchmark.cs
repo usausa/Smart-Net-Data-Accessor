@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Benchmark;
 
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
@@ -53,6 +52,7 @@ public class QueryBenchmark
     [GlobalSetup]
     public void Setup()
     {
+#pragma warning disable CA2000
         mockInt = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id")
@@ -61,7 +61,9 @@ public class QueryBenchmark
             {
                 (long)x
             })));
+#pragma warning restore CA2000
 
+#pragma warning disable CA2000
         mockWide = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
@@ -88,7 +90,9 @@ public class QueryBenchmark
                 $"Tag-{x}",
                 x * 0.25
             })));
+#pragma warning restore CA2000
 
+#pragma warning disable CA2000
         mockEnum = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
@@ -101,8 +105,10 @@ public class QueryBenchmark
                 $"Name-{x}",
                 x % 4
             })));
+#pragma warning restore CA2000
 
         var baseTicks = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+#pragma warning disable CA2000
         mockTicks = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
@@ -113,6 +119,7 @@ public class QueryBenchmark
                 (long)x,
                 baseTicks + (x * TimeSpan.TicksPerSecond)
             })));
+#pragma warning restore CA2000
 
         accessor = new BenchmarkAccessor();
     }

@@ -119,7 +119,7 @@ public sealed class ExecuteTest
     [Fact]
     public async Task ReadAllAsyncReturnsWrappedReaderAndDisposesAsync()
     {
-        using var con = new MockDbConnection();
+        await using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
             new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
             new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large })));

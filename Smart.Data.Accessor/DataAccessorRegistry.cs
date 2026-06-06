@@ -11,7 +11,7 @@ public static class DataAccessorRegistry
     public static void Register<TService>(Func<IServiceProvider, TService> factory)
         where TService : class
     {
-        Factories[typeof(TService)] = sp => factory(sp);
+        Factories[typeof(TService)] = factory;
     }
 
     public static IReadOnlyCollection<Type> RegisteredServiceTypes => Factories.Keys.ToArray();

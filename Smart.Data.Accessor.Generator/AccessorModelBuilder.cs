@@ -61,7 +61,7 @@ internal static class AccessorModelBuilder
         }
 
         AccessorModel? model = null;
-        if (!syntax.Modifiers.Any(m => m.Text == "partial"))
+        if (syntax.Modifiers.All(m => m.Text != "partial"))
         {
             diagnostics.Add(new DiagnosticInfo(Diagnostics.InvalidClass, syntax.Identifier.GetLocation(), classSymbol.Name));
         }
@@ -1426,7 +1426,7 @@ internal static class AccessorModelBuilder
     {
         elementFq = null;
         elementSymbol = null;
-        if ((type is not INamedTypeSymbol named) || !named.IsGenericType)
+        if ((type is not INamedTypeSymbol { IsGenericType: true } named))
         {
             return false;
         }
@@ -1632,7 +1632,7 @@ internal static class AccessorModelBuilder
     // class/record/struct — not a BCL scalar, enum, array, or connection/transaction/cancellation token.
     private static bool IsPocoParameter(ITypeSymbol type)
     {
-        if ((type is not INamedTypeSymbol nt) || (nt.TypeKind is not (TypeKind.Class or TypeKind.Struct)))
+        if (type is not INamedTypeSymbol { TypeKind: (TypeKind.Class or TypeKind.Struct) } nt)
         {
             return false;
         }

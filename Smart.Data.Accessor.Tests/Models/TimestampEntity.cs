@@ -1,8 +1,6 @@
 #pragma warning disable CA1812
 namespace Smart.Data.Accessor.Tests.Models;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Converters;
 

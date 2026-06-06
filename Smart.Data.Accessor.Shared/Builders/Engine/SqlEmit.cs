@@ -12,6 +12,7 @@ using SourceGenerateHelper;
 // assembly itself lives per provider so providers can diverge.
 internal static class SqlEmit
 {
+    // ReSharper disable once MemberCanBePrivate.Global
     public const string QueryBuilderMethodSuffix = "__QueryBuilder";
     public const char Marker = '@';
 

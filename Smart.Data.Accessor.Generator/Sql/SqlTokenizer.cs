@@ -33,6 +33,7 @@ public sealed class SqlTokenizer
         return Normalize(tokens);
     }
 
+    // ReSharper disable once MemberCanBePrivate.Global
     public static IReadOnlyList<Token> Normalize(IReadOnlyList<Token> source)
     {
         // Trim start blank

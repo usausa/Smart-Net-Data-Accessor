@@ -13,7 +13,7 @@ public sealed class UnsignedEnumTest
     [Fact]
     public void UIntEnumColumnReadsViaSignedCast()
     {
-        var allAsInt = unchecked((int)4000000000u);   // -294967296
+        const int allAsInt = unchecked((int)4000000000u);   // -294967296
 
         var columns = new[]
         {

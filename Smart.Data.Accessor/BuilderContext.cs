@@ -11,5 +11,6 @@ public readonly ref struct BuilderContext
         this.command = command;
     }
 
+    // ReSharper disable once ConvertToAutoProperty
     public DbCommand Command => command;
 }

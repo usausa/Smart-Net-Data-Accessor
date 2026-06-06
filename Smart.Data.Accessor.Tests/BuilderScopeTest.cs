@@ -21,11 +21,11 @@ public sealed class BuilderScopeTest
             cmd.Executing = c =>
             {
                 // Columns are emitted in property declaration order: Id, Name, CreatedAt.
-                var nameParam = (MockDbParameter)c.Parameters[1]!;
+                var nameParam = (MockDbParameter)c.Parameters[1];
                 Assert.Equal("@Name", nameParam.ParameterName);
                 Assert.Equal(DbType.AnsiString, nameParam.DbType);   // F3: property-scope [DbType]
 
-                var createdParam = (MockDbParameter)c.Parameters[2]!;
+                var createdParam = (MockDbParameter)c.Parameters[2];
                 Assert.Equal("@CreatedAt", createdParam.ParameterName);
                 Assert.Equal(created.Ticks, (long)createdParam.Value!);   // class-scope TicksConverter.ToDb
             };

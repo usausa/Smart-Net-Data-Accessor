@@ -53,7 +53,7 @@ public sealed class QueryTest
         var entity = accessor.QueryFirst(con);
 
         Assert.NotNull(entity);
-        Assert.Equal(7, entity!.Id);
+        Assert.Equal(7, entity.Id);
         Assert.Equal("Carol", entity.Name);
     }
 

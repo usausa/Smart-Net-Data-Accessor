@@ -8,10 +8,10 @@ internal static class MockData
 {
     private static readonly MockColumn[] DataColumns =
     [
-        new MockColumn(typeof(long), "Id"),
-        new MockColumn(typeof(string), "Name"),
-        new MockColumn(typeof(int), "Type"),
-        new MockColumn(typeof(int), "Kind")
+        new(typeof(long), "Id"),
+        new(typeof(string), "Name"),
+        new(typeof(int), "Type"),
+        new(typeof(int), "Kind")
     ];
 
     public static MockDataReader DataReader(params DataEntity[] rows) =>

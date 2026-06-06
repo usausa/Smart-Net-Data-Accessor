@@ -1,9 +1,11 @@
 namespace Smart.Data.Accessor.Generator.Builders;
 
 using System.Text;
+
 using Smart.Data.Accessor.Generator.Builders.Models;
 using Smart.Data.Accessor.Shared.Builders.Engine;
 using Smart.Data.Accessor.Shared.Builders.Models;
+
 using SourceGenerateHelper;
 
 // 標準（既定）Builder の emit：種別毎の SQL 組み立て。共有プリミティブは SqlEmit、識別子クォート・ページングは本クラスの Quote/AppendPaging。

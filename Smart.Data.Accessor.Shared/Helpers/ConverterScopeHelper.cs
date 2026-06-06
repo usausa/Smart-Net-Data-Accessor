@@ -10,9 +10,13 @@ using Microsoft.CodeAnalysis;
 // Compiled `internal` into each generator assembly (no DLL).
 internal static class ConverterScopeHelper
 {
+    // ReSharper disable InconsistentNaming
+    // ReSharper disable MemberCanBePrivate.Global
     public const string TypeHandlerGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute<TConverter>";
     public const string TypeHandlerNonGenericFq = "Smart.Data.Accessor.Attributes.TypeHandlerAttribute";
     public const string IValueConverterFq = "Smart.Data.Accessor.Converters.IValueConverter<TDb, TClr>";
+    // ReSharper restore MemberCanBePrivate.Global
+    // ReSharper restore InconsistentNaming
 
     // The TConverter of a [TypeHandler]-family attribute (null when the type could not be resolved);
     // false when the attribute is not a [TypeHandler] family member.

@@ -24,8 +24,10 @@ internal sealed class DataEntity
     public DataType Kind { get; set; }
 }
 
+// ReSharper disable NotAccessedPositionalProperty.Global
 internal sealed record DataRecord(
     long Id,
     string Name,
     [property: DbType<DbType>(DbType.Int32)] int Type,
     DataType Kind);
+// ReSharper restore NotAccessedPositionalProperty.Global

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System.Diagnostics.CodeAnalysis;
-
 using BenchmarkDotNet.Running;
 
 public static class Program

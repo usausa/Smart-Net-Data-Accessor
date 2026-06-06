@@ -43,8 +43,8 @@ internal static class Program
         var secondary = app.Services.GetRequiredService<SecondaryAccessor>();
 
         app.MapGet("/", static () => "Example.WebApplication2 (Smart.Resolver, multi-source). GET /primary or /secondary.");
-        app.MapGet("/primary", () => primary.QueryAll());
-        app.MapGet("/secondary", () => secondary.QueryAll());
+        app.MapGet("/primary", primary.QueryAll);
+        app.MapGet("/secondary", secondary.QueryAll);
 
         app.Run();
     }

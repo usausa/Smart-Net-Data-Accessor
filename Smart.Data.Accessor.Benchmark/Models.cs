@@ -1,7 +1,6 @@
 #pragma warning disable CA1812
 namespace Smart.Data.Accessor.Benchmark;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using Smart.Data.Accessor.Attributes;

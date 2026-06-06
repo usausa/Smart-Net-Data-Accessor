@@ -59,7 +59,7 @@ public sealed class ScopedConverterTest
             cmd.Executing = c =>
             {
                 // VALUES (id, createdAt): createdAt is the second bound parameter, written via ToDb.
-                var p = (MockDbParameter)c.Parameters[1]!;
+                var p = (MockDbParameter)c.Parameters[1];
                 Assert.Equal(Expected.Ticks, (long)p.Value!);
             };
             cmd.SetupResult(1);
@@ -85,7 +85,7 @@ public sealed class ScopedConverterTest
         {
             cmd.Executing = c =>
             {
-                var p = (MockDbParameter)c.Parameters[0]!;
+                var p = (MockDbParameter)c.Parameters[0];
                 Assert.Equal(DbType.AnsiString, p.DbType);
             };
             cmd.SetupResult(1);

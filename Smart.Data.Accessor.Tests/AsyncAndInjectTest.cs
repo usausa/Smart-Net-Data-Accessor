@@ -14,7 +14,7 @@ public sealed class AsyncAndInjectTest
     [Fact]
     public async Task QueryAllAsyncMapsRows()
     {
-        using var con = new MockDbConnection();
+        await using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
             new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
             new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large })));
@@ -29,7 +29,7 @@ public sealed class AsyncAndInjectTest
     [Fact]
     public async Task InsertAsyncReturnsAffected()
     {
-        using var con = new MockDbConnection();
+        await using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(1));
 
         var accessor = new AsyncAccessor();
@@ -65,7 +65,7 @@ public sealed class AsyncAndInjectTest
             cmd.Executing = static c =>
             {
                 Assert.Equal("INSERT INTO Data (Name) VALUES (@p0)", c.CommandText);
-                var p = (MockDbParameter)c.Parameters[0]!;
+                var p = (MockDbParameter)c.Parameters[0];
                 Assert.Equal(DbType.AnsiString, p.DbType);
             };
             cmd.SetupResult(1);

@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Benchmark;
 
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using BenchmarkDotNet.Attributes;

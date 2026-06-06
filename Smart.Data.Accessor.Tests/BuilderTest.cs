@@ -108,7 +108,7 @@ public sealed class BuilderTest
         var entity = accessor.Find(con, 9);
 
         Assert.NotNull(entity);
-        Assert.Equal(9, entity!.Id);
+        Assert.Equal(9, entity.Id);
     }
 
     [Fact]
