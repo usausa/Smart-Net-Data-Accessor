@@ -1,12 +1,12 @@
-namespace Smart.Data.Accessor.Builders.Generator.Models;
+namespace Smart.Data.Accessor.Generator.Builders.Models;
 
 using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 
 using SourceGenerateHelper;
 
-// SELECT COUNT(*) FROM <table>。
-// SELECT COUNT(*) FROM <table>.
-internal sealed record CountModel(
+// TRUNCATE TABLE <table>。
+// TRUNCATE TABLE <table>.
+internal sealed record TruncateModel(
     string MethodName,
     string TableName,
     EquatableArray<BuilderValueParam> ValueParams)

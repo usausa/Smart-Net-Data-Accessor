@@ -14,10 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
-    <ProjectReference Include="..\Smart.Data.Accessor.Builders\Smart.Data.Accessor.Builders.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Smart.Data.Accessor.Builders.Generator\Smart.Data.Accessor.Builders.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!-- spec §3.2 / Sprint F #41: pull `**\$(SmartDataAccessor_SqlFolder)\*.sql`

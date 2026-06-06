@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Smart.Data.Accessor.Builders\Smart.Data.Accessor.Builders.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.SqlServer.Generator\Smart.Data.Accessor.Builders.SqlServer.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 

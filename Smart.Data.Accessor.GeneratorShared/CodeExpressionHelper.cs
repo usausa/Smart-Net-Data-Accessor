@@ -3,8 +3,8 @@ namespace Smart.Data.Accessor.GeneratorShared;
 using System.Globalization;
 using System.Text;
 
-// Gen-time expression builders shared (as linked source) by the core (Smart.Data.Accessor.Generator)
-// and Builder (Smart.Data.Accessor.Builders.Generator) generators. These are pure functions whose
+// Gen-time expression builders shared (as linked source) by the core generator (Smart.Data.Accessor.Generator,
+// which also hosts the standard QueryBuilder generator) and the provider Builder generators. These are pure functions whose
 // outputs are symbol-free strings; the file is compiled `internal` into each generator assembly via
 // <Compile Link> (no DLL dependency; this is shared source, not a DLL). Only emit-time string builders
 // and Roslyn-enum→string helpers live here; equatable Models, transforms and diagnostic descriptors

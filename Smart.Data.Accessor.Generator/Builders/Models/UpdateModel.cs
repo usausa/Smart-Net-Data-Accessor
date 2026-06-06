@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Builders.Generator.Models;
+namespace Smart.Data.Accessor.Generator.Builders.Models;
 
 using Smart.Data.Accessor.Builders.GeneratorShared.Models;
 

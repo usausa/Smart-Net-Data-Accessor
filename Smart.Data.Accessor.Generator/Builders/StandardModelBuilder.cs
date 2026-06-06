@@ -1,8 +1,8 @@
-namespace Smart.Data.Accessor.Builders.Generator;
+namespace Smart.Data.Accessor.Generator.Builders;
 
-using Smart.Data.Accessor.Builders.Generator.Models;
 using Smart.Data.Accessor.Builders.GeneratorShared.Engine;
 using Smart.Data.Accessor.Builders.GeneratorShared.Models;
+using Smart.Data.Accessor.Generator.Builders.Models;
 
 using SourceGenerateHelper;
 

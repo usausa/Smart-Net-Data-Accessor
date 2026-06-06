@@ -1,13 +1,11 @@
 <Solution>
   <Folder Name="/Library/Builder/">
-    <Project Path="Smart.Data.Accessor.Builders.Generator/Smart.Data.Accessor.Builders.Generator.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.MySql.Generator/Smart.Data.Accessor.Builders.MySql.Generator.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.MySql/Smart.Data.Accessor.Builders.MySql.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.Postgres.Generator/Smart.Data.Accessor.Builders.Postgres.Generator.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.Postgres/Smart.Data.Accessor.Builders.Postgres.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.SqlServer.Generator/Smart.Data.Accessor.Builders.SqlServer.Generator.csproj" />
     <Project Path="Smart.Data.Accessor.Builders.SqlServer/Smart.Data.Accessor.Builders.SqlServer.csproj" />
-    <Project Path="Smart.Data.Accessor.Builders/Smart.Data.Accessor.Builders.csproj" />
   </Folder>
   <Folder Name="/Library/Core/">
     <Project Path="Smart.Data.Accessor.Generator/Smart.Data.Accessor.Generator.csproj" />

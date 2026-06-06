@@ -8,10 +8,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-using Smart.Data.Accessor.Builders.Generator;
 using Smart.Data.Accessor.Builders.MySql.Generator;
 using Smart.Data.Accessor.Builders.Postgres.Generator;
 using Smart.Data.Accessor.Builders.SqlServer.Generator;
+using Smart.Data.Accessor.Generator.Builders;
 
 // Runs the two Smart.Data.Accessor source generators (core DataAccessorGenerator +
 // Builders QueryBuilderGenerator) together in-memory and exposes the reported diagnostics
