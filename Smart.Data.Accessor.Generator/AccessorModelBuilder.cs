@@ -422,8 +422,8 @@ internal static class AccessorModelBuilder
                 // SDA0203: the first parameter (after conn/tx/CT) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(p =>
                     (p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) &&
-                    !p.Type.IsDbConnection() &&
-                    !p.Type.IsDbTransaction());
+                    !p.Type.InheritsFrom(WellKnownTypeNames.DbConnection) &&
+                    !p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction));
                 if ((firstUsable is null) ||
                     (firstUsable.Type.SpecialType != SpecialType.System_String))
                 {
@@ -572,9 +572,9 @@ internal static class AccessorModelBuilder
                     RefKind.Ref => ParameterRefKind.Ref,
                     _ => ParameterRefKind.None
                 };
-                var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(p.Type);
-                var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
-                var isNullableEnumParam = enumInfo?.IsNullable ?? false;
+                var enumUnderlying = p.Type.GetEnumUnderlyingType();
+                var enumUnderlyingFq = enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var isNullableEnumParam = (enumUnderlying is not null) && (p.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T });
 
                 // このパラメータの [TypeHandler<>] を member → method → class → profile のスコープ鎖で解決する。
                 // 解決できれば束縛値は TConverter.ToDb(...) 経由で書き込む。構造パラメータは converter を持たない。
@@ -585,7 +585,7 @@ internal static class AccessorModelBuilder
                 string? converterDbFqn = null;
                 string? converterClrFqn = null;
                 if ((p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) &&
-                    !p.Type.IsDbConnection() && !p.Type.IsDbTransaction())
+                    !p.Type.InheritsFrom(WellKnownTypeNames.DbConnection) && !p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction))
                 {
                     var paramScope = new ConverterResolver.Scope(member, classSymbol, profileSymbol);
                     if (ConverterResolver.Resolve(diagnostics, member, p.Name, p.GetAttributes(), p.Type, paramScope) is { } paramConv)
@@ -650,8 +650,8 @@ internal static class AccessorModelBuilder
                     p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     p.NullableAnnotation == NullableAnnotation.Annotated,
                     p.Type.ToDisplayString() == WellKnownTypeNames.CancellationToken,
-                    p.Type.IsDbConnection(),
-                    p.Type.IsDbTransaction(),
+                    p.Type.InheritsFrom(WellKnownTypeNames.DbConnection),
+                    p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction),
                     direction,
                     refKind,
                     dbTypeExpr,
@@ -1640,7 +1640,7 @@ internal static class AccessorModelBuilder
         {
             return false;   // string / decimal / DateTime / primitives / object
         }
-        if (nt.IsDbConnection() || nt.IsDbTransaction() || (nt.ToDisplayString() == WellKnownTypeNames.CancellationToken))
+        if (nt.InheritsFrom(WellKnownTypeNames.DbConnection) || nt.InheritsFrom(WellKnownTypeNames.DbTransaction) || (nt.ToDisplayString() == WellKnownTypeNames.CancellationToken))
         {
             return false;
         }
@@ -1779,9 +1779,9 @@ internal static class AccessorModelBuilder
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
 
-            var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(prop.Type);
-            var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
-            var isNullableEnumProp = enumInfo?.IsNullable ?? false;
+            var enumUnderlying = prop.Type.GetEnumUnderlyingType();
+            var enumUnderlyingFq = enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var isNullableEnumProp = (enumUnderlying is not null) && (prop.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T });
             list.Add(new PocoBindProperty(
                 prop.Name,
                 paramName ?? prop.Name,

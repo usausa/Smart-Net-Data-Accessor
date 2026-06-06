@@ -51,7 +51,7 @@ internal static class MethodResolver
         // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。各々の束縛メタデータを解決する。
         // Value parameters = method parameters excluding DbConnection / DbTransaction / CancellationToken; resolve each one's binding metadata.
         var valueParamSymbols = method.Parameters
-            .Where(p => (p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !p.Type.IsDbConnection() && !p.Type.IsDbTransaction())
+            .Where(p => (p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !p.Type.InheritsFrom(WellKnownTypeNames.DbConnection) && !p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction))
             .ToList();
         var valueParams = valueParamSymbols.Select(p => ResolveValueParam(p, typeMaps)).ToArray();
 
@@ -89,7 +89,7 @@ internal static class MethodResolver
     private static BuilderValueParam ResolveValueParam(IParameterSymbol p, Dictionary<string, TypeMapInfo> typeMaps)
     {
         var typeFq = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(p.Type);
+        var enumUnderlying = p.Type.GetEnumUnderlyingType();
 
         // パラメータ単位の明示 [DbType] が最優先。無ければ class/profile の [TypeMap] 既定を適用する（コアと同じ共有ロジック）。
         // An explicit parameter-scope [DbType] wins; otherwise the class/profile [TypeMap] default applies (the same shared logic as the core generator).
@@ -107,8 +107,8 @@ internal static class MethodResolver
             ColumnName(p),
             HasAttribute(p, LimitAttributeName),
             HasAttribute(p, OffsetAttributeName),
-            enumInfo?.UnderlyingFullName,
-            enumInfo?.IsNullable ?? false,
+            enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            (enumUnderlying is not null) && (p.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
             dbTypeExpr,
             size);
     }
@@ -166,7 +166,7 @@ internal static class MethodResolver
             size = info.Size;
         }
 
-        var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(prop.Type);
+        var enumUnderlying = prop.Type.GetEnumUnderlyingType();
 
         return new BuilderColumn(
             c.Column,
@@ -174,8 +174,8 @@ internal static class MethodResolver
             c.IsKey,
             c.IsDatabaseManaged,
             converter,
-            enumInfo?.UnderlyingFullName,
-            enumInfo?.IsNullable ?? false,
+            enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            (enumUnderlying is not null) && (prop.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
             dbTypeExpr,
             size);
     }
