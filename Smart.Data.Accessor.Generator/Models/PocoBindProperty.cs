@@ -7,7 +7,7 @@ internal sealed record PocoBindProperty(
     string PropertyName,
     string ParamName,                  // DB parameter name (BindMarker is prepended at emit): [Name] or PropertyName
     string TypeFullName,
-    ParameterDirectionKindLegacy Direction,
+    ParameterDirectionKind Direction,
     string? DbTypeExpr,
     int? Size,
     string? EnumUnderlyingFullName,

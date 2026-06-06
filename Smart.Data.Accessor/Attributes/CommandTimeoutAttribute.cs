@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-// Alias for TimeoutAttribute, kept for legacy parity.
+// Alias for TimeoutAttribute, kept for parity with the previous version.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class CommandTimeoutAttribute : Attribute

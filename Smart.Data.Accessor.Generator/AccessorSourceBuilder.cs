@@ -82,12 +82,12 @@ internal static class AccessorSourceBuilder
 
         switch (pp.Direction)
         {
-            case ParameterDirectionKindLegacy.Output:
+            case ParameterDirectionKind.Output:
                 builder.Indent().Append(pp.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                     .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
-            case ParameterDirectionKindLegacy.InputOutput:
+            case ParameterDirectionKind.InputOutput:
                 builder.Indent().Append(pp.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
                     .Append(paramName).Append("\", ").Append(valueExpr).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
@@ -252,13 +252,13 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
-    private static bool IsAsyncShape(ReturnShapeLegacy s) =>
-        s is ReturnShapeLegacy.Task or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.TaskList
-          or ReturnShapeLegacy.ValueTask or ReturnShapeLegacy.ValueTaskScalar or ReturnShapeLegacy.AsyncEnumerable
-          or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+    private static bool IsAsyncShape(ReturnShape s) =>
+        s is ReturnShape.Task or ReturnShape.TaskScalar or ReturnShape.TaskList
+          or ReturnShape.ValueTask or ReturnShape.ValueTaskScalar or ReturnShape.AsyncEnumerable
+          or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
-    private static bool IsReaderShape(ReturnShapeLegacy s) =>
-        s is ReturnShapeLegacy.Reader or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+    private static bool IsReaderShape(ReturnShape s) =>
+        s is ReturnShape.Reader or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
     // content（'\n' 区切り・先頭インデント無しを前提）の各行を SourceBuilder の現在のインデントで出力する。空行はインデント無しの NewLine()。
     // Emit each line of `content` (assumed '\n'-separated with no leading indentation) at the SourceBuilder's current
@@ -307,14 +307,14 @@ internal static class AccessorSourceBuilder
         {
             var modifier = p.RefKind switch
             {
-                RefKindLegacy.Out => "out ",
-                RefKindLegacy.Ref => "ref ",
+                ParameterRefKind.Out => "out ",
+                ParameterRefKind.Ref => "ref ",
                 _ => string.Empty
             };
             return $"{modifier}{p.TypeFullName} {p.Name}";
         }));
-        var isAsync = IsAsyncShape(m.ReturnShapeLegacy);
-        var isReader = IsReaderShape(m.ReturnShapeLegacy);
+        var isAsync = IsAsyncShape(m.ReturnShape);
+        var isReader = IsReaderShape(m.ReturnShape);
         var asyncKw = isAsync ? "async " : string.Empty;
         builder.Indent()
             .Append(m.Accessibility.ToText()).Append(" ").Append(asyncKw).Append("partial ").Append(m.ReturnTypeFullName).Append(" ")
@@ -330,14 +330,14 @@ internal static class AccessorSourceBuilder
         // For reader shapes (ExecuteReader), ownership of cmd and (Pattern B) the connection transfers to WrappedReader,
         // so we avoid `using` and dispose manually only if something throws.
         var cmdKeyword = isReader ? "var" : "using var";
-        var ownsConnectionForReader = isReader && (m.ConnectionPattern == ConnectionPatternLegacy.None);
+        var ownsConnectionForReader = isReader && (m.ConnectionPattern == ConnectionPattern.None);
 
         // Pattern A（引数の conn/tx）／Pattern B（注入プロバイダ）の接続取得。閉じていれば開く。
         // Pattern A (conn/tx argument) / Pattern B (injected provider) connection acquisition; opens the connection if closed.
         string commandSource;
         switch (m.ConnectionPattern)
         {
-            case ConnectionPatternLegacy.ConnectionArg:
+            case ConnectionPattern.ConnectionArg:
             {
                 var connName = m.ConnectionParameterName!;
                 if (isReader)
@@ -364,7 +364,7 @@ internal static class AccessorSourceBuilder
                 commandSource = connName;
                 break;
             }
-            case ConnectionPatternLegacy.TransactionArg:
+            case ConnectionPattern.TransactionArg:
             {
                 var txName = m.TransactionParameterName!;
                 var connExpr = $"{txName}.Connection!";
@@ -577,14 +577,14 @@ internal static class AccessorSourceBuilder
 
             switch (p.Direction)
             {
-                case ParameterDirectionKindLegacy.Output:
+                case ParameterDirectionKind.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKindLegacy.InputOutput:
+                case ParameterDirectionKind.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
@@ -592,7 +592,7 @@ internal static class AccessorSourceBuilder
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKindLegacy.ReturnValue:
+                case ParameterDirectionKind.ReturnValue:
                     // SDA0210 は BuildAccessorModel で報告済みなので、ここでは出力しない。
                     // SDA0210 is already reported in BuildAccessorModel; skip emission here.
                     break;
@@ -678,14 +678,14 @@ internal static class AccessorSourceBuilder
 
             switch (p.Direction)
             {
-                case ParameterDirectionKindLegacy.Output:
+                case ParameterDirectionKind.Output:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKindLegacy.InputOutput:
+                case ParameterDirectionKind.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
@@ -693,7 +693,7 @@ internal static class AccessorSourceBuilder
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
                     break;
-                case ParameterDirectionKindLegacy.ReturnValue:
+                case ParameterDirectionKind.ReturnValue:
                     builder.Indent()
                         .Append("__op_").Append(p.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
@@ -760,7 +760,7 @@ internal static class AccessorSourceBuilder
             }
 
             var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
-            if ((param is null) || (param.RefKind == RefKindLegacy.None))
+            if ((param is null) || (param.RefKind == ParameterRefKind.None))
             {
                 continue;
             }
@@ -778,8 +778,8 @@ internal static class AccessorSourceBuilder
     // lets WrappedReader dispose the connection too. Sync and async are emitted separately.
     private static void EmitReaderInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
     {
-        var ownsConnection = m.ConnectionPattern == ConnectionPatternLegacy.None;
-        var isAsync = m.ReturnShapeLegacy is ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+        var ownsConnection = m.ConnectionPattern == ConnectionPattern.None;
+        var isAsync = m.ReturnShape is ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
         var behaviorArg = ownsConnection
             ? string.Empty
             : "__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default";
@@ -812,7 +812,7 @@ internal static class AccessorSourceBuilder
     {
         var hasOutputs = m.OutputBindings.Count > 0;
 
-        if ((m.MethodKind == "ExecuteReader") || IsReaderShape(m.ReturnShapeLegacy))
+        if ((m.MethodKind == "ExecuteReader") || IsReaderShape(m.ReturnShape))
         {
             EmitReaderInvocation(builder, m, ctExpr);
             return;
@@ -820,13 +820,13 @@ internal static class AccessorSourceBuilder
 
         if ((m.MethodKind == "Execute") || (m.MethodKind == "DirectSql"))
         {
-            switch (m.ReturnShapeLegacy)
+            switch (m.ReturnShape)
             {
-                case ReturnShapeLegacy.Void:
+                case ReturnShape.Void:
                     builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
-                case ReturnShapeLegacy.Scalar:
+                case ReturnShape.Scalar:
                     if (m.MapsProcedureReturnValue)
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
@@ -864,12 +864,12 @@ internal static class AccessorSourceBuilder
                         }
                     }
                     break;
-                case ReturnShapeLegacy.Task:
+                case ReturnShape.Task:
                     builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
-                case ReturnShapeLegacy.TaskScalar:
-                case ReturnShapeLegacy.ValueTaskScalar:
+                case ReturnShape.TaskScalar:
+                case ReturnShape.ValueTaskScalar:
                     if (m.MapsProcedureReturnValue)
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
@@ -907,7 +907,7 @@ internal static class AccessorSourceBuilder
                         }
                     }
                     break;
-                case ReturnShapeLegacy.ValueTask:
+                case ReturnShape.ValueTask:
                     builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, m);
                     break;
@@ -925,9 +925,9 @@ internal static class AccessorSourceBuilder
         // per-row delegate dispatch.
         var ordStruct = OrdinalStructName(m);
         var entityBody = BuildEntityCreationBody(m, "__reader", "__o");
-        switch (m.ReturnShapeLegacy)
+        switch (m.ReturnShape)
         {
-            case ReturnShapeLegacy.List:
+            case ReturnShape.List:
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(m.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
@@ -941,7 +941,7 @@ internal static class AccessorSourceBuilder
                 builder.EndScope();
                 builder.Indent().Append("return __list;").NewLine();
                 break;
-            case ReturnShapeLegacy.TaskList:
+            case ReturnShape.TaskList:
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(m.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
@@ -955,7 +955,7 @@ internal static class AccessorSourceBuilder
                 builder.EndScope();
                 builder.Indent().Append("return __list;").NewLine();
                 break;
-            case ReturnShapeLegacy.IteratorEnumerable:
+            case ReturnShape.IteratorEnumerable:
                 // 行毎に yield return を出す（バッファリングしない）。OrdinalCache は最初の行が来た後に 1 回だけ取得する。
                 // Emit a per-row `yield return` (no buffered list); OrdinalCache is captured once after the first row arrives.
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
@@ -969,7 +969,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("while (__reader.Read());").NewLine();
                 builder.EndScope();
                 break;
-            case ReturnShapeLegacy.AsyncEnumerable:
+            case ReturnShape.AsyncEnumerable:
                 // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要（無い場合 SDA0305 で警告）。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
                 // [EnumeratorCancellation] (SDA0305 warns when missing).
@@ -984,7 +984,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("while (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false));").NewLine();
                 builder.EndScope();
                 break;
-            case ReturnShapeLegacy.Scalar:
+            case ReturnShape.Scalar:
                 // QueryFirst スタイル：マップした単一要素を返す。リーダーが空なら default!。
                 // QueryFirst-style: return the single mapped item, or default! when the reader is empty.
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
@@ -995,8 +995,8 @@ internal static class AccessorSourceBuilder
                 builder.EndScope();
                 builder.Indent().Append("return default!;").NewLine();
                 break;
-            case ReturnShapeLegacy.TaskScalar:
-            case ReturnShapeLegacy.ValueTaskScalar:
+            case ReturnShape.TaskScalar:
+            case ReturnShape.ValueTaskScalar:
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();

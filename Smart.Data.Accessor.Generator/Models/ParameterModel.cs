@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;
 
-internal enum ParameterDirectionKindLegacy
+internal enum ParameterDirectionKind
 {
     Input,
     Output,
@@ -10,7 +10,7 @@ internal enum ParameterDirectionKindLegacy
     ReturnValue
 }
 
-internal enum RefKindLegacy
+internal enum ParameterRefKind
 {
     None,
     Out,
@@ -24,8 +24,8 @@ internal sealed record ParameterModel(
     bool IsCancellationToken,
     bool IsDbConnection,
     bool IsDbTransaction,
-    ParameterDirectionKindLegacy Direction,
-    RefKindLegacy RefKind,
+    ParameterDirectionKind Direction,
+    ParameterRefKind RefKind,
     string? DbTypeExpr,     // e.g. "global::System.Data.DbType.AnsiString"
     int? Size,
     string? EnumUnderlyingFullName,    // FQN of underlying primitive when parameter type is enum (or Nullable<enum>); null otherwise

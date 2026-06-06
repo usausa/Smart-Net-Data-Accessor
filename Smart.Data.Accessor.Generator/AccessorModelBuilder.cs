@@ -467,7 +467,7 @@ internal static class AccessorModelBuilder
             {
                 string? dbTypeExpr = null;
                 int? size = null;
-                var direction = ParameterDirectionKindLegacy.Input;
+                var direction = ParameterDirectionKind.Input;
                 string? providerParamTypeFqn = null;
                 string? providerPropertyName = null;
                 string? providerValueExpr = null;
@@ -534,10 +534,10 @@ internal static class AccessorModelBuilder
                     {
                         direction = (ParameterDirection)dirRaw switch
                         {
-                            ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
-                            ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
-                            ParameterDirection.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
-                            _ => ParameterDirectionKindLegacy.Input
+                            ParameterDirection.Output => ParameterDirectionKind.Output,
+                            ParameterDirection.InputOutput => ParameterDirectionKind.InputOutput,
+                            ParameterDirection.ReturnValue => ParameterDirectionKind.ReturnValue,
+                            _ => ParameterDirectionKind.Input
                         };
                     }
                 }
@@ -555,16 +555,16 @@ internal static class AccessorModelBuilder
                 // OUT / InputOutput parameters need a concrete DbType (otherwise sql_variant).
                 // Infer it from the CLR type when no explicit [DbType] / provider DbType is present.
                 if ((dbTypeExpr is null) && (providerParamTypeFqn is null) &&
-                    (direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput))
+                    (direction is ParameterDirectionKind.Output or ParameterDirectionKind.InputOutput))
                 {
                     dbTypeExpr = InferDbTypeExpr(p.Type);
                 }
 
                 var refKind = p.RefKind switch
                 {
-                    RefKind.Out => RefKindLegacy.Out,
-                    RefKind.Ref => RefKindLegacy.Ref,
-                    _ => RefKindLegacy.None
+                    RefKind.Out => ParameterRefKind.Out,
+                    RefKind.Ref => ParameterRefKind.Ref,
+                    _ => ParameterRefKind.None
                 };
                 var enumInfo = TypeAnalysisHelper.ResolveEnumUnderlying(p.Type);
                 var enumUnderlyingFq = enumInfo?.UnderlyingFullName;
@@ -667,18 +667,18 @@ internal static class AccessorModelBuilder
             // Pattern A/B detection: scan for DbConnection / DbTransaction parameters.
             var connectionParam = parameters.FirstOrDefault(p => p.IsDbConnection);
             var transactionParam = parameters.FirstOrDefault(p => p.IsDbTransaction);
-            ConnectionPatternLegacy connectionPattern;
+            ConnectionPattern connectionPattern;
             if (transactionParam is not null)
             {
-                connectionPattern = ConnectionPatternLegacy.TransactionArg;
+                connectionPattern = ConnectionPattern.TransactionArg;
             }
             else if (connectionParam is not null)
             {
-                connectionPattern = ConnectionPatternLegacy.ConnectionArg;
+                connectionPattern = ConnectionPattern.ConnectionArg;
             }
             else
             {
-                connectionPattern = ConnectionPatternLegacy.None;
+                connectionPattern = ConnectionPattern.None;
             }
 
             // メソッドレベルの [CommandTimeout(N)] / [Timeout(N)]。
@@ -737,7 +737,7 @@ internal static class AccessorModelBuilder
 
             // SDA0305: IAsyncEnumerable<T> は CT パラメータに [EnumeratorCancellation] を要求する。
             // SDA0305: IAsyncEnumerable<T> requires [EnumeratorCancellation] on its CT parameter.
-            if (shape == ReturnShapeLegacy.AsyncEnumerable)
+            if (shape == ReturnShape.AsyncEnumerable)
             {
                 var ctParam = member.Parameters.FirstOrDefault(p => p.Type.ToDisplayString() == WellKnownTypeNames.CancellationToken);
                 var hasEnumeratorCancellation = (ctParam is not null) && ctParam.GetAttributes()
@@ -820,7 +820,7 @@ internal static class AccessorModelBuilder
                 {
                     continue;
                 }
-                if (pm.Direction == ParameterDirectionKindLegacy.Input)
+                if (pm.Direction == ParameterDirectionKind.Input)
                 {
                     continue;
                 }
@@ -833,7 +833,7 @@ internal static class AccessorModelBuilder
                         pm.Name));
                     continue;
                 }
-                if (pm.Direction == ParameterDirectionKindLegacy.ReturnValue)
+                if (pm.Direction == ParameterDirectionKind.ReturnValue)
                 {
                     // [Direction(ReturnValue)] は廃止。ストアドの RETURN 値はメソッドのスカラー戻り値へマップする。
                     // [Direction(ReturnValue)] is retired; the stored-procedure RETURN value maps to the method's scalar return value instead.
@@ -846,16 +846,16 @@ internal static class AccessorModelBuilder
                 }
                 var refKindOk = pm.Direction switch
                 {
-                    ParameterDirectionKindLegacy.Output => pm.RefKind is RefKindLegacy.Out or RefKindLegacy.Ref,
-                    ParameterDirectionKindLegacy.InputOutput => pm.RefKind == RefKindLegacy.Ref,
+                    ParameterDirectionKind.Output => pm.RefKind is ParameterRefKind.Out or ParameterRefKind.Ref,
+                    ParameterDirectionKind.InputOutput => pm.RefKind == ParameterRefKind.Ref,
                     _ => true
                 };
                 if (!refKindOk)
                 {
                     var refKindName = pm.RefKind switch
                     {
-                        RefKindLegacy.Out => "out",
-                        RefKindLegacy.Ref => "ref",
+                        ParameterRefKind.Out => "out",
+                        ParameterRefKind.Ref => "ref",
                         _ => "(none)"
                     };
                     diagnostics.Add(new DiagnosticInfo(
@@ -890,7 +890,7 @@ internal static class AccessorModelBuilder
                     {
                         continue;
                     }
-                    if ((pm.Name == directSqlParameterName) && (pm.Direction != ParameterDirectionKindLegacy.Input))
+                    if ((pm.Name == directSqlParameterName) && (pm.Direction != ParameterDirectionKind.Input))
                     {
                         diagnostics.Add(new DiagnosticInfo(
                             Diagnostics.DirectSqlCommandTextDirection,
@@ -907,7 +907,7 @@ internal static class AccessorModelBuilder
                 outputBindings = parameters
                     .Where(p => (p.PocoProperties is null) && !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
                     .Where(p => p.Name != directSqlParameterName)
-                    .Where(p => p.Direction is ParameterDirectionKindLegacy.Output or ParameterDirectionKindLegacy.InputOutput)
+                    .Where(p => p.Direction is ParameterDirectionKind.Output or ParameterDirectionKind.InputOutput)
                     .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
@@ -920,7 +920,7 @@ internal static class AccessorModelBuilder
                 // Procedure：束縛は Input 以外の Direction を持つメソッドパラメータと、POCO 引数の出力プロパティから導く。
                 // Procedure: bindings are derived from method parameters with a non-Input Direction, plus POCO-argument output properties.
                 outputBindings = parameters
-                    .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionKindLegacy.Input))
+                    .Where(p => (p.PocoProperties is null) && (p.Direction != ParameterDirectionKind.Input))
                     .Select(p => new OutputBinding(
                         p.Name,
                         $"__op_{p.Name}",
@@ -940,8 +940,8 @@ internal static class AccessorModelBuilder
             string? scalarConverterDbType = null;
             var scalarSymbol = shape.Value switch
             {
-                ReturnShapeLegacy.Scalar => member.ReturnType,
-                ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
+                ReturnShape.Scalar => member.ReturnType,
+                ReturnShape.TaskScalar or ReturnShape.ValueTaskScalar =>
                     (member.ReturnType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault(),
                 _ => null
             };
@@ -958,7 +958,7 @@ internal static class AccessorModelBuilder
             // スカラー戻り値を持つ [Procedure] は、ストアドの RETURN 値を（自動追加した ReturnValue パラメータ経由で）メソッドの戻り値へマップする。
             // A [Procedure] with a scalar return maps the stored-procedure RETURN value to the method's return value (via an auto-added ReturnValue parameter).
             var mapsProcedureReturnValue = (procedureName is not null) &&
-                (shape.Value is ReturnShapeLegacy.Scalar or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar);
+                (shape.Value is ReturnShape.Scalar or ReturnShape.TaskScalar or ReturnShape.ValueTaskScalar);
 
             methods.Add(new MethodModel(
                 member.Name,
@@ -1099,7 +1099,7 @@ internal static class AccessorModelBuilder
             }
         }
 
-        var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPatternLegacy.None);
+        var requiresFactory = methods.Any(m => m.ConnectionPattern == ConnectionPattern.None);
 
         // SDA0015: [Provider] が設定されているのに、IDbProviderSelector.GetProvider(name) を消費する Pattern B メソッドが無い。
         // SDA0015: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
@@ -1137,11 +1137,11 @@ internal static class AccessorModelBuilder
             classSymbol.Interfaces.FirstOrDefault()?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
     }
 
-    private static bool IsValidExecuteReturn(ReturnShapeLegacy shape, ITypeSymbol returnType) => shape switch
+    private static bool IsValidExecuteReturn(ReturnShape shape, ITypeSymbol returnType) => shape switch
     {
-        ReturnShapeLegacy.Void or ReturnShapeLegacy.Task or ReturnShapeLegacy.ValueTask => true,
-        ReturnShapeLegacy.Scalar => returnType.SpecialType == SpecialType.System_Int32,
-        ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.ValueTaskScalar =>
+        ReturnShape.Void or ReturnShape.Task or ReturnShape.ValueTask => true,
+        ReturnShape.Scalar => returnType.SpecialType == SpecialType.System_Int32,
+        ReturnShape.TaskScalar or ReturnShape.ValueTaskScalar =>
             (returnType is INamedTypeSymbol named) &&
             (named.TypeArguments.Length == 1) &&
             (named.TypeArguments[0].SpecialType == SpecialType.System_Int32),
@@ -1251,7 +1251,7 @@ internal static class AccessorModelBuilder
         }
     }
 
-    private static ReturnShapeLegacy? ClassifyReturn(
+    private static ReturnShape? ClassifyReturn(
         ITypeSymbol returnType,
         out string? scalarFq,
         out string? elementFq,
@@ -1263,7 +1263,7 @@ internal static class AccessorModelBuilder
 
         if (returnType.SpecialType == SpecialType.System_Void)
         {
-            return ReturnShapeLegacy.Void;
+            return ReturnShape.Void;
         }
 
         // T[] / Memory<T> / ImmutableArray<T> / HashSet<T> / Tuple / 匿名型は戻り値型として恒久的に廃止（SDA0301）。
@@ -1276,7 +1276,7 @@ internal static class AccessorModelBuilder
         if (IsReaderType(returnType))
         {
             scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return ReturnShapeLegacy.Reader;
+            return ReturnShape.Reader;
         }
 
         if (returnType is INamedTypeSymbol named)
@@ -1287,11 +1287,11 @@ internal static class AccessorModelBuilder
             // Task / ValueTask (non-generic).
             if (fq == WellKnownTypeNames.Task)
             {
-                return ReturnShapeLegacy.Task;
+                return ReturnShape.Task;
             }
             if (fq == WellKnownTypeNames.ValueTask)
             {
-                return ReturnShapeLegacy.ValueTask;
+                return ReturnShape.ValueTask;
             }
 
             if (named.IsGenericType)
@@ -1307,16 +1307,16 @@ internal static class AccessorModelBuilder
                     if (IsReaderType(arg))
                     {
                         scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        return ReturnShapeLegacy.TaskReader;
+                        return ReturnShape.TaskReader;
                     }
                     if (IsListLike(arg, out elementFq, out elementSymbol))
                     {
-                        return ReturnShapeLegacy.TaskList;
+                        return ReturnShape.TaskList;
                     }
                     scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
                     elementFq = scalarFq;
-                    return ReturnShapeLegacy.TaskScalar;
+                    return ReturnShape.TaskScalar;
                 }
                 if (fq is WellKnownTypeNames.ValueTaskOfTResult or WellKnownTypeNames.ValueTaskOfT)
                 {
@@ -1327,22 +1327,22 @@ internal static class AccessorModelBuilder
                     if (IsReaderType(arg))
                     {
                         scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        return ReturnShapeLegacy.ValueTaskReader;
+                        return ReturnShape.ValueTaskReader;
                     }
                     if (IsListLike(arg, out elementFq, out elementSymbol))
                     {
-                        return ReturnShapeLegacy.TaskList;
+                        return ReturnShape.TaskList;
                     }
                     scalarFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
                     elementFq = scalarFq;
-                    return ReturnShapeLegacy.ValueTaskScalar;
+                    return ReturnShape.ValueTaskScalar;
                 }
                 if (fq == WellKnownTypeNames.AsyncEnumerableOfT)
                 {
                     elementFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
-                    return ReturnShapeLegacy.AsyncEnumerable;
+                    return ReturnShape.AsyncEnumerable;
                 }
                 // IEnumerable<T> はイテレータ（Generator が yield return を直接 emit する）。
                 // IEnumerable<T> is an iterator (the Generator emits yield return directly).
@@ -1350,29 +1350,29 @@ internal static class AccessorModelBuilder
                 {
                     elementFq = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     elementSymbol = arg as INamedTypeSymbol;
-                    return elementSymbol is not null ? ReturnShapeLegacy.IteratorEnumerable : null;
+                    return elementSymbol is not null ? ReturnShape.IteratorEnumerable : null;
                 }
                 if (IsListLike(returnType, out elementFq, out elementSymbol))
                 {
-                    return ReturnShapeLegacy.List;
+                    return ReturnShape.List;
                 }
             }
         }
 
         // 単純スカラー（int, string 等）、または単一のマップ済みエンティティ（QueryFirst → T / T?）。
         // 非プリミティブの名前付き型では Task<T> 分岐と同じ扱いにし、同期の単一 POCO Query が要素 symbol を解決できるようにする
-        // （emit 側は Query の ReturnShapeLegacy.Scalar を既にサポート）。プリミティブスカラー（SpecialType 集合）は
+        // （emit 側は Query の ReturnShape.Scalar を既にサポート）。プリミティブスカラー（SpecialType 集合）は
         // elementSymbol を null のままにし、[ExecuteScalar]/スカラーのパスに影響を与えない。
         // Plain scalar (int, string, etc.) or a single mapped entity (QueryFirst -> T / T?). For a non-primitive named
         // type, mirror the Task<T> branch so a sync single-POCO Query resolves its element symbol (the emit side already
-        // supports ReturnShapeLegacy.Scalar for Query). Primitive scalars (the SpecialType set) keep elementSymbol null, so [ExecuteScalar]/scalar paths are unaffected.
+        // supports ReturnShape.Scalar for Query). Primitive scalars (the SpecialType set) keep elementSymbol null, so [ExecuteScalar]/scalar paths are unaffected.
         scalarFq = returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if ((returnType.SpecialType == SpecialType.None) && (returnType is INamedTypeSymbol scalarNamed))
         {
             elementSymbol = scalarNamed;
             elementFq = scalarFq;
         }
-        return ReturnShapeLegacy.Scalar;
+        return ReturnShape.Scalar;
     }
 
     // 戻り値型として恒久的に廃止された型かどうか。
@@ -1706,7 +1706,7 @@ internal static class AccessorModelBuilder
 
             string? dbTypeExpr = null;
             int? size = null;
-            var direction = ParameterDirectionKindLegacy.Input;
+            var direction = ParameterDirectionKind.Input;
             string? paramName = null;
             foreach (var pa in prop.GetAttributes())
             {
@@ -1731,9 +1731,9 @@ internal static class AccessorModelBuilder
                 {
                     direction = (ParameterDirection)dirRaw switch
                     {
-                        ParameterDirection.Output => ParameterDirectionKindLegacy.Output,
-                        ParameterDirection.InputOutput => ParameterDirectionKindLegacy.InputOutput,
-                        _ => ParameterDirectionKindLegacy.Input
+                        ParameterDirection.Output => ParameterDirectionKind.Output,
+                        ParameterDirection.InputOutput => ParameterDirectionKind.InputOutput,
+                        _ => ParameterDirectionKind.Input
                     };
                 }
             }
@@ -1760,7 +1760,7 @@ internal static class AccessorModelBuilder
             // OUT / InputOutput は具体的な DbType を必要とする（InferDbTypeExpr 参照）。converter があれば TDb（DB 側の型）から、
             // 無ければ CLR プロパティ型から推論する。
             // OUT / InputOutput need a concrete DbType (see InferDbTypeExpr); with a converter it is inferred from TDb (the DB-side type), otherwise from the CLR property type.
-            if ((dbTypeExpr is null) && (direction != ParameterDirectionKindLegacy.Input))
+            if ((dbTypeExpr is null) && (direction != ParameterDirectionKind.Input))
             {
                 dbTypeExpr = InferDbTypeExpr(converterDbType ?? prop.Type);
             }
@@ -1792,7 +1792,7 @@ internal static class AccessorModelBuilder
         parameters
             .Where(static p => p.PocoProperties is not null)
             .SelectMany(static p => p.PocoProperties!.Value
-                .Where(static pp => pp.Direction != ParameterDirectionKindLegacy.Input)
+                .Where(static pp => pp.Direction != ParameterDirectionKind.Input)
                 .Select(pp => new OutputBinding(
                     pp.ParamName,
                     pp.HandleName,
@@ -1838,13 +1838,13 @@ internal static class AccessorModelBuilder
         return false;
     }
 
-    private static bool IsAsyncShape(ReturnShapeLegacy s) =>
-        s is ReturnShapeLegacy.Task or ReturnShapeLegacy.TaskScalar or ReturnShapeLegacy.TaskList
-          or ReturnShapeLegacy.ValueTask or ReturnShapeLegacy.ValueTaskScalar or ReturnShapeLegacy.AsyncEnumerable
-          or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+    private static bool IsAsyncShape(ReturnShape s) =>
+        s is ReturnShape.Task or ReturnShape.TaskScalar or ReturnShape.TaskList
+          or ReturnShape.ValueTask or ReturnShape.ValueTaskScalar or ReturnShape.AsyncEnumerable
+          or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
-    private static bool IsReaderShape(ReturnShapeLegacy s) =>
-        s is ReturnShapeLegacy.Reader or ReturnShapeLegacy.TaskReader or ReturnShapeLegacy.ValueTaskReader;
+    private static bool IsReaderShape(ReturnShape s) =>
+        s is ReturnShape.Reader or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
     //--------------------------------------------------------------------------------
     // 2-way SQL のトークナイズ＋ emit。
     // 2-way SQL tokenization + emit.
@@ -1943,9 +1943,9 @@ internal static class AccessorModelBuilder
                 }
                 var dirKind = pm.Direction switch
                 {
-                    ParameterDirectionKindLegacy.Output => NodeEmitter.Direction.Output,
-                    ParameterDirectionKindLegacy.InputOutput => NodeEmitter.Direction.InputOutput,
-                    ParameterDirectionKindLegacy.ReturnValue => NodeEmitter.Direction.ReturnValue,
+                    ParameterDirectionKind.Output => NodeEmitter.Direction.Output,
+                    ParameterDirectionKind.InputOutput => NodeEmitter.Direction.InputOutput,
+                    ParameterDirectionKind.ReturnValue => NodeEmitter.Direction.ReturnValue,
                     _ => NodeEmitter.Direction.Input
                 };
                 if ((pm.DbTypeExpr is null) && (pm.Size is null) &&
@@ -2062,16 +2062,16 @@ internal static class AccessorModelBuilder
         }
 
         var bindings = result.OutputBindings
-            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToLegacyDirection(b.Direction)))
+            .Select(static b => new OutputBinding(b.ParameterName, b.HandleName, ToParameterDirectionKind(b.Direction)))
             .ToList();
         return (result.Code, result.StaticSqlText, result.StaticParameterCode, bindings, usings);
     }
 
-    private static ParameterDirectionKindLegacy ToLegacyDirection(NodeEmitter.Direction d) => d switch
+    private static ParameterDirectionKind ToParameterDirectionKind(NodeEmitter.Direction d) => d switch
     {
-        NodeEmitter.Direction.Output => ParameterDirectionKindLegacy.Output,
-        NodeEmitter.Direction.InputOutput => ParameterDirectionKindLegacy.InputOutput,
-        NodeEmitter.Direction.ReturnValue => ParameterDirectionKindLegacy.ReturnValue,
-        _ => ParameterDirectionKindLegacy.Input
+        NodeEmitter.Direction.Output => ParameterDirectionKind.Output,
+        NodeEmitter.Direction.InputOutput => ParameterDirectionKind.InputOutput,
+        NodeEmitter.Direction.ReturnValue => ParameterDirectionKind.ReturnValue,
+        _ => ParameterDirectionKind.Input
     };
 }

@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 using SourceGenerateHelper;
 
-internal enum ReturnShapeLegacy
+internal enum ReturnShape
 {
     Void,
     Scalar,              // T (sync)
@@ -21,7 +21,7 @@ internal enum ReturnShapeLegacy
     ValueTaskReader // ValueTask<IDataReader> / ValueTask<DbDataReader>
 }
 
-internal enum ConnectionPatternLegacy
+internal enum ConnectionPattern
 {
     None,            // Pattern B: no DbConnection / DbTransaction arg → IDbProvider.CreateConnection() or IDbProviderSelector.GetProvider(name).CreateConnection()
     ConnectionArg,   // Pattern A: DbConnection arg
@@ -33,11 +33,11 @@ internal sealed record MethodModel(
     string MethodKind, // "Execute" | "Query" | "ExecuteReader" | "DirectSql"
     Accessibility Accessibility,
     string ReturnTypeFullName,
-    ReturnShapeLegacy ReturnShapeLegacy,
+    ReturnShape ReturnShape,
     string? ScalarTypeFullName,    // inner T for Scalar / TaskScalar / ValueTaskScalar
     string? ElementTypeFullName,   // element T for List/TaskList/AsyncEnumerable
     EquatableArray<ParameterModel> Parameters,
-    ConnectionPatternLegacy ConnectionPattern,
+    ConnectionPattern ConnectionPattern,
     string? ConnectionParameterName,
     string? TransactionParameterName,
     char BindMarker,
