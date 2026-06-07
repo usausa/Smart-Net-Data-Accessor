@@ -1795,7 +1795,7 @@ internal static class AccessorModelBuilder
 
     // POCO 引数が寄与する OUT/InputOutput 束縛（書き戻し先 = {argName}.{property}）。
     // The OUT/InputOutput bindings contributed by POCO arguments (writeback target = {argName}.{property}).
-    private static IEnumerable<OutputBinding> PocoOutputBindings(IReadOnlyList<ParameterModel> parameters) =>
+    private static IEnumerable<OutputBinding> PocoOutputBindings(IEnumerable<ParameterModel> parameters) =>
         parameters
             .Where(static x => x.PocoProperties is not null)
             .SelectMany(static x => x.PocoProperties!.Value

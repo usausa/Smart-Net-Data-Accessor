@@ -29,7 +29,7 @@ internal static class Program
         var accessor = app.Services.GetRequiredService<WebDataAccessor>();
 
         app.MapGet("/", static () => "Example.WebApplication (M.E.DI, single source). GET /data for rows.");
-        app.MapGet("/data", () => accessor.QueryAll());
+        app.MapGet("/data", accessor.QueryAll);
 
         app.Run();
     }

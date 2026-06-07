@@ -33,6 +33,6 @@ public sealed class DataAccessorFactory : IServiceProvider
         {
             return providerSelector;
         }
-        return singletons.TryGetValue(serviceType, out var instance) ? instance : null;
+        return singletons.GetValueOrDefault(serviceType);
     }
 }
