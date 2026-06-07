@@ -35,9 +35,9 @@ public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName(
                 BuilderClassScanner.DataAccessorAttributeName,
                 static (node, _) => node is ClassDeclarationSyntax,
-                static (ctx, ct) => BuilderClassScanner.Scan(ctx, Targets, PostgresModelBuilder.BuildMethod, ct))
+                static (context, cancellation) => BuilderClassScanner.Scan(context, Targets, PostgresModelBuilder.BuildMethod, cancellation))
             .WithTrackingName(BuilderClassScanner.TrackingName);
 
-        context.RegisterSourceOutput(provider, static (spc, model) => BuilderOutput.Emit(spc, model, PostgresSourceBuilder.EmitMethod, ".Postgres"));
+        context.RegisterSourceOutput(provider, static (productionContext, model) => BuilderOutput.Emit(productionContext, model, PostgresSourceBuilder.EmitMethod, ".Postgres"));
     }
 }

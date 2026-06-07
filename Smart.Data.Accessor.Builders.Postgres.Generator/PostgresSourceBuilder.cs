@@ -21,29 +21,29 @@ internal static class PostgresSourceBuilder
 
         switch (method)
         {
-            case PostgresInsertModel m:
-                EmitInsert(builder, m);
+            case PostgresInsertModel model:
+                EmitInsert(builder, model);
                 break;
-            case PostgresUpdateModel m:
-                EmitUpdate(builder, m);
+            case PostgresUpdateModel model:
+                EmitUpdate(builder, model);
                 break;
-            case PostgresDeleteModel m:
-                EmitDelete(builder, m);
+            case PostgresDeleteModel model:
+                EmitDelete(builder, model);
                 break;
-            case PostgresCountModel m:
-                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Quote(m.TableName));
+            case PostgresCountModel model:
+                SqlEmit.EmitCommandText(builder, "SELECT COUNT(*) FROM " + Quote(model.TableName));
                 break;
-            case PostgresTruncateModel m:
-                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Quote(m.TableName));
+            case PostgresTruncateModel model:
+                SqlEmit.EmitCommandText(builder, "TRUNCATE TABLE " + Quote(model.TableName));
                 break;
-            case PostgresSelectModel m:
-                EmitSelect(builder, m);
+            case PostgresSelectModel model:
+                EmitSelect(builder, model);
                 break;
-            case PostgresSelectSingleModel m:
-                EmitSelectSingle(builder, m);
+            case PostgresSelectSingleModel model:
+                EmitSelectSingle(builder, model);
                 break;
-            case PostgresUpsertModel m:
-                EmitUpsert(builder, m);
+            case PostgresUpsertModel model:
+                EmitUpsert(builder, model);
                 break;
         }
 
@@ -54,32 +54,32 @@ internal static class PostgresSourceBuilder
     // パラメータモード（Table 指定）はバインドパラメータを列・値にする。RETURNING 句があれば末尾に付加。
     // Build an INSERT. Entity mode (typeof(T)) uses the entity columns (excluding [DatabaseManaged]); parameter mode
     // (Table = "...") uses the bind parameters as columns/values. Appends the RETURNING clause when present.
-    private static void EmitInsert(SourceBuilder builder, PostgresInsertModel m)
+    private static void EmitInsert(SourceBuilder builder, PostgresInsertModel model)
     {
-        if (m.EntityParamName is not null)
+        if (model.EntityParamName is not null)
         {
             // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
             // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
-            var cols = m.Columns.Where(static c => !c.IsDatabaseManaged).ToList();
-            var colSql = String.Join(", ", cols.Select(c => Quote(c.ColumnName)));
-            var valSql = String.Join(", ", cols.Select(c => SqlEmit.Marker + c.PropertyName));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(m.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(m.ReturningColumns)}");
-            foreach (var c in cols)
+            var columns = model.Columns.Where(static x => !x.IsDatabaseManaged).ToList();
+            var colSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
+            var valSql = String.Join(", ", columns.Select(x => SqlEmit.Marker + x.PropertyName));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(model.ReturningColumns)}");
+            foreach (var column in columns)
             {
-                SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + c.PropertyName, $"{m.EntityParamName}.{c.PropertyName}", c);
+                SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
             }
         }
         else
         {
             // パラメータモード：列・値はバインドパラメータから組む。
             // Parameter mode: columns / values come from the bind parameters.
-            var bindParams = SqlEmit.BindParams(m);
-            var colSql = String.Join(", ", bindParams.Select(p => Quote(p.ColumnName)));
-            var valSql = String.Join(", ", bindParams.Select(p => SqlEmit.Marker + p.Name));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(m.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(m.ReturningColumns)}");
-            foreach (var p in bindParams)
+            var bindParams = SqlEmit.BindParams(model);
+            var colSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
+            var valSql = String.Join(", ", bindParams.Select(x => SqlEmit.Marker + x.Name));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(model.ReturningColumns)}");
+            foreach (var parameter in bindParams)
             {
-                SqlEmit.EmitValueParamBinding(builder, p);
+                SqlEmit.EmitValueParamBinding(builder, parameter);
             }
         }
     }
@@ -88,20 +88,20 @@ internal static class PostgresSourceBuilder
     // エンティティが無い場合は "UPDATE T SET " だけを出力する。
     // Build an UPDATE: the SET clause uses non-key, non-[DatabaseManaged] columns; the WHERE clause uses [Key] columns
     // (parameters prefixed @k_); the RETURNING clause (if any) is appended. Without an entity it emits just "UPDATE T SET ".
-    private static void EmitUpdate(SourceBuilder builder, PostgresUpdateModel m)
+    private static void EmitUpdate(SourceBuilder builder, PostgresUpdateModel model)
     {
-        if (!m.HasEntityType || (m.EntityParamName is null))
+        if (!model.HasEntityType || (model.EntityParamName is null))
         {
-            SqlEmit.EmitCommandText(builder, "UPDATE " + Quote(m.TableName) + " SET ");
+            SqlEmit.EmitCommandText(builder, "UPDATE " + Quote(model.TableName) + " SET ");
             return;
         }
 
-        var columns = m.Columns;
-        var settable = columns.Where(static c => !c.IsKey && !c.IsDatabaseManaged).ToList();
-        var keys = columns.Where(static c => c.IsKey).ToList();
+        var columns = model.Columns;
+        var settable = columns.Where(static x => !x.IsKey && !x.IsDatabaseManaged).ToList();
+        var keys = columns.Where(static x => x.IsKey).ToList();
 
         var sql = new StringBuilder();
-        sql.Append("UPDATE ").Append(Quote(m.TableName)).Append(" SET ");
+        sql.Append("UPDATE ").Append(Quote(model.TableName)).Append(" SET ");
         for (var i = 0; i < settable.Count; i++)
         {
             if (i > 0)
@@ -123,29 +123,29 @@ internal static class PostgresSourceBuilder
             }
         }
 
-        sql.Append(ReturningClause(m.ReturningColumns));
+        sql.Append(ReturningClause(model.ReturningColumns));
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
-        foreach (var c in settable)
+        foreach (var column in settable)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + c.PropertyName, $"{m.EntityParamName}.{c.PropertyName}", c);
+            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
-        foreach (var c in keys)
+        foreach (var column in keys)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + "k_" + c.PropertyName, $"{m.EntityParamName}.{c.PropertyName}", c);
+            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 
     // DELETE を組み立てる。WHERE 句はバインドパラメータ（先頭から [Key] 列に対応付け）。RETURNING 句があれば末尾に付加。
     // Build a DELETE: the WHERE clause uses the bind parameters (mapped to the key columns in order); the RETURNING clause (if any) is appended.
-    private static void EmitDelete(SourceBuilder builder, PostgresDeleteModel m)
+    private static void EmitDelete(SourceBuilder builder, PostgresDeleteModel model)
     {
-        var keyColumns = m.Columns.Where(static c => c.IsKey).ToList();
-        var bindParams = SqlEmit.BindParams(m);
+        var keyColumns = model.Columns.Where(static x => x.IsKey).ToList();
+        var bindParams = SqlEmit.BindParams(model);
 
         var sql = new StringBuilder();
-        sql.Append("DELETE FROM ").Append(Quote(m.TableName));
+        sql.Append("DELETE FROM ").Append(Quote(model.TableName));
         if (bindParams.Count > 0)
         {
             sql.Append(" WHERE ");
@@ -160,35 +160,35 @@ internal static class PostgresSourceBuilder
             }
         }
 
-        sql.Append(ReturningClause(m.ReturningColumns));
+        sql.Append(ReturningClause(model.ReturningColumns));
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
-        foreach (var p in bindParams)
+        foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, p);
+            SqlEmit.EmitValueParamBinding(builder, parameter);
         }
     }
 
     // SELECT（全件）を組み立てる。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があればプロバイダのページング句を付ける。
     // Build a SELECT (all rows): SELECT * when there is no entity; otherwise list the columns and, if [Limit]/[Offset]
     // are present, append the provider's paging clause.
-    private static void EmitSelect(SourceBuilder builder, PostgresSelectModel m)
+    private static void EmitSelect(SourceBuilder builder, PostgresSelectModel model)
     {
-        if (!m.HasEntityType)
+        if (!model.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(model.TableName));
             return;
         }
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", model.Columns.Select(x => Quote(x.ColumnName)))).Append(" FROM ").Append(Quote(model.TableName));
 
         // [Limit]/[Offset] パラメータがある場合のみ、プロバイダのページング句を付加する（パラメータ束縛は offset→limit の順）。
         // Append the provider's paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
-        var valueParams = m.ValueParams;
-        var limitParam = valueParams.FirstOrDefault(static p => p.IsLimit);
-        var offsetParam = valueParams.FirstOrDefault(static p => p.IsOffset);
+        var valueParams = model.ValueParams;
+        var limitParam = valueParams.FirstOrDefault(static x => x.IsLimit);
+        var offsetParam = valueParams.FirstOrDefault(static x => x.IsOffset);
         if ((limitParam is not null) || (offsetParam is not null))
         {
             AppendPaging(
@@ -211,19 +211,19 @@ internal static class PostgresSourceBuilder
 
     // SELECT（単一行）を組み立てる。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
-    private static void EmitSelectSingle(SourceBuilder builder, PostgresSelectSingleModel m)
+    private static void EmitSelectSingle(SourceBuilder builder, PostgresSelectSingleModel model)
     {
-        if (!m.HasEntityType)
+        if (!model.HasEntityType)
         {
-            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(m.TableName));
+            SqlEmit.EmitCommandText(builder, "SELECT * FROM " + Quote(model.TableName));
             return;
         }
 
-        var keyColumns = m.Columns.Where(static c => c.IsKey).ToList();
-        var bindParams = SqlEmit.BindParams(m);
+        var keyColumns = model.Columns.Where(static x => x.IsKey).ToList();
+        var bindParams = SqlEmit.BindParams(model);
 
         var sql = new StringBuilder();
-        sql.Append("SELECT ").Append(String.Join(", ", m.Columns.Select(c => Quote(c.ColumnName)))).Append(" FROM ").Append(Quote(m.TableName));
+        sql.Append("SELECT ").Append(String.Join(", ", model.Columns.Select(x => Quote(x.ColumnName)))).Append(" FROM ").Append(Quote(model.TableName));
         if (bindParams.Count > 0)
         {
             sql.Append(" WHERE ");
@@ -240,9 +240,9 @@ internal static class PostgresSourceBuilder
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
-        foreach (var p in bindParams)
+        foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, p);
+            SqlEmit.EmitValueParamBinding(builder, parameter);
         }
     }
 
@@ -251,25 +251,25 @@ internal static class PostgresSourceBuilder
     // Build INSERT ... ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col. INSERT columns are non-[DatabaseManaged]; the
     // conflict target is the [Key] columns; updates assign the non-key, non-[DatabaseManaged] columns. DO NOTHING when
     // there is nothing to update. Parameter binding is the same as INSERT entity mode.
-    private static void EmitUpsert(SourceBuilder builder, PostgresUpsertModel m)
+    private static void EmitUpsert(SourceBuilder builder, PostgresUpsertModel model)
     {
-        if (!m.HasEntityType || (m.EntityParamName is null))
+        if (!model.HasEntityType || (model.EntityParamName is null))
         {
             // エンティティ実体が無く列を解決できない場合は何も組み立てない（診断は transform 側で報告済み）。
             // Without an entity instance the column list is unresolved; emit nothing (the diagnostic is raised in the transform).
             return;
         }
 
-        var cols = m.Columns.Where(static c => !c.IsDatabaseManaged).ToList();
-        var keys = m.Columns.Where(static c => c.IsKey).ToList();
-        var updates = m.Columns.Where(static c => !c.IsKey && !c.IsDatabaseManaged).ToList();
+        var columns = model.Columns.Where(static x => !x.IsDatabaseManaged).ToList();
+        var keys = model.Columns.Where(static x => x.IsKey).ToList();
+        var updates = model.Columns.Where(static x => !x.IsKey && !x.IsDatabaseManaged).ToList();
 
-        var colSql = String.Join(", ", cols.Select(c => Quote(c.ColumnName)));
-        var valSql = String.Join(", ", cols.Select(c => SqlEmit.Marker + c.PropertyName));
-        var conflictSql = String.Join(", ", keys.Select(c => Quote(c.ColumnName)));
+        var colSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
+        var valSql = String.Join(", ", columns.Select(x => SqlEmit.Marker + x.PropertyName));
+        var conflictSql = String.Join(", ", keys.Select(x => Quote(x.ColumnName)));
 
         var sql = new StringBuilder();
-        sql.Append("INSERT INTO ").Append(Quote(m.TableName)).Append(" (").Append(colSql).Append(") VALUES (").Append(valSql).Append(") ON CONFLICT (").Append(conflictSql).Append(')');
+        sql.Append("INSERT INTO ").Append(Quote(model.TableName)).Append(" (").Append(colSql).Append(") VALUES (").Append(valSql).Append(") ON CONFLICT (").Append(conflictSql).Append(')');
         if (updates.Count > 0)
         {
             sql.Append(" DO UPDATE SET ");
@@ -289,9 +289,9 @@ internal static class PostgresSourceBuilder
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
-        foreach (var c in cols)
+        foreach (var column in columns)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + c.PropertyName, $"{m.EntityParamName}.{c.PropertyName}", c);
+            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 
@@ -304,7 +304,7 @@ internal static class PostgresSourceBuilder
             return string.Empty;
         }
 
-        var parts = returningColumns.Split(',').Select(static c => c.Trim()).Where(static c => c.Length > 0).ToList();
+        var parts = returningColumns.Split(',').Select(static x => x.Trim()).Where(static x => x.Length > 0).ToList();
         if (parts.Count == 0)
         {
             return string.Empty;

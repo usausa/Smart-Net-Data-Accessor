@@ -17,7 +17,7 @@ public sealed class ProviderBuilderTests
         }
         """;
 
-    private static string InsertAccessor(string attr) => $$"""
+    private static string InsertAccessor(string attributeName) => $$"""
         using Smart.Data.Accessor.Attributes;
 
         {{Entity}}
@@ -25,13 +25,13 @@ public sealed class ProviderBuilderTests
         [DataAccessor]
         internal sealed partial class Accessor
         {
-            [{{attr}}(typeof(Entity), Table = "Data")]
+            [{{attributeName}}(typeof(Entity), Table = "Data")]
             [Execute]
             public partial int Insert(Entity entity);
         }
         """;
 
-    private static string PageAccessor(string attr) => $$"""
+    private static string PageAccessor(string attributeName) => $$"""
         using System.Collections.Generic;
         using Smart.Data.Accessor.Attributes;
 
@@ -40,7 +40,7 @@ public sealed class ProviderBuilderTests
         [DataAccessor]
         internal sealed partial class Accessor
         {
-            [{{attr}}(typeof(Entity), Table = "Data")]
+            [{{attributeName}}(typeof(Entity), Table = "Data")]
             [Query]
             public partial IReadOnlyList<Entity> Page([Limit] int limit, [Offset] int offset);
         }

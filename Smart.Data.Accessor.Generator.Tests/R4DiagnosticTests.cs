@@ -29,7 +29,7 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0506");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0506");
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0507");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0507");
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0506" or "SDA0507");
+        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0506" or "SDA0507");
     }
 
     [Fact]
@@ -75,6 +75,6 @@ public sealed class R4DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SDA0506" or "SDA0507");
+        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0506" or "SDA0507");
     }
 }

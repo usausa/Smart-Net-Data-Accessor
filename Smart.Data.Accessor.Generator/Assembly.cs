@@ -47,9 +47,9 @@ namespace System
 
         public (int Offset, int Length) GetOffsetAndLength(int length)
         {
-            var s = Start.GetOffset(length);
-            var e = End.GetOffset(length);
-            return (s, e - s);
+            var start = Start.GetOffset(length);
+            var end = End.GetOffset(length);
+            return (start, end - start);
         }
     }
 }

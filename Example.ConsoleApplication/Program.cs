@@ -87,8 +87,8 @@ internal static class Program
         var selectAll = accessor.SelectAll();
         Console.WriteLine($"SelectAll -> {selectAll.Count} row(s)");
 
-        var upd = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11, Kind = DataType.Unknown };
-        var updated = accessor.UpdateEntity(upd);
+        var update = new DataEntity { Id = selectAll[0].Id, Name = "Alice2", Type = 11, Kind = DataType.Unknown };
+        var updated = accessor.UpdateEntity(update);
         Console.WriteLine($"UpdateEntity -> {updated} row(s) updated");
 
         var deleted = accessor.DeleteById(selectAll[2].Id);
@@ -154,13 +154,13 @@ internal static class Program
         services.AddSingleton<IExampleLogger>(counter);
         services.AddDataAccessors();
 
-        using var sp = services.BuildServiceProvider();
+        using var provider = services.BuildServiceProvider();
 
-        var accessor = sp.GetRequiredService<ExampleAccessor>();
+        var accessor = provider.GetRequiredService<ExampleAccessor>();
         var rows = accessor.SelectAll();
         Console.WriteLine($"DI ExampleAccessor.SelectAll -> {rows.Count} row(s)");
 
-        var injectAccessor = sp.GetRequiredService<ExampleInjectAccessor>();
+        var injectAccessor = provider.GetRequiredService<ExampleInjectAccessor>();
         var logged = injectAccessor.CallLoggerAndCount("hello from DI");
         var all = injectAccessor.QueryAll();
         Console.WriteLine($"DI ExampleInjectAccessor.QueryAll -> {all.Count} row(s), logger={injectAccessor.GetLoggerTypeName()}, count={logged}");

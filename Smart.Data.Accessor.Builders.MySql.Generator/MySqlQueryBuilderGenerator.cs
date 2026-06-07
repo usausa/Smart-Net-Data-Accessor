@@ -38,9 +38,9 @@ public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName(
                 BuilderClassScanner.DataAccessorAttributeName,
                 static (node, _) => node is ClassDeclarationSyntax,
-                static (ctx, ct) => BuilderClassScanner.Scan(ctx, Targets, MySqlModelBuilder.BuildMethod, ct))
+                static (context, cancellation) => BuilderClassScanner.Scan(context, Targets, MySqlModelBuilder.BuildMethod, cancellation))
             .WithTrackingName(BuilderClassScanner.TrackingName);
 
-        context.RegisterSourceOutput(provider, static (spc, model) => BuilderOutput.Emit(spc, model, MySqlSourceBuilder.EmitMethod, ".MySql"));
+        context.RegisterSourceOutput(provider, static (productionContext, model) => BuilderOutput.Emit(productionContext, model, MySqlSourceBuilder.EmitMethod, ".MySql"));
     }
 }

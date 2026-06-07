@@ -35,7 +35,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0309");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0309");
     }
 
     [Fact]
@@ -49,8 +49,8 @@ public sealed class ConverterDiagnosticTests
 
             internal sealed class LongToIntConverter : IValueConverter<long, int>
             {
-                public static int FromDb(long v) => (int)v;
-                public static long ToDb(int v) => v;
+                public static int FromDb(long value) => (int)value;
+                public static long ToDb(int value) => value;
             }
 
             internal sealed class Entity
@@ -69,7 +69,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0308");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0308");
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public sealed class ConverterDiagnosticTests
 
             internal sealed class ExplicitConverter : IValueConverter<long, int>
             {
-                static int IValueConverter<long, int>.FromDb(long v) => (int)v;
-                static long IValueConverter<long, int>.ToDb(int v) => v;
+                static int IValueConverter<long, int>.FromDb(long value) => (int)value;
+                static long IValueConverter<long, int>.ToDb(int value) => value;
             }
 
             internal sealed class Entity
@@ -104,7 +104,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0310");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0310");
     }
 
     [Fact]
@@ -118,14 +118,14 @@ public sealed class ConverterDiagnosticTests
 
             internal sealed class ConverterA : IValueConverter<long, int>
             {
-                public static int FromDb(long v) => (int)v;
-                public static long ToDb(int v) => v;
+                public static int FromDb(long value) => (int)value;
+                public static long ToDb(int value) => value;
             }
 
             internal sealed class ConverterB : IValueConverter<long, int>
             {
-                public static int FromDb(long v) => (int)v;
-                public static long ToDb(int v) => v;
+                public static int FromDb(long value) => (int)value;
+                public static long ToDb(int value) => value;
             }
 
             internal sealed class Entity
@@ -145,7 +145,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0311");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0311");
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class ConverterDiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Name from T"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0307");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0307");
     }
 
     [Fact]
@@ -186,8 +186,8 @@ public sealed class ConverterDiagnosticTests
 
             internal sealed class TicksConverter : IValueConverter<long, DateTime>
             {
-                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
-                public static long ToDb(DateTime v) => v.Ticks;
+                public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+                public static long ToDb(DateTime value) => value.Ticks;
             }
 
             internal sealed class Entity

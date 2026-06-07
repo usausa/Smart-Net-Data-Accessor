@@ -46,12 +46,12 @@ public static class ExecuteHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter(DbCommand cmd, string name, object? value, DbType? type = null, int? size = null)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Direction = ParameterDirection.Input;
-        AssignValue(p, value, type, size);
-        cmd.Parameters.Add(p);
-        return p;
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Direction = ParameterDirection.Input;
+        AssignValue(parameter, value, type, size);
+        cmd.Parameters.Add(parameter);
+        return parameter;
     }
 
     // Generic input-parameter helper. Avoids the enumerator-boxing that the non-generic overload pays
@@ -59,12 +59,12 @@ public static class ExecuteHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInParameter<T>(DbCommand cmd, string name, T value, DbType? type = null, int? size = null)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Direction = ParameterDirection.Input;
-        AssignValue(p, value, type, size);
-        cmd.Parameters.Add(p);
-        return p;
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Direction = ParameterDirection.Input;
+        AssignValue(parameter, value, type, size);
+        cmd.Parameters.Add(parameter);
+        return parameter;
     }
 
     // Converter-sharing input-parameter overload. The static abstract IValueConverter<TDb, TClr>.ToDb
@@ -104,14 +104,14 @@ public static class ExecuteHelper
 
         var sb = new StringBuilder("(");
         var index = 0;
-        foreach (var v in values)
+        foreach (var value in values)
         {
             if (index > 0)
             {
                 sb.Append(',');
             }
             var paramName = namePrefix + "_" + index.ToString(CultureInfo.InvariantCulture);
-            AddInParameter(cmd, paramName, v, type);
+            AddInParameter(cmd, paramName, value, type);
             sb.Append(paramName);
             index++;
         }
@@ -127,43 +127,43 @@ public static class ExecuteHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddOutParameter(DbCommand cmd, string name, DbType type, int? size = null)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Direction = ParameterDirection.Output;
-        p.DbType = type;
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Direction = ParameterDirection.Output;
+        parameter.DbType = type;
         if (size.HasValue)
         {
-            p.Size = size.Value;
+            parameter.Size = size.Value;
         }
-        cmd.Parameters.Add(p);
-        return p;
+        cmd.Parameters.Add(parameter);
+        return parameter;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddInOutParameter(DbCommand cmd, string name, object? value, DbType type, int? size = null)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Direction = ParameterDirection.InputOutput;
-        p.DbType = type;
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Direction = ParameterDirection.InputOutput;
+        parameter.DbType = type;
         if (size.HasValue)
         {
-            p.Size = size.Value;
+            parameter.Size = size.Value;
         }
-        p.Value = value ?? DBNull.Value;
-        cmd.Parameters.Add(p);
-        return p;
+        parameter.Value = value ?? DBNull.Value;
+        cmd.Parameters.Add(parameter);
+        return parameter;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static DbParameter AddReturnValueParameter(DbCommand cmd, string name, DbType type)
     {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Direction = ParameterDirection.ReturnValue;
-        p.DbType = type;
-        cmd.Parameters.Add(p);
-        return p;
+        var parameter = cmd.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Direction = ParameterDirection.ReturnValue;
+        parameter.DbType = type;
+        cmd.Parameters.Add(parameter);
+        return parameter;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -187,18 +187,18 @@ public static class ExecuteHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AssignValue(DbParameter p, object? value, DbType? type, int? size)
+    private static void AssignValue(DbParameter parameter, object? value, DbType? type, int? size)
     {
         if (value is null)
         {
-            p.Value = DBNull.Value;
+            parameter.Value = DBNull.Value;
             if (type.HasValue)
             {
-                p.DbType = type.Value;
+                parameter.DbType = type.Value;
             }
             if (size.HasValue)
             {
-                p.Size = size.Value;
+                parameter.Size = size.Value;
             }
             return;
         }
@@ -210,14 +210,14 @@ public static class ExecuteHelper
             actual = Convert.ChangeType(actual, Enum.GetUnderlyingType(actualType), CultureInfo.InvariantCulture);
         }
 
-        p.Value = actual;
+        parameter.Value = actual;
         if (type.HasValue)
         {
-            p.DbType = type.Value;
+            parameter.DbType = type.Value;
         }
         if (size.HasValue)
         {
-            p.Size = size.Value;
+            parameter.Size = size.Value;
         }
     }
 

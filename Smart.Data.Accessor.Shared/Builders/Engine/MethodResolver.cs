@@ -23,21 +23,21 @@ internal static class MethodResolver
     public static ResolvedMethod? Resolve(
         INamedTypeSymbol container,
         IMethodSymbol method,
-        AttributeData attr,
+        AttributeData attribute,
         Dictionary<string, TypeMapInfo> typeMaps,
         INamedTypeSymbol? profile,
         List<DiagnosticInfo> diagnostics,
         LocationInfo? location)
     {
-        var entityType = attr.ConstructorArguments.Length > 0
-            ? attr.ConstructorArguments[0].Value as INamedTypeSymbol
+        var entityType = attribute.ConstructorArguments.Length > 0
+            ? attribute.ConstructorArguments[0].Value as INamedTypeSymbol
             : null;
         string? table = null;
-        foreach (var kv in attr.NamedArguments)
+        foreach (var namedArgument in attribute.NamedArguments)
         {
-            if ((kv.Key == "Table") && (kv.Value.Value is string s))
+            if ((namedArgument.Key == "Table") && (namedArgument.Value.Value is string tableValue))
             {
-                table = s;
+                table = tableValue;
             }
         }
 
@@ -51,18 +51,18 @@ internal static class MethodResolver
         // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。各々の束縛メタデータを解決する。
         // Value parameters = method parameters excluding DbConnection / DbTransaction / CancellationToken; resolve each one's binding metadata.
         var valueParamSymbols = method.Parameters
-            .Where(p => (p.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !p.Type.InheritsFrom(WellKnownTypeNames.DbConnection) && !p.Type.InheritsFrom(WellKnownTypeNames.DbTransaction))
+            .Where(x => (x.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !x.Type.InheritsFrom(WellKnownTypeNames.DbConnection) && !x.Type.InheritsFrom(WellKnownTypeNames.DbTransaction))
             .ToList();
-        var valueParams = valueParamSymbols.Select(p => ResolveValueParam(p, typeMaps)).ToArray();
+        var valueParams = valueParamSymbols.Select(x => ResolveValueParam(x, typeMaps)).ToArray();
 
         // エンティティ実体は、ページング属性が付かず型が EntityType に一致する最初の値パラメータ。
         // The entity instance is the first non-paging value parameter whose type matches EntityType.
         var entityParam = entityType is null
             ? null
-            : valueParamSymbols.FirstOrDefault(p =>
-                !HasAttribute(p, LimitAttributeName) &&
-                !HasAttribute(p, OffsetAttributeName) &&
-                SymbolEqualityComparer.Default.Equals(p.Type, entityType));
+            : valueParamSymbols.FirstOrDefault(x =>
+                !HasAttribute(x, LimitAttributeName) &&
+                !HasAttribute(x, OffsetAttributeName) &&
+                SymbolEqualityComparer.Default.Equals(x.Type, entityType));
         var hasEntityType = entityType is not null;
 
         // エンティティ型がある場合はその列（プロパティ）を列挙し、各列の束縛メタデータを解決する。
@@ -71,7 +71,7 @@ internal static class MethodResolver
             ? Enumerable.Empty<EntityColumn>()
             : ReadEntityColumns(entityType);
         var columns = entityColumns
-            .Select(c => ResolveColumn(c, method, container, profile, typeMaps, diagnostics, location))
+            .Select(x => ResolveColumn(x, method, container, profile, typeMaps, diagnostics, location))
             .ToArray();
 
         return new ResolvedMethod(
@@ -86,37 +86,37 @@ internal static class MethodResolver
 
     // メソッドの値パラメータの束縛メタデータ（[DbType] / [TypeMap] / enum。値パラメータに converter は付かない）を解決する。
     // Resolve a method value parameter's binding metadata ([DbType] / [TypeMap] / enum; no converter on value parameters).
-    private static BuilderValueParam ResolveValueParam(IParameterSymbol p, Dictionary<string, TypeMapInfo> typeMaps)
+    private static BuilderValueParam ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps)
     {
-        var typeFq = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var enumUnderlying = p.Type.GetEnumUnderlyingType();
+        var typeName = parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var enumUnderlying = parameter.Type.GetEnumUnderlyingType();
 
         // パラメータ単位の明示 [DbType] が最優先。無ければ class/profile の [TypeMap] 既定を適用する（コアと同じ共有ロジック）。
         // An explicit parameter-scope [DbType] wins; otherwise the class/profile [TypeMap] default applies (the same shared logic as the core generator).
-        var dbTypeExpr = MappingAttributeHelper.ResolveParameterDbType(p);
+        var dbTypeExpression = MappingAttributeHelper.ResolveParameterDbType(parameter);
         int? size = null;
-        if ((dbTypeExpr is null) && MappingAttributeHelper.TryGetTypeMap(p.Type, typeMaps, out var info))
+        if ((dbTypeExpression is null) && MappingAttributeHelper.TryGetTypeMap(parameter.Type, typeMaps, out var info))
         {
-            dbTypeExpr = info.DbTypeExpr;
+            dbTypeExpression = info.DbTypeExpression;
             size = info.Size;
         }
 
         return new BuilderValueParam(
-            p.Name,
-            typeFq,
-            ColumnName(p),
-            HasAttribute(p, LimitAttributeName),
-            HasAttribute(p, OffsetAttributeName),
+            parameter.Name,
+            typeName,
+            ColumnName(parameter),
+            HasAttribute(parameter, LimitAttributeName),
+            HasAttribute(parameter, OffsetAttributeName),
             enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            (enumUnderlying is not null) && (p.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
-            dbTypeExpr,
+            (enumUnderlying is not null) && (parameter.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
+            dbTypeExpression,
             size);
     }
 
     // エンティティ列の束縛メタデータ（converter / DbType / enum / null 許容）を解決する。出力時の値式は "<entityParam>.<PropertyName>"。
     // Resolve an entity column's binding metadata (converter / DbType / enum / nullability).
     private static BuilderColumn ResolveColumn(
-        EntityColumn c,
+        EntityColumn column,
         IMethodSymbol method,
         INamedTypeSymbol container,
         INamedTypeSymbol? profile,
@@ -124,20 +124,20 @@ internal static class MethodResolver
         List<DiagnosticInfo> diagnostics,
         LocationInfo? location)
     {
-        var prop = c.Symbol;
-        var handler = MappingResolver.ResolveTypeHandler(prop, method, container, profile);
-        var explicitDbType = MappingAttributeHelper.ResolvePropertyDbType(prop);
+        var property = column.Symbol;
+        var handler = MappingResolver.ResolveTypeHandler(property, method, container, profile);
+        var explicitDbType = MappingAttributeHelper.ResolvePropertyDbType(property);
 
         // SDA1006: 同じ型に [TypeHandler] と [TypeMap] が両方あると [TypeHandler] が優先される＝[TypeMap] 既定が死ぬので警告する。
         // SDA1006: a [TypeHandler] wins over a [TypeMap] for the same type; warn that the [TypeMap] default is dead.
-        if ((handler is not null) && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out _))
+        if ((handler is not null) && MappingAttributeHelper.TryGetTypeMap(property.Type, typeMaps, out _))
         {
             diagnostics.Add(new DiagnosticInfo(
                 BuilderDiagnostics.TypeMapTypeHandlerConflict,
                 location,
                 container.Name,
-                prop.Type.ToDisplayString(),
-                prop.Name));
+                property.Type.ToDisplayString(),
+                property.Name));
         }
 
         // 有効な converter があれば TConverter とその IValueConverter<TDb,TClr> 型引数を捕捉し、値は
@@ -154,29 +154,29 @@ internal static class MethodResolver
 
         // DbType：プロパティ単位の明示 [DbType] が最優先。無ければ converter が無い場合に限り [TypeMap] 既定を適用する。
         // DbType: an explicit property-scope [DbType] wins; otherwise a [TypeMap] default applies only when no converter rewrites the value.
-        string? dbTypeExpr = null;
+        string? dbTypeExpression = null;
         int? size = null;
         if (explicitDbType is not null)
         {
-            dbTypeExpr = explicitDbType;
+            dbTypeExpression = explicitDbType;
         }
-        else if ((converter is null) && MappingAttributeHelper.TryGetTypeMap(prop.Type, typeMaps, out var info))
+        else if ((converter is null) && MappingAttributeHelper.TryGetTypeMap(property.Type, typeMaps, out var info))
         {
-            dbTypeExpr = info.DbTypeExpr;
+            dbTypeExpression = info.DbTypeExpression;
             size = info.Size;
         }
 
-        var enumUnderlying = prop.Type.GetEnumUnderlyingType();
+        var enumUnderlying = property.Type.GetEnumUnderlyingType();
 
         return new BuilderColumn(
-            c.Column,
-            c.PropertyName,
-            c.IsKey,
-            c.IsDatabaseManaged,
+            column.Column,
+            column.PropertyName,
+            column.IsKey,
+            column.IsDatabaseManaged,
             converter,
             enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            (enumUnderlying is not null) && (prop.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
-            dbTypeExpr,
+            (enumUnderlying is not null) && (property.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
+            dbTypeExpression,
             size);
     }
 
@@ -185,33 +185,33 @@ internal static class MethodResolver
     private static List<EntityColumn> ReadEntityColumns(INamedTypeSymbol entityType)
     {
         var list = new List<EntityColumn>();
-        foreach (var p in entityType.GetMembers().OfType<IPropertySymbol>())
+        foreach (var property in entityType.GetMembers().OfType<IPropertySymbol>())
         {
-            if ((p.DeclaredAccessibility != Accessibility.Public) || p.IsStatic || (p.GetMethod is null))
+            if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.GetMethod is null))
             {
                 continue;
             }
-            var ca = ColumnAttributeHelper.Read(p);
-            if (ca.IsIgnored)
+            var columnAttribute = ColumnAttributeHelper.Read(property);
+            if (columnAttribute.IsIgnored)
             {
                 continue;
             }
-            list.Add(new EntityColumn(ca.ColumnName, p.Name, ca.IsKey, ca.IsDatabaseManaged, p));
+            list.Add(new EntityColumn(columnAttribute.ColumnName, property.Name, columnAttribute.IsKey, columnAttribute.IsDatabaseManaged, property));
         }
         return list;
     }
 
     // 列名解決：[Name("...")] があればその名前、無ければパラメータ名。
     // Column name: the [Name("...")] value if present, otherwise the parameter name.
-    private static string ColumnName(IParameterSymbol p)
-        => p.GetAttributes()
-            .FirstOrDefault(static a => a.AttributeClass?.ToDisplayString() == NameAttributeName)
-            ?.ConstructorArguments.FirstOrDefault().Value as string ?? p.Name;
+    private static string ColumnName(IParameterSymbol parameter)
+        => parameter.GetAttributes()
+            .FirstOrDefault(static x => x.AttributeClass?.ToDisplayString() == NameAttributeName)
+            ?.ConstructorArguments.FirstOrDefault().Value as string ?? parameter.Name;
 
     // 指定属性がパラメータに付いているか。
     // Whether the given attribute is present on the parameter.
-    private static bool HasAttribute(IParameterSymbol p, string attributeName)
-        => p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == attributeName);
+    private static bool HasAttribute(IParameterSymbol parameter, string attributeName)
+        => parameter.GetAttributes().Any(x => x.AttributeClass?.ToDisplayString() == attributeName);
 
     private readonly record struct EntityColumn(string Column, string PropertyName, bool IsKey, bool IsDatabaseManaged, IPropertySymbol Symbol);
 }

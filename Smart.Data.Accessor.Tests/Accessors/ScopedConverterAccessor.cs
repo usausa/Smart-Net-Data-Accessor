@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Attributes;
 using Smart.Data.Accessor.Tests.Models;
 
 // Class-scope [TypeHandler<>]: TicksConverter applies to every DateTime value in the
-// accessor — reader (FromDb), writer (ToDb), and scalar return (FromDb) — without per-member attrs.
+// accessor — reader (FromDb), writer (ToDb), and scalar return (FromDb) — without per-member attributes.
 [DataAccessor]
 [TypeHandler(typeof(TicksConverter))]
 internal sealed partial class ClassScopeConverterAccessor

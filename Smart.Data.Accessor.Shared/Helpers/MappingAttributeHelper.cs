@@ -12,18 +12,18 @@ using Microsoft.CodeAnalysis;
 // generator-specific / Builder-specific shape).
 internal static class MappingAttributeHelper
 {
-    private const string TypeMapAttributeFq = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
-    private const string DbTypeAttributeFq = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
-    private const string ExecuteConfigAttributeFq = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
+    private const string TypeMapAttributeName = "Smart.Data.Accessor.Attributes.TypeMapAttribute";
+    private const string DbTypeAttributeName = "Smart.Data.Accessor.Attributes.DbTypeAttribute";
+    private const string ExecuteConfigAttributeName = "Smart.Data.Accessor.Attributes.ExecuteConfigAttribute";
 
     // The profile referenced by [ExecuteConfig(typeof(P))] on the accessor (null when absent).
     public static INamedTypeSymbol? ResolveProfile(INamedTypeSymbol container)
     {
-        foreach (var attr in container.GetAttributes())
+        foreach (var attribute in container.GetAttributes())
         {
-            if ((attr.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeFq) &&
-                (attr.ConstructorArguments.Length >= 1) &&
-                (attr.ConstructorArguments[0].Value is INamedTypeSymbol profile))
+            if ((attribute.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName) &&
+                (attribute.ConstructorArguments.Length >= 1) &&
+                (attribute.ConstructorArguments[0].Value is INamedTypeSymbol profile))
             {
                 return profile;
             }
@@ -46,12 +46,12 @@ internal static class MappingAttributeHelper
 
     private static void CollectTypeMaps(INamedTypeSymbol owner, Dictionary<string, TypeMapInfo> map)
     {
-        foreach (var attr in owner.GetAttributes())
+        foreach (var attribute in owner.GetAttributes())
         {
-            if ((attr.AttributeClass?.ToDisplayString() != TypeMapAttributeFq) ||
-                (attr.ConstructorArguments.Length < 2) ||
-                (attr.ConstructorArguments[0].Value is not ITypeSymbol clrType) ||
-                (attr.ConstructorArguments[1].Value is not int dbTypeValue))
+            if ((attribute.AttributeClass?.ToDisplayString() != TypeMapAttributeName) ||
+                (attribute.ConstructorArguments.Length < 2) ||
+                (attribute.ConstructorArguments[0].Value is not ITypeSymbol clrType) ||
+                (attribute.ConstructorArguments[1].Value is not int dbTypeValue))
             {
                 continue;
             }
@@ -63,11 +63,11 @@ internal static class MappingAttributeHelper
             }
 
             int? size = null;
-            foreach (var na in attr.NamedArguments)
+            foreach (var namedArgument in attribute.NamedArguments)
             {
-                if ((na.Key == "Size") && (na.Value.Value is int s))
+                if ((namedArgument.Key == "Size") && (namedArgument.Value.Value is int sizeValue))
                 {
-                    size = s;
+                    size = sizeValue;
                 }
             }
             map[key] = new TypeMapInfo($"(global::System.Data.DbType){dbTypeValue}", size);
@@ -82,20 +82,20 @@ internal static class MappingAttributeHelper
     }
 
     // A property-scope [DbType(DbType)] expression (non-generic), or null.
-    public static string? ResolvePropertyDbType(IPropertySymbol prop) => ResolveDbType(prop.GetAttributes());
+    public static string? ResolvePropertyDbType(IPropertySymbol property) => ResolveDbType(property.GetAttributes());
 
     // A parameter-scope [DbType(DbType)] expression (non-generic), or null.
     public static string? ResolveParameterDbType(IParameterSymbol parameter) => ResolveDbType(parameter.GetAttributes());
 
     private static string? ResolveDbType(ImmutableArray<AttributeData> attributes)
     {
-        foreach (var attr in attributes)
+        foreach (var attribute in attributes)
         {
-            if ((attr.AttributeClass?.ToDisplayString() == DbTypeAttributeFq) &&
-                (attr.ConstructorArguments.Length > 0) &&
-                (attr.ConstructorArguments[0].Value is int dbTypeRaw))
+            if ((attribute.AttributeClass?.ToDisplayString() == DbTypeAttributeName) &&
+                (attribute.ConstructorArguments.Length > 0) &&
+                (attribute.ConstructorArguments[0].Value is int dbTypeValue))
             {
-                return $"(global::System.Data.DbType){dbTypeRaw}";
+                return $"(global::System.Data.DbType){dbTypeValue}";
             }
         }
         return null;
@@ -103,4 +103,4 @@ internal static class MappingAttributeHelper
 }
 
 // Equatable resolution result of a [TypeMap] entry (shared by both generators).
-internal readonly record struct TypeMapInfo(string DbTypeExpr, int? Size);
+internal readonly record struct TypeMapInfo(string DbTypeExpression, int? Size);

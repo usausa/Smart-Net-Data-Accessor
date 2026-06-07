@@ -142,7 +142,7 @@ public sealed class SqlPipelineTests
         // The leading-blank from the empty/plain case is trimmed by Normalize() at the
         // start/end of the stream. For these single-token inputs that means the Blank
         // disappears entirely.
-        var actual = tokens.Select(static t => t.TokenType).ToArray();
+        var actual = tokens.Select(static x => x.TokenType).ToArray();
         if (actual.Length == 0)
         {
             // Trim-leading-and-trailing-blanks behavior — accept that as Blank for the assertion.
@@ -167,9 +167,9 @@ public sealed class SqlPipelineTests
         var sb = new StringBuilder();
         foreach (var node in nodes)
         {
-            if (node is SqlNode s)
+            if (node is SqlNode sqlNode)
             {
-                sb.Append(s.Sql);
+                sb.Append(sqlNode.Sql);
             }
         }
         return sb.ToString();

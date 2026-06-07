@@ -17,5 +17,5 @@ internal sealed record ColumnInfo(
     // reader and calls TConverter.FromDb(...) to produce the property value.
     ConverterReadBinding? Converter = null,
     // intermediate bit-preserving cast inserted between the enum cast and the (signed) reader for
-    // unsigned / sbyte enum underlyings — e.g. "uint" → (MyEnum)(uint)reader.GetInt32(ord).
+    // unsigned / sbyte enum underlyings — e.g. "uint" → (MyEnum)(uint)reader.GetInt32(ordinal).
     string? EnumUnderlyingCastFullName = null);

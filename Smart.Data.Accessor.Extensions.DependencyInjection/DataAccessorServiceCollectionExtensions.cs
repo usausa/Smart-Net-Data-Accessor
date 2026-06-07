@@ -14,7 +14,7 @@ public static class DataAccessorServiceCollectionExtensions
     {
         foreach (var serviceType in DataAccessorRegistry.RegisteredServiceTypes)
         {
-            services.AddSingleton(serviceType, sp => DataAccessorRegistry.Create(serviceType, sp));
+            services.AddSingleton(serviceType, provider => DataAccessorRegistry.Create(serviceType, provider));
         }
         return services;
     }

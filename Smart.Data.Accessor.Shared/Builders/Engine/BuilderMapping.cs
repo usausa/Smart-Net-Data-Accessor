@@ -15,21 +15,21 @@ internal static class MappingResolver
     // member scope is exclusive (a declared [TypeHandler] governs even when the converter type is
     // unresolved); the outer scopes are type-keyed.
     public static INamedTypeSymbol? ResolveTypeHandler(
-        IPropertySymbol prop,
+        IPropertySymbol property,
         IMethodSymbol method,
         INamedTypeSymbol container,
         INamedTypeSymbol? profile)
     {
-        foreach (var attr in prop.GetAttributes())
+        foreach (var attribute in property.GetAttributes())
         {
-            if (ConverterScopeHelper.TryGetHandlerConverter(attr, out var memberConverter))
+            if (ConverterScopeHelper.TryGetHandlerConverter(attribute, out var memberConverter))
             {
                 return memberConverter;
             }
         }
 
-        return ConverterScopeHelper.FindTypeKeyedConverter(method.GetAttributes(), prop.Type)
-            ?? ConverterScopeHelper.FindTypeKeyedConverter(container.GetAttributes(), prop.Type)
-            ?? (profile is null ? null : ConverterScopeHelper.FindTypeKeyedConverter(profile.GetAttributes(), prop.Type));
+        return ConverterScopeHelper.FindTypeKeyedConverter(method.GetAttributes(), property.Type)
+            ?? ConverterScopeHelper.FindTypeKeyedConverter(container.GetAttributes(), property.Type)
+            ?? (profile is null ? null : ConverterScopeHelper.FindTypeKeyedConverter(profile.GetAttributes(), property.Type));
     }
 }

@@ -15,10 +15,10 @@ public sealed class ExecuteTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c =>
+            cmd.Executing = static x =>
             {
-                Assert.Equal("INSERT INTO Data (Name, Type) VALUES (@p0, @p1)", c.CommandText);
-                Assert.Equal(2, c.Parameters.Count);
+                Assert.Equal("INSERT INTO Data (Name, Type) VALUES (@p0, @p1)", x.CommandText);
+                Assert.Equal(2, x.Parameters.Count);
             };
             cmd.SetupResult(1);
         });
@@ -35,7 +35,7 @@ public sealed class ExecuteTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("DELETE FROM Data WHERE Id = @p0", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("DELETE FROM Data WHERE Id = @p0", x.CommandText);
             cmd.SetupResult(1);
         });
 
@@ -49,7 +49,7 @@ public sealed class ExecuteTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("SELECT COUNT(*) FROM Data", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("SELECT COUNT(*) FROM Data", x.CommandText);
             cmd.SetupResult(42L);
         });
 
@@ -137,7 +137,7 @@ public sealed class ExecuteTest
     public void WrappedReaderExposesTypedGetters()
     {
         var guid = Guid.NewGuid();
-        var dt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var dateTime = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
 
         using var con = new MockDbConnection();
         con.SetupCommand(cmd => cmd.SetupResult(new MockDataReader(
@@ -152,9 +152,9 @@ public sealed class ExecuteTest
                 new MockColumn(typeof(decimal), "De"),
                 new MockColumn(typeof(string), "Str"),
                 new MockColumn(typeof(Guid), "G"),
-                new MockColumn(typeof(DateTime), "Dt")
+                new MockColumn(typeof(DateTime), "dt")
             ],
-            [[true, (byte)1, (short)2, 3, 4L, 1.5f, 2.5d, 3.5m, "x", guid, dt]])));
+            [[true, (byte)1, (short)2, 3, 4L, 1.5f, 2.5d, 3.5m, "x", guid, dateTime]])));
 
         var accessor = new ExecuteAccessor();
         using var reader = accessor.ReadAll(con);
@@ -171,12 +171,12 @@ public sealed class ExecuteTest
         Assert.Equal(3.5m, reader.GetDecimal(7));
         Assert.Equal("x", reader.GetString(8));
         Assert.Equal(guid, reader.GetGuid(9));
-        Assert.Equal(dt, reader.GetDateTime(10));
+        Assert.Equal(dateTime, reader.GetDateTime(10));
 
         // indexer / メタ情報
         Assert.Equal(true, reader[0]);
         Assert.Equal("x", reader["Str"]);
-        Assert.Equal("Dt", reader.GetName(10));
+        Assert.Equal("dt", reader.GetName(10));
         Assert.Equal(typeof(Guid), reader.GetFieldType(9));
         Assert.False(reader.IsClosed);
     }

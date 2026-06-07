@@ -9,39 +9,39 @@ using Microsoft.CodeAnalysis;
 // small value-equatable Info (named XxxInfo, not XxxModel).
 internal static class ColumnAttributeHelper
 {
-    private const string NameAttributeFq = "Smart.Data.Accessor.Attributes.NameAttribute";
-    private const string IgnoreAttributeFq = "Smart.Data.Accessor.Attributes.IgnoreAttribute";
-    private const string KeyAttributeFq = "Smart.Data.Accessor.Attributes.KeyAttribute";
-    private const string DatabaseManagedAttributeFq = "Smart.Data.Accessor.Attributes.DatabaseManagedAttribute";
+    private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
+    private const string IgnoreAttributeName = "Smart.Data.Accessor.Attributes.IgnoreAttribute";
+    private const string KeyAttributeName = "Smart.Data.Accessor.Attributes.KeyAttribute";
+    private const string DatabaseManagedAttributeName = "Smart.Data.Accessor.Attributes.DatabaseManagedAttribute";
 
     // Reads the column-mapping attributes of an entity property. ColumnName falls back to the property
     // name when [Name] is absent. (Consumers apply their own member-eligibility filter — accessibility,
     // static, get/set — before/after this.)
-    public static ColumnAttributeInfo Read(IPropertySymbol prop)
+    public static ColumnAttributeInfo Read(IPropertySymbol property)
     {
         string? name = null;
         var isKey = false;
         var isDatabaseManaged = false;
         var isIgnored = false;
-        foreach (var attr in prop.GetAttributes())
+        foreach (var attribute in property.GetAttributes())
         {
-            switch (attr.AttributeClass?.ToDisplayString())
+            switch (attribute.AttributeClass?.ToDisplayString())
             {
-                case NameAttributeFq when (attr.ConstructorArguments.Length > 0) && (attr.ConstructorArguments[0].Value is string nm):
-                    name = nm;
+                case NameAttributeName when (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is string nameValue):
+                    name = nameValue;
                     break;
-                case KeyAttributeFq:
+                case KeyAttributeName:
                     isKey = true;
                     break;
-                case DatabaseManagedAttributeFq:
+                case DatabaseManagedAttributeName:
                     isDatabaseManaged = true;
                     break;
-                case IgnoreAttributeFq:
+                case IgnoreAttributeName:
                     isIgnored = true;
                     break;
             }
         }
-        return new ColumnAttributeInfo(name ?? prop.Name, isKey, isDatabaseManaged, isIgnored);
+        return new ColumnAttributeInfo(name ?? property.Name, isKey, isDatabaseManaged, isIgnored);
     }
 }
 

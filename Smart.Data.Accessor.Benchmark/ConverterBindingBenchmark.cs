@@ -11,7 +11,7 @@ using Smart.Mock.Data;
 
 // 改善2 (P6 gate + P8 post-impl): benchmark for the converter-sharing overload
 // ExecuteHelper.AddInParameter<TConverter, TDb, TClr> (calls static abstract TConverter.ToDb through a
-// generic constraint) vs the current generator-emitted direct call Conv.ToDb(x).
+// generic constraint) vs the current generator-emitted direct call converter.ToDb(x).
 //
 //  * Micro*  isolates the ToDb call path (long accumulate, no boxing) — P6's adoption gate. The concern
 //            was that TConverter being a sealed reference type would force shared generics (indirect,
@@ -45,31 +45,31 @@ public class ConverterBindingBenchmark
     public void Cleanup() => mock.Dispose();
 
     // Current generator output: a direct static call to the concrete converter.
-    [Benchmark(Baseline = true, OperationsPerInvoke = Ops, Description = "Micro: Direct Conv.ToDb (current emit)")]
+    [Benchmark(Baseline = true, OperationsPerInvoke = Ops, Description = "Micro: Direct converter.ToDb (current emit)")]
     public long MicroDirect()
     {
-        long acc = 0;
-        var v = seed;
+        long accumulator = 0;
+        var value = seed;
         for (var i = 0; i < Ops; i++)
         {
-            acc += BenchTicksConverter.ToDb(v);
-            v = v.AddTicks(1);
+            accumulator += BenchTicksConverter.ToDb(value);
+            value = value.AddTicks(1);
         }
-        return acc;
+        return accumulator;
     }
 
     // Shared-overload core: the static abstract ToDb reached through a generic type constraint.
     [Benchmark(OperationsPerInvoke = Ops, Description = "Micro: Generic <TConv> ToDb (overload core)")]
     public long MicroGeneric()
     {
-        long acc = 0;
-        var v = seed;
+        long accumulator = 0;
+        var value = seed;
         for (var i = 0; i < Ops; i++)
         {
-            acc += ToDb<BenchTicksConverter, long, DateTime>(v);
-            v = v.AddTicks(1);
+            accumulator += ToDb<BenchTicksConverter, long, DateTime>(value);
+            value = value.AddTicks(1);
         }
-        return acc;
+        return accumulator;
     }
 
     // Current emit shape: gen-time inline ToDb boxed into the non-generic AddInParameter(object?).

@@ -17,28 +17,28 @@ public sealed class ProcMockTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = x =>
             {
-                MockDbParameter P(string n)
+                MockDbParameter FindParameter(string name)
                 {
-                    foreach (MockDbParameter p in c.Parameters)
+                    foreach (MockDbParameter parameter in x.Parameters)
                     {
-                        if (p.ParameterName == n)
+                        if (parameter.ParameterName == name)
                         {
-                            return p;
+                            return parameter;
                         }
                     }
-                    throw new InvalidOperationException("parameter not found: " + n);
+                    throw new InvalidOperationException("parameter not found: " + name);
                 }
 
-                Assert.Equal(7, (int)P("@A").Value!);
-                Assert.Equal(3, (int)P("@B").Value!);
-                Assert.Equal(100, (int)P("@Acc").Value!);   // InputOutput input value
+                Assert.Equal(7, (int)FindParameter("@A").Value!);
+                Assert.Equal(3, (int)FindParameter("@B").Value!);
+                Assert.Equal(100, (int)FindParameter("@Acc").Value!);   // InputOutput input value
 
                 // Simulate the procedure writing the OUT / InputOutput / RETURN values.
-                P("@Sum").Value = 10;
-                P("@Acc").Value = 105;
-                P("@__ReturnValue").Value = 21;
+                FindParameter("@Sum").Value = 10;
+                FindParameter("@Acc").Value = 105;
+                FindParameter("@__ReturnValue").Value = 21;
             };
             cmd.SetupResult(0);
         });
@@ -62,27 +62,27 @@ public sealed class ProcMockTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = x =>
             {
-                MockDbParameter P(string n)
+                MockDbParameter FindParameter(string name)
                 {
-                    foreach (MockDbParameter p in c.Parameters)
+                    foreach (MockDbParameter parameter in x.Parameters)
                     {
-                        if (p.ParameterName == n)
+                        if (parameter.ParameterName == name)
                         {
-                            return p;
+                            return parameter;
                         }
                     }
-                    throw new InvalidOperationException("parameter not found: " + n);
+                    throw new InvalidOperationException("parameter not found: " + name);
                 }
 
                 // Input / InputOutput: DateTime converted to Int64 ticks via TicksConverter.ToDb.
-                Assert.Equal(inDate.Ticks, (long)P("@In").Value!);
-                Assert.Equal(stampIn.Ticks, (long)P("@Stamp").Value!);
+                Assert.Equal(inDate.Ticks, (long)FindParameter("@In").Value!);
+                Assert.Equal(stampIn.Ticks, (long)FindParameter("@Stamp").Value!);
 
                 // Simulate the proc returning ticks (long) on the OUT / InputOutput parameters.
-                P("@Out").Value = outTicks;
-                P("@Stamp").Value = stampOutTicks;
+                FindParameter("@Out").Value = outTicks;
+                FindParameter("@Stamp").Value = stampOutTicks;
             };
             cmd.SetupResult(0);
         });

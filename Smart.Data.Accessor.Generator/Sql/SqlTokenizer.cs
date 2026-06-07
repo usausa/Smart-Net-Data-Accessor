@@ -278,14 +278,14 @@ public sealed class SqlTokenizer
         }
     }
 
-    private static bool IsBlockChar(char c)
+    private static bool IsBlockChar(char character)
     {
-        if (Char.IsWhiteSpace(c))
+        if (Char.IsWhiteSpace(character))
         {
             return false;
         }
 
-        return c switch
+        return character switch
         {
             '\'' => false,
             ',' => false,

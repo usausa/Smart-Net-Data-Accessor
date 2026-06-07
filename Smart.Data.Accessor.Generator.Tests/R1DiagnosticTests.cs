@@ -27,7 +27,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0013");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0013");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SDA0013");
+        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0013");
     }
 
     [Fact]
@@ -81,6 +81,6 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, d => d.Id == "SDA0105");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0105");
     }
 }

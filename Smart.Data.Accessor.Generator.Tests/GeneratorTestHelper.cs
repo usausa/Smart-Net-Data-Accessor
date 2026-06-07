@@ -22,8 +22,8 @@ internal static class GeneratorTestHelper
     // binaries (PackageReference), so load it eagerly to avoid a first-use resolve failure.
     private static readonly Lazy<bool> EnsureDeps = new(static () =>
     {
-        var dir = Path.GetDirectoryName(typeof(GeneratorTestHelper).Assembly.Location)!;
-        var helper = Path.Combine(dir, "SourceGenerateHelper.dll");
+        var directory = Path.GetDirectoryName(typeof(GeneratorTestHelper).Assembly.Location)!;
+        var helper = Path.Combine(directory, "SourceGenerateHelper.dll");
         if (File.Exists(helper))
         {
             Assembly.LoadFrom(helper);
@@ -61,7 +61,7 @@ internal static class GeneratorTestHelper
                 nullableContextOptions: NullableContextOptions.Enable));
 
         var additionalTexts = sqlFiles
-            .Select(static f => (AdditionalText)new InMemoryAdditionalText($"/proj/Sql/{f.Name}.sql", f.Sql))
+            .Select(static x => (AdditionalText)new InMemoryAdditionalText($"/proj/Sql/{x.Name}.sql", x.Sql))
             .ToImmutableArray();
 
         var driver = CSharpGeneratorDriver.Create(
@@ -102,9 +102,9 @@ internal static class GeneratorTestHelper
     internal static IReadOnlyList<Diagnostic> GetDiagnostics(string source, params (string Name, string Sql)[] sqlFiles) =>
         Run(source, sqlFiles)
             .Diagnostics
-            .Where(static d =>
-                d.Id.StartsWith("SDA", StringComparison.Ordinal) ||
-                d.Id.StartsWith("SDB", StringComparison.Ordinal))
+            .Where(static x =>
+                x.Id.StartsWith("SDA", StringComparison.Ordinal) ||
+                x.Id.StartsWith("SDB", StringComparison.Ordinal))
             .ToList();
 
     // For incremental-cache regression tests: a driver with step tracking enabled
@@ -124,7 +124,7 @@ internal static class GeneratorTestHelper
                 nullableContextOptions: NullableContextOptions.Enable));
 
         var additionalTexts = sqlFiles
-            .Select(static f => (AdditionalText)new InMemoryAdditionalText($"/proj/Sql/{f.Name}.sql", f.Sql))
+            .Select(static x => (AdditionalText)new InMemoryAdditionalText($"/proj/Sql/{x.Name}.sql", x.Sql))
             .ToImmutableArray();
 
         var driver = CSharpGeneratorDriver.Create(

@@ -55,7 +55,7 @@ internal static class NodeEmitter
     // Per-parameter attribute metadata gathered from method parameters.
     public sealed class ParameterAttributes
     {
-        public string? DbTypeExpr { get; init; }   // e.g. "global::System.Data.DbType.AnsiString" or null
+        public string? DbTypeExpression { get; init; }   // e.g. "global::System.Data.DbType.AnsiString" or null
         public int? Size { get; init; }
         public Direction Direction { get; init; } = Direction.Input;
         public string? OutputHandleName { get; init; }   // optional local variable name to capture DbParameter handle
@@ -71,7 +71,7 @@ internal static class NodeEmitter
         // AddInParameter/AddOutParameter/AddInOutParameter call.
         public string? ProviderParameterTypeFullName { get; init; }
         public string? ProviderPropertyName { get; init; }
-        public string? ProviderValueExpr { get; init; }
+        public string? ProviderValueExpression { get; init; }
 
         // non-null when a [TypeHandler<>] applies to this parameter; the bound value is written via
         // TConverter.ToDb(...). Applied only to a bare parameter marker (no member-access path).
@@ -99,13 +99,13 @@ internal static class NodeEmitter
     public static EmitResult Emit(
         IReadOnlyList<NodeBase> nodes,
         ISet<string> knownParameters,
-        Func<string, ParameterAttributes?> attrLookup)
-        => Emit(nodes, knownParameters, attrLookup, '@');
+        Func<string, ParameterAttributes?> attributeLookup)
+        => Emit(nodes, knownParameters, attributeLookup, '@');
 
     public static EmitResult Emit(
         IReadOnlyList<NodeBase> nodes,
         ISet<string> knownParameters,
-        Func<string, ParameterAttributes?> attrLookup,
+        Func<string, ParameterAttributes?> attributeLookup,
         char bindMarker)
     {
         var sb = new StringBuilder();
@@ -129,122 +129,122 @@ internal static class NodeEmitter
         {
             switch (node)
             {
-                case SqlNode s:
-                    if (!String.IsNullOrEmpty(s.Sql))
+                case SqlNode sqlNode:
+                    if (!String.IsNullOrEmpty(sqlNode.Sql))
                     {
-                        sb.Append("__sb.Append(\"").Append(Escape(s.Sql)).Append("\");\n");
-                        staticSql.Append(s.Sql);
+                        sb.Append("__sb.Append(\"").Append(Escape(sqlNode.Sql)).Append("\");\n");
+                        staticSql.Append(sqlNode.Sql);
                     }
                     break;
 
-                case ParameterNode p:
+                case ParameterNode parameterNode:
                 {
-                    var root = StringHelper.ExtractRoot(p.Name);
+                    var root = StringHelper.ExtractRoot(parameterNode.Name);
                     if (!knownParameters.Contains(root))
                     {
-                        undefined.Add(p.Name);
+                        undefined.Add(parameterNode.Name);
                     }
-                    var pname = bindMarker + "p" + counter++;
-                    var attrs = attrLookup(root);
-                    var sizeArg = attrs?.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
-                    var direction = attrs?.Direction ?? Direction.Input;
+                    var parameterName = bindMarker + "p" + counter++;
+                    var attributes = attributeLookup(root);
+                    var sizeArg = attributes?.Size is { } size ? ", " + size.ToString(CultureInfo.InvariantCulture) : string.Empty;
+                    var direction = attributes?.Direction ?? Direction.Input;
                     // Apply the converter (ToDb) or the enum-cast only when the SQL token is the bare
                     // parameter (no member access) — for `entity.X` the leaf type is unknown to this
                     // layer. A converter takes priority over the enum cast.
-                    var valueExpr = p.Name;
+                    var valueExpression = parameterNode.Name;
                     var inMethod = "AddInParameter";
-                    if (!p.Name.Contains('.'))
+                    if (!parameterNode.Name.Contains('.'))
                     {
-                        if (attrs?.ConverterTypeFullName is { } converter)
+                        if (attributes?.ConverterTypeFullName is { } converter)
                         {
-                            // Bind via the converter-sharing overload; valueExpr stays raw (the helper
+                            // Bind via the converter-sharing overload; valueExpression stays raw (the helper
                             // calls TConverter.ToDb + handles null/Nullable).
-                            inMethod = CodeExpressionHelper.AddInParameterConverter(converter, attrs.ConverterDbTypeFullName!, attrs.ConverterClrTypeFullName!);
+                            inMethod = CodeExpressionHelper.AddInParameterConverter(converter, attributes.ConverterDbTypeFullName!, attributes.ConverterClrTypeFullName!);
                         }
-                        else if (attrs?.EnumUnderlyingFullName is { } enumUnderlying)
+                        else if (attributes?.EnumUnderlyingFullName is { } enumUnderlying)
                         {
-                            valueExpr = CodeExpressionHelper.EnumCastValue(enumUnderlying, attrs.IsNullableEnum, p.Name);
+                            valueExpression = CodeExpressionHelper.EnumCastValue(enumUnderlying, attributes.IsNullableEnum, parameterNode.Name);
                         }
                     }
-                    var hasProvider = (attrs?.ProviderParameterTypeFullName is not null)
-                        && (attrs.ProviderPropertyName is not null)
-                        && (attrs.ProviderValueExpr is not null);
-                    if (p.IsMultiple)
+                    var hasProvider = (attributes?.ProviderParameterTypeFullName is not null)
+                        && (attributes.ProviderPropertyName is not null)
+                        && (attributes.ProviderValueExpression is not null);
+                    if (parameterNode.IsMultiple)
                     {
                         // /*@ list */ expands to a comma-separated placeholder list whose
                         // arity depends on the IEnumerable count -> SQL text is dynamic.
                         hasDynamicSql = true;
                         requiresIEnumerable = true;
                         sb.Append("__sb.Append(global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(cmd, \"")
-                            .Append(pname)
+                            .Append(parameterName)
                             .Append("\", ")
-                            .Append(p.Name)
-                            .Append(CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, null))
+                            .Append(parameterNode.Name)
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, null))
                             .Append("));\n");
                     }
                     else if (direction == Direction.Input)
                     {
-                        sb.Append("__sb.Append(\"").Append(pname).Append("\");\n");
-                        staticSql.Append(pname);
+                        sb.Append("__sb.Append(\"").Append(parameterName).Append("\");\n");
+                        staticSql.Append(parameterName);
                         if (hasProvider)
                         {
                             // Skip the positional DbType? slot — provider-specific assignment
                             // will set the native typed property. Use named arg for size to
                             // keep the call unambiguous.
-                            var providerSizeArg = attrs?.Size is { } pSz
-                                ? ", size: " + pSz.ToString(CultureInfo.InvariantCulture)
+                            var providerSizeArg = attributes?.Size is { } providerSize
+                                ? ", size: " + providerSize.ToString(CultureInfo.InvariantCulture)
                                 : string.Empty;
                             EmitParamLine(
-                                $"(({attrs!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{providerSizeArg})).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
+                                $"(({attributes!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{parameterName}\", {valueExpression}{providerSizeArg})).{attributes.ProviderPropertyName} = {attributes.ProviderValueExpression};");
                         }
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{pname}\", {valueExpr}{CodeExpressionHelper.DbTypeSizeArgs(attrs?.DbTypeExpr, attrs?.Size)});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{parameterName}\", {valueExpression}{CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, attributes?.Size)});");
                         }
                     }
                     else
                     {
                         // OUT / InOut / ReturnValue — DbType is required.
-                        var dbTypeExpr = attrs?.DbTypeExpr ?? "global::System.Data.DbType.Object";
-                        var handle = attrs?.OutputHandleName ?? $"__op_{p.Name}";
-                        outputBindings.Add(new OutputBinding(p.Name, handle));
-                        sb.Append("__sb.Append(\"").Append(pname).Append("\");\n");
-                        staticSql.Append(pname);
+                        var dbTypeExpression = attributes?.DbTypeExpression ?? "global::System.Data.DbType.Object";
+                        var handle = attributes?.OutputHandleName ?? $"__op_{parameterNode.Name}";
+                        outputBindings.Add(new OutputBinding(parameterNode.Name, handle));
+                        sb.Append("__sb.Append(\"").Append(parameterName).Append("\");\n");
+                        staticSql.Append(parameterName);
                         switch (direction)
                         {
                             case Direction.Output:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"{pname}\", {dbTypeExpr}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"{parameterName}\", {dbTypeExpression}{sizeArg});");
                                 break;
                             case Direction.InputOutput:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"{pname}\", {valueExpr}, {dbTypeExpr}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"{parameterName}\", {valueExpression}, {dbTypeExpression}{sizeArg});");
                                 break;
                             case Direction.ReturnValue:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"{pname}\", {dbTypeExpr});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"{parameterName}\", {dbTypeExpression});");
                                 break;
                         }
                         if (hasProvider && (direction is Direction.Output or Direction.InputOutput))
                         {
                             EmitParamLine(
-                                $"(({attrs!.ProviderParameterTypeFullName}){handle}).{attrs.ProviderPropertyName} = {attrs.ProviderValueExpr};");
+                                $"(({attributes!.ProviderParameterTypeFullName}){handle}).{attributes.ProviderPropertyName} = {attributes.ProviderValueExpression};");
                         }
                     }
                     break;
                 }
 
-                case RawSqlNode r:
+                case RawSqlNode rawSqlNode:
                     hasDynamicSql = true;
                     sb.Append("__sb.Append((")
-                        .Append(r.Source)
+                        .Append(rawSqlNode.Source)
                         .Append(")?.ToString() ?? string.Empty);\n");
                     break;
 
-                case CodeNode c:
+                case CodeNode codeNode:
                     hasDynamicSql = true;
-                    sb.Append(c.Code).Append('\n');
+                    sb.Append(codeNode.Code).Append('\n');
                     break;
 
                 // UsingNode is consumed by DataAccessorGenerator at the accessor level (aggregated and
@@ -262,5 +262,5 @@ internal static class NodeEmitter
             outputBindings);
     }
 
-    private static string Escape(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    private static string Escape(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

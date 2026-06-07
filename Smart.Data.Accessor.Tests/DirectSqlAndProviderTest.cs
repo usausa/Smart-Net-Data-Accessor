@@ -15,7 +15,7 @@ public sealed class DirectSqlAndProviderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("DELETE FROM Data WHERE Type = 1", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("DELETE FROM Data WHERE Type = 1", x.CommandText);
             cmd.SetupResult(2);
         });
 
@@ -31,7 +31,7 @@ public sealed class DirectSqlAndProviderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("SELECT Id, Name, Type, Kind FROM Data", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("SELECT Id, Name, Type, Kind FROM Data", x.CommandText);
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
                 new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large }));
@@ -64,11 +64,11 @@ public sealed class DirectSqlAndProviderTest
     {
         var provider = new DelegateDbProvider(static () =>
         {
-            var c = new MockDbConnection();
-            c.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
+            var con = new MockDbConnection();
+            con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
                 new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large })));
-            return c;
+            return con;
         });
 
         var accessor = new ProviderAccessor(provider);

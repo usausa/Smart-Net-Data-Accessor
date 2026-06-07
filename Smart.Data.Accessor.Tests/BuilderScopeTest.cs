@@ -18,14 +18,14 @@ public sealed class BuilderScopeTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = x =>
             {
                 // Columns are emitted in property declaration order: Id, Name, CreatedAt.
-                var nameParam = (MockDbParameter)c.Parameters[1];
+                var nameParam = (MockDbParameter)x.Parameters[1];
                 Assert.Equal("@Name", nameParam.ParameterName);
                 Assert.Equal(DbType.AnsiString, nameParam.DbType);   // F3: property-scope [DbType]
 
-                var createdParam = (MockDbParameter)c.Parameters[2];
+                var createdParam = (MockDbParameter)x.Parameters[2];
                 Assert.Equal("@CreatedAt", createdParam.ParameterName);
                 Assert.Equal(created.Ticks, (long)createdParam.Value!);   // class-scope TicksConverter.ToDb
             };

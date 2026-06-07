@@ -25,16 +25,16 @@ internal sealed record ParameterModel(
     bool IsDbTransaction,
     ParameterDirectionType Direction,
     ParameterRefKind RefKind,
-    string? DbTypeExpr,     // e.g. "global::System.Data.DbType.AnsiString"
+    string? DbTypeExpression,     // e.g. "global::System.Data.DbType.AnsiString"
     int? Size,
     string? EnumUnderlyingFullName,    // FQN of underlying primitive when parameter type is enum (or Nullable<enum>); null otherwise
     bool IsNullableEnum,
     // provider-specific DbType from `[DbType<TEnum>(value)]`.
-    // When non-null, emit `((ProviderParameterTypeFullName)p).ProviderPropertyName = ProviderValueExpr;`
+    // When non-null, emit `((ProviderParameterTypeFullName)p).ProviderPropertyName = ProviderValueExpression;`
     // after `AddInParameter`/`AddOutParameter`/`AddInOutParameter`.
     string? ProviderParameterTypeFullName,
     string? ProviderPropertyName,
-    string? ProviderValueExpr,
+    string? ProviderValueExpression,
     // non-null when a [TypeHandler<>] applies to this parameter (member / method / class / profile
     // scope). The bound value is written via `TConverter.ToDb(value)`. ConverterValueIsNullable is
     // true when the parameter is `Nullable<TClr>` (a HasValue guard is emitted so `ToDb` receives the

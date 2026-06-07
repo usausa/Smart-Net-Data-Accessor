@@ -13,10 +13,10 @@ using SourceGenerateHelper;
 // cannot be resolved.
 internal static class StandardModelBuilder
 {
-    public static BuilderMethodModel? BuildMethod(MethodBuildContext<Operation> c)
+    public static BuilderMethodModel? BuildMethod(MethodBuildContext<Operation> context)
     {
-        var r = MethodResolver.Resolve(c.Container, c.Method, c.Attr, c.TypeMaps, c.Profile, c.Diagnostics, c.Location);
-        if (r is null)
+        var method = MethodResolver.Resolve(context.Container, context.Method, context.Attribute, context.TypeMaps, context.Profile, context.Diagnostics, context.Location);
+        if (method is null)
         {
             return null;
         }
@@ -24,54 +24,54 @@ internal static class StandardModelBuilder
         // 種別毎に対応する Model を返す。Update / Delete / SelectSingle はキー（[Key]）が無いと WHERE を組めないため診断を出す。
         // Return the model per kind. Update / Delete / SelectSingle need a key ([Key]) to build the WHERE clause, so they
         // raise a diagnostic when none is present.
-        switch (c.Operation)
+        switch (context.Operation)
         {
             case Operation.Insert:
-                return new InsertModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.EntityParamName);
+                return new InsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName);
 
             case Operation.Update:
-                if (!r.HasEntityType || (r.EntityParamName is null))
+                if (!method.HasEntityType || (method.EntityParamName is null))
                 {
                     // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
                     // SDA1004: cannot resolve the column list (no entity instance).
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                else if (!r.Columns.Any(static col => col.IsKey))
+                else if (!method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new UpdateModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.EntityParamName, r.HasEntityType);
+                return new UpdateModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType);
 
             case Operation.Delete:
-                if (r.HasEntityType && !r.Columns.Any(static col => col.IsKey))
+                if (method.HasEntityType && !method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new DeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns);
+                return new DeleteModel(method.MethodName, method.TableName, method.ValueParams, method.Columns);
 
             case Operation.Count:
-                return new CountModel(r.MethodName, r.TableName, r.ValueParams);
+                return new CountModel(method.MethodName, method.TableName, method.ValueParams);
 
             case Operation.Truncate:
-                return new TruncateModel(r.MethodName, r.TableName, r.ValueParams);
+                return new TruncateModel(method.MethodName, method.TableName, method.ValueParams);
 
             case Operation.Select:
-                if (!r.HasEntityType)
+                if (!method.HasEntityType)
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                return new SelectModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new SelectModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
 
             case Operation.SelectSingle:
-                if (!r.HasEntityType)
+                if (!method.HasEntityType)
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                else if (!r.Columns.Any(static col => col.IsKey))
+                else if (!method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new SelectSingleModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new SelectSingleModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
 
             default:
                 return null;

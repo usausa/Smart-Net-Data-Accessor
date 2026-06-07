@@ -24,7 +24,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "UPDATE [Data] SET [Name] = @Name, [Age] = @Age WHERE [Id] = @k_Id")]
     [InlineData("MySql", "UPDATE `Data` SET `Name` = @Name, `Age` = @Age WHERE `Id` = @k_Id")]
     [InlineData("Pg", "UPDATE \"Data\" SET \"Name\" = @Name, \"Age\" = @Age WHERE \"Id\" = @k_Id")]
-    public void ProviderUpdateQuotesAllIdentifiers(string attr, string expected)
+    public void ProviderUpdateQuotesAllIdentifiers(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -40,9 +40,9 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Update(typeof(Entity), Table = "Data")]
+                [{{attributePrefix}}Update(typeof(Entity), Table = "Data")]
                 [Execute]
-                public partial int Upd(Entity entity);
+                public partial int update(Entity entity);
             }
             """;
         AssertCommandText(GeneratorTestHelper.Run(source).AllGeneratedText, expected);
@@ -52,7 +52,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "DELETE FROM [Data] WHERE [Id] = @id")]
     [InlineData("MySql", "DELETE FROM `Data` WHERE `Id` = @id")]
     [InlineData("Pg", "DELETE FROM \"Data\" WHERE \"Id\" = @id")]
-    public void ProviderDeleteQuotesAllIdentifiers(string attr, string expected)
+    public void ProviderDeleteQuotesAllIdentifiers(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -66,7 +66,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Delete(typeof(Entity), Table = "Data")]
+                [{{attributePrefix}}Delete(typeof(Entity), Table = "Data")]
                 [Execute]
                 public partial int Del(int id);
             }
@@ -78,7 +78,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "SELECT [Id], [Name] FROM [Data] WHERE [Id] = @id")]
     [InlineData("MySql", "SELECT `Id`, `Name` FROM `Data` WHERE `Id` = @id")]
     [InlineData("Pg", "SELECT \"Id\", \"Name\" FROM \"Data\" WHERE \"Id\" = @id")]
-    public void ProviderSelectSingleQuotesAllIdentifiers(string attr, string expected)
+    public void ProviderSelectSingleQuotesAllIdentifiers(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -93,7 +93,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}SelectSingle(typeof(Entity), Table = "Data")]
+                [{{attributePrefix}}SelectSingle(typeof(Entity), Table = "Data")]
                 [QueryFirst]
                 public partial Entity Get(int id);
             }
@@ -105,7 +105,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "SELECT COUNT(*) FROM [Data]")]
     [InlineData("MySql", "SELECT COUNT(*) FROM `Data`")]
     [InlineData("Pg", "SELECT COUNT(*) FROM \"Data\"")]
-    public void ProviderCountQuotesTable(string attr, string expected)
+    public void ProviderCountQuotesTable(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -118,7 +118,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Count(typeof(Entity), Table = "Data")]
+                [{{attributePrefix}}Count(typeof(Entity), Table = "Data")]
                 [ExecuteScalar]
                 public partial long Cnt();
             }
@@ -130,7 +130,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "TRUNCATE TABLE [Data]")]
     [InlineData("MySql", "TRUNCATE TABLE `Data`")]
     [InlineData("Pg", "TRUNCATE TABLE \"Data\"")]
-    public void ProviderTruncateQuotesTable(string attr, string expected)
+    public void ProviderTruncateQuotesTable(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -143,7 +143,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Truncate(typeof(Entity), Table = "Data")]
+                [{{attributePrefix}}Truncate(typeof(Entity), Table = "Data")]
                 [Execute]
                 public partial int Clr();
             }
@@ -157,7 +157,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "SELECT * FROM [Data]")]
     [InlineData("MySql", "SELECT * FROM `Data`")]
     [InlineData("Pg", "SELECT * FROM \"Data\"")]
-    public void ProviderSelectWithoutEntityEmitsSelectStar(string attr, string expected)
+    public void ProviderSelectWithoutEntityEmitsSelectStar(string attributePrefix, string expected)
     {
         var source = $$"""
             using System.Collections.Generic;
@@ -171,7 +171,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Select(Table = "Data")]
+                [{{attributePrefix}}Select(Table = "Data")]
                 [Query]
                 public partial IReadOnlyList<Entity> All();
             }
@@ -183,7 +183,7 @@ public sealed class ProviderOperationBuilderTests
     [InlineData("Sql", "UPDATE [Data] SET ")]
     [InlineData("MySql", "UPDATE `Data` SET ")]
     [InlineData("Pg", "UPDATE \"Data\" SET ")]
-    public void ProviderUpdateWithoutEntityEmitsSetStub(string attr, string expected)
+    public void ProviderUpdateWithoutEntityEmitsSetStub(string attributePrefix, string expected)
     {
         var source = $$"""
             using Smart.Data.Accessor.Attributes;
@@ -191,7 +191,7 @@ public sealed class ProviderOperationBuilderTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-                [{{attr}}Update(Table = "Data")]
+                [{{attributePrefix}}Update(Table = "Data")]
                 [Execute]
                 public partial int Touch();
             }

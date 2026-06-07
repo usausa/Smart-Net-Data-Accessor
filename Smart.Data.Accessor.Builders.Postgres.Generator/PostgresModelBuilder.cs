@@ -15,10 +15,10 @@ using SourceGenerateHelper;
 // column read happen here. Returns null when the method cannot be resolved.
 internal static class PostgresModelBuilder
 {
-    public static BuilderMethodModel? BuildMethod(MethodBuildContext<PostgresOperation> c)
+    public static BuilderMethodModel? BuildMethod(MethodBuildContext<PostgresOperation> context)
     {
-        var r = MethodResolver.Resolve(c.Container, c.Method, c.Attr, c.TypeMaps, c.Profile, c.Diagnostics, c.Location);
-        if (r is null)
+        var method = MethodResolver.Resolve(context.Container, context.Method, context.Attribute, context.TypeMaps, context.Profile, context.Diagnostics, context.Location);
+        if (method is null)
         {
             return null;
         }
@@ -26,67 +26,67 @@ internal static class PostgresModelBuilder
         // 種別毎に対応する Model を返す。Update / Delete / SelectSingle / Upsert はキー（[Key]）が無いと WHERE/ON を組めないため診断を出す。
         // Return the model per kind. Update / Delete / SelectSingle / Upsert need a key ([Key]) to build the WHERE/ON
         // clause, so they raise a diagnostic when none is present.
-        switch (c.Operation)
+        switch (context.Operation)
         {
             case PostgresOperation.Insert:
-                return new PostgresInsertModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.EntityParamName, ReadReturningColumns(c.Attr));
+                return new PostgresInsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, ReadReturningColumns(context.Attribute));
 
             case PostgresOperation.Update:
-                if (!r.HasEntityType || (r.EntityParamName is null))
+                if (!method.HasEntityType || (method.EntityParamName is null))
                 {
                     // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
                     // SDA1004: cannot resolve the column list (no entity instance).
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                else if (!r.Columns.Any(static col => col.IsKey))
+                else if (!method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new PostgresUpdateModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.EntityParamName, r.HasEntityType, ReadReturningColumns(c.Attr));
+                return new PostgresUpdateModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType, ReadReturningColumns(context.Attribute));
 
             case PostgresOperation.Delete:
-                if (r.HasEntityType && !r.Columns.Any(static col => col.IsKey))
+                if (method.HasEntityType && !method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new PostgresDeleteModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, ReadReturningColumns(c.Attr));
+                return new PostgresDeleteModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, ReadReturningColumns(context.Attribute));
 
             case PostgresOperation.Count:
-                return new PostgresCountModel(r.MethodName, r.TableName, r.ValueParams);
+                return new PostgresCountModel(method.MethodName, method.TableName, method.ValueParams);
 
             case PostgresOperation.Truncate:
-                return new PostgresTruncateModel(r.MethodName, r.TableName, r.ValueParams);
+                return new PostgresTruncateModel(method.MethodName, method.TableName, method.ValueParams);
 
             case PostgresOperation.Select:
-                if (!r.HasEntityType)
+                if (!method.HasEntityType)
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                return new PostgresSelectModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new PostgresSelectModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
 
             case PostgresOperation.SelectSingle:
-                if (!r.HasEntityType)
+                if (!method.HasEntityType)
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                else if (!r.Columns.Any(static col => col.IsKey))
+                else if (!method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new PostgresSelectSingleModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.HasEntityType);
+                return new PostgresSelectSingleModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
 
             case PostgresOperation.Upsert:
-                if (!r.HasEntityType || (r.EntityParamName is null))
+                if (!method.HasEntityType || (method.EntityParamName is null))
                 {
                     // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
                     // SDA1004: cannot resolve the column list (no entity instance).
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, c.Location, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
                 }
-                else if (!r.Columns.Any(static col => col.IsKey))
+                else if (!method.Columns.Any(static x => x.IsKey))
                 {
-                    c.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, c.Location, r.EntityTypeName!, c.Method.Name));
+                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
                 }
-                return new PostgresUpsertModel(r.MethodName, r.TableName, r.ValueParams, r.Columns, r.EntityParamName, r.HasEntityType);
+                return new PostgresUpsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType);
 
             default:
                 return null;
@@ -95,13 +95,13 @@ internal static class PostgresModelBuilder
 
     // 属性の Returning 名前引数（RETURNING 句で返す列。カンマ区切り）を読む。未指定・空白は null。
     // Read the attribute's Returning named argument (columns for the RETURNING clause, comma-separated). Null when absent/blank.
-    private static string? ReadReturningColumns(AttributeData attr)
+    private static string? ReadReturningColumns(AttributeData attribute)
     {
-        foreach (var kv in attr.NamedArguments)
+        foreach (var namedArgument in attribute.NamedArguments)
         {
-            if ((kv.Key == "Returning") && (kv.Value.Value is string s) && !String.IsNullOrWhiteSpace(s))
+            if ((namedArgument.Key == "Returning") && (namedArgument.Value.Value is string value) && !String.IsNullOrWhiteSpace(value))
             {
-                return s;
+                return value;
             }
         }
         return null;

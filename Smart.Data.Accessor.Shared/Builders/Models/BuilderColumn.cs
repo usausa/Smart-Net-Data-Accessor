@@ -15,7 +15,7 @@ internal sealed record BuilderColumn(
     string? EnumUnderlyingFullName,
     bool IsNullableEnum,
     // final p.DbType expression: explicit [DbType] wins, else a [TypeMap] default when no converter applies; null when none.
-    string? DbTypeExpr,
+    string? DbTypeExpression,
     int? Size);
 
 // the converter type plus its IValueConverter<TDb, TClr> type-argument FQNs, emitted as the three

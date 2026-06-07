@@ -75,19 +75,19 @@ public sealed class ExecuteHelperTest
     {
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
-        var p = cmd.CreateParameter();
+        var parameter = cmd.CreateParameter();
 
-        p.Value = 42;
-        Assert.Equal(42, ExecuteHelper.GetOutputValue<int>(p));
+        parameter.Value = 42;
+        Assert.Equal(42, ExecuteHelper.GetOutputValue<int>(parameter));
 
-        p.Value = 42;
-        Assert.Equal(42L, ExecuteHelper.GetOutputValue<long>(p));   // int → long
+        parameter.Value = 42;
+        Assert.Equal(42L, ExecuteHelper.GetOutputValue<long>(parameter));   // int → long
 
-        p.Value = 2;
-        Assert.Equal(DataType.Large, ExecuteHelper.GetOutputValue<DataType>(p));
+        parameter.Value = 2;
+        Assert.Equal(DataType.Large, ExecuteHelper.GetOutputValue<DataType>(parameter));
 
-        p.Value = DBNull.Value;
-        Assert.Equal(0, ExecuteHelper.GetOutputValue<int>(p));
+        parameter.Value = DBNull.Value;
+        Assert.Equal(0, ExecuteHelper.GetOutputValue<int>(parameter));
     }
 
     // ---- AddInParameter (+ AssignValue paths) ----
@@ -98,11 +98,11 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInParameter(cmd, "@p", 42);
+        var parameter = ExecuteHelper.AddInParameter(cmd, "@p", 42);
 
-        Assert.Equal("@p", p.ParameterName);
-        Assert.Equal(ParameterDirection.Input, p.Direction);
-        Assert.Equal(42, p.Value);
+        Assert.Equal("@p", parameter.ParameterName);
+        Assert.Equal(ParameterDirection.Input, parameter.Direction);
+        Assert.Equal(42, parameter.Value);
         Assert.Single(cmd.Parameters);
     }
 
@@ -112,9 +112,9 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInParameter(cmd, "@p", null);
+        var parameter = ExecuteHelper.AddInParameter(cmd, "@p", null);
 
-        Assert.Equal(DBNull.Value, p.Value);
+        Assert.Equal(DBNull.Value, parameter.Value);
     }
 
     [Fact]
@@ -123,9 +123,9 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInParameter(cmd, "@p", DataType.Large);
+        var parameter = ExecuteHelper.AddInParameter(cmd, "@p", DataType.Large);
 
-        Assert.Equal(2, p.Value);   // enum → underlying int (AssignValue)
+        Assert.Equal(2, parameter.Value);   // enum → underlying int (AssignValue)
     }
 
     [Fact]
@@ -134,10 +134,10 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInParameter(cmd, "@p", "abc", DbType.AnsiString, 16);
+        var parameter = ExecuteHelper.AddInParameter(cmd, "@p", "abc", DbType.AnsiString, 16);
 
-        Assert.Equal(DbType.AnsiString, p.DbType);
-        Assert.Equal(16, p.Size);
+        Assert.Equal(DbType.AnsiString, parameter.DbType);
+        Assert.Equal(16, parameter.Size);
     }
 
     // ---- AddInParameters (IN-list expansion) ----
@@ -172,11 +172,11 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddOutParameter(cmd, "@o", DbType.Int32, 4);
+        var parameter = ExecuteHelper.AddOutParameter(cmd, "@o", DbType.Int32, 4);
 
-        Assert.Equal(ParameterDirection.Output, p.Direction);
-        Assert.Equal(DbType.Int32, p.DbType);
-        Assert.Equal(4, p.Size);
+        Assert.Equal(ParameterDirection.Output, parameter.Direction);
+        Assert.Equal(DbType.Int32, parameter.DbType);
+        Assert.Equal(4, parameter.Size);
     }
 
     [Fact]
@@ -185,11 +185,11 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInOutParameter(cmd, "@io", 7, DbType.Int32);
+        var parameter = ExecuteHelper.AddInOutParameter(cmd, "@io", 7, DbType.Int32);
 
-        Assert.Equal(ParameterDirection.InputOutput, p.Direction);
-        Assert.Equal(7, p.Value);
-        Assert.Equal(DbType.Int32, p.DbType);
+        Assert.Equal(ParameterDirection.InputOutput, parameter.Direction);
+        Assert.Equal(7, parameter.Value);
+        Assert.Equal(DbType.Int32, parameter.DbType);
     }
 
     [Fact]
@@ -198,9 +198,9 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddInOutParameter(cmd, "@io", null, DbType.Int32);
+        var parameter = ExecuteHelper.AddInOutParameter(cmd, "@io", null, DbType.Int32);
 
-        Assert.Equal(DBNull.Value, p.Value);
+        Assert.Equal(DBNull.Value, parameter.Value);
     }
 
     [Fact]
@@ -209,9 +209,9 @@ public sealed class ExecuteHelperTest
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
 
-        var p = ExecuteHelper.AddReturnValueParameter(cmd, "@rv", DbType.Int32);
+        var parameter = ExecuteHelper.AddReturnValueParameter(cmd, "@rv", DbType.Int32);
 
-        Assert.Equal(ParameterDirection.ReturnValue, p.Direction);
-        Assert.Equal(DbType.Int32, p.DbType);
+        Assert.Equal(ParameterDirection.ReturnValue, parameter.Direction);
+        Assert.Equal(DbType.Int32, parameter.DbType);
     }
 }

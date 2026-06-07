@@ -13,14 +13,14 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         internal sealed class ClassConv : IValueConverter<long, DateTime>
         {
-            public static DateTime FromDb(long v) => new(v);
-            public static long ToDb(DateTime v) => v.Ticks;
+            public static DateTime FromDb(long value) => new(value);
+            public static long ToDb(DateTime value) => value.Ticks;
         }
 
         internal sealed class PropConv : IValueConverter<long, DateTime>
         {
-            public static DateTime FromDb(long v) => new(v);
-            public static long ToDb(DateTime v) => v.Ticks;
+            public static DateTime FromDb(long value) => new(value);
+            public static long ToDb(DateTime value) => value.Ticks;
         }
 
         internal sealed class Entity

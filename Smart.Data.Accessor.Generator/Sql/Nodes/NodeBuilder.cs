@@ -45,19 +45,19 @@ public sealed class NodeBuilder
                 continue;
             }
 
-            var s = code.Code;
-            for (var i = 0; i < s.Length; i++)
+            var codeText = code.Code;
+            for (var i = 0; i < codeText.Length; i++)
             {
-                switch (s[i])
+                switch (codeText[i])
                 {
                     case '"':
-                        i = SkipLiteral(s, i, '"');
+                        i = SkipLiteral(codeText, i, '"');
                         break;
                     case '\'':
-                        i = SkipLiteral(s, i, '\'');
+                        i = SkipLiteral(codeText, i, '\'');
                         break;
-                    case '/' when (i + 1 < s.Length) && (s[i + 1] == '/'):
-                        i = s.Length;   // line comment: ignore the rest of this block fragment
+                    case '/' when (i + 1 < codeText.Length) && (codeText[i + 1] == '/'):
+                        i = codeText.Length;   // line comment: ignore the rest of this block fragment
                         break;
                     case '{':
                         depth++;
@@ -78,21 +78,21 @@ public sealed class NodeBuilder
 
     // Advances past a string ('"') or char ('\'') literal beginning at index i, honouring the '\'
     // escape. Returns the index of the closing delimiter (the caller's loop increment moves past it).
-    private static int SkipLiteral(string s, int i, char delimiter)
+    private static int SkipLiteral(string text, int i, char delimiter)
     {
-        for (var j = i + 1; j < s.Length; j++)
+        for (var j = i + 1; j < text.Length; j++)
         {
-            if (s[j] == '\\')
+            if (text[j] == '\\')
             {
                 j++;   // skip the escaped character
                 continue;
             }
-            if (s[j] == delimiter)
+            if (text[j] == delimiter)
             {
                 return j;
             }
         }
-        return s.Length;
+        return text.Length;
     }
 
     private Token? NextToken() => current + 1 < tokens.Count ? tokens[++current] : null;

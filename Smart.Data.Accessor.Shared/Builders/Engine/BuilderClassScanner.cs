@@ -21,17 +21,17 @@ internal static class BuilderClassScanner
     public const string TrackingName = "BuilderClassModel";
 
     public static BuilderClassModel Scan<TOperation>(
-        GeneratorAttributeSyntaxContext ctx,
+        GeneratorAttributeSyntaxContext context,
         IReadOnlyList<(string Attribute, TOperation Operation)> targets,
         Func<MethodBuildContext<TOperation>, BuilderMethodModel?> buildMethod,
-        CancellationToken ct)
+        CancellationToken cancellation)
     {
         // クラスの名前空間・アクセシビリティ・partial 有無を取得し、[TypeMap] の解決スコープ（class ＋ profile）を用意する。
         // Read the class namespace / accessibility / partial-ness, and prepare the [TypeMap] resolution scope (class + profile).
-        var container = (INamedTypeSymbol)ctx.TargetSymbol;
+        var container = (INamedTypeSymbol)context.TargetSymbol;
         var ns = container.ContainingNamespace.IsGlobalNamespace ? string.Empty : container.ContainingNamespace.ToDisplayString();
         var accessibility = container.DeclaredAccessibility;
-        var isPartial = (ctx.TargetNode is ClassDeclarationSyntax classSyntax) && classSyntax.Modifiers.Any(static t => t.Text == "partial");
+        var isPartial = (context.TargetNode is ClassDeclarationSyntax classSyntax) && classSyntax.Modifiers.Any(static x => x.Text == "partial");
 
         var profile = MappingAttributeHelper.ResolveProfile(container);
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(container, profile);
@@ -43,7 +43,7 @@ internal static class BuilderClassScanner
         // Scan each member and process only the methods carrying one of this generator's QueryBuilder attributes (targets).
         foreach (var member in container.GetMembers())
         {
-            ct.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             if (member is not IMethodSymbol method)
             {
                 continue;
@@ -51,15 +51,15 @@ internal static class BuilderClassScanner
 
             // このメソッドに付いた対象属性を集める（複数一致＝同一メソッドへの重複指定）。
             // Collect the target attributes present on this method (multiple matches = a duplicate specification on one method).
-            var matched = new List<(AttributeData Attr, TOperation Operation)>();
-            foreach (var attrData in method.GetAttributes())
+            var matched = new List<(AttributeData Attribute, TOperation Operation)>();
+            foreach (var attribute in method.GetAttributes())
             {
-                var fq = attrData.AttributeClass?.ToDisplayString();
+                var attributeName = attribute.AttributeClass?.ToDisplayString();
                 foreach (var target in targets)
                 {
-                    if (target.Attribute == fq)
+                    if (target.Attribute == attributeName)
                     {
-                        matched.Add((attrData, target.Operation));
+                        matched.Add((attribute, target.Operation));
                         break;
                     }
                 }
@@ -89,7 +89,7 @@ internal static class BuilderClassScanner
             }
 
             var model = buildMethod(new MethodBuildContext<TOperation>(
-                container, method, matched[0].Attr, matched[0].Operation, typeMaps, profile, diagnostics, location));
+                container, method, matched[0].Attribute, matched[0].Operation, typeMaps, profile, diagnostics, location));
             if (model is not null)
             {
                 methods.Add(model);
@@ -110,7 +110,7 @@ internal static class BuilderClassScanner
 internal readonly record struct MethodBuildContext<TOperation>(
     INamedTypeSymbol Container,
     IMethodSymbol Method,
-    AttributeData Attr,
+    AttributeData Attribute,
     TOperation Operation,
     Dictionary<string, TypeMapInfo> TypeMaps,
     INamedTypeSymbol? Profile,

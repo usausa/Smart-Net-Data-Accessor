@@ -15,8 +15,8 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal(
-                "INSERT INTO \"Data\" (\"Name\", \"Type\", \"Kind\") VALUES (@Name, @Type, @Kind)", c.CommandText);
+            cmd.Executing = static x => Assert.Equal(
+                "INSERT INTO \"Data\" (\"Name\", \"Type\", \"Kind\") VALUES (@Name, @Type, @Kind)", x.CommandText);
             cmd.SetupResult(1);
         });
 
@@ -32,8 +32,8 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal(
-                "UPDATE \"Data\" SET \"Name\" = @Name, \"Type\" = @Type, \"Kind\" = @Kind WHERE \"Id\" = @k_Id", c.CommandText);
+            cmd.Executing = static x => Assert.Equal(
+                "UPDATE \"Data\" SET \"Name\" = @Name, \"Type\" = @Type, \"Kind\" = @Kind WHERE \"Id\" = @k_Id", x.CommandText);
             cmd.SetupResult(1);
         });
 
@@ -49,7 +49,7 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("DELETE FROM \"Data\" WHERE \"Id\" = @id", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("DELETE FROM \"Data\" WHERE \"Id\" = @id", x.CommandText);
             cmd.SetupResult(1);
         });
 
@@ -65,7 +65,7 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("SELECT COUNT(*) FROM \"Data\"", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("SELECT COUNT(*) FROM \"Data\"", x.CommandText);
             cmd.SetupResult(3L);
         });
 
@@ -79,8 +79,8 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal(
-                "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\"", c.CommandText);
+            cmd.Executing = static x => Assert.Equal(
+                "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\"", x.CommandText);
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small }));
         });
@@ -98,8 +98,8 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal(
-                "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\" WHERE \"Id\" = @id", c.CommandText);
+            cmd.Executing = static x => Assert.Equal(
+                "SELECT \"Id\", \"Name\", \"Type\", \"Kind\" FROM \"Data\" WHERE \"Id\" = @id", x.CommandText);
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 9, Name = "Bob", Type = 2, Kind = DataType.Large }));
         });
@@ -117,8 +117,8 @@ public sealed class BuilderTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal(
-                "INSERT INTO \"Data\" (\"id\", \"name\") VALUES (@id, @name)", c.CommandText);
+            cmd.Executing = static x => Assert.Equal(
+                "INSERT INTO \"Data\" (\"id\", \"name\") VALUES (@id, @name)", x.CommandText);
             cmd.SetupResult(1);
         });
 

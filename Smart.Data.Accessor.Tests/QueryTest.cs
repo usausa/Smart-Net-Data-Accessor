@@ -15,7 +15,7 @@ public sealed class QueryTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("SELECT Id, Name, Type, Kind FROM Data ORDER BY Id", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("SELECT Id, Name, Type, Kind FROM Data ORDER BY Id", x.CommandText);
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small },
                 new DataEntity { Id = 2, Name = "Bob", Type = 2, Kind = DataType.Large }));

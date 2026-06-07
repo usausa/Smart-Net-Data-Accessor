@@ -15,5 +15,5 @@ internal sealed record BuilderValueParam(
     string? EnumUnderlyingFullName,
     bool IsNullableEnum,
     // p.DbType / p.Size from a [TypeMap] default; null when none.
-    string? DbTypeExpr,
+    string? DbTypeExpression,
     int? Size);

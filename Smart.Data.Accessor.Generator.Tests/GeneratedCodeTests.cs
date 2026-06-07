@@ -171,8 +171,8 @@ public sealed class GeneratedCodeTests
 
             internal sealed class TicksConverter : IValueConverter<long, DateTime>
             {
-                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
-                public static long ToDb(DateTime v) => v.Ticks;
+                public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+                public static long ToDb(DateTime value) => value.Ticks;
             }
 
             internal sealed class Entity
@@ -210,8 +210,8 @@ public sealed class GeneratedCodeTests
 
             internal sealed class TicksConverter : IValueConverter<long, DateTime>
             {
-                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
-                public static long ToDb(DateTime v) => v.Ticks;
+                public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+                public static long ToDb(DateTime value) => value.Ticks;
             }
 
             [DataAccessor]
@@ -553,7 +553,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        // OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpr）。
+        // OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpression）。
         Assert.Contains("AddOutParameter(cmd, \"@total\", global::System.Data.DbType.Int32)", text, StringComparison.Ordinal);
     }
 

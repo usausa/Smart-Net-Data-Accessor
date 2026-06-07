@@ -16,7 +16,7 @@ public sealed class DynamicSqlTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => captured = c.CommandText;
+            cmd.Executing = x => captured = x.CommandText;
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small }));
         });
@@ -35,7 +35,7 @@ public sealed class DynamicSqlTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => captured = c.CommandText;
+            cmd.Executing = x => captured = x.CommandText;
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 5, Name = "Bob", Type = 2, Kind = DataType.Large }));
         });
@@ -54,7 +54,7 @@ public sealed class DynamicSqlTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => captured = c.CommandText;
+            cmd.Executing = x => captured = x.CommandText;
             cmd.SetupResult(MockData.DataReader(
                 new DataEntity { Id = 1, Name = "A", Type = 1, Kind = DataType.Small },
                 new DataEntity { Id = 2, Name = "B", Type = 2, Kind = DataType.Large }));
@@ -75,7 +75,7 @@ public sealed class DynamicSqlTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c => captured = c.CommandText;
+            cmd.Executing = x => captured = x.CommandText;
             cmd.SetupResult(MockData.EmptyDataReader());
         });
 

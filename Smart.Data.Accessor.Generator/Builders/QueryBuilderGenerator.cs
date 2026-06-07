@@ -35,9 +35,9 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName(
                 BuilderClassScanner.DataAccessorAttributeName,
                 static (node, _) => node is ClassDeclarationSyntax,
-                static (ctx, ct) => BuilderClassScanner.Scan(ctx, Targets, StandardModelBuilder.BuildMethod, ct))
+                static (context, cancellation) => BuilderClassScanner.Scan(context, Targets, StandardModelBuilder.BuildMethod, cancellation))
             .WithTrackingName(BuilderClassScanner.TrackingName);
 
-        context.RegisterSourceOutput(provider, static (spc, model) => BuilderOutput.Emit(spc, model, StandardSourceBuilder.EmitMethod, string.Empty));
+        context.RegisterSourceOutput(provider, static (productionContext, model) => BuilderOutput.Emit(productionContext, model, StandardSourceBuilder.EmitMethod, string.Empty));
     }
 }

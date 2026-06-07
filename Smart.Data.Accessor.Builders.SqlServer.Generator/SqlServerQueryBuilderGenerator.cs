@@ -35,9 +35,9 @@ public sealed class SqlServerQueryBuilderGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName(
                 BuilderClassScanner.DataAccessorAttributeName,
                 static (node, _) => node is ClassDeclarationSyntax,
-                static (ctx, ct) => BuilderClassScanner.Scan(ctx, Targets, SqlServerModelBuilder.BuildMethod, ct))
+                static (context, cancellation) => BuilderClassScanner.Scan(context, Targets, SqlServerModelBuilder.BuildMethod, cancellation))
             .WithTrackingName(BuilderClassScanner.TrackingName);
 
-        context.RegisterSourceOutput(provider, static (spc, model) => BuilderOutput.Emit(spc, model, SqlServerSourceBuilder.EmitMethod, ".SqlServer"));
+        context.RegisterSourceOutput(provider, static (productionContext, model) => BuilderOutput.Emit(productionContext, model, SqlServerSourceBuilder.EmitMethod, ".SqlServer"));
     }
 }

@@ -16,87 +16,87 @@ internal static class AccessorSourceBuilder
     // Decide the (AddInParameter-family method name, value expression) for an input parameter. A [TypeHandler<>] input
     // parameter binds through the converter-sharing overload AddInParameter<TConverter, TDb, TClr>(cmd, name, value)
     // (the helper calls ToDb + handles null); a non-converter parameter uses the plain AddInParameter with a gen-time value expression.
-    private static (string Method, string Value) BuildInParameterCall(ParameterModel p)
-        => p.ConverterTypeFullName is { } conv
-            ? (CodeExpressionHelper.AddInParameterConverter(conv, p.ConverterDbTypeFullName!, p.ConverterClrTypeFullName!), p.Name)
-            : ("AddInParameter", BuildParameterValueExpr(p));
+    private static (string Method, string Value) BuildInParameterCall(ParameterModel parameter)
+        => parameter.ConverterTypeFullName is { } converter
+            ? (CodeExpressionHelper.AddInParameterConverter(converter, parameter.ConverterDbTypeFullName!, parameter.ConverterClrTypeFullName!), parameter.Name)
+            : ("AddInParameter", BuildParameterValueExpression(parameter));
 
     // 入力値式を組み立てる。束縛された [TypeHandler<>] があれば TConverter.ToDb(...) で値を書き、enum 既定キャストより優先する。
     // Nullable<TClr> の場合は HasValue ガードで、非 null なら値を ToDb へ、null なら null（→ DBNull）を渡す。
     // Build the input value expression. A bound [TypeHandler<>] writes the value via TConverter.ToDb(...) and takes
     // priority over the enum default cast. For Nullable<TClr>, a HasValue guard passes the non-null value to ToDb,
     // otherwise null (→ DBNull).
-    private static string BuildParameterValueExpr(ParameterModel p)
+    private static string BuildParameterValueExpression(ParameterModel parameter)
     {
-        if (p.ConverterTypeFullName is { } converter)
+        if (parameter.ConverterTypeFullName is { } converter)
         {
-            return p.ConverterValueIsNullable
-                ? $"({p.Name}.HasValue ? (object?){converter}.ToDb({p.Name}.Value) : null)"
-                : $"{converter}.ToDb({p.Name})";
+            return parameter.ConverterValueIsNullable
+                ? $"({parameter.Name}.HasValue ? (object?){converter}.ToDb({parameter.Name}.Value) : null)"
+                : $"{converter}.ToDb({parameter.Name})";
         }
-        if (p.EnumUnderlyingFullName is null)
+        if (parameter.EnumUnderlyingFullName is null)
         {
-            return p.Name;
+            return parameter.Name;
         }
-        return CodeExpressionHelper.EnumCastValue(p.EnumUnderlyingFullName, p.IsNullableEnum, p.Name);
+        return CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, parameter.Name);
     }
 
     // POCO プロパティの入力値式（{argName}.{property}）を組み立てる。プロパティが enum なら underlying へのキャストを付ける。
     // Build the input value expression for a POCO property ({argName}.{property}), adding the enum-underlying cast when the property is an enum.
-    private static string BuildPocoValueExpr(string argName, PocoBindProperty pp)
+    private static string BuildPocoValueExpression(string argName, PocoBindProperty property)
     {
-        var access = argName + "." + pp.PropertyName;
+        var access = argName + "." + property.PropertyName;
         // converter があれば TConverter.ToDb で入力を書く（enum キャストより優先）。
         // A converter writes the input via TConverter.ToDb (priority over the enum cast).
-        if (pp.ConverterTypeFullName is { } converter)
+        if (property.ConverterTypeFullName is { } converter)
         {
-            return pp.ConverterValueIsNullable
+            return property.ConverterValueIsNullable
                 ? $"({access}.HasValue ? (object?){converter}.ToDb({access}.Value) : null)"
                 : $"{converter}.ToDb({access})";
         }
-        if (pp.EnumUnderlyingFullName is null)
+        if (property.EnumUnderlyingFullName is null)
         {
             return access;
         }
-        return CodeExpressionHelper.EnumCastValue(pp.EnumUnderlyingFullName, pp.IsNullableEnum, access);
+        return CodeExpressionHelper.EnumCastValue(property.EnumUnderlyingFullName, property.IsNullableEnum, access);
     }
 
     // [TypeHandler<>] が付いた入力 POCO プロパティは AddInParameter<TConverter,TDb,TClr> で束縛する（ヘルパーが ToDb と null を処理）。
     // converter が無いプロパティは生成時の値式を使う。
     // A [TypeHandler<>] input POCO property binds through AddInParameter<TConverter,TDb,TClr> (the helper calls ToDb +
     // handles null); a non-converter property uses the gen-time value expression.
-    private static (string Method, string Value) BuildPocoInParameterCall(string argName, PocoBindProperty pp)
-        => pp.ConverterTypeFullName is { } conv
-            ? (CodeExpressionHelper.AddInParameterConverter(conv, pp.ConverterDbTypeFullName!, pp.ConverterClrTypeFullName!), argName + "." + pp.PropertyName)
-            : ("AddInParameter", BuildPocoValueExpr(argName, pp));
+    private static (string Method, string Value) BuildPocoInParameterCall(string argName, PocoBindProperty property)
+        => property.ConverterTypeFullName is { } converter
+            ? (CodeExpressionHelper.AddInParameterConverter(converter, property.ConverterDbTypeFullName!, property.ConverterClrTypeFullName!), argName + "." + property.PropertyName)
+            : ("AddInParameter", BuildPocoValueExpression(argName, property));
 
     // 展開した POCO プロパティ 1 つ分の Add*Parameter を出力する（ストアド / DirectSql セットアップ用）。Direction に応じて
     // OUT / InOut / 通常入力を出し分ける。
     // Emit Add*Parameter for one expanded POCO property (procedure / DirectSql setup), choosing OUT / InOut / plain input by Direction.
-    private static void EmitPocoPropertyParameter(SourceBuilder builder, char bindMarker, string argName, PocoBindProperty pp)
+    private static void EmitPocoPropertyParameter(SourceBuilder builder, char bindMarker, string argName, PocoBindProperty property)
     {
-        var paramName = bindMarker + pp.ParamName;
-        var valueExpr = BuildPocoValueExpr(argName, pp);
-        var dbTypeExprOrDefault = pp.DbTypeExpr ?? "global::System.Data.DbType.Object";
-        var sizeArg = pp.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
+        var paramName = bindMarker + property.ParamName;
+        var valueExpression = BuildPocoValueExpression(argName, property);
+        var dbTypeExprOrDefault = property.DbTypeExpression ?? "global::System.Data.DbType.Object";
+        var sizeArg = property.Size is { } size ? ", " + size.ToString(CultureInfo.InvariantCulture) : string.Empty;
 
-        switch (pp.Direction)
+        switch (property.Direction)
         {
             case ParameterDirectionType.Output:
-                builder.Indent().Append(pp.HandleName)
+                builder.Indent().Append(property.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                     .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
             case ParameterDirectionType.InputOutput:
-                builder.Indent().Append(pp.HandleName)
+                builder.Indent().Append(property.HandleName)
                     .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(valueExpr).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                    .Append(paramName).Append("\", ").Append(valueExpression).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
             default:
-                var (pocoMethod, pocoValue) = BuildPocoInParameterCall(argName, pp);
+                var (pocoMethod, pocoValue) = BuildPocoInParameterCall(argName, property);
                 builder.Indent()
                     .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(pocoMethod).Append("(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(pocoValue).Append(CodeExpressionHelper.DbTypeSizeArgs(pp.DbTypeExpr, pp.Size)).Append(");").NewLine();
+                    .Append(paramName).Append("\", ").Append(pocoValue).Append(CodeExpressionHelper.DbTypeSizeArgs(property.DbTypeExpression, property.Size)).Append(");").NewLine();
                 break;
         }
     }
@@ -105,14 +105,14 @@ internal static class AccessorSourceBuilder
     // converter 有り＝DB 値を TDb として読み TConverter.FromDb で変換する（[return:] / method / class / profile のスコープ鎖で解決）。
     // Build the scalar read expression for an [ExecuteScalar] method. Without a converter: ConvertScalar<TClr>(executeCall).
     // With one: read the DB value as TDb and convert via TConverter.FromDb (resolved over the [return:] / method / class / profile scope chain).
-    private static string BuildScalarReadExpr(MethodModel m, string executeCall)
+    private static string BuildScalarReadExpression(MethodModel method, string executeCall)
     {
         const string convertScalar = "global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<";
-        if (m.ScalarConverterTypeFullName is { } converter)
+        if (method.ScalarConverterTypeFullName is { } converter)
         {
-            return $"{converter}.FromDb({convertScalar}{m.ScalarConverterDbTypeFullName}>({executeCall})!)";
+            return $"{converter}.FromDb({convertScalar}{method.ScalarConverterDbTypeFullName}>({executeCall})!)";
         }
-        return $"{convertScalar}{m.ScalarTypeFullName}>({executeCall})";
+        return $"{convertScalar}{method.ScalarTypeFullName}>({executeCall})";
     }
     //--------------------------------------------------------------------------------
     // Emit
@@ -131,18 +131,18 @@ internal static class AccessorSourceBuilder
         // Aggregate /*!helper */ / /*!using */ across all methods, dedupe by (IsStatic, Name), and emit them before the
         // namespace declaration; `using static` directives come after plain `using` to match conventional ordering.
         var aggregated = model.Methods
-            .SelectMany(m => m.Usings)
+            .SelectMany(x => x.Usings)
             .Distinct()
-            .OrderBy(u => u.IsStatic ? 1 : 0)
-            .ThenBy(u => u.Name, StringComparer.Ordinal)
+            .OrderBy(x => x.IsStatic ? 1 : 0)
+            .ThenBy(x => x.Name, StringComparer.Ordinal)
             .ToList();
         if (aggregated.Count > 0)
         {
-            foreach (var u in aggregated)
+            foreach (var usingDirective in aggregated)
             {
                 builder.Indent()
-                    .Append(u.IsStatic ? "using static " : "using ")
-                    .Append(u.Name)
+                    .Append(usingDirective.IsStatic ? "using static " : "using ")
+                    .Append(usingDirective.Name)
                     .Append(";")
                     .NewLine();
             }
@@ -158,10 +158,10 @@ internal static class AccessorSourceBuilder
         builder.BeginScope();
         EmitConstructor(builder, model);
 
-        foreach (var m in model.Methods)
+        foreach (var method in model.Methods)
         {
             builder.NewLine();
-            EmitMethod(builder, m, model.ProviderName);
+            EmitMethod(builder, method, model.ProviderName);
         }
 
         builder.EndScope();
@@ -252,13 +252,13 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
-    private static bool IsAsyncShape(ReturnShape s) =>
-        s is ReturnShape.Task or ReturnShape.TaskScalar or ReturnShape.TaskList
+    private static bool IsAsyncShape(ReturnShape shape) =>
+        shape is ReturnShape.Task or ReturnShape.TaskScalar or ReturnShape.TaskList
           or ReturnShape.ValueTask or ReturnShape.ValueTaskScalar or ReturnShape.AsyncEnumerable
           or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
-    private static bool IsReaderShape(ReturnShape s) =>
-        s is ReturnShape.Reader or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
+    private static bool IsReaderShape(ReturnShape shape) =>
+        shape is ReturnShape.Reader or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
     // content（'\n' 区切り・先頭インデント無しを前提）の各行を SourceBuilder の現在のインデントで出力する。空行はインデント無しの NewLine()。
     // Emit each line of `content` (assumed '\n'-separated with no leading indentation) at the SourceBuilder's current
@@ -297,55 +297,55 @@ internal static class AccessorSourceBuilder
     // Emit one method's partial implementation in order: the OrdinalCache struct, the signature, connection acquisition
     // (Pattern A/B), (for reader shapes) a try/catch that safely disposes cmd/connection, SQL + parameter setup, the
     // invocation, and (for non-reader shapes) cleanup.
-    private static void EmitMethod(SourceBuilder builder, MethodModel m, string? providerName)
+    private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName)
     {
         // メソッド毎の OrdinalCache 構造体（列序数を 1 クエリにつき 1 回だけ解決し、各行で再利用する）。
         // Per-method OrdinalCache struct (column ordinals resolved once per query, reused per row).
-        EmitOrdinalCacheStruct(builder, m);
+        EmitOrdinalCacheStruct(builder, method);
 
-        var paramList = String.Join(", ", m.Parameters.Select(p =>
+        var paramList = String.Join(", ", method.Parameters.Select(x =>
         {
-            var modifier = p.RefKind switch
+            var modifier = x.RefKind switch
             {
                 ParameterRefKind.Out => "out ",
                 ParameterRefKind.Ref => "ref ",
                 _ => string.Empty
             };
-            return $"{modifier}{p.TypeFullName} {p.Name}";
+            return $"{modifier}{x.TypeFullName} {x.Name}";
         }));
-        var isAsync = IsAsyncShape(m.ReturnShape);
-        var isReader = IsReaderShape(m.ReturnShape);
+        var isAsync = IsAsyncShape(method.ReturnShape);
+        var isReader = IsReaderShape(method.ReturnShape);
         var asyncKw = isAsync ? "async " : string.Empty;
         builder.Indent()
-            .Append(m.Accessibility.ToText()).Append(" ").Append(asyncKw).Append("partial ").Append(m.ReturnTypeFullName).Append(" ")
-            .Append(m.Name).Append("(").Append(paramList).Append(")").NewLine();
+            .Append(method.Accessibility.ToText()).Append(" ").Append(asyncKw).Append("partial ").Append(method.ReturnTypeFullName).Append(" ")
+            .Append(method.Name).Append("(").Append(paramList).Append(")").NewLine();
         builder.BeginScope();
 
         // CancellationToken 引数を探す（無ければ default）。
         // Discover the CancellationToken parameter (default when absent).
-        var ct = m.Parameters.FirstOrDefault(p => p.IsCancellationToken);
-        var ctExpr = ct?.Name ?? "default";
+        var cancellation = method.Parameters.FirstOrDefault(x => x.IsCancellationToken);
+        var cancellationExpression = cancellation?.Name ?? "default";
 
         // reader 形（ExecuteReader）では cmd と（Pattern B の）接続の所有権を WrappedReader へ渡すため `using` を使わず、例外時のみ手動破棄する。
         // For reader shapes (ExecuteReader), ownership of cmd and (Pattern B) the connection transfers to WrappedReader,
         // so we avoid `using` and dispose manually only if something throws.
         var cmdKeyword = isReader ? "var" : "using var";
-        var ownsConnectionForReader = isReader && (m.ConnectionPattern == ConnectionPattern.None);
+        var ownsConnectionForReader = isReader && (method.ConnectionPattern == ConnectionPattern.None);
 
         // Pattern A（引数の conn/tx）／Pattern B（注入プロバイダ）の接続取得。閉じていれば開く。
         // Pattern A (conn/tx argument) / Pattern B (injected provider) connection acquisition; opens the connection if closed.
         string commandSource;
-        switch (m.ConnectionPattern)
+        switch (method.ConnectionPattern)
         {
             case ConnectionPattern.ConnectionArg:
             {
-                var connName = m.ConnectionParameterName!;
+                var connName = method.ConnectionParameterName!;
                 if (isReader)
                 {
                     builder.Indent().Append("var __wasClosed = (").Append(connName).Append(".State == global::System.Data.ConnectionState.Closed);").NewLine();
                     if (isAsync)
                     {
-                        builder.Indent().Append("if (__wasClosed) await ").Append(connName).Append(".OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                        builder.Indent().Append("if (__wasClosed) await ").Append(connName).Append(".OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                     }
                     else
                     {
@@ -354,7 +354,7 @@ internal static class AccessorSourceBuilder
                 }
                 else if (isAsync)
                 {
-                    builder.Indent().Append("if (").Append(connName).Append(".State == global::System.Data.ConnectionState.Closed) await ").Append(connName).Append(".OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("if (").Append(connName).Append(".State == global::System.Data.ConnectionState.Closed) await ").Append(connName).Append(".OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 }
                 else
                 {
@@ -366,31 +366,31 @@ internal static class AccessorSourceBuilder
             }
             case ConnectionPattern.TransactionArg:
             {
-                var txName = m.TransactionParameterName!;
-                var connExpr = $"{txName}.Connection!";
+                var txName = method.TransactionParameterName!;
+                var connectionExpression = $"{txName}.Connection!";
                 if (isReader)
                 {
-                    builder.Indent().Append("var __wasClosed = (").Append(connExpr).Append(".State == global::System.Data.ConnectionState.Closed);").NewLine();
+                    builder.Indent().Append("var __wasClosed = (").Append(connectionExpression).Append(".State == global::System.Data.ConnectionState.Closed);").NewLine();
                     if (isAsync)
                     {
-                        builder.Indent().Append("if (__wasClosed) await ").Append(connExpr).Append(".OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                        builder.Indent().Append("if (__wasClosed) await ").Append(connectionExpression).Append(".OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                     }
                     else
                     {
-                        builder.Indent().Append("if (__wasClosed) ").Append(connExpr).Append(".Open();").NewLine();
+                        builder.Indent().Append("if (__wasClosed) ").Append(connectionExpression).Append(".Open();").NewLine();
                     }
                 }
                 else if (isAsync)
                 {
-                    builder.Indent().Append("if (").Append(connExpr).Append(".State == global::System.Data.ConnectionState.Closed) await ").Append(connExpr).Append(".OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("if (").Append(connectionExpression).Append(".State == global::System.Data.ConnectionState.Closed) await ").Append(connectionExpression).Append(".OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 }
                 else
                 {
-                    builder.Indent().Append("if (").Append(connExpr).Append(".State == global::System.Data.ConnectionState.Closed) ").Append(connExpr).Append(".Open();").NewLine();
+                    builder.Indent().Append("if (").Append(connectionExpression).Append(".State == global::System.Data.ConnectionState.Closed) ").Append(connectionExpression).Append(".Open();").NewLine();
                 }
-                builder.Indent().Append(cmdKeyword).Append(" cmd = ").Append(connExpr).Append(".CreateCommand();").NewLine();
+                builder.Indent().Append(cmdKeyword).Append(" cmd = ").Append(connectionExpression).Append(".CreateCommand();").NewLine();
                 builder.Indent().Append("cmd.Transaction = ").Append(txName).Append(";").NewLine();
-                commandSource = connExpr;
+                commandSource = connectionExpression;
                 break;
             }
             default:
@@ -401,14 +401,14 @@ internal static class AccessorSourceBuilder
                 // Pattern B: the connection comes from the injected provider.
                 //   no  [Provider] → this.dbProvider.CreateConnection()
                 //   has [Provider] → this.providerSelector.GetProvider("name").CreateConnection()
-                var providerCallExpr = providerName is null
+                var providerCallExpression = providerName is null
                     ? "this.dbProvider.CreateConnection()"
                     : $"this.providerSelector.GetProvider(\"{providerName.Replace("\"", "\\\"")}\").CreateConnection()";
                 var connKeyword = isReader ? "var" : "using var";
-                builder.Indent().Append(connKeyword).Append(" connection = ").Append(providerCallExpr).Append(";").NewLine();
+                builder.Indent().Append(connKeyword).Append(" connection = ").Append(providerCallExpression).Append(";").NewLine();
                 if (isAsync)
                 {
-                    builder.Indent().Append("await connection.OpenAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await connection.OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 }
                 else
                 {
@@ -430,52 +430,52 @@ internal static class AccessorSourceBuilder
             builder.BeginScope();
         }
 
-        if (m.CommandTimeoutSeconds is { } cts)
+        if (method.CommandTimeoutSeconds is { } cts)
         {
             builder.Indent().Append("cmd.CommandTimeout = ").Append(cts.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
         }
 
         // SQL とパラメータの準備。コマンドソース（DirectSql / ストアド / QueryBuilder / 2-way SQL）で分岐する。
         // SQL and parameter setup, branching on the command source (DirectSql / stored procedure / QueryBuilder / 2-way SQL).
-        if (m.SqlSource == SqlSource.DirectSql)
+        if (method.SqlSource == SqlSource.DirectSql)
         {
-            EmitDirectSqlSetup(builder, m);
+            EmitDirectSqlSetup(builder, method);
         }
-        else if (m.ProcedureName is not null)
+        else if (method.ProcedureName is not null)
         {
-            EmitProcedureSetup(builder, m);
+            EmitProcedureSetup(builder, method);
         }
-        else if (m.BuilderMethodName is not null)
+        else if (method.BuilderMethodName is not null)
         {
-            builder.Indent().Append("var ctx = new global::Smart.Data.Accessor.BuilderContext(cmd);").NewLine();
+            builder.Indent().Append("var context = new global::Smart.Data.Accessor.BuilderContext(cmd);").NewLine();
             // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。コア・Builder の両ジェネレータが
             // 同一の除外規則を適用しないと、呼び出しと生成される {Method}__QueryBuilder のシグネチャがずれる。
             // Value parameters = method params excluding DbConnection / DbTransaction / CancellationToken. Both generators
             // must apply the identical exclusion so the call and the generated {Method}__QueryBuilder signature line up.
-            var valueArgs = m.Parameters
-                .Where(p => !p.IsCancellationToken && !p.IsDbConnection && !p.IsDbTransaction)
-                .Select(p => p.Name);
-            var args = String.Join(", ", new[] { "ref ctx" }.Concat(valueArgs));
-            builder.Indent().Append(m.BuilderMethodName).Append("(").Append(args).Append(");").NewLine();
+            var valueArgs = method.Parameters
+                .Where(x => !x.IsCancellationToken && !x.IsDbConnection && !x.IsDbTransaction)
+                .Select(x => x.Name);
+            var args = String.Join(", ", new[] { "ref context" }.Concat(valueArgs));
+            builder.Indent().Append(method.BuilderMethodName).Append("(").Append(args).Append(");").NewLine();
         }
         else
         {
             // OUT / InOut / ReturnValue のパラメータハンドルを先に宣言し、SQL 組み立ての try/finally を抜けた後も参照できるようにする。
             // Pre-declare OUT / InOut / ReturnValue parameter handles so they remain accessible after the SQL-building try/finally block.
-            foreach (var binding in m.OutputBindings)
+            foreach (var binding in method.OutputBindings)
             {
                 builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
             }
 
-            if (m.StaticSqlText is not null)
+            if (method.StaticSqlText is not null)
             {
                 // 静的 SQL の高速経路：動的分岐が無いので StringBuilderPool / try-finally を使わず CommandText リテラルとパラメータ設定を直接出す。
                 // Static SQL fast path: with no dynamic branches, emit the literal CommandText and parameter setup directly,
                 // without StringBuilderPool / try-finally.
-                builder.Indent().Append("cmd.CommandText = \"").Append(EscapeCSharpString(m.StaticSqlText)).Append("\";").NewLine();
-                if (!String.IsNullOrEmpty(m.StaticParameterCode))
+                builder.Indent().Append("cmd.CommandText = \"").Append(EscapeCSharpString(method.StaticSqlText)).Append("\";").NewLine();
+                if (!String.IsNullOrEmpty(method.StaticParameterCode))
                 {
-                    AppendCodeLines(builder, m.StaticParameterCode);
+                    AppendCodeLines(builder, method.StaticParameterCode);
                 }
             }
             else
@@ -485,9 +485,9 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("var __sb = global::Smart.Data.Accessor.Helpers.StringBuilderPool.Rent();").NewLine();
                 builder.Indent().Append("try").NewLine();
                 builder.BeginScope();
-                if (!String.IsNullOrEmpty(m.SqlEmitCode))
+                if (!String.IsNullOrEmpty(method.SqlEmitCode))
                 {
-                    AppendCodeLines(builder, m.SqlEmitCode);
+                    AppendCodeLines(builder, method.SqlEmitCode);
                 }
                 builder.Indent().Append("cmd.CommandText = __sb.ToString();").NewLine();
                 builder.EndScope();
@@ -498,7 +498,7 @@ internal static class AccessorSourceBuilder
             }
         }
 
-        EmitInvocation(builder, m, ctExpr);
+        EmitInvocation(builder, method, cancellationExpression);
 
         if (isReader)
         {
@@ -532,65 +532,65 @@ internal static class AccessorSourceBuilder
     // （POCO 引数はプロパティ毎に展開、OUT/InOut はハンドル経由）。
     // Emit the [DirectSql] setup: assign the first (string) argument to cmd.CommandText and bind the remaining arguments
     // as parameters (POCO arguments expand per property; OUT/InOut go through handles).
-    private static void EmitDirectSqlSetup(SourceBuilder builder, MethodModel m)
+    private static void EmitDirectSqlSetup(SourceBuilder builder, MethodModel method)
     {
-        if (m.DirectSqlParameterName is null)
+        if (method.DirectSqlParameterName is null)
         {
             builder.Indent().Append("// [DirectSql] could not locate a string parameter to use as SQL source.").NewLine();
             return;
         }
 
-        builder.Indent().Append("cmd.CommandText = ").Append(m.DirectSqlParameterName).Append(";").NewLine();
+        builder.Indent().Append("cmd.CommandText = ").Append(method.DirectSqlParameterName).Append(";").NewLine();
 
         // OUT / InOut のハンドルを先に宣言し、実行後に EmitOutputWriteback が読めるようにする。
         // Pre-declare OUT / InOut handles so EmitOutputWriteback can read them after the execute call.
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in method.OutputBindings)
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
-        foreach (var p in m.Parameters)
+        foreach (var parameter in method.Parameters)
         {
-            if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
+            if (parameter.IsCancellationToken || parameter.IsDbConnection || parameter.IsDbTransaction)
             {
                 continue;
             }
-            if (p.Name == m.DirectSqlParameterName)
+            if (parameter.Name == method.DirectSqlParameterName)
             {
                 continue;
             }
-            if (p.PocoProperties is { } pocoProps)
+            if (parameter.PocoProperties is { } pocoProps)
             {
                 // POCO 引数をプロパティ 1 つにつき 1 パラメータへ展開する。
                 // Expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps)
+                foreach (var property in pocoProps)
                 {
-                    EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
+                    EmitPocoPropertyParameter(builder, method.BindMarker, parameter.Name, property);
                 }
                 continue;
             }
 
-            var paramName = m.BindMarker + p.Name;
-            var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
-            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
-            var hasProvider = p.ProviderParameterTypeFullName is not null;
+            var paramName = method.BindMarker + parameter.Name;
+            var dbTypeExprOrDefault = parameter.DbTypeExpression ?? "global::System.Data.DbType.Object";
+            var sizeArg = parameter.Size is { } size ? ", " + size.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            var hasProvider = parameter.ProviderParameterTypeFullName is not null;
 
-            switch (p.Direction)
+            switch (parameter.Direction)
             {
                 case ParameterDirectionType.Output:
                     builder.Indent()
-                        .Append("__op_").Append(p.Name)
+                        .Append("__op_").Append(parameter.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
-                    EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
+                    EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.InputOutput:
                     builder.Indent()
-                        .Append("__op_").Append(p.Name)
+                        .Append("__op_").Append(parameter.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
+                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpression(parameter))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
-                    EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
+                    EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.ReturnValue:
                     // SDA0210 は BuildAccessorModel で報告済みなので、ここでは出力しない。
@@ -599,23 +599,23 @@ internal static class AccessorSourceBuilder
                 default:
                     if (hasProvider)
                     {
-                        var providerSizeArg = p.Size is { } iSz
+                        var providerSizeArg = parameter.Size is { } iSz
                             ? ", size: " + iSz.ToString(CultureInfo.InvariantCulture)
                             : string.Empty;
-                        var (inMethod, inValue) = BuildInParameterCall(p);
+                        var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
-                            .Append("((").Append(p.ProviderParameterTypeFullName!)
+                            .Append("((").Append(parameter.ProviderParameterTypeFullName!)
                             .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
-                            .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
+                            .Append(")).").Append(parameter.ProviderPropertyName!).Append(" = ").Append(parameter.ProviderValueExpression!).Append(";").NewLine();
                     }
                     else
                     {
-                        var (inMethod, inValue) = BuildInParameterCall(p);
+                        var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
                             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue)
-                            .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size)).Append(");").NewLine();
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size)).Append(");").NewLine();
                     }
                     break;
             }
@@ -625,112 +625,112 @@ internal static class AccessorSourceBuilder
     // プロバイダ固有 DbType（[DbType<TEnum>]）の設定を出力する。生成したパラメータをプロバイダ固有型へキャストし、固有プロパティに代入する。
     // Emit the provider-specific DbType ([DbType<TEnum>]) assignment: cast the created parameter to the provider-specific
     // type and set its native property.
-    private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModel p, string handleName)
+    private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModel parameter, string handleName)
     {
-        if ((p.ProviderParameterTypeFullName is null) || (p.ProviderPropertyName is null) || (p.ProviderValueExpr is null))
+        if ((parameter.ProviderParameterTypeFullName is null) || (parameter.ProviderPropertyName is null) || (parameter.ProviderValueExpression is null))
         {
             return;
         }
         builder.Indent()
-            .Append("((").Append(p.ProviderParameterTypeFullName).Append(")").Append(handleName)
-            .Append(").").Append(p.ProviderPropertyName).Append(" = ").Append(p.ProviderValueExpr).Append(";").NewLine();
+            .Append("((").Append(parameter.ProviderParameterTypeFullName).Append(")").Append(handleName)
+            .Append(").").Append(parameter.ProviderPropertyName).Append(" = ").Append(parameter.ProviderValueExpression).Append(";").NewLine();
     }
 
     // ストアドプロシージャのセットアップを出力する。CommandType=StoredProcedure と手続き名を設定し、各引数をパラメータとして束縛する
     // （POCO 展開・OUT/InOut/ReturnValue 対応）。RETURN 値をメソッド戻り値へマップする場合は ReturnValue パラメータを追加する。
     // Emit the stored-procedure setup: set CommandType=StoredProcedure and the procedure name, then bind each argument as a
     // parameter (POCO expansion, OUT/InOut/ReturnValue). When the RETURN value maps to the method return, add a ReturnValue parameter.
-    private static void EmitProcedureSetup(SourceBuilder builder, MethodModel m)
+    private static void EmitProcedureSetup(SourceBuilder builder, MethodModel method)
     {
-        var procName = m.ProcedureName!.Replace("\"", "\\\"");
+        var procName = method.ProcedureName!.Replace("\"", "\\\"");
         builder.Indent().Append("cmd.CommandType = global::System.Data.CommandType.StoredProcedure;").NewLine();
         builder.Indent().Append("cmd.CommandText = \"").Append(procName).Append("\";").NewLine();
 
         // Pre-declare OUT / InOut / ReturnValue parameter handles so they are accessible after Execute.
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in method.OutputBindings)
         {
             builder.Indent().Append("global::System.Data.Common.DbParameter ").Append(binding.HandleName).Append(" = null!;").NewLine();
         }
 
         // 各メソッド引数の Add*Parameter を BindMarker ＋ 引数名で出力する。
         // Emit Add*Parameter for each method parameter, using BindMarker + parameter name.
-        foreach (var p in m.Parameters)
+        foreach (var parameter in method.Parameters)
         {
-            if (p.IsCancellationToken || p.IsDbConnection || p.IsDbTransaction)
+            if (parameter.IsCancellationToken || parameter.IsDbConnection || parameter.IsDbTransaction)
             {
                 continue;
             }
-            if (p.PocoProperties is { } pocoProps)
+            if (parameter.PocoProperties is { } pocoProps)
             {
                 // POCO 引数をプロパティ 1 つにつき 1 パラメータへ展開する。
                 // Expand the POCO argument into one parameter per property.
-                foreach (var pp in pocoProps)
+                foreach (var property in pocoProps)
                 {
-                    EmitPocoPropertyParameter(builder, m.BindMarker, p.Name, pp);
+                    EmitPocoPropertyParameter(builder, method.BindMarker, parameter.Name, property);
                 }
                 continue;
             }
 
-            var paramName = m.BindMarker + p.Name;
-            var dbTypeExprOrDefault = p.DbTypeExpr ?? "global::System.Data.DbType.Object";
-            var sizeArg = p.Size is { } sz ? ", " + sz.ToString(CultureInfo.InvariantCulture) : string.Empty;
-            var hasProvider = p.ProviderParameterTypeFullName is not null;
+            var paramName = method.BindMarker + parameter.Name;
+            var dbTypeExprOrDefault = parameter.DbTypeExpression ?? "global::System.Data.DbType.Object";
+            var sizeArg = parameter.Size is { } size ? ", " + size.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            var hasProvider = parameter.ProviderParameterTypeFullName is not null;
 
-            switch (p.Direction)
+            switch (parameter.Direction)
             {
                 case ParameterDirectionType.Output:
                     builder.Indent()
-                        .Append("__op_").Append(p.Name)
+                        .Append("__op_").Append(parameter.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
-                    EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
+                    EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.InputOutput:
                     builder.Indent()
-                        .Append("__op_").Append(p.Name)
+                        .Append("__op_").Append(parameter.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpr(p))
+                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpression(parameter))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
-                    EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
+                    EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.ReturnValue:
                     builder.Indent()
-                        .Append("__op_").Append(p.Name)
+                        .Append("__op_").Append(parameter.Name)
                         .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
                         .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(");").NewLine();
-                    EmitProviderDbTypeAssignment(builder, p, $"__op_{p.Name}");
+                    EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 default:
                     if (hasProvider)
                     {
-                        var providerSizeArg = p.Size is { } iSz
+                        var providerSizeArg = parameter.Size is { } iSz
                             ? ", size: " + iSz.ToString(CultureInfo.InvariantCulture)
                             : string.Empty;
-                        var (inMethod, inValue) = BuildInParameterCall(p);
+                        var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
-                            .Append("((").Append(p.ProviderParameterTypeFullName!)
+                            .Append("((").Append(parameter.ProviderParameterTypeFullName!)
                             .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
-                            .Append(")).").Append(p.ProviderPropertyName!).Append(" = ").Append(p.ProviderValueExpr!).Append(";").NewLine();
+                            .Append(")).").Append(parameter.ProviderPropertyName!).Append(" = ").Append(parameter.ProviderValueExpression!).Append(";").NewLine();
                     }
                     else
                     {
-                        var (inMethod, inValue) = BuildInParameterCall(p);
+                        var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
                             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
                             .Append(paramName).Append("\", ").Append(inValue)
-                            .Append(CodeExpressionHelper.DbTypeSizeArgs(p.DbTypeExpr, p.Size)).Append(");").NewLine();
+                            .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size)).Append(");").NewLine();
                     }
                     break;
             }
         }
 
-        if (m.MapsProcedureReturnValue)
+        if (method.MapsProcedureReturnValue)
         {
             // ストアドの RETURN 値を捕捉する（メソッドのスカラー戻り値へマップする）。
             // Capture the stored-procedure RETURN value (mapped to the method's scalar return value).
             builder.Indent().Append("var __returnValue = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
-                .Append(m.BindMarker).Append("__ReturnValue\", global::System.Data.DbType.Int32);").NewLine();
+                .Append(method.BindMarker).Append("__ReturnValue\", global::System.Data.DbType.Int32);").NewLine();
         }
     }
 
@@ -738,16 +738,16 @@ internal static class AccessorSourceBuilder
     // converter があれば OUT 値を TDb として読み TConverter.FromDb で変換する。
     // Write OUT / InOut / ReturnValue values back to the caller: POCO output properties into {arg}.{property}, out/ref
     // parameters into the parameter itself. With a converter, read the OUT value as TDb then TConverter.FromDb.
-    private static void EmitOutputWriteback(SourceBuilder builder, MethodModel m)
+    private static void EmitOutputWriteback(SourceBuilder builder, MethodModel method)
     {
-        foreach (var binding in m.OutputBindings)
+        foreach (var binding in method.OutputBindings)
         {
             if (binding.WritebackTarget is { } target)
             {
                 builder.Indent().Append(target).Append(" = ");
-                if (binding.ConverterTypeFullName is { } conv)
+                if (binding.ConverterTypeFullName is { } converter)
                 {
-                    builder.Append(conv).Append(".FromDb(global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
+                    builder.Append(converter).Append(".FromDb(global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
                         .Append(binding.WritebackTypeFullName!).Append(">(").Append(binding.HandleName).Append(")!)");
                 }
                 else
@@ -759,7 +759,7 @@ internal static class AccessorSourceBuilder
                 continue;
             }
 
-            var param = m.Parameters.FirstOrDefault(p => p.Name == binding.ParameterName);
+            var param = method.Parameters.FirstOrDefault(x => x.Name == binding.ParameterName);
             if ((param is null) || (param.RefKind == ParameterRefKind.None))
             {
                 continue;
@@ -776,10 +776,10 @@ internal static class AccessorSourceBuilder
     // Emit execution and return for reader (ExecuteReader) shapes: wrap cmd/connection in a WrappedReader and return it.
     // Pattern A does not close the connection (CloseConnection restores the pre-call state); Pattern B (owns the connection)
     // lets WrappedReader dispose the connection too. Sync and async are emitted separately.
-    private static void EmitReaderInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
+    private static void EmitReaderInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression)
     {
-        var ownsConnection = m.ConnectionPattern == ConnectionPattern.None;
-        var isAsync = m.ReturnShape is ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
+        var ownsConnection = method.ConnectionPattern == ConnectionPattern.None;
+        var isAsync = method.ReturnShape is ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
         var behaviorArg = ownsConnection
             ? string.Empty
             : "__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default";
@@ -787,8 +787,8 @@ internal static class AccessorSourceBuilder
         if (isAsync)
         {
             var asyncArgs = ownsConnection
-                ? ctExpr
-                : behaviorArg + ", " + ctExpr;
+                ? cancellationExpression
+                : behaviorArg + ", " + cancellationExpression;
             builder.Indent().Append("var __reader = await cmd.ExecuteReaderAsync(").Append(asyncArgs).Append(").ConfigureAwait(false);").NewLine();
             builder.Indent().Append(ownsConnection
                 ? "return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, __reader, connection);"
@@ -808,41 +808,41 @@ internal static class AccessorSourceBuilder
     // ExecuteNonQuery / ExecuteScalar を出し、Query 形は下のリーダーループ（List / 単一 / yield / async）を生成する。
     // Emit the method's execution: reader shapes go to EmitReaderInvocation; Execute/DirectSql emit ExecuteNonQuery /
     // ExecuteScalar per return shape (void/scalar/Task...); Query shapes generate the reader loop below (List / single / yield / async).
-    private static void EmitInvocation(SourceBuilder builder, MethodModel m, string ctExpr)
+    private static void EmitInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression)
     {
-        var hasOutputs = m.OutputBindings.Count > 0;
+        var hasOutputs = method.OutputBindings.Count > 0;
 
-        if ((m.MethodType == MethodType.ExecuteReader) || IsReaderShape(m.ReturnShape))
+        if ((method.MethodType == MethodType.ExecuteReader) || IsReaderShape(method.ReturnShape))
         {
-            EmitReaderInvocation(builder, m, ctExpr);
+            EmitReaderInvocation(builder, method, cancellationExpression);
             return;
         }
 
-        if ((m.MethodType == MethodType.Execute) || (m.MethodType == MethodType.ExecuteScalar))
+        if ((method.MethodType == MethodType.Execute) || (method.MethodType == MethodType.ExecuteScalar))
         {
-            switch (m.ReturnShape)
+            switch (method.ReturnShape)
             {
                 case ReturnShape.Void:
                     builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
-                    EmitOutputWriteback(builder, m);
+                    EmitOutputWriteback(builder, method);
                     break;
                 case ReturnShape.Scalar:
-                    if (m.MapsProcedureReturnValue)
+                    if (method.MapsProcedureReturnValue)
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
                         // Stored-procedure RETURN value -> method return value.
                         builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
-                        EmitOutputWriteback(builder, m);
-                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(m.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
+                        EmitOutputWriteback(builder, method);
+                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
                     }
                     // int Execute / scalar
-                    if (m.ScalarTypeFullName == "int")
+                    if (method.ScalarTypeFullName == "int")
                     {
                         if (hasOutputs)
                         {
                             builder.Indent().Append("var __result = cmd.ExecuteNonQuery();").NewLine();
-                            EmitOutputWriteback(builder, m);
+                            EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
@@ -854,62 +854,62 @@ internal static class AccessorSourceBuilder
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpr(m, "cmd.ExecuteScalar()")).Append(";").NewLine();
-                            EmitOutputWriteback(builder, m);
+                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpression(method, "cmd.ExecuteScalar()")).Append(";").NewLine();
+                            EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return ").Append(BuildScalarReadExpr(m, "cmd.ExecuteScalar()")).Append("!;").NewLine();
+                            builder.Indent().Append("return ").Append(BuildScalarReadExpression(method, "cmd.ExecuteScalar()")).Append("!;").NewLine();
                         }
                     }
                     break;
                 case ReturnShape.Task:
-                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                    EmitOutputWriteback(builder, m);
+                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                    EmitOutputWriteback(builder, method);
                     break;
                 case ReturnShape.TaskScalar:
                 case ReturnShape.ValueTaskScalar:
-                    if (m.MapsProcedureReturnValue)
+                    if (method.MapsProcedureReturnValue)
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
                         // Stored-procedure RETURN value -> method return value.
-                        builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                        EmitOutputWriteback(builder, m);
-                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(m.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
+                        builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                        EmitOutputWriteback(builder, method);
+                        builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
                     }
-                    if (m.ScalarTypeFullName == "int")
+                    if (method.ScalarTypeFullName == "int")
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                            EmitOutputWriteback(builder, m);
+                            builder.Indent().Append("var __result = await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                            EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("return await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                         }
                     }
                     else
                     {
-                        var scalarExecuteAsync = "await cmd.ExecuteScalarAsync(" + ctExpr + ").ConfigureAwait(false)";
+                        var scalarExecuteAsync = "await cmd.ExecuteScalarAsync(" + cancellationExpression + ").ConfigureAwait(false)";
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpr(m, scalarExecuteAsync)).Append(";").NewLine();
-                            EmitOutputWriteback(builder, m);
+                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpression(method, scalarExecuteAsync)).Append(";").NewLine();
+                            EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return ").Append(BuildScalarReadExpr(m, scalarExecuteAsync)).Append("!;").NewLine();
+                            builder.Indent().Append("return ").Append(BuildScalarReadExpression(method, scalarExecuteAsync)).Append("!;").NewLine();
                         }
                     }
                     break;
                 case ReturnShape.ValueTask:
-                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                    EmitOutputWriteback(builder, m);
+                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                    EmitOutputWriteback(builder, method);
                     break;
                 default:
                     builder.Indent().Append("// unsupported Execute shape").NewLine();
@@ -923,13 +923,13 @@ internal static class AccessorSourceBuilder
         // Query shapes use the OrdinalCache + type-specific reader methods. The generator inlines the read loop directly
         // (no ExecuteHelper.QueryBuffer / QueryFirstOrDefault call) so the JIT can specialise row materialisation and avoid
         // per-row delegate dispatch.
-        var ordStruct = OrdinalStructName(m);
-        var entityBody = BuildEntityCreationBody(m, "__reader", "__o");
-        switch (m.ReturnShape)
+        var ordStruct = OrdinalStructName(method);
+        var entityBody = BuildEntityCreationBody(method, "__reader", "__o");
+        switch (method.ReturnShape)
         {
             case ReturnShape.List:
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
-                builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(m.ElementTypeFullName!).Append(">();").NewLine();
+                builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
@@ -942,16 +942,16 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("return __list;").NewLine();
                 break;
             case ReturnShape.TaskList:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(m.ElementTypeFullName!).Append(">();").NewLine();
-                builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
+                builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("__list.Add(").Append(entityBody).Append(");").NewLine();
                 builder.EndScope();
-                builder.Indent().Append("while (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false));").NewLine();
+                builder.Indent().Append("while (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false));").NewLine();
                 builder.EndScope();
                 builder.Indent().Append("return __list;").NewLine();
                 break;
@@ -973,15 +973,15 @@ internal static class AccessorSourceBuilder
                 // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要（無い場合 SDA0305 で警告）。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
                 // [EnumeratorCancellation] (SDA0305 warns when missing).
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("yield return ").Append(entityBody).Append(";").NewLine();
                 builder.EndScope();
-                builder.Indent().Append("while (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false));").NewLine();
+                builder.Indent().Append("while (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false));").NewLine();
                 builder.EndScope();
                 break;
             case ReturnShape.Scalar:
@@ -997,8 +997,8 @@ internal static class AccessorSourceBuilder
                 break;
             case ReturnShape.TaskScalar:
             case ReturnShape.ValueTaskScalar:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(ctExpr).Append(").ConfigureAwait(false);").NewLine();
-                builder.Indent().Append("if (await __reader.ReadAsync(").Append(ctExpr).Append(").ConfigureAwait(false))").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
                 builder.Indent().Append("return ").Append(entityBody).Append(";").NewLine();
@@ -1015,74 +1015,74 @@ internal static class AccessorSourceBuilder
     // 序数は渡された OrdinalCache 変数から取り、列読み取りは型別リーダーメソッドを使う。
     // Build the entity-creation expression: new T { Prop = ..., ... } for a class/POCO, or new T(name: ..., ...) for a
     // record primary constructor. Ordinals come from the supplied OrdinalCache variable; column reads use type-specific reader methods.
-    private static string BuildEntityCreationBody(MethodModel m, string readerVar, string ordVar)
+    private static string BuildEntityCreationBody(MethodModel method, string readerVariable, string ordinal)
     {
         var sb = new StringBuilder();
-        var useCtor = m.UseRecordPrimaryConstructor;
-        sb.Append("new ").Append(m.ElementTypeFullName).Append(useCtor ? "(" : " { ");
-        var cols = m.QueryColumns;
-        if (cols is not null)
+        var useCtor = method.UseRecordPrimaryConstructor;
+        sb.Append("new ").Append(method.ElementTypeFullName).Append(useCtor ? "(" : " { ");
+        var columns = method.QueryColumns;
+        if (columns is not null)
         {
             var first = true;
-            foreach (var col in cols)
+            foreach (var column in columns)
             {
                 if (!first)
                 {
                     sb.Append(", ");
                 }
                 first = false;
-                sb.Append(col.PropertyName).Append(useCtor ? ": " : " = ");
-                if (col.Converter is { } conv)
+                sb.Append(column.PropertyName).Append(useCtor ? ": " : " = ");
+                if (column.Converter is { } converter)
                 {
                     // TDb として読み TConverter.FromDb で変換する。DB NULL ガードは型別リーダー経路と同じ（[NotNullColumn] で除外可）。
                     // Read TDb then convert via TConverter.FromDb. The DB NULL guard mirrors the typed-reader path ([NotNullColumn] opts out).
-                    if (!col.SkipNullCheck)
+                    if (!column.SkipNullCheck)
                     {
-                        sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
+                        sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
                           .Append(" ? default! : ");
                     }
-                    sb.Append(conv.ConverterTypeFullName).Append(".FromDb(");
-                    if (conv.DbTypedReaderMethod is not null)
+                    sb.Append(converter.ConverterTypeFullName).Append(".FromDb(");
+                    if (converter.DbTypedReaderMethod is not null)
                     {
-                        sb.Append(readerVar).Append('.').Append(conv.DbTypedReaderMethod).Append('(').Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                        sb.Append(readerVariable).Append('.').Append(converter.DbTypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
                     }
                     else
                     {
                         sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
-                          .Append(conv.DbTypeFullName)
-                          .Append(">(").Append(readerVar).Append(", ").Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                          .Append(converter.DbTypeFullName)
+                          .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
                     }
                     sb.Append(')');
                 }
-                else if (col.TypedReaderMethod is not null)
+                else if (column.TypedReaderMethod is not null)
                 {
-                    if (!col.SkipNullCheck)
+                    if (!column.SkipNullCheck)
                     {
                         // 非 null 許容プロパティが DB NULL を受けると default! になる（SDA0307）。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
                         // A non-nullable property receiving DB NULL falls through as default! (SDA0307). [NotNullColumn] opts
                         // out of this check; the provider throws InvalidCastException on an actual NULL.
-                        sb.Append(readerVar).Append(".IsDBNull(").Append(ordVar).Append('.').Append(col.PropertyName).Append(')')
+                        sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
                           .Append(" ? default! : ");
                     }
-                    if (col.EnumCastTypeFullName is not null)
+                    if (column.EnumCastTypeFullName is not null)
                     {
                         // enum は underlying プリミティブとして読んでからキャストし直す。unsigned / sbyte の underlying では符号付きの
-                        // リーダー結果を橋渡しするためビット保存の中間キャストを挟む。例：(MyEnum)(uint)reader.GetInt32(ord)。
+                        // リーダー結果を橋渡しするためビット保存の中間キャストを挟む。例：(MyEnum)(uint)reader.GetInt32(ordinal)。
                         // An enum is read as its underlying primitive then cast back. For unsigned / sbyte underlyings an
-                        // intermediate bit-preserving cast bridges the signed reader result, e.g. (MyEnum)(uint)reader.GetInt32(ord).
-                        sb.Append('(').Append(col.EnumCastTypeFullName).Append(')');
-                        if (col.EnumUnderlyingCastFullName is not null)
+                        // intermediate bit-preserving cast bridges the signed reader result, e.g. (MyEnum)(uint)reader.GetInt32(ordinal).
+                        sb.Append('(').Append(column.EnumCastTypeFullName).Append(')');
+                        if (column.EnumUnderlyingCastFullName is not null)
                         {
-                            sb.Append('(').Append(col.EnumUnderlyingCastFullName).Append(')');
+                            sb.Append('(').Append(column.EnumUnderlyingCastFullName).Append(')');
                         }
                     }
-                    sb.Append(readerVar).Append('.').Append(col.TypedReaderMethod).Append('(').Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                    sb.Append(readerVariable).Append('.').Append(column.TypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
                 }
                 else
                 {
                     sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
-                      .Append(col.TypeFullName)
-                      .Append(">(").Append(readerVar).Append(", ").Append(ordVar).Append('.').Append(col.PropertyName).Append(')');
+                      .Append(column.TypeFullName)
+                      .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
                 }
             }
         }
@@ -1090,33 +1090,33 @@ internal static class AccessorSourceBuilder
         return sb.ToString();
     }
 
-    private static string OrdinalStructName(MethodModel m) => "__" + m.Name + "Ordinals";
+    private static string OrdinalStructName(MethodModel method) => "__" + method.Name + "Ordinals";
 
     // クエリ列の序数キャッシュ構造体（__{Method}Ordinals）を生成する。各列の序数を public int フィールドに持ち、From(reader) で
     // GetOrdinal を 1 回だけ呼んで構築する（以降は行毎に再利用）。
     // Emit the query-column ordinal cache struct (__{Method}Ordinals): one public int field per column, built by From(reader)
     // which calls GetOrdinal once (reused per row thereafter).
-    private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel m)
+    private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel method)
     {
-        if ((m.QueryColumns is not { } cols) || (cols.Count == 0))
+        if ((method.QueryColumns is not { } columns) || (columns.Count == 0))
         {
             return;
         }
 
-        var name = OrdinalStructName(m);
+        var name = OrdinalStructName(method);
         builder.Indent().Append("private readonly struct ").Append(name).NewLine();
         builder.BeginScope();
-        foreach (var col in cols)
+        foreach (var column in columns)
         {
-            builder.Indent().Append("public readonly int ").Append(col.PropertyName).Append(";").NewLine();
+            builder.Indent().Append("public readonly int ").Append(column.PropertyName).Append(";").NewLine();
         }
         builder.NewLine();
-        var ctorParams = String.Join(", ", cols.Select(c => "int " + LowerFirst(c.PropertyName)));
+        var ctorParams = String.Join(", ", columns.Select(x => "int " + LowerFirst(x.PropertyName)));
         builder.Indent().Append("private ").Append(name).Append("(").Append(ctorParams).Append(")").NewLine();
         builder.BeginScope();
-        foreach (var col in cols)
+        foreach (var column in columns)
         {
-            builder.Indent().Append(col.PropertyName).Append(" = ").Append(LowerFirst(col.PropertyName)).Append(";").NewLine();
+            builder.Indent().Append(column.PropertyName).Append(" = ").Append(LowerFirst(column.PropertyName)).Append(";").NewLine();
         }
         builder.EndScope();
         builder.NewLine();
@@ -1124,13 +1124,13 @@ internal static class AccessorSourceBuilder
         builder.Indent().Append("public static ").Append(name).Append(" From(global::System.Data.Common.DbDataReader reader)").NewLine();
         builder.IndentLevel++;
         builder.Indent().Append("=> new(");
-        for (var i = 0; i < cols.Count; i++)
+        for (var i = 0; i < columns.Count; i++)
         {
             if (i > 0)
             {
                 builder.Append(", ");
             }
-            var col = cols[i];
+            var col = columns[i];
             builder.Append("reader.GetOrdinal(\"").Append(col.ColumnName).Append("\")");
         }
         builder.Append(");").NewLine();
@@ -1138,8 +1138,8 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
-    private static string LowerFirst(string s) =>
-        String.IsNullOrEmpty(s) || Char.IsLower(s[0]) ? s : Char.ToLowerInvariant(s[0]) + s[1..];
+    private static string LowerFirst(string text) =>
+        String.IsNullOrEmpty(text) || Char.IsLower(text[0]) ? text : Char.ToLowerInvariant(text[0]) + text[1..];
 
-    private static string EscapeCSharpString(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    private static string EscapeCSharpString(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

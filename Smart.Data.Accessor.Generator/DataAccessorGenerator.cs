@@ -27,20 +27,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // .targets が CompilerVisibleProperty として公開し、ここでは AnalyzerConfigOptions から読み取る。
         // The SQL folder name is configurable per project via the <SmartDataAccessor_SqlFolder> MSBuild property
         // (default "Sql"); the .targets exposes it as a CompilerVisibleProperty, read here from AnalyzerConfigOptions.
-        var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (p, _) =>
-            p.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var v) &&
-                !String.IsNullOrWhiteSpace(v)
-                ? v
+        var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (x, _) =>
+            x.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var folder) &&
+                !String.IsNullOrWhiteSpace(folder)
+                ? folder
                 : "Sql");
 
         // 追加ファイル（AdditionalText）から .sql を集め、(ファイル名, 本文) に射影し、SQL フォルダ名と結合する。
         // Collect .sql additional files, project each to (file name, text), and combine them with the SQL folder name.
         var sqlFiles = context.AdditionalTextsProvider
-            .Where(static t => t.Path.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-            .Select(static (t, ct) => (
+            .Where(static x => x.Path.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
+            .Select(static (t, cancellation) => (
                 FullPath: t.Path,
                 Path: Path.GetFileNameWithoutExtension(t.Path),
-                Text: t.GetText(ct)?.ToString() ?? string.Empty))
+                Text: t.GetText(cancellation)?.ToString() ?? string.Empty))
             .Combine(sqlFolder)
             .Where(static pair =>
             {
@@ -61,15 +61,15 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var classResults = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 AccessorModelBuilder.DataAccessorAttributeName,
-                static (s, _) => s is ClassDeclarationSyntax,
-                static (ctx, _) => AccessorModelBuilder.BuildClassResult(ctx))
+                static (x, _) => x is ClassDeclarationSyntax,
+                static (context, _) => AccessorModelBuilder.BuildClassResult(context))
             .WithTrackingName("AccessorClassResult");
 
         // 各アクセサの暫定 Model と .sql 集合を結合し、SQL を解決・解析して Model を完成させる。
         // Combine each accessor's partial model with the .sql set, then resolve/parse SQL to complete the model.
         var completed = classResults
             .Combine(sqlFiles)
-            .Select(static (pair, ct) => AccessorModelBuilder.CompleteModel(pair.Left, pair.Right, ct))
+            .Select(static (pair, cancellation) => AccessorModelBuilder.CompleteModel(pair.Left, pair.Right, cancellation))
             .WithTrackingName("AccessorCompleted");
 
         // アクセサ毎のソース＋診断を出力する。completed は [DataAccessor] クラス 1 個につき 1 要素のストリームなので、
@@ -79,7 +79,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // class, so RegisterSourceOutput runs once per element (= per class), emitting that class's
         // {ns}_{Class}.g.cs. Only accessors whose own Result<AccessorModel> changed are re-emitted; unchanged
         // ones stay cached and are skipped (per-class granularity).
-        context.RegisterSourceOutput(completed, static (spc, c) => EmitCompleted(spc, c));
+        context.RegisterSourceOutput(completed, static (productionContext, result) => EmitCompleted(productionContext, result));
 
         // レジストリ初期化子（全アクセサを横断して集約。symbol 由来で SQL 不要）。
         // .Collect() がストリームを 1 つの ImmutableArray に畳み込み、全アクセサを一度に渡す。レジストリ
@@ -91,7 +91,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // (DataAccessorRegistryInitializer.g.cs) is one file aggregating every accessor's DI registration and
         // cannot be split per class, so RegisterSourceOutput runs once over the whole set; it re-emits that one
         // small file whenever the set changes (an accessor added/removed, or any registration-relevant data).
-        context.RegisterSourceOutput(completed.Collect(), static (spc, all) => EmitRegistry(spc, all));
+        context.RegisterSourceOutput(completed.Collect(), static (productionContext, all) => EmitRegistry(productionContext, all));
 
         // /*!using*/ と /*!helper*/ は Compilation に対して検証しない。無効な名前空間・ヘルパー型は生成された
         // using 行の C# エラーとして現れるため、専用診断は出さない（パイプラインを Compilation 非依存・完全キャッシュに保つ）。
@@ -103,13 +103,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // 1 アクセサ分の出力：診断を報告し、Model があれば AccessorSourceBuilder でソースを生成して {ns}_{Class}.g.cs を追加する。
     // Emit one accessor: report its diagnostics, then (if a model exists) generate its source via
     // AccessorSourceBuilder and add it as {ns}_{Class}.g.cs.
-    private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> c)
+    private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> result)
     {
-        foreach (var d in c.Diagnostics)
+        foreach (var diagnostic in result.Diagnostics)
         {
-            context.ReportDiagnostic(d.ToDiagnostic());
+            context.ReportDiagnostic(diagnostic.ToDiagnostic());
         }
-        if (c.Value is not { } model)
+        if (result.Value is not { } model)
         {
             return;
         }
@@ -127,21 +127,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private static void EmitRegistry(SourceProductionContext context, ImmutableArray<Result<AccessorModel>> all)
     {
         var registrations = new List<RegistryEntry>();
-        foreach (var c in all)
+        foreach (var result in all)
         {
-            if (c.Value is not { } model)
+            if (result.Value is not { } model)
             {
                 continue;
             }
-            var concreteFq = String.IsNullOrEmpty(model.Namespace)
+            var concreteName = String.IsNullOrEmpty(model.Namespace)
                 ? $"global::{model.ClassName}"
                 : $"global::{model.Namespace}.{model.ClassName}";
             registrations.Add(new RegistryEntry(
-                model.ServiceTypeFullName ?? concreteFq,
-                concreteFq,
+                model.ServiceTypeFullName ?? concreteName,
+                concreteName,
                 model.RequiresConnectionFactory,
                 model.ProviderName is not null,
-                model.Injects.Select(i => i.TypeFullName).ToArray()));
+                model.Injects.Select(x => x.TypeFullName).ToArray()));
         }
 
         if (registrations.Count > 0)
@@ -152,16 +152,16 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private sealed record RegistryEntry(
-        string ServiceTypeFq,
-        string ConcreteTypeFq,
+        string ServiceTypeName,
+        string ConcreteTypeName,
         bool RequiresProvider,
         bool MultiProvider,
         IReadOnlyList<string> InjectTypeFqs);
 
     // ModuleInitializer 内で DataAccessorRegistry.Register<T>(factory) を 1 件ずつ生成する。各 factory は
-    // sp.GetService 経由でプロバイダ／[Inject] 依存を解決し、アクセサを new する。
+    // provider.GetService 経由でプロバイダ／[Inject] 依存を解決し、アクセサを new する。
     // Build the initializer: emit one DataAccessorRegistry.Register<T>(factory) per accessor inside a
-    // ModuleInitializer. Each factory resolves its provider / [Inject] dependencies via sp.GetService and news up the accessor.
+    // ModuleInitializer. Each factory resolves its provider / [Inject] dependencies via provider.GetService and news up the accessor.
     private static string EmitRegistryInitializer(List<RegistryEntry> entries)
     {
         var builder = new SourceBuilder();
@@ -179,20 +179,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             var args = new List<string>();
             if (entry.RequiresProvider)
             {
-                var providerFq = entry.MultiProvider
+                var providerName = entry.MultiProvider
                     ? "global::Smart.Data.IDbProviderSelector"
                     : "global::Smart.Data.IDbProvider";
-                args.Add($"({providerFq})sp.GetService(typeof({providerFq}))!");
+                args.Add($"({providerName})provider.GetService(typeof({providerName}))!");
             }
-            foreach (var injectFq in entry.InjectTypeFqs)
+            foreach (var injectName in entry.InjectTypeFqs)
             {
-                args.Add($"({injectFq})sp.GetService(typeof({injectFq}))!");
+                args.Add($"({injectName})provider.GetService(typeof({injectName}))!");
             }
             builder.Indent()
                 .Append("global::Smart.Data.Accessor.DataAccessorRegistry.Register<")
-                .Append(entry.ServiceTypeFq)
-                .Append(">(static sp => new ")
-                .Append(entry.ConcreteTypeFq)
+                .Append(entry.ServiceTypeName)
+                .Append(">(static provider => new ")
+                .Append(entry.ConcreteTypeName)
                 .Append("(")
                 .Append(String.Join(", ", args))
                 .Append("));")

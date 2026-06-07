@@ -21,23 +21,23 @@ internal static class CodeExpressionHelper
     // The enum underlying-cast value expression in its canonical form — an explicit (object?)(underlying)
     // cast, with a HasValue guard (→ DBNull) for Nullable<enum>. Kept gen-time (a runtime cast via
     // Convert.ChangeType would box / regress).
-    public static string EnumCastValue(string underlyingFullName, bool isNullable, string valueExpr)
+    public static string EnumCastValue(string underlyingFullName, bool isNullable, string valueExpression)
         => isNullable
-            ? $"({valueExpr}.HasValue ? (object?)({underlyingFullName}){valueExpr}.Value : null)"
-            : $"(object?)({underlyingFullName}){valueExpr}";
+            ? $"({valueExpression}.HasValue ? (object?)({underlyingFullName}){valueExpression}.Value : null)"
+            : $"(object?)({underlyingFullName}){valueExpression}";
 
     // The trailing DbType / Size arguments of an AddInParameter(cmd, name, value, dbType?, size?) call:
     // ", dbType, size" / ", dbType" / "". Size is only emitted alongside a DbType (the signature has no
     // size-without-dbType overload), so a size with no DbType expr is dropped.
-    public static string DbTypeSizeArgs(string? dbTypeExpr, int? size)
+    public static string DbTypeSizeArgs(string? dbTypeExpression, int? size)
     {
-        if (dbTypeExpr is null)
+        if (dbTypeExpression is null)
         {
             return string.Empty;
         }
-        return size is { } sz
-            ? $", {dbTypeExpr}, {sz.ToString(CultureInfo.InvariantCulture)}"
-            : $", {dbTypeExpr}";
+        return size is { } sizeValue
+            ? $", {dbTypeExpression}, {sizeValue.ToString(CultureInfo.InvariantCulture)}"
+            : $", {dbTypeExpression}";
     }
 
     // Escapes a string for a C# string literal (e.g. cmd.CommandText = "...";).

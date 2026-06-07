@@ -34,5 +34,5 @@ internal static class StringHelper
         return false;
     }
 
-    private static bool IsIdentifierChar(char c) => Char.IsLetterOrDigit(c) || (c == '_');
+    private static bool IsIdentifierChar(char character) => Char.IsLetterOrDigit(character) || (character == '_');
 }

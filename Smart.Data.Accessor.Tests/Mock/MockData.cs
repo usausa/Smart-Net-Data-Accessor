@@ -15,7 +15,7 @@ internal static class MockData
     ];
 
     public static MockDataReader DataReader(params DataEntity[] rows) =>
-        new(DataColumns, rows.Select(static e => new object[] { e.Id, e.Name, e.Type, (int)e.Kind }).ToList());
+        new(DataColumns, rows.Select(static x => new object[] { x.Id, x.Name, x.Type, (int)x.Kind }).ToList());
 
     public static MockDataReader EmptyDataReader() =>
         new(DataColumns, new List<object[]>());

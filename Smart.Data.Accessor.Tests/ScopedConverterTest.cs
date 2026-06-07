@@ -56,11 +56,11 @@ public sealed class ScopedConverterTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = x =>
             {
                 // VALUES (id, createdAt): createdAt is the second bound parameter, written via ToDb.
-                var p = (MockDbParameter)c.Parameters[1];
-                Assert.Equal(Expected.Ticks, (long)p.Value!);
+                var parameter = (MockDbParameter)x.Parameters[1];
+                Assert.Equal(Expected.Ticks, (long)parameter.Value!);
             };
             cmd.SetupResult(1);
         });
@@ -83,10 +83,10 @@ public sealed class ScopedConverterTest
         using var con = new MockDbConnection();
         con.SetupCommand(cmd =>
         {
-            cmd.Executing = c =>
+            cmd.Executing = x =>
             {
-                var p = (MockDbParameter)c.Parameters[0];
-                Assert.Equal(DbType.AnsiString, p.DbType);
+                var parameter = (MockDbParameter)x.Parameters[0];
+                Assert.Equal(DbType.AnsiString, parameter.DbType);
             };
             cmd.SetupResult(1);
         });

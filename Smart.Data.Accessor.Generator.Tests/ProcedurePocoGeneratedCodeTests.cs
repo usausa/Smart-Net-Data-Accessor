@@ -28,7 +28,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
             {
                 [Procedure("usp_Foo")]
                 [Execute]
-                public partial Task Foo(FooArgs args, CancellationToken ct);
+                public partial Task Foo(FooArgs args, CancellationToken cancellation);
             }
             """;
 
@@ -139,8 +139,8 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
             internal sealed class TicksConverter : IValueConverter<long, DateTime>
             {
-                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
-                public static long ToDb(DateTime v) => v.Ticks;
+                public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+                public static long ToDb(DateTime value) => value.Ticks;
             }
 
             [DataAccessor]
@@ -169,8 +169,8 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
             internal sealed class TicksConverter : IValueConverter<long, DateTime>
             {
-                public static DateTime FromDb(long v) => new(v, DateTimeKind.Utc);
-                public static long ToDb(DateTime v) => v.Ticks;
+                public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+                public static long ToDb(DateTime value) => value.Ticks;
             }
 
             internal sealed class Bag
@@ -208,7 +208,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
             {
                 [Procedure("usp_Calc")]
                 [Execute]
-                public partial Task<int> Calc(int input, CancellationToken ct);
+                public partial Task<int> Calc(int input, CancellationToken cancellation);
             }
             """;
 
@@ -238,6 +238,6 @@ public sealed class ProcedurePocoGeneratedCodeTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // [Direction(ReturnValue)] is retired everywhere.
-        Assert.Contains(diagnostics, d => d.Id == "SDA0210");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0210");
     }
 }

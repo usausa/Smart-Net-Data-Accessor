@@ -44,7 +44,7 @@ public sealed class AsyncAndInjectTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c => Assert.Equal("INSERT INTO Data (Name, Type) VALUES (@p0, @p1)", c.CommandText);
+            cmd.Executing = static x => Assert.Equal("INSERT INTO Data (Name, Type) VALUES (@p0, @p1)", x.CommandText);
             cmd.SetupResult(1);
         });
         con.Open();
@@ -62,11 +62,11 @@ public sealed class AsyncAndInjectTest
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd =>
         {
-            cmd.Executing = static c =>
+            cmd.Executing = static x =>
             {
-                Assert.Equal("INSERT INTO Data (Name) VALUES (@p0)", c.CommandText);
-                var p = (MockDbParameter)c.Parameters[0];
-                Assert.Equal(DbType.AnsiString, p.DbType);
+                Assert.Equal("INSERT INTO Data (Name) VALUES (@p0)", x.CommandText);
+                var parameter = (MockDbParameter)x.Parameters[0];
+                Assert.Equal(DbType.AnsiString, parameter.DbType);
             };
             cmd.SetupResult(1);
         });

@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Attributes;
 
 using System.Diagnostics.CodeAnalysis;
 
-// Builds a full-scan SELECT cols FROM t statement. Columns come from the entity type
+// Builds a full-scan SELECT columns FROM t statement. Columns come from the entity type
 // (or the query method's return element type).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
