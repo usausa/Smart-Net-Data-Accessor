@@ -1,81 +1,114 @@
 namespace Smart.Data.Accessor.Generator.Builders;
 
+using Microsoft.CodeAnalysis;
+
 using Smart.Data.Accessor.Generator.Builders.Models;
 using Smart.Data.Accessor.Shared.Builders;
-using Smart.Data.Accessor.Shared.Builders.Engine;
-using Smart.Data.Accessor.Shared.Builders.Models;
 
 using SourceGenerateHelper;
 
-// 標準（既定）Builder の transform。共通解決（テーブル名・値パラメータ・列）は MethodResolver に委譲し、ここでは Operation 別の
-// Model 生成と診断（キー欠如など）だけを行う。解決できない場合は null を返す。
-// Transform for the standard (default) builder. Common resolution (table / value params / columns) is delegated to
-// MethodResolver; only the Operation-specific model construction and diagnostics happen here. Returns null when the method
-// cannot be resolved.
+// 標準（既定）Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で
+// per-kind Model を直接構築する（Operation enum は持たない）。種別固有の診断（キー欠如など）は各生成メソッドで出す。
+// Transform for the standard (default) builder. Scans via the shared ClassScanner and resolves via MethodResolver, then
+// builds the per-kind model directly through an attribute-name → build-delegate table (no Operation enum). Kind-specific
+// diagnostics (missing key, etc.) are raised in each build method.
 internal static class StandardModelBuilder
 {
-    public static BuilderMethodModel? BuildMethod(MethodBuildContext<Operation> context)
+    private const string Ns = "Smart.Data.Accessor.Attributes.";
+
+    private delegate StandardMethodModel? BuildMethod(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics);
+
+    private static readonly (string Attribute, BuildMethod Build)[] Targets =
+    [
+        (Ns + "InsertAttribute", BuildInsert),
+        (Ns + "UpdateAttribute", BuildUpdate),
+        (Ns + "DeleteAttribute", BuildDelete),
+        (Ns + "CountAttribute", BuildCount),
+        (Ns + "SelectAttribute", BuildSelect),
+        (Ns + "SelectSingleAttribute", BuildSelectSingle),
+        (Ns + "TruncateAttribute", BuildTruncate),
+    ];
+
+    public static StandardClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)
     {
-        var method = MethodResolver.Resolve(context.Container, context.Method, context.Attribute, context.TypeMaps, context.Profile, context.Diagnostics, context.Location);
-        if (method is null)
+        var scan = ClassScanner.ResolveClass(context);
+        var diagnostics = new List<DiagnosticInfo>();
+        var methods = new List<StandardMethodModel>();
+        foreach (var (matched, build) in ClassScanner.EnumerateMethods(scan, Targets, diagnostics))
         {
-            return null;
+            cancellation.ThrowIfCancellationRequested();
+            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, diagnostics, matched.Location);
+            if (resolution is null)
+            {
+                continue;
+            }
+            var model = build(resolution, matched, diagnostics);
+            if (model is not null)
+            {
+                methods.Add(model);
+            }
         }
 
-        // 種別毎に対応する Model を返す。Update / Delete / SelectSingle はキー（[Key]）が無いと WHERE を組めないため診断を出す。
-        // Return the model per kind. Update / Delete / SelectSingle need a key ([Key]) to build the WHERE clause, so they
-        // raise a diagnostic when none is present.
-        switch (context.Operation)
+        return new StandardClassModel(
+            scan.Namespace,
+            scan.ClassName,
+            scan.Accessibility,
+            new EquatableArray<StandardMethodModel>(methods.ToArray()),
+            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+    }
+
+    private static InsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName) { BindMarker = matched.BindMarker };
+
+    private static UpdateModel BuildUpdate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        // Update はエンティティ実体とキー（[Key]）が無いと SET/WHERE を組めないため診断を出す。
+        // Update needs an entity instance and a key ([Key]) to build SET/WHERE, so it raises a diagnostic when absent.
+        if (!resolution.HasEntityType || (resolution.EntityParamName is null))
         {
-            case Operation.Insert:
-                return new InsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName);
-
-            case Operation.Update:
-                if (!method.HasEntityType || (method.EntityParamName is null))
-                {
-                    // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
-                    // SDA1004: cannot resolve the column list (no entity instance).
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                else if (!method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new UpdateModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType);
-
-            case Operation.Delete:
-                if (method.HasEntityType && !method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new DeleteModel(method.MethodName, method.TableName, method.ValueParams, method.Columns);
-
-            case Operation.Count:
-                return new CountModel(method.MethodName, method.TableName, method.ValueParams);
-
-            case Operation.Truncate:
-                return new TruncateModel(method.MethodName, method.TableName, method.ValueParams);
-
-            case Operation.Select:
-                if (!method.HasEntityType)
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                return new SelectModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
-
-            case Operation.SelectSingle:
-                if (!method.HasEntityType)
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                else if (!method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new SelectSingleModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
-
-            default:
-                return null;
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
         }
+        else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static DeleteModel BuildDelete(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (resolution.HasEntityType && !resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns) { BindMarker = matched.BindMarker };
+    }
+
+    private static CountModel BuildCount(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams) { BindMarker = matched.BindMarker };
+
+    private static TruncateModel BuildTruncate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams) { BindMarker = matched.BindMarker };
+
+    private static SelectModel BuildSelect(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType)
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static SelectSingleModel BuildSelectSingle(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType)
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.HasEntityType) { BindMarker = matched.BindMarker };
     }
 }

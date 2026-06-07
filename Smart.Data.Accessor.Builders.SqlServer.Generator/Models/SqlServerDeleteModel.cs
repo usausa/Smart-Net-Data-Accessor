@@ -1,15 +1,15 @@
 namespace Smart.Data.Accessor.Builders.SqlServer.Generator.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// DELETE FROM <table> WHERE <バインドパラメータ。エンティティ型がある場合はキー列に対応付け>。
-// DELETE FROM <table> WHERE <bind params, keyed to key columns when an entity type is present>.
+// DELETE（OUTPUT 句対応）。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+// DELETE (with OUTPUT clause). WHERE = bind parameters (mapped to key columns).
 internal sealed record SqlServerDeleteModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     string? OutputColumns)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : SqlServerMethodModel(MethodName, TableName, ValueParams);

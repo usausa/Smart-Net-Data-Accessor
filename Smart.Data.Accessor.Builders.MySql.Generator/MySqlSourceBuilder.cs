@@ -3,8 +3,7 @@ namespace Smart.Data.Accessor.Builders.MySql.Generator;
 using System.Text;
 
 using Smart.Data.Accessor.Builders.MySql.Generator.Models;
-using Smart.Data.Accessor.Shared.Builders.Engine;
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
@@ -12,17 +11,20 @@ using SourceGenerateHelper;
 // Emit for the MySQL builder: per-kind SQL assembly (backtick quoting, LIMIT/OFFSET, ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE).
 internal static class MySqlSourceBuilder
 {
-    // 1 メソッド分のヘルパーを出力する。シグネチャと cmd 取得・スコープ開閉は共有の SqlEmit、種別毎の本体はこのプロバイダーが持つ。
-    // Emit one method's helper. The signature, cmd acquisition and scope open/close come from the shared SqlEmit; the
-    // per-kind body is owned by this provider.
-    public static void EmitMethod(SourceBuilder builder, BuilderMethodModel method)
+    public static void EmitMethod(SourceBuilder builder, MySqlMethodModel method)
     {
-        SqlEmit.OpenMethod(builder, method);
+        SqlEmit.OpenMethod(builder, method.MethodName, method.ValueParams);
 
         switch (method)
         {
             case MySqlInsertModel model:
-                EmitInsert(builder, model);
+                EmitInsertForm(builder, "INSERT INTO", model, model.TableName, model.Columns, model.EntityParamName);
+                break;
+            case MySqlReplaceModel model:
+                EmitInsertForm(builder, "REPLACE INTO", model, model.TableName, model.Columns, model.EntityParamName);
+                break;
+            case MySqlInsertIgnoreModel model:
+                EmitInsertForm(builder, "INSERT IGNORE INTO", model, model.TableName, model.Columns, model.EntityParamName);
                 break;
             case MySqlUpdateModel model:
                 EmitUpdate(builder, model);
@@ -45,42 +47,20 @@ internal static class MySqlSourceBuilder
             case MySqlUpsertModel model:
                 EmitUpsert(builder, model);
                 break;
-            case MySqlReplaceModel model:
-                EmitReplace(builder, model);
-                break;
-            case MySqlInsertIgnoreModel model:
-                EmitInsertIgnore(builder, model);
-                break;
         }
 
         SqlEmit.CloseMethod(builder);
     }
 
-    // INSERT を組み立てる（INSERT INTO）。
-    // Build an INSERT (INSERT INTO).
-    private static void EmitInsert(SourceBuilder builder, MySqlInsertModel model)
-        => EmitInsertForm(builder, "INSERT INTO", model, model.TableName, model.Columns, model.EntityParamName);
-
-    // REPLACE INTO を組み立てる（列・値は INSERT と同形）。
-    // Build REPLACE INTO (same column/value shape as INSERT).
-    private static void EmitReplace(SourceBuilder builder, MySqlReplaceModel model)
-        => EmitInsertForm(builder, "REPLACE INTO", model, model.TableName, model.Columns, model.EntityParamName);
-
-    // INSERT IGNORE INTO を組み立てる（列・値は INSERT と同形）。
-    // Build INSERT IGNORE INTO (same column/value shape as INSERT).
-    private static void EmitInsertIgnore(SourceBuilder builder, MySqlInsertIgnoreModel model)
-        => EmitInsertForm(builder, "INSERT IGNORE INTO", model, model.TableName, model.Columns, model.EntityParamName);
-
     // INSERT 系（INSERT INTO / REPLACE INTO / INSERT IGNORE INTO）の列・値・束縛を共通で組み立てる。verb は INTO までの先頭句。
     // エンティティモードは非 [DatabaseManaged] 列、パラメータモードはバインドパラメータを列・値にする。
-    // Build the shared columns / values / bindings for the INSERT family (INSERT INTO / REPLACE INTO / INSERT IGNORE
-    // INTO); verb is the leading clause through INTO. Entity mode uses the non-[DatabaseManaged] columns, parameter mode
-    // uses the bind parameters.
-    private static void EmitInsertForm(SourceBuilder builder, string verb, BuilderMethodModel model, string tableName, EquatableArray<BuilderColumn> columns, string? entityParamName)
+    // Build the shared columns / values / bindings for the INSERT family; verb is the leading clause through INTO.
+    // Entity mode uses the non-[DatabaseManaged] columns, parameter mode uses the bind parameters.
+    private static void EmitInsertForm(SourceBuilder builder, string verb, MySqlMethodModel model, string tableName, EquatableArray<ColumnBinding> columns, string? entityParamName)
     {
         if (entityParamName is not null)
         {
-            var insertColumns = columns.Where(static x => !x.IsDatabaseManaged).ToList();
+            var insertColumns = columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
             var columnSql = String.Join(", ", insertColumns.Select(x => Quote(x.ColumnName)));
             var valueSql = String.Join(", ", insertColumns.Select(x => model.BindMarker + x.PropertyName));
             SqlEmit.EmitCommandText(builder, $"{verb} {Quote(tableName)} ({columnSql}) VALUES ({valueSql})");
@@ -91,7 +71,7 @@ internal static class MySqlSourceBuilder
         }
         else
         {
-            var bindParams = SqlEmit.BindParams(model);
+            var bindParams = SqlEmit.BindParams(model.ValueParams);
             var columnSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
             var valueSql = String.Join(", ", bindParams.Select(x => model.BindMarker + x.Name));
             SqlEmit.EmitCommandText(builder, $"{verb} {Quote(tableName)} ({columnSql}) VALUES ({valueSql})");
@@ -102,22 +82,17 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // INSERT ... ON DUPLICATE KEY UPDATE を組み立てる。INSERT 列は非 [DatabaseManaged]、更新は非キー・非 [DatabaseManaged] 列を
-    // `col = VALUES(col)` で。更新対象が無ければ全列を更新（最低 1 つの代入が要るため）。
-    // Build INSERT ... ON DUPLICATE KEY UPDATE. INSERT columns are non-[DatabaseManaged]; the update assigns the
-    // non-key, non-[DatabaseManaged] columns via `col = VALUES(col)`, falling back to all columns when there is nothing
-    // else to update (the clause requires at least one assignment).
+    // INSERT ... ON DUPLICATE KEY UPDATE を組み立てる。更新は非キー・非 [DatabaseManaged] 列を `col = VALUES(col)` で。更新対象が無ければ全列。
+    // Build INSERT ... ON DUPLICATE KEY UPDATE. The update assigns the non-key, non-[DatabaseManaged] columns via `col = VALUES(col)`, falling back to all columns when there is nothing else to update.
     private static void EmitUpsert(SourceBuilder builder, MySqlUpsertModel model)
     {
         if (!model.HasEntityType || (model.EntityParamName is null))
         {
-            // エンティティ実体が無く列を解決できない場合は何も組み立てない（診断は transform 側で報告済み）。
-            // Without an entity instance the column list is unresolved; emit nothing (the diagnostic is raised in the transform).
             return;
         }
 
-        var columns = model.Columns.Where(static x => !x.IsDatabaseManaged).ToList();
-        var updates = model.Columns.Where(static x => !x.IsKey && !x.IsDatabaseManaged).ToList();
+        var columns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
+        var updates = model.Columns.Where(static x => !x.Flags.IsKey() && !x.Flags.IsDatabaseManaged()).ToList();
         if (updates.Count == 0)
         {
             updates = columns;
@@ -134,10 +109,8 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // UPDATE を組み立てる。SET 句は非キーかつ非 [DatabaseManaged] 列、WHERE 句は [Key] 列（@k_ 接頭辞のパラメータ）。
-    // エンティティが無い場合は "UPDATE T SET " だけを出力する。
-    // Build an UPDATE: the SET clause uses non-key, non-[DatabaseManaged] columns; the WHERE clause uses [Key] columns
-    // (parameters prefixed @k_). Without an entity it emits just "UPDATE T SET ".
+    // UPDATE を組み立てる。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティが無ければ "UPDATE T SET " のみ。
+    // Build an UPDATE. SET = non-key, non-[DatabaseManaged]; WHERE = [Key] columns. Without an entity it emits just "UPDATE T SET ".
     private static void EmitUpdate(SourceBuilder builder, MySqlUpdateModel model)
     {
         if (!model.HasEntityType || (model.EntityParamName is null))
@@ -147,8 +120,8 @@ internal static class MySqlSourceBuilder
         }
 
         var columns = model.Columns;
-        var settable = columns.Where(static x => !x.IsKey && !x.IsDatabaseManaged).ToList();
-        var keys = columns.Where(static x => x.IsKey).ToList();
+        var settable = columns.Where(static x => !x.Flags.IsKey() && !x.Flags.IsDatabaseManaged()).ToList();
+        var keys = columns.Where(static x => x.Flags.IsKey()).ToList();
 
         var sql = new StringBuilder();
         sql.Append("UPDATE ").Append(Quote(model.TableName)).Append(" SET ");
@@ -189,8 +162,8 @@ internal static class MySqlSourceBuilder
     // Build a DELETE: the WHERE clause uses the bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, MySqlDeleteModel model)
     {
-        var keyColumns = model.Columns.Where(static x => x.IsKey).ToList();
-        var bindParams = SqlEmit.BindParams(model);
+        var keyColumns = model.Columns.Where(static x => x.Flags.IsKey()).ToList();
+        var bindParams = SqlEmit.BindParams(model.ValueParams);
 
         var sql = new StringBuilder();
         sql.Append("DELETE FROM ").Append(Quote(model.TableName));
@@ -216,9 +189,8 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // SELECT（全件）を組み立てる。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があればプロバイダのページング句を付ける。
-    // Build a SELECT (all rows): SELECT * when there is no entity; otherwise list the columns and, if [Limit]/[Offset]
-    // are present, append the provider's paging clause.
+    // SELECT（全件）。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば LIMIT/OFFSET を付ける。
+    // Build a SELECT (all rows): SELECT * without an entity; otherwise list columns and append LIMIT/OFFSET when [Limit]/[Offset] are present.
     private static void EmitSelect(SourceBuilder builder, MySqlSelectModel model)
     {
         if (!model.HasEntityType)
@@ -230,11 +202,9 @@ internal static class MySqlSourceBuilder
         var sql = new StringBuilder();
         sql.Append("SELECT ").Append(String.Join(", ", model.Columns.Select(x => Quote(x.ColumnName)))).Append(" FROM ").Append(Quote(model.TableName));
 
-        // [Limit]/[Offset] パラメータがある場合のみ、プロバイダのページング句を付加する（パラメータ束縛は offset→limit の順）。
-        // Append the provider's paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
         var valueParams = model.ValueParams;
-        var limitParam = valueParams.FirstOrDefault(static x => x.IsLimit);
-        var offsetParam = valueParams.FirstOrDefault(static x => x.IsOffset);
+        var limitParam = valueParams.FirstOrDefault(static x => x.Flags.IsLimit());
+        var offsetParam = valueParams.FirstOrDefault(static x => x.Flags.IsOffset());
         if ((limitParam is not null) || (offsetParam is not null))
         {
             AppendPaging(
@@ -255,7 +225,7 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // SELECT（単一行）を組み立てる。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // SELECT（単一行）。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, MySqlSelectSingleModel model)
     {
@@ -265,8 +235,8 @@ internal static class MySqlSourceBuilder
             return;
         }
 
-        var keyColumns = model.Columns.Where(static x => x.IsKey).ToList();
-        var bindParams = SqlEmit.BindParams(model);
+        var keyColumns = model.Columns.Where(static x => x.Flags.IsKey()).ToList();
+        var bindParams = SqlEmit.BindParams(model.ValueParams);
 
         var sql = new StringBuilder();
         sql.Append("SELECT ").Append(String.Join(", ", model.Columns.Select(x => Quote(x.ColumnName)))).Append(" FROM ").Append(Quote(model.TableName));

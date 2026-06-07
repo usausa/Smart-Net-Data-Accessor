@@ -1,15 +1,15 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// REPLACE INTO。列・値は INSERT と同形（エンティティモード／パラメータモード）。重複キーで delete→insert。
-// REPLACE INTO. Same column/value shape as INSERT (entity / parameter mode); deletes-then-inserts on a duplicate key.
+// REPLACE INTO（列・値は INSERT と同形）。
+// REPLACE INTO (same column/value shape as INSERT).
 internal sealed record MySqlReplaceModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     string? EntityParamName)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : MySqlMethodModel(MethodName, TableName, ValueParams);

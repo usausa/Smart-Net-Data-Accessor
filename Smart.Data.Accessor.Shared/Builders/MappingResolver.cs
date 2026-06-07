@@ -1,19 +1,17 @@
-namespace Smart.Data.Accessor.Shared.Builders.Engine;
+namespace Smart.Data.Accessor.Shared.Builders;
 
 using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Shared.Helpers;
 
-// Resolves the [TypeHandler<TConverter>] scope chain (member (property) → method → accessor class →
-// [ExecuteConfig] profile) for Builder entity columns, reusing the shared ConverterScopeHelper
-// primitives. Builder applies the result as-is (no converter validation). [TypeMap] / [DbType] /
-// [ExecuteConfig] are resolved via the shared MappingAttributeHelper (identical to the core generator).
-// Shared source (linked into each builder generator assembly).
+// [TypeHandler<TConverter>] のスコープ連鎖（member(property) → method → accessor class → [ExecuteConfig] profile）を解決する。
+// 共有 ConverterScopeHelper を再利用。Builder は結果をそのまま使う（converter 検証はしない）。
+// Resolves the [TypeHandler<TConverter>] scope chain (member (property) → method → accessor class → [ExecuteConfig] profile)
+// reusing the shared ConverterScopeHelper primitives. Builder applies the result as-is (no converter validation).
 internal static class MappingResolver
 {
-    // resolve the converter for an entity property across member → method → class → profile. The
-    // member scope is exclusive (a declared [TypeHandler] governs even when the converter type is
-    // unresolved); the outer scopes are type-keyed.
+    // member スコープは排他（宣言された [TypeHandler] が converter 未解決でも支配）、外側スコープは型キー一致。
+    // The member scope is exclusive (a declared [TypeHandler] governs even when unresolved); the outer scopes are type-keyed.
     public static INamedTypeSymbol? ResolveTypeHandler(
         IPropertySymbol property,
         IMethodSymbol method,

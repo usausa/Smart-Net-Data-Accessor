@@ -1,31 +1,27 @@
-namespace Smart.Data.Accessor.Shared.Builders.Engine;
+namespace Smart.Data.Accessor.Shared.Builders;
 
 using Microsoft.CodeAnalysis;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
 using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 
-// Resolution of the per-method data common to every QueryBuilder operation/provider, shared by the providers in this
-// generator assembly: table name, value parameters, entity columns and their binding metadata (converter / DbType /
-// enum). Operation selection and operation-specific diagnostics stay in each provider's transform.
+// 種別・provider に依らない 1 メソッドの解決（テーブル名・値パラメータ・エンティティ列と束縛メタデータ）。種別選択と
+// 種別固有の診断は各 provider の transform に残す。戻り値 MethodResolution は一時 DTO。
+// Provider-/kind-agnostic resolution of one method (table name, value parameters, entity columns + binding metadata).
+// Operation selection and operation-specific diagnostics stay in each provider's transform. The MethodResolution result is a transient DTO.
 internal static class MethodResolver
 {
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
     private const string LimitAttributeName = "Smart.Data.Accessor.Attributes.LimitAttribute";
     private const string OffsetAttributeName = "Smart.Data.Accessor.Attributes.OffsetAttribute";
 
-    // 属性からエンティティ型 / Table 名を取り、テーブル名・値パラメータ・エンティティ列を解決する。テーブル名を決められなければ
-    // SDA1003 を出して null を返す（種別に依らない共通前処理）。
-    // Read the entity type / Table name from the attribute and resolve the table name, value parameters and entity
-    // columns. Returns null (after raising SDA1003) when the table cannot be determined. Operation-independent.
-    public static ResolvedMethod? Resolve(
-        INamedTypeSymbol container,
+    // 属性からエンティティ型 / Table 名を取り、テーブル名・値パラメータ・エンティティ列を解決する。テーブル名を決められなければ SDA1003 を出して null を返す。
+    // Read the entity type / Table name from the attribute and resolve the table name, value parameters and entity columns. Returns null (after raising SDA1003) when the table cannot be determined.
+    public static MethodResolution? Resolve(
+        in ClassScan scan,
         IMethodSymbol method,
         AttributeData attribute,
-        Dictionary<string, TypeMapInfo> typeMaps,
-        INamedTypeSymbol? profile,
         List<DiagnosticInfo> diagnostics,
         LocationInfo? location)
     {
@@ -47,6 +43,12 @@ internal static class MethodResolver
             diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.MissingTable, location, method.Name));
             return null;
         }
+
+        // in 引数 scan はラムダで捕捉できないため、必要なメンバをローカルへ退避する。
+        // The `in` parameter `scan` cannot be captured by a lambda, so copy the members it needs into locals.
+        var typeMaps = scan.TypeMaps;
+        var container = scan.Container;
+        var profile = scan.Profile;
 
         // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。各々の束縛メタデータを解決する。
         // Value parameters = method parameters excluding DbConnection / DbTransaction / CancellationToken; resolve each one's binding metadata.
@@ -74,25 +76,25 @@ internal static class MethodResolver
             .Select(x => ResolveColumn(x, method, container, profile, typeMaps, diagnostics, location))
             .ToArray();
 
-        return new ResolvedMethod(
+        return new MethodResolution(
             method.Name,
             tableName,
             hasEntityType,
             entityType?.Name,
             entityParam?.Name,
-            new EquatableArray<BuilderValueParam>(valueParams),
-            new EquatableArray<BuilderColumn>(columns));
+            new EquatableArray<ColumnBinding>(columns),
+            new EquatableArray<ParameterBinding>(valueParams));
     }
 
     // メソッドの値パラメータの束縛メタデータ（[DbType] / [TypeMap] / enum。値パラメータに converter は付かない）を解決する。
     // Resolve a method value parameter's binding metadata ([DbType] / [TypeMap] / enum; no converter on value parameters).
-    private static BuilderValueParam ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps)
+    private static ParameterBinding ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps)
     {
         var typeName = parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var enumUnderlying = parameter.Type.GetEnumUnderlyingType();
 
-        // パラメータ単位の明示 [DbType] が最優先。無ければ class/profile の [TypeMap] 既定を適用する（コアと同じ共有ロジック）。
-        // An explicit parameter-scope [DbType] wins; otherwise the class/profile [TypeMap] default applies (the same shared logic as the core generator).
+        // パラメータ単位の明示 [DbType] が最優先。無ければ class/profile の [TypeMap] 既定を適用する。
+        // An explicit parameter-scope [DbType] wins; otherwise the class/profile [TypeMap] default applies.
         var dbTypeExpression = MappingAttributeHelper.ResolveParameterDbType(parameter);
         int? size = null;
         if ((dbTypeExpression is null) && MappingAttributeHelper.TryGetTypeMap(parameter.Type, typeMaps, out var info))
@@ -101,21 +103,30 @@ internal static class MethodResolver
             size = info.Size;
         }
 
-        return new BuilderValueParam(
+        var flags = ParameterFlags.None;
+        if (HasAttribute(parameter, LimitAttributeName))
+        {
+            flags |= ParameterFlags.Limit;
+        }
+        if (HasAttribute(parameter, OffsetAttributeName))
+        {
+            flags |= ParameterFlags.Offset;
+        }
+
+        return new ParameterBinding(
             parameter.Name,
             typeName,
             ColumnName(parameter),
-            HasAttribute(parameter, LimitAttributeName),
-            HasAttribute(parameter, OffsetAttributeName),
             enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             (enumUnderlying is not null) && (parameter.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
             dbTypeExpression,
-            size);
+            size,
+            flags);
     }
 
-    // エンティティ列の束縛メタデータ（converter / DbType / enum / null 許容）を解決する。出力時の値式は "<entityParam>.<PropertyName>"。
+    // エンティティ列の束縛メタデータ（converter / DbType / enum / null 許容）を解決する。
     // Resolve an entity column's binding metadata (converter / DbType / enum / nullability).
-    private static BuilderColumn ResolveColumn(
+    private static ColumnBinding ResolveColumn(
         EntityColumn column,
         IMethodSymbol method,
         INamedTypeSymbol container,
@@ -140,13 +151,12 @@ internal static class MethodResolver
                 property.Name));
         }
 
-        // 有効な converter があれば TConverter とその IValueConverter<TDb,TClr> 型引数を捕捉し、値は
-        // ExecuteHelper.AddInParameter<TConverter,TDb,TClr> で束縛する（ToDb と null 処理はヘルパー側に集約）。
+        // 有効な converter があれば TConverter とその IValueConverter<TDb,TClr> 型引数を捕捉する。
         // When a valid converter applies, capture TConverter + its IValueConverter<TDb,TClr> type args.
-        BuilderConverterBinding? converter = null;
+        ConverterBinding? converter = null;
         if ((handler is not null) && ConverterScopeHelper.TryGetConverterTypes(handler, out var convDb, out var convClr))
         {
-            converter = new BuilderConverterBinding(
+            converter = new ConverterBinding(
                 handler.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 convDb.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 convClr.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
@@ -168,16 +178,25 @@ internal static class MethodResolver
 
         var enumUnderlying = property.Type.GetEnumUnderlyingType();
 
-        return new BuilderColumn(
+        var flags = ColumnFlags.None;
+        if (column.IsKey)
+        {
+            flags |= ColumnFlags.Key;
+        }
+        if (column.IsDatabaseManaged)
+        {
+            flags |= ColumnFlags.DatabaseManaged;
+        }
+
+        return new ColumnBinding(
             column.Column,
             column.PropertyName,
-            column.IsKey,
-            column.IsDatabaseManaged,
-            converter,
             enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             (enumUnderlying is not null) && (property.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
+            converter,
             dbTypeExpression,
-            size);
+            size,
+            flags);
     }
 
     // エンティティ型の public インスタンスプロパティ（getter あり）を列挙し、[Ignore] を除いて列リストを作る。

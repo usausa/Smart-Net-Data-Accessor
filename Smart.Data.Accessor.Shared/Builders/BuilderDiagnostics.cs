@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 // QueryBuilder generator diagnostics. Shared across providers (linked source); each generator assembly
 // tracks them in its AnalyzerReleases. IDs use the SDA1xxx band so the reporting generator is
-// identifiable from the number (the core generator owns SDA0xxx). Ordered by the BuilderClassScanner /
+// identifiable from the number (the core generator owns SDA0xxx). Ordered by the ClassScanner /
 // MethodResolver / per-provider transform pipeline: container → attribute → table → columns → key → mapping.
 internal static class BuilderDiagnostics
 {

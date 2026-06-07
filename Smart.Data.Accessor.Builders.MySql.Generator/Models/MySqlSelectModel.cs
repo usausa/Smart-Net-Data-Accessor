@@ -1,15 +1,15 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// SELECT <columns> FROM <table> [プロバイダーのページング]。エンティティ必須、ページングは [Limit]/[Offset] パラメータから。
-// SELECT <columns> FROM <table> [provider paging]. Entity required; paging from [Limit]/[Offset] params.
+// SELECT <columns> FROM <table> [LIMIT/OFFSET ページング]。エンティティ必須。
+// SELECT <columns> FROM <table> [LIMIT/OFFSET paging]. Entity required.
 internal sealed record MySqlSelectModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : MySqlMethodModel(MethodName, TableName, ValueParams);

@@ -1,16 +1,16 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// UPDATE <table> SET <非キー・非 [DatabaseManaged] 列> WHERE <キー列>。エンティティモードのみ。
-// UPDATE <table> SET <non-key, non-[DatabaseManaged] columns> WHERE <key columns>. Entity mode only.
+// UPDATE。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティモードのみ。
+// UPDATE. SET = non-key, non-[DatabaseManaged] columns; WHERE = [Key] columns. Entity mode only.
 internal sealed record MySqlUpdateModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     string? EntityParamName,
     bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : MySqlMethodModel(MethodName, TableName, ValueParams);

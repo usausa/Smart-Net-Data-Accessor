@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Builders.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
@@ -9,6 +9,6 @@ using SourceGenerateHelper;
 internal sealed record DeleteModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns)
+    : StandardMethodModel(MethodName, TableName, ValueParams);

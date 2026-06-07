@@ -1,6 +1,6 @@
 namespace Smart.Data.Accessor.Generator.Builders.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
@@ -9,8 +9,8 @@ using SourceGenerateHelper;
 internal sealed record UpdateModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     string? EntityParamName,
     bool HasEntityType)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : StandardMethodModel(MethodName, TableName, ValueParams);

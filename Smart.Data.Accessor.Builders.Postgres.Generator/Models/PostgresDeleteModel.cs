@@ -1,15 +1,15 @@
 namespace Smart.Data.Accessor.Builders.Postgres.Generator.Models;
 
-using Smart.Data.Accessor.Shared.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// DELETE FROM <table> WHERE <バインドパラメータ。エンティティ型がある場合はキー列に対応付け>。
-// DELETE FROM <table> WHERE <bind params, keyed to key columns when an entity type is present>.
+// DELETE（RETURNING 句対応）。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+// DELETE (with RETURNING clause). WHERE = bind parameters (mapped to key columns).
 internal sealed record PostgresDeleteModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams,
-    EquatableArray<BuilderColumn> Columns,
+    EquatableArray<ParameterBinding> ValueParams,
+    EquatableArray<ColumnBinding> Columns,
     string? ReturningColumns)
-    : BuilderMethodModel(MethodName, TableName, ValueParams);
+    : PostgresMethodModel(MethodName, TableName, ValueParams);

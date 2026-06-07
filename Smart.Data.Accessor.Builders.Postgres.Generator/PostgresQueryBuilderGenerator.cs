@@ -3,41 +3,23 @@ namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-using Smart.Data.Accessor.Builders.Postgres.Generator.Models;
-using Smart.Data.Accessor.Shared.Builders.Engine;
+using Smart.Data.Accessor.Shared.Builders;
 
-// PostgreSQL QueryBuilder ジェネレータ（配線）。[PgInsert]/…/[PgTruncate]/[PgUpsert] が付いたメソッドに {Method}__QueryBuilder
-// ヘルパーを生成する（二重引用符、LIMIT/OFFSET、ON CONFLICT、RETURNING）。走査は共有 BuilderClassScanner、transform は
-// PostgresModelBuilder、出力は共有 BuilderOutput＋PostgresSourceBuilder に委譲する（3 層）。
-// The PostgreSQL QueryBuilder generator (wiring). Emits the {Method}__QueryBuilder helper for methods carrying the
-// [PgInsert]/…/[PgTruncate]/[PgUpsert] attributes (double-quote quoting, LIMIT/OFFSET, ON CONFLICT, RETURNING). Scanning
-// is the shared BuilderClassScanner, the transform is PostgresModelBuilder, output is the shared BuilderOutput + PostgresSourceBuilder.
+// PostgreSQL QueryBuilder ジェネレータ（配線）。走査は共有 ClassScanner、transform は PostgresModelBuilder、出力は共有 SourceOutput＋PostgresSourceBuilder。
+// The PostgreSQL QueryBuilder generator (wiring). Scanning is the shared ClassScanner, the transform is PostgresModelBuilder, output is the shared SourceOutput + PostgresSourceBuilder.
 [Generator]
 public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator
 {
-    private const string Ns = "Smart.Data.Accessor.Attributes.Pg";
-
-    private static readonly (string Attribute, PostgresOperation Operation)[] Targets =
-    [
-        (Ns + "InsertAttribute", PostgresOperation.Insert),
-        (Ns + "UpdateAttribute", PostgresOperation.Update),
-        (Ns + "DeleteAttribute", PostgresOperation.Delete),
-        (Ns + "CountAttribute", PostgresOperation.Count),
-        (Ns + "SelectAttribute", PostgresOperation.Select),
-        (Ns + "SelectSingleAttribute", PostgresOperation.SelectSingle),
-        (Ns + "TruncateAttribute", PostgresOperation.Truncate),
-        (Ns + "UpsertAttribute", PostgresOperation.Upsert)
-    ];
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var provider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                BuilderClassScanner.DataAccessorAttributeName,
+                ClassScanner.DataAccessorAttributeName,
                 static (node, _) => node is ClassDeclarationSyntax,
-                static (context, cancellation) => BuilderClassScanner.Scan(context, Targets, PostgresModelBuilder.BuildMethod, cancellation))
-            .WithTrackingName(BuilderClassScanner.TrackingName);
+                static (context, cancellation) => PostgresModelBuilder.Build(context, cancellation))
+            .WithTrackingName(ClassScanner.TrackingName);
 
-        context.RegisterSourceOutput(provider, static (productionContext, model) => BuilderOutput.Emit(productionContext, model, PostgresSourceBuilder.EmitMethod, ".Postgres"));
+        context.RegisterSourceOutput(provider, static (productionContext, model) =>
+            SourceOutput.Emit(productionContext, model.Namespace, model.ClassName, model.Accessibility, model.Methods, model.Diagnostics, PostgresSourceBuilder.EmitMethod, ".Postgres"));
     }
 }

@@ -1,99 +1,133 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator;
 
+using Microsoft.CodeAnalysis;
+
 using Smart.Data.Accessor.Builders.MySql.Generator.Models;
 using Smart.Data.Accessor.Shared.Builders;
-using Smart.Data.Accessor.Shared.Builders.Engine;
-using Smart.Data.Accessor.Shared.Builders.Models;
 
 using SourceGenerateHelper;
 
-// MySQL Builder の transform。共通解決（テーブル名・値パラメータ・列）は MethodResolver に委譲し、ここでは MySqlOperation 別の Model
-// 生成と診断（キー欠如など）だけを行う。解決できない場合は null を返す。
-// Transform for the MySQL builder. Common resolution (table / value params / columns) is delegated to MethodResolver;
-// only the MySqlOperation-specific model construction and diagnostics happen here. Returns null when the method cannot be resolved.
+// MySQL Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で per-kind Model を
+// 構築する（Operation enum は持たない）。種別固有の診断（キー欠如など）は各生成メソッドで出す。
+// Transform for the MySQL builder. Scans via the shared ClassScanner and resolves via MethodResolver, then builds the
+// per-kind model through an attribute-name → build-delegate table (no Operation enum). Kind diagnostics happen here.
 internal static class MySqlModelBuilder
 {
-    public static BuilderMethodModel? BuildMethod(MethodBuildContext<MySqlOperation> context)
+    private const string Ns = "Smart.Data.Accessor.Attributes.MySql";
+
+    private delegate MySqlMethodModel? BuildMethod(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics);
+
+    private static readonly (string Attribute, BuildMethod Build)[] Targets =
+    [
+        (Ns + "InsertAttribute", BuildInsert),
+        (Ns + "UpdateAttribute", BuildUpdate),
+        (Ns + "DeleteAttribute", BuildDelete),
+        (Ns + "CountAttribute", BuildCount),
+        (Ns + "SelectAttribute", BuildSelect),
+        (Ns + "SelectSingleAttribute", BuildSelectSingle),
+        (Ns + "TruncateAttribute", BuildTruncate),
+        (Ns + "UpsertAttribute", BuildUpsert),
+        (Ns + "ReplaceAttribute", BuildReplace),
+        (Ns + "InsertIgnoreAttribute", BuildInsertIgnore),
+    ];
+
+    public static MySqlClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)
     {
-        var method = MethodResolver.Resolve(context.Container, context.Method, context.Attribute, context.TypeMaps, context.Profile, context.Diagnostics, context.Location);
-        if (method is null)
+        var scan = ClassScanner.ResolveClass(context);
+        var diagnostics = new List<DiagnosticInfo>();
+        var methods = new List<MySqlMethodModel>();
+        foreach (var (matched, build) in ClassScanner.EnumerateMethods(scan, Targets, diagnostics))
         {
-            return null;
+            cancellation.ThrowIfCancellationRequested();
+            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, diagnostics, matched.Location);
+            if (resolution is null)
+            {
+                continue;
+            }
+            var model = build(resolution, matched, diagnostics);
+            if (model is not null)
+            {
+                methods.Add(model);
+            }
         }
 
-        // 種別毎に対応する Model を返す。Update / Delete / SelectSingle / Upsert はキー（[Key]）が無いと WHERE/突合を組めないため診断を出す。
-        // Return the model per kind. Update / Delete / SelectSingle / Upsert need a key ([Key]) to build the WHERE/match
-        // clause, so they raise a diagnostic when none is present.
-        switch (context.Operation)
-        {
-            case MySqlOperation.Insert:
-                return new MySqlInsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName);
-
-            case MySqlOperation.Update:
-                if (!method.HasEntityType || (method.EntityParamName is null))
-                {
-                    // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
-                    // SDA1004: cannot resolve the column list (no entity instance).
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                else if (!method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new MySqlUpdateModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType);
-
-            case MySqlOperation.Delete:
-                if (method.HasEntityType && !method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new MySqlDeleteModel(method.MethodName, method.TableName, method.ValueParams, method.Columns);
-
-            case MySqlOperation.Count:
-                return new MySqlCountModel(method.MethodName, method.TableName, method.ValueParams);
-
-            case MySqlOperation.Truncate:
-                return new MySqlTruncateModel(method.MethodName, method.TableName, method.ValueParams);
-
-            case MySqlOperation.Select:
-                if (!method.HasEntityType)
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                return new MySqlSelectModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
-
-            case MySqlOperation.SelectSingle:
-                if (!method.HasEntityType)
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                else if (!method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new MySqlSelectSingleModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.HasEntityType);
-
-            case MySqlOperation.Upsert:
-                if (!method.HasEntityType || (method.EntityParamName is null))
-                {
-                    // SDA1004: 列リストを解決できない（エンティティ実体が無い）。
-                    // SDA1004: cannot resolve the column list (no entity instance).
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, context.Location, context.Method.Name));
-                }
-                else if (!method.Columns.Any(static x => x.IsKey))
-                {
-                    context.Diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, context.Location, method.EntityTypeName!, context.Method.Name));
-                }
-                return new MySqlUpsertModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName, method.HasEntityType);
-
-            case MySqlOperation.Replace:
-                return new MySqlReplaceModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName);
-
-            case MySqlOperation.InsertIgnore:
-                return new MySqlInsertIgnoreModel(method.MethodName, method.TableName, method.ValueParams, method.Columns, method.EntityParamName);
-
-            default:
-                return null;
-        }
+        return new MySqlClassModel(
+            scan.Namespace,
+            scan.ClassName,
+            scan.Accessibility,
+            new EquatableArray<MySqlMethodModel>(methods.ToArray()),
+            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
     }
+
+    private static MySqlInsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName) { BindMarker = matched.BindMarker };
+
+    private static MySqlUpdateModel BuildUpdate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType || (resolution.EntityParamName is null))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static MySqlDeleteModel BuildDelete(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (resolution.HasEntityType && !resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns) { BindMarker = matched.BindMarker };
+    }
+
+    private static MySqlCountModel BuildCount(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams) { BindMarker = matched.BindMarker };
+
+    private static MySqlTruncateModel BuildTruncate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams) { BindMarker = matched.BindMarker };
+
+    private static MySqlSelectModel BuildSelect(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType)
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static MySqlSelectSingleModel BuildSelectSingle(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType)
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static MySqlUpsertModel BuildUpsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+    {
+        if (!resolution.HasEntityType || (resolution.EntityParamName is null))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
+        }
+        else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
+        {
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+        }
+        return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
+    }
+
+    private static MySqlReplaceModel BuildReplace(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName) { BindMarker = matched.BindMarker };
+
+    private static MySqlInsertIgnoreModel BuildInsertIgnore(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
+        => new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName) { BindMarker = matched.BindMarker };
 }
