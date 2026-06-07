@@ -3,6 +3,7 @@ namespace Smart.Data.Accessor.Builders.Postgres.Generator;
 using Microsoft.CodeAnalysis;
 
 using Smart.Data.Accessor.Builders.Postgres.Generator.Models;
+using Smart.Data.Accessor.Shared.Builders;
 using Smart.Data.Accessor.Shared.Builders.Engine;
 using Smart.Data.Accessor.Shared.Builders.Models;
 

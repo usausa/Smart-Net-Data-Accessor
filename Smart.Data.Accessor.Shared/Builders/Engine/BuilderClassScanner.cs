@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Shared.Builders.Engine;
 
+using System.Collections.Immutable;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -20,6 +22,8 @@ internal static class BuilderClassScanner
     // The incremental step name (so tests can observe the model being cached / reused). Common to every provider.
     public const string TrackingName = "BuilderClassModel";
 
+    private const string BindPrefixAttributeName = "Smart.Data.Accessor.Attributes.BindPrefixAttribute";
+
     public static BuilderClassModel Scan<TOperation>(
         GeneratorAttributeSyntaxContext context,
         IReadOnlyList<(string Attribute, TOperation Operation)> targets,
@@ -35,6 +39,11 @@ internal static class BuilderClassScanner
 
         var profile = MappingAttributeHelper.ResolveProfile(container);
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(container, profile);
+
+        // [BindPrefix] のバインドマーカーを assembly → class スコープで解決（method スコープは各メソッドで上書き）。既定 '@'。
+        // Resolve the [BindPrefix] bind marker at assembly → class scope (method scope overrides per method). Default '@'.
+        var assemblyMarker = container.ContainingAssembly is { } assembly ? ResolveBindMarker(assembly.GetAttributes()) : null;
+        var classMarker = ResolveBindMarker(container.GetAttributes()) ?? assemblyMarker;
 
         var diagnostics = new List<DiagnosticInfo>();
         var methods = new List<BuilderMethodModel>();
@@ -92,7 +101,10 @@ internal static class BuilderClassScanner
                 container, method, matched[0].Attribute, matched[0].Operation, typeMaps, profile, diagnostics, location));
             if (model is not null)
             {
-                methods.Add(model);
+                // method スコープの [BindPrefix] が最優先、無ければ class/assembly、いずれも無ければ '@'。
+                // A method-scope [BindPrefix] wins; otherwise class/assembly; otherwise '@'.
+                var methodMarker = ResolveBindMarker(method.GetAttributes()) ?? classMarker ?? '@';
+                methods.Add(model with { BindMarker = methodMarker });
             }
         }
 
@@ -102,6 +114,22 @@ internal static class BuilderClassScanner
             accessibility,
             new EquatableArray<BuilderMethodModel>(methods.ToArray()),
             new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+    }
+
+    // [BindPrefix(marker)] のバインドマーカーを取り出す（無ければ null）。
+    // Extract the bind marker from [BindPrefix(marker)] (null when absent).
+    private static char? ResolveBindMarker(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attribute in attributes)
+        {
+            if ((attribute.AttributeClass?.ToDisplayString() == BindPrefixAttributeName) &&
+                (attribute.ConstructorArguments.Length > 0) &&
+                (attribute.ConstructorArguments[0].Value is char marker))
+            {
+                return marker;
+            }
+        }
+        return null;
     }
 }
 

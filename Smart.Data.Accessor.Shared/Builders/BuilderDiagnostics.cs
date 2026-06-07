@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Shared.Builders.Engine;
+namespace Smart.Data.Accessor.Shared.Builders;
 
 using Microsoft.CodeAnalysis;
 

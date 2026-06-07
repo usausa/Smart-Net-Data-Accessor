@@ -61,12 +61,12 @@ internal static class PostgresSourceBuilder
             // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
             // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
             var columns = model.Columns.Where(static x => !x.IsDatabaseManaged).ToList();
-            var colSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
-            var valSql = String.Join(", ", columns.Select(x => SqlEmit.Marker + x.PropertyName));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(model.ReturningColumns)}");
+            var columnSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
+            var valueSql = String.Join(", ", columns.Select(x => model.BindMarker + x.PropertyName));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({columnSql}) VALUES ({valueSql}){ReturningClause(model.ReturningColumns)}");
             foreach (var column in columns)
             {
-                SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+                SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
             }
         }
         else
@@ -74,12 +74,12 @@ internal static class PostgresSourceBuilder
             // パラメータモード：列・値はバインドパラメータから組む。
             // Parameter mode: columns / values come from the bind parameters.
             var bindParams = SqlEmit.BindParams(model);
-            var colSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
-            var valSql = String.Join(", ", bindParams.Select(x => SqlEmit.Marker + x.Name));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}) VALUES ({valSql}){ReturningClause(model.ReturningColumns)}");
+            var columnSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
+            var valueSql = String.Join(", ", bindParams.Select(x => model.BindMarker + x.Name));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({columnSql}) VALUES ({valueSql}){ReturningClause(model.ReturningColumns)}");
             foreach (var parameter in bindParams)
             {
-                SqlEmit.EmitValueParamBinding(builder, parameter);
+                SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
             }
         }
     }
@@ -108,7 +108,7 @@ internal static class PostgresSourceBuilder
             {
                 sql.Append(", ");
             }
-            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
+            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(model.BindMarker).Append(settable[i].PropertyName);
         }
         if (keys.Count > 0)
         {
@@ -119,7 +119,7 @@ internal static class PostgresSourceBuilder
                 {
                     sql.Append(" AND ");
                 }
-                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
+                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(model.BindMarker).Append("k_").Append(keys[i].PropertyName);
             }
         }
 
@@ -129,11 +129,11 @@ internal static class PostgresSourceBuilder
 
         foreach (var column in settable)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
         foreach (var column in keys)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 
@@ -156,7 +156,7 @@ internal static class PostgresSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(model.BindMarker).Append(bindParams[i].Name);
             }
         }
 
@@ -166,7 +166,7 @@ internal static class PostgresSourceBuilder
 
         foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, parameter);
+            SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
         }
     }
 
@@ -193,19 +193,19 @@ internal static class PostgresSourceBuilder
         {
             AppendPaging(
                 sql,
-                limitParam is null ? null : SqlEmit.Marker + limitParam.Name,
-                offsetParam is null ? null : SqlEmit.Marker + offsetParam.Name);
+                limitParam is null ? null : model.BindMarker + limitParam.Name,
+                offsetParam is null ? null : model.BindMarker + offsetParam.Name);
         }
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
         if (offsetParam is not null)
         {
-            SqlEmit.EmitValueParamBinding(builder, offsetParam);
+            SqlEmit.EmitValueParamBinding(builder, offsetParam, model.BindMarker);
         }
         if (limitParam is not null)
         {
-            SqlEmit.EmitValueParamBinding(builder, limitParam);
+            SqlEmit.EmitValueParamBinding(builder, limitParam, model.BindMarker);
         }
     }
 
@@ -234,7 +234,7 @@ internal static class PostgresSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(model.BindMarker).Append(bindParams[i].Name);
             }
         }
 
@@ -242,7 +242,7 @@ internal static class PostgresSourceBuilder
 
         foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, parameter);
+            SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
         }
     }
 
@@ -264,12 +264,12 @@ internal static class PostgresSourceBuilder
         var keys = model.Columns.Where(static x => x.IsKey).ToList();
         var updates = model.Columns.Where(static x => !x.IsKey && !x.IsDatabaseManaged).ToList();
 
-        var colSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
-        var valSql = String.Join(", ", columns.Select(x => SqlEmit.Marker + x.PropertyName));
+        var columnSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
+        var valueSql = String.Join(", ", columns.Select(x => model.BindMarker + x.PropertyName));
         var conflictSql = String.Join(", ", keys.Select(x => Quote(x.ColumnName)));
 
         var sql = new StringBuilder();
-        sql.Append("INSERT INTO ").Append(Quote(model.TableName)).Append(" (").Append(colSql).Append(") VALUES (").Append(valSql).Append(") ON CONFLICT (").Append(conflictSql).Append(')');
+        sql.Append("INSERT INTO ").Append(Quote(model.TableName)).Append(" (").Append(columnSql).Append(") VALUES (").Append(valueSql).Append(") ON CONFLICT (").Append(conflictSql).Append(')');
         if (updates.Count > 0)
         {
             sql.Append(" DO UPDATE SET ");
@@ -291,7 +291,7 @@ internal static class PostgresSourceBuilder
 
         foreach (var column in columns)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 

@@ -1,4 +1,4 @@
-namespace Smart.Data.Accessor.Shared.Helpers;
+namespace Smart.Data.Accessor.Shared;
 
 // Shared (linked source) display names of well-known BCL / framework types, used by both generators
 // for symbol classification (ToDisplayString() comparisons). These are not in Roslyn's SpecialType

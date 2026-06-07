@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Builders.MySql.Generator;
 
 using Smart.Data.Accessor.Builders.MySql.Generator.Models;
+using Smart.Data.Accessor.Shared.Builders;
 using Smart.Data.Accessor.Shared.Builders.Engine;
 using Smart.Data.Accessor.Shared.Builders.Models;
 

@@ -14,4 +14,9 @@ using SourceGenerateHelper;
 internal abstract record BuilderMethodModel(
     string MethodName,
     string TableName,
-    EquatableArray<BuilderValueParam> ValueParams);
+    EquatableArray<BuilderValueParam> ValueParams)
+{
+    // バインドマーカー（[BindPrefix] 由来。assembly/class/method スコープで解決、既定 '@'）。emit 段で SQL 文字列とパラメータ名に使う。
+    // The bind marker (from [BindPrefix], resolved at assembly/class/method scope; default '@'). Used at emit for the SQL text and parameter names.
+    public char BindMarker { get; init; } = '@';
+}

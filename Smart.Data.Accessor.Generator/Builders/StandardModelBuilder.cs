@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Builders;
 
 using Smart.Data.Accessor.Generator.Builders.Models;
+using Smart.Data.Accessor.Shared.Builders;
 using Smart.Data.Accessor.Shared.Builders.Engine;
 using Smart.Data.Accessor.Shared.Builders.Models;
 

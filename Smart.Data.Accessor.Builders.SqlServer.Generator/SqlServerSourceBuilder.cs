@@ -61,12 +61,12 @@ internal static class SqlServerSourceBuilder
             // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
             // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
             var columns = model.Columns.Where(static x => !x.IsDatabaseManaged).ToList();
-            var colSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
-            var valSql = String.Join(", ", columns.Select(x => SqlEmit.Marker + x.PropertyName));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}){OutputClause(model.OutputColumns, "INSERTED")} VALUES ({valSql})");
+            var columnSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
+            var valueSql = String.Join(", ", columns.Select(x => model.BindMarker + x.PropertyName));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({columnSql}){OutputClause(model.OutputColumns, "INSERTED")} VALUES ({valueSql})");
             foreach (var column in columns)
             {
-                SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+                SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
             }
         }
         else
@@ -74,12 +74,12 @@ internal static class SqlServerSourceBuilder
             // パラメータモード：列・値はバインドパラメータから組む。
             // Parameter mode: columns / values come from the bind parameters.
             var bindParams = SqlEmit.BindParams(model);
-            var colSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
-            var valSql = String.Join(", ", bindParams.Select(x => SqlEmit.Marker + x.Name));
-            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({colSql}){OutputClause(model.OutputColumns, "INSERTED")} VALUES ({valSql})");
+            var columnSql = String.Join(", ", bindParams.Select(x => Quote(x.ColumnName)));
+            var valueSql = String.Join(", ", bindParams.Select(x => model.BindMarker + x.Name));
+            SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({columnSql}){OutputClause(model.OutputColumns, "INSERTED")} VALUES ({valueSql})");
             foreach (var parameter in bindParams)
             {
-                SqlEmit.EmitValueParamBinding(builder, parameter);
+                SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
             }
         }
     }
@@ -108,7 +108,7 @@ internal static class SqlServerSourceBuilder
             {
                 sql.Append(", ");
             }
-            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append(settable[i].PropertyName);
+            sql.Append(Quote(settable[i].ColumnName)).Append(" = ").Append(model.BindMarker).Append(settable[i].PropertyName);
         }
         sql.Append(OutputClause(model.OutputColumns, "INSERTED"));
         if (keys.Count > 0)
@@ -120,7 +120,7 @@ internal static class SqlServerSourceBuilder
                 {
                     sql.Append(" AND ");
                 }
-                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(SqlEmit.Marker).Append("k_").Append(keys[i].PropertyName);
+                sql.Append(Quote(keys[i].ColumnName)).Append(" = ").Append(model.BindMarker).Append("k_").Append(keys[i].PropertyName);
             }
         }
 
@@ -128,11 +128,11 @@ internal static class SqlServerSourceBuilder
 
         foreach (var column in settable)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
         foreach (var column in keys)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 
@@ -156,7 +156,7 @@ internal static class SqlServerSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(model.BindMarker).Append(bindParams[i].Name);
             }
         }
 
@@ -164,7 +164,7 @@ internal static class SqlServerSourceBuilder
 
         foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, parameter);
+            SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
         }
     }
 
@@ -191,19 +191,19 @@ internal static class SqlServerSourceBuilder
         {
             AppendPaging(
                 sql,
-                limitParam is null ? null : SqlEmit.Marker + limitParam.Name,
-                offsetParam is null ? null : SqlEmit.Marker + offsetParam.Name);
+                limitParam is null ? null : model.BindMarker + limitParam.Name,
+                offsetParam is null ? null : model.BindMarker + offsetParam.Name);
         }
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
         if (offsetParam is not null)
         {
-            SqlEmit.EmitValueParamBinding(builder, offsetParam);
+            SqlEmit.EmitValueParamBinding(builder, offsetParam, model.BindMarker);
         }
         if (limitParam is not null)
         {
-            SqlEmit.EmitValueParamBinding(builder, limitParam);
+            SqlEmit.EmitValueParamBinding(builder, limitParam, model.BindMarker);
         }
     }
 
@@ -232,7 +232,7 @@ internal static class SqlServerSourceBuilder
                     sql.Append(" AND ");
                 }
                 var column = i < keyColumns.Count ? keyColumns[i].ColumnName : bindParams[i].ColumnName;
-                sql.Append(Quote(column)).Append(" = ").Append(SqlEmit.Marker).Append(bindParams[i].Name);
+                sql.Append(Quote(column)).Append(" = ").Append(model.BindMarker).Append(bindParams[i].Name);
             }
         }
 
@@ -240,7 +240,7 @@ internal static class SqlServerSourceBuilder
 
         foreach (var parameter in bindParams)
         {
-            SqlEmit.EmitValueParamBinding(builder, parameter);
+            SqlEmit.EmitValueParamBinding(builder, parameter, model.BindMarker);
         }
     }
 
@@ -270,7 +270,7 @@ internal static class SqlServerSourceBuilder
             {
                 sql.Append(", ");
             }
-            sql.Append(SqlEmit.Marker).Append(columns[i].PropertyName).Append(" AS ").Append(Quote(columns[i].ColumnName));
+            sql.Append(model.BindMarker).Append(columns[i].PropertyName).Append(" AS ").Append(Quote(columns[i].ColumnName));
         }
         sql.Append(") AS S ON (");
         for (var i = 0; i < keys.Count; i++)
@@ -318,7 +318,7 @@ internal static class SqlServerSourceBuilder
 
         foreach (var column in columns)
         {
-            SqlEmit.EmitColumnParameter(builder, SqlEmit.Marker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 

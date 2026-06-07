@@ -14,7 +14,6 @@ internal static class SqlEmit
 {
     // ReSharper disable once MemberCanBePrivate.Global
     public const string QueryBuilderMethodSuffix = "__QueryBuilder";
-    public const char Marker = '@';
 
     // private static void {Method}__QueryBuilder(ref BuilderContext context, <value params>) を開き、`var cmd = context.Command;` まで出力する。
     // Open `private static void {Method}__QueryBuilder(ref BuilderContext context, <value params>)` and emit `var cmd = context.Command;`.
@@ -79,10 +78,10 @@ internal static class SqlEmit
 
     // メソッドの値パラメータを ExecuteHelper.AddInParameter で束縛する（converter は付かない）。
     // Bind a method value parameter via ExecuteHelper.AddInParameter (no converter).
-    public static void EmitValueParamBinding(SourceBuilder builder, BuilderValueParam parameter)
+    public static void EmitValueParamBinding(SourceBuilder builder, BuilderValueParam parameter, char marker)
         => builder.Indent()
             .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-            .Append(Marker).Append(parameter.Name).Append("\", ")
+            .Append(marker).Append(parameter.Name).Append("\", ")
             .Append(ValueParamArg(parameter))
             .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size))
             .Append(");").NewLine();
