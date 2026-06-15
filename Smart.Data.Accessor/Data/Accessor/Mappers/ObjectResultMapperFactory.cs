@@ -78,7 +78,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
-        var converters = new Dictionary<int, Func<object, object>>();
+        var converters = new Dictionary<int, Func<object, object?>>();
         TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
 
         // Define type
@@ -209,7 +209,7 @@ public sealed class ObjectResultMapperFactory : IResultMapperFactory
 
         if (field is not null)
         {
-            ilGenerator.EmitValueConvertByField(field, objectLocal);
+            ilGenerator.EmitValueConvertByField(field, objectLocal, type, valueTypeLocals, next);
         }
 
         ilGenerator.EmitTypeConversionForType(type);

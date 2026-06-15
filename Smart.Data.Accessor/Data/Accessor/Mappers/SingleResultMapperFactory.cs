@@ -73,9 +73,9 @@ public sealed class SingleResultMapperFactory : IResultMapperFactory
 
     private sealed class ParserMapper<T> : ResultMapper<T>
     {
-        private readonly Func<object, object> parser;
+        private readonly Func<object, object?> parser;
 
-        public ParserMapper(Func<object, object> parser)
+        public ParserMapper(Func<object, object?> parser)
         {
             this.parser = parser;
         }
@@ -84,7 +84,13 @@ public sealed class SingleResultMapperFactory : IResultMapperFactory
         public override T Map(IDataRecord record)
         {
             var value = record.GetValue(0);
-            return value is DBNull ? default! : UnsafeCastHelper.UnsafeCast<T>(parser(value));
+            if (value is DBNull)
+            {
+                return default!;
+            }
+
+            var converted = parser(value);
+            return converted is null ? default! : UnsafeCastHelper.UnsafeCast<T>(converted);
         }
     }
 }

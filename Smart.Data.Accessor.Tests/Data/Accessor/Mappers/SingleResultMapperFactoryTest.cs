@@ -89,4 +89,33 @@ public sealed class SingleResultMapperFactoryTest
         Assert.Equal(1, list[0]);
         Assert.Null(list[1]);
     }
+
+    [Fact]
+    public void TestMapSingleConvertFailureReturnsDefault()
+    {
+        var engine = new ExecuteEngineConfig().ToEngine();
+
+        var columns = new[]
+        {
+            new MockColumn(typeof(string), "Column1")
+        };
+        var values = new List<object[]>
+        {
+            new object[] { "True" },
+            new object[] { "Invalid" },
+            new object[] { DBNull.Value }
+        };
+
+        var cmd = new MockDbCommand();
+        cmd.SetupResult(new MockDataReader(columns, values));
+
+        var info = new QueryInfo<bool>(engine, null!, false);
+
+        var list = engine.QueryBuffer(info, cmd);
+
+        Assert.Equal(3, list.Count);
+        Assert.True(list[0]);
+        Assert.False(list[1]);
+        Assert.False(list[2]);
+    }
 }

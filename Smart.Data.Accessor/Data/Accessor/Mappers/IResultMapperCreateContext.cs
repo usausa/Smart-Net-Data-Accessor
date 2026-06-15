@@ -6,5 +6,5 @@ public interface IResultMapperCreateContext
 {
     IServiceProvider ServiceProvider { get; }
 
-    Func<object, object>? GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
+    Func<object, object?>? GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider);
 }

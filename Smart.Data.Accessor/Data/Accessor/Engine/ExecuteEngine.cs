@@ -110,7 +110,7 @@ public sealed partial class ExecuteEngine : IEngineController, IResultMapperCrea
     // Converter
     //--------------------------------------------------------------------------------
 
-    Func<object, object>? IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
+    Func<object, object?>? IResultMapperCreateContext.GetConverter(Type sourceType, Type destinationType, ICustomAttributeProvider provider)
     {
         var converter = CreateHandler(destinationType, provider);
         if (converter is not null)
@@ -167,7 +167,7 @@ public sealed partial class ExecuteEngine : IEngineController, IResultMapperCrea
             return default!;
         }
 
-        return objectConverter.Convert<T>(source);
+        return objectConverter.Convert<T>(source) ?? default!;
     }
 
     //--------------------------------------------------------------------------------

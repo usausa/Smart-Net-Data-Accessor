@@ -13,7 +13,7 @@ public sealed class ObjectResultMapperFactoryTest
     // Map
     //--------------------------------------------------------------------------------
 
-    public enum Value
+    public enum EnumValue
     {
         Zero = 0,
         One = 1
@@ -95,9 +95,9 @@ public sealed class ObjectResultMapperFactoryTest
 
         // Enum
 
-        public Value EnumColumn { get; set; }
+        public EnumValue EnumColumn { get; set; }
 
-        public Value? EnumColumnN { get; set; }
+        public EnumValue? EnumColumnN { get; set; }
 
         public int ReadonlyColumn => IgnoreColumn;
 
@@ -245,8 +245,8 @@ public sealed class ObjectResultMapperFactoryTest
         Assert.Equal((UIntPtr)1, list[0].UIntPtrColumn);
         Assert.Equal((UIntPtr)1, list[0].UIntPtrColumnN);
 
-        Assert.Equal(Value.One, list[0].EnumColumn);
-        Assert.Equal(Value.One, list[0].EnumColumnN);
+        Assert.Equal(EnumValue.One, list[0].EnumColumn);
+        Assert.Equal(EnumValue.One, list[0].EnumColumnN);
 
         Assert.Equal(0, list[0].ReadonlyColumn);
         Assert.Equal(0, list[0].IgnoreColumn);
@@ -294,6 +294,88 @@ public sealed class ObjectResultMapperFactoryTest
 
         Assert.Equal(0, list[1].ReadonlyColumn);
         Assert.Equal(0, list[1].IgnoreColumn);
+    }
+
+    public sealed class ConvertEntity
+    {
+        public bool BoolColumn { get; set; }
+
+        public int IntColumn { get; set; }
+    }
+
+    [Fact]
+    public void TestMapPropertyConvertFailureReturnsDefault()
+    {
+        var engine = new ExecuteEngineConfig().ToEngine();
+
+        var columns = new[]
+        {
+            new MockColumn(typeof(string), nameof(ConvertEntity.BoolColumn)),
+            new MockColumn(typeof(string), nameof(ConvertEntity.IntColumn))
+        };
+        var values = new List<object[]>
+        {
+            new object[] { "True", "1" },
+            new object[] { "Invalid", "2" }
+        };
+
+        var cmd = new MockDbCommand();
+        cmd.SetupResult(new MockDataReader(columns, values));
+
+        var info = new QueryInfo<ConvertEntity>(engine, GetType().GetMethod(nameof(TestMapPropertyConvertFailureReturnsDefault))!, false);
+
+        var list = engine.QueryBuffer(info, cmd);
+
+        // "Invalid" makes the string->bool converter return null; the Emit path must fall back to default(false), not throw
+        Assert.Equal(2, list.Count);
+        Assert.True(list[0].BoolColumn);
+        Assert.Equal(1, list[0].IntColumn);
+        Assert.False(list[1].BoolColumn);
+        Assert.Equal(2, list[1].IntColumn);
+    }
+
+    public sealed class ConvertConstructorEntity
+    {
+        public bool Flag { get; }
+
+        public int Value { get; }
+
+        public ConvertConstructorEntity(bool flag, int value)
+        {
+            Flag = flag;
+            Value = value;
+        }
+    }
+
+    [Fact]
+    public void TestMapConstructorConvertFailureReturnsDefault()
+    {
+        var engine = new ExecuteEngineConfig().ToEngine();
+
+        var columns = new[]
+        {
+            new MockColumn(typeof(string), nameof(ConvertConstructorEntity.Flag)),
+            new MockColumn(typeof(string), nameof(ConvertConstructorEntity.Value))
+        };
+        var values = new List<object[]>
+        {
+            new object[] { "True", "1" },
+            new object[] { "Invalid", "2" }
+        };
+
+        var cmd = new MockDbCommand();
+        cmd.SetupResult(new MockDataReader(columns, values));
+
+        var info = new QueryInfo<ConvertConstructorEntity>(engine, GetType().GetMethod(nameof(TestMapConstructorConvertFailureReturnsDefault))!, false);
+
+        var list = engine.QueryBuffer(info, cmd);
+
+        // Constructor parameter path: "Invalid" makes the converter return null; it must become default(false), not throw
+        Assert.Equal(2, list.Count);
+        Assert.True(list[0].Flag);
+        Assert.Equal(1, list[0].Value);
+        Assert.False(list[1].Flag);
+        Assert.Equal(2, list[1].Value);
     }
 
     //--------------------------------------------------------------------------------

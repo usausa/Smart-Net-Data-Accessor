@@ -9,7 +9,7 @@ internal static class TypeMapInfoHelper
         TypeMapInfo typeMap,
         IResultMapperCreateContext context,
         ColumnInfo[] columns,
-        Dictionary<int, Func<object, object>> map)
+        Dictionary<int, Func<object, object?>> map)
     {
         if (typeMap.Constructor is not null)
         {

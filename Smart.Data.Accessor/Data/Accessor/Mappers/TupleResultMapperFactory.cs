@@ -81,7 +81,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
             throw new InvalidOperationException($"Type is not supported for mapper. type=[{type}]");
         }
 
-        var converters = new Dictionary<int, Func<object, object>>();
+        var converters = new Dictionary<int, Func<object, object?>>();
         foreach (var typeMap in typeMaps)
         {
             TypeMapInfoHelper.BuildConverterMap(typeMap, context, columns, converters);
@@ -171,7 +171,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 
                         if (fields.TryGetValue(parameterMap.Index, out var field))
                         {
-                            ilGenerator.EmitValueConvertByField(field, objectLocal);
+                            ilGenerator.EmitValueConvertByField(field, objectLocal, parameterMap.Info.ParameterType, valueTypeLocals, next);
                         }
 
                         ilGenerator.EmitTypeConversionForType(parameterMap.Info.ParameterType);
@@ -273,7 +273,7 @@ public sealed class TupleResultMapperFactory : IResultMapperFactory
 
                 if (fields.TryGetValue(propertyMap.Index, out var field))
                 {
-                    ilGenerator.EmitValueConvertByField(field, objectLocal);
+                    ilGenerator.EmitValueConvertByField(field, objectLocal, propertyMap.Info.PropertyType, valueTypeLocals, next);
                 }
 
                 ilGenerator.EmitTypeConversionForType(propertyMap.Info.PropertyType);

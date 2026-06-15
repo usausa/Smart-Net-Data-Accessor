@@ -95,16 +95,25 @@ internal static class EmitExtensions
         ilGenerator.Emit(OpCodes.Initobj, type);
     }
 
-    public static void EmitValueConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local)
+    public static void EmitValueConvertByField(this ILGenerator ilGenerator, FieldInfo field, LocalBuilder local, Type type, Dictionary<Type, LocalBuilder> valueTypeLocals, Label next)
     {
-        ilGenerator.EmitStloc(local);                                       // [Value] :
+        ilGenerator.EmitStloc(local);
 
-        ilGenerator.Emit(OpCodes.Ldarg_0);                                  // [Value] : [Holder]
-        ilGenerator.Emit(OpCodes.Ldfld, field);                             // [Value] : [Converter]
+        ilGenerator.Emit(OpCodes.Ldarg_0);                                  // [Holder]
+        ilGenerator.Emit(OpCodes.Ldfld, field);                             // [Converter]
 
         ilGenerator.EmitLdloc(local);                                       // [Converter][Value]
 
         ilGenerator.Emit(OpCodes.Call, ConvertFunc);                        // [Value(Converted)]
+
+        // The converter may return null (e.g. failed parse). Fall back to the default value instead of unboxing null
+        var hasValue = ilGenerator.DefineLabel();
+        ilGenerator.Emit(OpCodes.Dup);                                      // [Converted][Converted]
+        ilGenerator.Emit(OpCodes.Brtrue_S, hasValue);
+        ilGenerator.Emit(OpCodes.Pop);
+        ilGenerator.EmitStackDefaultValue(type, valueTypeLocals);           // [Default]
+        ilGenerator.Emit(OpCodes.Br, next);
+        ilGenerator.MarkLabel(hasValue);                                    // [Converted]
     }
 
     [RequiresDynamicCode("EmitTypeConversionForType uses GetConstructor which requires dynamic code.")]
