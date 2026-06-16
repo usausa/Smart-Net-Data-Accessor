@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageReference Include="Usa.Smart.Core" Version="2.11.0" />
-    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.13.0" />
+    <PackageReference Include="Usa.Smart.Data.Accessor" Version="2.14.0" />
   </ItemGroup>
 
 </Project>
