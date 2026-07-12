@@ -483,6 +483,7 @@ public class MappingStrategyBenchmark
     private void VerifyOrThrow()
     {
         var full = ReaderDrivenWide(mockWide, CommandBehavior.SequentialAccess);
+        // ReSharper disable once CompareOfFloatsByEqualityOperator
         if ((full.Count != RowCount) || (full[0].Id != 1L) || (full[0].Name != "Name-1") || (full[^1].Weight != RowCount * 0.25))
         {
             throw new InvalidOperationException("ReaderDrivenWide produced incorrect results.");

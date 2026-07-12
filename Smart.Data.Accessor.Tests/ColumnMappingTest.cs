@@ -1,7 +1,6 @@
 namespace Smart.Data.Accessor.Tests;
 
 using Smart.Data.Accessor.Tests.Accessors;
-using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
 using Xunit;
