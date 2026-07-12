@@ -299,9 +299,10 @@ internal static class AccessorSourceBuilder
     // invocation, and (for non-reader shapes) cleanup.
     private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName)
     {
-        // メソッド毎の OrdinalCache 構造体（列序数を 1 クエリにつき 1 回だけ解決し、各行で再利用する）。
-        // Per-method OrdinalCache struct (column ordinals resolved once per query, reused per row).
+        // メソッド毎の OrdinalCache 構造体（列序数を 1 クエリにつき 1 回だけ解決し、各行で再利用する）と行マッパー。
+        // Per-method OrdinalCache struct (column ordinals resolved once per query, reused per row) and the row mapper.
         EmitOrdinalCacheStruct(builder, method);
+        EmitRowMapperMethod(builder, method);
 
         var paramList = String.Join(", ", method.Parameters.Select(x =>
         {
@@ -796,7 +797,7 @@ internal static class AccessorSourceBuilder
         }
         else if (ownsConnection)
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess), connection);").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(), connection);").NewLine();
         }
         else
         {
@@ -836,8 +837,11 @@ internal static class AccessorSourceBuilder
                         builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
                     }
-                    // int Execute / scalar
-                    if (method.ScalarTypeFullName == "int")
+                    // [Execute] のスカラー戻り値は影響行数（SDA0302 が int 系へ制限）。[ExecuteScalar] は int を含む任意のスカラーを
+                    // ExecuteScalar + ConvertScalar で読む。
+                    // An [Execute] scalar return is the affected-row count (SDA0302 restricts it to int shapes).
+                    // [ExecuteScalar] reads any scalar (including int) via ExecuteScalar + ConvertScalar.
+                    if (method.MethodType == MethodType.Execute)
                     {
                         if (hasOutputs)
                         {
@@ -879,7 +883,7 @@ internal static class AccessorSourceBuilder
                         builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
                     }
-                    if (method.ScalarTypeFullName == "int")
+                    if (method.MethodType == MethodType.Execute)
                     {
                         if (hasOutputs)
                         {
@@ -918,17 +922,24 @@ internal static class AccessorSourceBuilder
             return;
         }
 
-        // Query 形：OrdinalCache ＋ 型別リーダーメソッドを使う。読み取りループを直接インライン展開し（ExecuteHelper の
-        // QueryBuffer / QueryFirstOrDefault を呼ばない）、行マテリアライズを JIT が特化でき、行毎のデリゲート呼び出しを避けられるようにする。
-        // Query shapes use the OrdinalCache + type-specific reader methods. The generator inlines the read loop directly
-        // (no ExecuteHelper.QueryBuffer / QueryFirstOrDefault call) so the JIT can specialise row materialisation and avoid
-        // per-row delegate dispatch.
+        // Query 形：OrdinalCache ＋ 行マッパー（__Map{Method}、AggressiveInlining の static 直呼び）を使い、読み取りループを
+        // 直接展開する（ExecuteHelper の QueryBuffer / QueryFirstOrDefault もデリゲートも使わない）。序数は名前照合で解決し
+        // 欠落列は -1（部分列 SELECT・動的列を許容。旧 GetOrdinal 方式は欠落列で throw していた）。
+        // CommandBehavior は list/iterator 形が SingleResult、単一行形が SingleResult | SingleRow。SequentialAccess は使わない：
+        // 列はプロパティ宣言順で読むため ordinal 昇順アクセスを保証できず、SqlClient / Npgsql では実行時例外になり得る。
+        // Query shapes use the OrdinalCache + the row mapper (__Map{Method}, an aggressively-inlined static call) with a
+        // directly expanded read loop (no ExecuteHelper.QueryBuffer / QueryFirstOrDefault, no delegates). Ordinals resolve
+        // by name matching with -1 for absent columns (tolerates subset SELECTs / dynamic columns; the former GetOrdinal
+        // form threw on a missing column).
+        // CommandBehavior: SingleResult for list/iterator shapes, SingleResult | SingleRow for single-row shapes.
+        // SequentialAccess is not used: columns are read in property declaration order, so ascending-ordinal access
+        // cannot be guaranteed and SqlClient / Npgsql could throw at runtime.
         var ordStruct = OrdinalStructName(method);
-        var entityBody = BuildEntityCreationBody(method, "__reader", "__o");
+        var entityBody = RowMapperName(method) + "(__reader, in __o)";
         switch (method.ReturnShape)
         {
             case ReturnShape.List:
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
+                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult);").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
@@ -942,7 +953,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("return __list;").NewLine();
                 break;
             case ReturnShape.TaskList:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
@@ -958,7 +969,7 @@ internal static class AccessorSourceBuilder
             case ReturnShape.IteratorEnumerable:
                 // 行毎に yield return を出す（バッファリングしない）。OrdinalCache は最初の行が来た後に 1 回だけ取得する。
                 // Emit a per-row `yield return` (no buffered list); OrdinalCache is captured once after the first row arrives.
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
+                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult);").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
@@ -973,7 +984,7 @@ internal static class AccessorSourceBuilder
                 // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要（無い場合 SDA0305 で警告）。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
                 // [EnumeratorCancellation] (SDA0305 warns when missing).
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
@@ -987,7 +998,7 @@ internal static class AccessorSourceBuilder
             case ReturnShape.Scalar:
                 // QueryFirst スタイル：マップした単一要素を返す。リーダーが空なら default!。
                 // QueryFirst-style: return the single mapped item, or default! when the reader is empty.
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess);").NewLine();
+                builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SingleRow);").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
@@ -997,7 +1008,7 @@ internal static class AccessorSourceBuilder
                 break;
             case ReturnShape.TaskScalar:
             case ReturnShape.ValueTaskScalar:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SingleRow, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordStruct).Append(".From(__reader);").NewLine();
@@ -1011,91 +1022,128 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // エンティティ生成式を組み立てる：class/POCO は new T { Prop = ..., ... }、record 主コンストラクタは new T(name: ..., ...)。
-    // 序数は渡された OrdinalCache 変数から取り、列読み取りは型別リーダーメソッドを使う。
-    // Build the entity-creation expression: new T { Prop = ..., ... } for a class/POCO, or new T(name: ..., ...) for a
-    // record primary constructor. Ordinals come from the supplied OrdinalCache variable; column reads use type-specific reader methods.
-    private static string BuildEntityCreationBody(MethodModel method, string readerVariable, string ordinal)
+    // 1 列分の読み取り式（代入・ctor 引数の右辺）を組み立てる。converter（FromDb）／型別リーダー（enum キャスト含む）／
+    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き（DB NULL は default!、SDA0307）。
+    // Build one column's read expression (assignment / ctor-argument RHS): converter (FromDb), typed reader (incl. enum
+    // casts), or the GetValue<T> fallback. Except for [NotNullColumn], the read carries the IsDBNull guard (DB NULL
+    // falls through as default!, SDA0307).
+    private static string BuildColumnReadExpression(ColumnInfo column, string readerVariable, string ordinal)
     {
         var sb = new StringBuilder();
-        var useCtor = method.UseRecordPrimaryConstructor;
-        sb.Append("new ").Append(method.ElementTypeFullName).Append(useCtor ? "(" : " { ");
-        var columns = method.QueryColumns;
-        if (columns is not null)
+        if (column.Converter is { } converter)
         {
+            // TDb として読み TConverter.FromDb で変換する。DB NULL ガードは型別リーダー経路と同じ（[NotNullColumn] で除外可）。
+            // Read TDb then convert via TConverter.FromDb. The DB NULL guard mirrors the typed-reader path ([NotNullColumn] opts out).
+            if (!column.SkipNullCheck)
+            {
+                sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
+                  .Append(" ? default! : ");
+            }
+            sb.Append(converter.ConverterTypeFullName).Append(".FromDb(");
+            if (converter.DbTypedReaderMethod is not null)
+            {
+                sb.Append(readerVariable).Append('.').Append(converter.DbTypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
+            }
+            else
+            {
+                sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
+                  .Append(converter.DbTypeFullName)
+                  .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
+            }
+            sb.Append(')');
+        }
+        else if (column.TypedReaderMethod is not null)
+        {
+            if (!column.SkipNullCheck)
+            {
+                // 非 null 許容プロパティが DB NULL を受けると default! になる（SDA0307）。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
+                // A non-nullable property receiving DB NULL falls through as default! (SDA0307). [NotNullColumn] opts
+                // out of this check; the provider throws InvalidCastException on an actual NULL.
+                sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
+                  .Append(" ? default! : ");
+            }
+            if (column.EnumCastTypeFullName is not null)
+            {
+                // enum は underlying プリミティブとして読んでからキャストし直す。unsigned / sbyte の underlying では符号付きの
+                // リーダー結果を橋渡しするためビット保存の中間キャストを挟む。例：(MyEnum)(uint)reader.GetInt32(ordinal)。
+                // An enum is read as its underlying primitive then cast back. For unsigned / sbyte underlyings an
+                // intermediate bit-preserving cast bridges the signed reader result, e.g. (MyEnum)(uint)reader.GetInt32(ordinal).
+                sb.Append('(').Append(column.EnumCastTypeFullName).Append(')');
+                if (column.EnumUnderlyingCastFullName is not null)
+                {
+                    sb.Append('(').Append(column.EnumUnderlyingCastFullName).Append(')');
+                }
+            }
+            sb.Append(readerVariable).Append('.').Append(column.TypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
+        }
+        else
+        {
+            sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
+              .Append(column.TypeFullName)
+              .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
+        }
+        return sb.ToString();
+    }
+
+    private static string RowMapperName(MethodModel method) => "__Map" + method.Name;
+
+    // 行マッパーメソッド（__Map{Method}）を生成する。序数キャッシュを受け取り 1 行分のエンティティを構築する。
+    // class/POCO は `new T()` の後、結果セットに存在する列（序数 >= 0）だけをプロパティへ設定する — 無い列は「設定しない」
+    // （default の上書きではなく、プロパティ初期化子・既定値をそのまま保つ）。record 主コンストラクタは全引数が必須のため、
+    // 無い列の引数は default! を渡す（構造上「設定しない」は不可能）。
+    // Emit the row-mapper method (__Map{Method}): takes the ordinal cache and materialises one row. For a class/POCO it
+    // creates `new T()` and assigns only the columns present in the result set (ordinal >= 0) — an absent column is NOT
+    // assigned (property initialisers / defaults survive, rather than being overwritten with default). A record primary
+    // constructor requires every argument, so absent columns pass default! (skipping is structurally impossible).
+    private static void EmitRowMapperMethod(SourceBuilder builder, MethodModel method)
+    {
+        if ((method.QueryColumns is not { } columns) || (columns.Count == 0))
+        {
+            return;
+        }
+
+        builder.Indent().Append("[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]").NewLine();
+        builder.Indent().Append("private static ").Append(method.ElementTypeFullName!).Append(' ').Append(RowMapperName(method))
+            .Append("(global::System.Data.Common.DbDataReader reader, in ").Append(OrdinalStructName(method)).Append(" o)").NewLine();
+        builder.BeginScope();
+        if (method.UseRecordPrimaryConstructor)
+        {
+            builder.Indent().Append("return new ").Append(method.ElementTypeFullName!).Append('(');
             var first = true;
             foreach (var column in columns)
             {
                 if (!first)
                 {
-                    sb.Append(", ");
+                    builder.Append(", ");
                 }
                 first = false;
-                sb.Append(column.PropertyName).Append(useCtor ? ": " : " = ");
-                if (column.Converter is { } converter)
-                {
-                    // TDb として読み TConverter.FromDb で変換する。DB NULL ガードは型別リーダー経路と同じ（[NotNullColumn] で除外可）。
-                    // Read TDb then convert via TConverter.FromDb. The DB NULL guard mirrors the typed-reader path ([NotNullColumn] opts out).
-                    if (!column.SkipNullCheck)
-                    {
-                        sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
-                          .Append(" ? default! : ");
-                    }
-                    sb.Append(converter.ConverterTypeFullName).Append(".FromDb(");
-                    if (converter.DbTypedReaderMethod is not null)
-                    {
-                        sb.Append(readerVariable).Append('.').Append(converter.DbTypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
-                    }
-                    else
-                    {
-                        sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
-                          .Append(converter.DbTypeFullName)
-                          .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
-                    }
-                    sb.Append(')');
-                }
-                else if (column.TypedReaderMethod is not null)
-                {
-                    if (!column.SkipNullCheck)
-                    {
-                        // 非 null 許容プロパティが DB NULL を受けると default! になる（SDA0307）。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
-                        // A non-nullable property receiving DB NULL falls through as default! (SDA0307). [NotNullColumn] opts
-                        // out of this check; the provider throws InvalidCastException on an actual NULL.
-                        sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
-                          .Append(" ? default! : ");
-                    }
-                    if (column.EnumCastTypeFullName is not null)
-                    {
-                        // enum は underlying プリミティブとして読んでからキャストし直す。unsigned / sbyte の underlying では符号付きの
-                        // リーダー結果を橋渡しするためビット保存の中間キャストを挟む。例：(MyEnum)(uint)reader.GetInt32(ordinal)。
-                        // An enum is read as its underlying primitive then cast back. For unsigned / sbyte underlyings an
-                        // intermediate bit-preserving cast bridges the signed reader result, e.g. (MyEnum)(uint)reader.GetInt32(ordinal).
-                        sb.Append('(').Append(column.EnumCastTypeFullName).Append(')');
-                        if (column.EnumUnderlyingCastFullName is not null)
-                        {
-                            sb.Append('(').Append(column.EnumUnderlyingCastFullName).Append(')');
-                        }
-                    }
-                    sb.Append(readerVariable).Append('.').Append(column.TypedReaderMethod).Append('(').Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
-                }
-                else
-                {
-                    sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetValue<")
-                      .Append(column.TypeFullName)
-                      .Append(">(").Append(readerVariable).Append(", ").Append(ordinal).Append('.').Append(column.PropertyName).Append(')');
-                }
+                builder.Append(column.PropertyName).Append(": o.").Append(column.PropertyName).Append(" < 0 ? default! : (")
+                    .Append(BuildColumnReadExpression(column, "reader", "o")).Append(')');
             }
+            builder.Append(");").NewLine();
         }
-        sb.Append(useCtor ? ")" : " }");
-        return sb.ToString();
+        else
+        {
+            builder.Indent().Append("var entity = new ").Append(method.ElementTypeFullName!).Append("();").NewLine();
+            foreach (var column in columns)
+            {
+                builder.Indent().Append("if (o.").Append(column.PropertyName).Append(" >= 0) entity.").Append(column.PropertyName)
+                    .Append(" = ").Append(BuildColumnReadExpression(column, "reader", "o")).Append(';').NewLine();
+            }
+            builder.Indent().Append("return entity;").NewLine();
+        }
+        builder.EndScope();
     }
 
     private static string OrdinalStructName(MethodModel method) => "__" + method.Name + "Ordinals";
 
-    // クエリ列の序数キャッシュ構造体（__{Method}Ordinals）を生成する。各列の序数を public int フィールドに持ち、From(reader) で
-    // GetOrdinal を 1 回だけ呼んで構築する（以降は行毎に再利用）。
-    // Emit the query-column ordinal cache struct (__{Method}Ordinals): one public int field per column, built by From(reader)
-    // which calls GetOrdinal once (reused per row thereafter).
+    // クエリ列の序数キャッシュ構造体（__{Method}Ordinals）を生成する。各列の序数を public int フィールドに持ち、From(reader) は
+    // リーダーの列を 1 回だけ走査（GetName + 列名 switch）して構築する（以降は行毎に再利用）。結果セットに無い列は -1 のままとし、
+    // GetOrdinal（欠落列で throw）は使わない。照合は完全一致を優先し、default 節で大小無視（GetOrdinal 相当）にフォールバックする。
+    // Emit the query-column ordinal cache struct (__{Method}Ordinals): one public int field per column. From(reader) scans
+    // the reader's columns once (GetName + name switch); a column absent from the result set stays -1 (GetOrdinal, which
+    // throws on a missing column, is not used). Matching prefers exact names and falls back to a case-insensitive
+    // comparison (GetOrdinal-equivalent) in the default arm.
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, MethodModel method)
     {
         if ((method.QueryColumns is not { } columns) || (columns.Count == 0))
@@ -1120,21 +1168,90 @@ internal static class AccessorSourceBuilder
         }
         builder.EndScope();
         builder.NewLine();
-        builder.Indent().Append("[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]").NewLine();
         builder.Indent().Append("public static ").Append(name).Append(" From(global::System.Data.Common.DbDataReader reader)").NewLine();
+        builder.BeginScope();
+        for (var i = 0; i < columns.Count; i++)
+        {
+            builder.Indent().Append("var __ord").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = -1;").NewLine();
+        }
+        builder.Indent().Append("var __fieldCount = reader.FieldCount;").NewLine();
+        builder.Indent().Append("for (var __i = 0; __i < __fieldCount; __i++)").NewLine();
+        builder.BeginScope();
+        builder.Indent().Append("var __name = reader.GetName(__i);").NewLine();
+        builder.Indent().Append("switch (__name)").NewLine();
+        builder.BeginScope();
+        // 同名列（[Name] 重複）は 1 つの case にまとめる（case ラベル重複による CS0152 を避ける）。先勝ち（GetOrdinal 同等）。
+        // Duplicate column names ([Name] reuse) share one case (avoids CS0152); first match wins (GetOrdinal-equivalent).
+        var groups = new List<(string ColumnName, List<int> Indexes)>();
+        for (var i = 0; i < columns.Count; i++)
+        {
+            var columnName = columns[i].ColumnName;
+            var (_, indexes) = groups.FirstOrDefault(x => x.ColumnName == columnName);
+            if (indexes is null)
+            {
+                groups.Add((columnName, [i]));
+            }
+            else
+            {
+                indexes.Add(i);
+            }
+        }
+        foreach (var (columnName, indexes) in groups)
+        {
+            builder.Indent().Append("case \"").Append(EscapeCSharpString(columnName)).Append("\":").NewLine();
+            builder.IndentLevel++;
+            foreach (var index in indexes)
+            {
+                var ordinalVariable = "__ord" + index.ToString(CultureInfo.InvariantCulture);
+                builder.Indent().Append("if (").Append(ordinalVariable).Append(" < 0) ").Append(ordinalVariable).Append(" = __i;").NewLine();
+            }
+            builder.Indent().Append("break;").NewLine();
+            builder.IndentLevel--;
+        }
+        builder.Indent().Append("default:").NewLine();
         builder.IndentLevel++;
-        builder.Indent().Append("=> new(");
+        for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
+        {
+            var (columnName, indexes) = groups[groupIndex];
+            var condition = String.Join(" || ", indexes.Select(x => "(__ord" + x.ToString(CultureInfo.InvariantCulture) + " < 0)"));
+            if (indexes.Count > 1)
+            {
+                condition = "(" + condition + ")";
+            }
+            builder.Indent().Append(groupIndex == 0 ? "if (" : "else if (").Append(condition)
+                .Append(" && global::System.String.Equals(__name, \"").Append(EscapeCSharpString(columnName))
+                .Append("\", global::System.StringComparison.OrdinalIgnoreCase))");
+            if (indexes.Count == 1)
+            {
+                var ordinalVariable = "__ord" + indexes[0].ToString(CultureInfo.InvariantCulture);
+                builder.Append(' ').Append(ordinalVariable).Append(" = __i;").NewLine();
+            }
+            else
+            {
+                builder.Append(" { ");
+                foreach (var index in indexes)
+                {
+                    var ordinalVariable = "__ord" + index.ToString(CultureInfo.InvariantCulture);
+                    builder.Append("if (").Append(ordinalVariable).Append(" < 0) ").Append(ordinalVariable).Append(" = __i; ");
+                }
+                builder.Append('}').NewLine();
+            }
+        }
+        builder.Indent().Append("break;").NewLine();
+        builder.IndentLevel--;
+        builder.EndScope();
+        builder.EndScope();
+        builder.Indent().Append("return new(");
         for (var i = 0; i < columns.Count; i++)
         {
             if (i > 0)
             {
                 builder.Append(", ");
             }
-            var col = columns[i];
-            builder.Append("reader.GetOrdinal(\"").Append(col.ColumnName).Append("\")");
+            builder.Append("__ord").Append(i.ToString(CultureInfo.InvariantCulture));
         }
         builder.Append(");").NewLine();
-        builder.IndentLevel--;
+        builder.EndScope();
         builder.EndScope();
     }
 

@@ -65,6 +65,30 @@ public sealed class BenchEnumRow
     public BenchStatus Status { get; set; }
 }
 
+// 10-column record (positional / constructor-based) for the mapping-strategy PoC benchmark.
+public sealed record BenchWideRecord(
+    long Id,
+    string Name,
+    int Age,
+    double Score,
+    bool Active,
+    int Status,
+    string Description,
+    int Category,
+    string Tag,
+    double Weight);
+
+// GetValue<T> fallback: uint has no DbDataReader typed getter, so reads go through
+// ExecuteHelper.GetValue<uint> (per-row type coercion when the column arrives as long).
+public sealed class BenchUIntRow
+{
+    [NotNullColumn]
+    public long Id { get; set; }
+
+    [NotNullColumn]
+    public uint Value { get; set; }
+}
+
 // Case 4: a DateTime stored as Int64 ticks, mapped on read via [TypeHandler<>].
 internal sealed class BenchTicksConverter : IValueConverter<long, DateTime>
 {

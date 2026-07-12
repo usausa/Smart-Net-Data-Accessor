@@ -175,12 +175,12 @@ internal static class NodeEmitter
                         // arity depends on the IEnumerable count -> SQL text is dynamic.
                         hasDynamicSql = true;
                         requiresIEnumerable = true;
-                        sb.Append("__sb.Append(global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(cmd, \"")
+                        sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(__sb, cmd, \"")
                             .Append(parameterName)
                             .Append("\", ")
                             .Append(parameterNode.Name)
                             .Append(CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, null))
-                            .Append("));\n");
+                            .Append(");\n");
                     }
                     else if (direction == Direction.Input)
                     {

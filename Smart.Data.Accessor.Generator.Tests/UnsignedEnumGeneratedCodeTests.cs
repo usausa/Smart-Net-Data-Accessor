@@ -39,12 +39,12 @@ public sealed class UnsignedEnumGeneratedCodeTests
         var text = GeneratorTestHelper.Run(source, ("Accessor.All", "select P8, Ps8, P16, P32, P64 from T")).AllGeneratedText;
 
         // byte → GetByte, no intermediate cast (byte is already unsigned).
-        Assert.Contains("(global::E8)__reader.GetByte(", text, StringComparison.Ordinal);
+        Assert.Contains("(global::E8)reader.GetByte(", text, StringComparison.Ordinal);
         // sbyte / ushort / uint / ulong → signed reader + intermediate bit-preserving cast.
-        Assert.Contains("(global::ES8)(sbyte)__reader.GetByte(", text, StringComparison.Ordinal);
-        Assert.Contains("(global::E16)(ushort)__reader.GetInt16(", text, StringComparison.Ordinal);
-        Assert.Contains("(global::E32)(uint)__reader.GetInt32(", text, StringComparison.Ordinal);
-        Assert.Contains("(global::E64)(ulong)__reader.GetInt64(", text, StringComparison.Ordinal);
+        Assert.Contains("(global::ES8)(sbyte)reader.GetByte(", text, StringComparison.Ordinal);
+        Assert.Contains("(global::E16)(ushort)reader.GetInt16(", text, StringComparison.Ordinal);
+        Assert.Contains("(global::E32)(uint)reader.GetInt32(", text, StringComparison.Ordinal);
+        Assert.Contains("(global::E64)(ulong)reader.GetInt64(", text, StringComparison.Ordinal);
         // No boxing GetValue<T> fallback for these enums.
         Assert.DoesNotContain("GetValue<global::E32>", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetValue<global::E64>", text, StringComparison.Ordinal);

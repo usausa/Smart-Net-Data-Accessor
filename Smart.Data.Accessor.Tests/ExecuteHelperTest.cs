@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Tests;
 
 using System.Data;
+using System.Text;
 
 using Smart.Data.Accessor.Helpers;
 using Smart.Data.Accessor.Tests.Models;
@@ -143,25 +144,60 @@ public sealed class ExecuteHelperTest
     // ---- AddInParameters (IN-list expansion) ----
 
     [Fact]
-    public void AddInParametersExpandsValuesIntoMarkers()
+    public void AddInParametersExpandsListValuesIntoMarkers()
     {
+        // An array is IReadOnlyList<T> and exercises the indexed fast path.
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
+        var sb = new StringBuilder();
 
-        var markers = ExecuteHelper.AddInParameters(cmd, "@p", new[] { 1, 2, 3 });
+        ExecuteHelper.AddInParameters(sb, cmd, "@p", new[] { 1, 2, 3 });
 
-        Assert.Equal("(@p_0,@p_1,@p_2)", markers);
+        Assert.Equal("(@p_0,@p_1,@p_2)", sb.ToString());
         Assert.Equal(3, cmd.Parameters.Count);
     }
 
     [Fact]
-    public void AddInParametersNullOrEmptyReturnsNullToken()
+    public void AddInParametersExpandsEnumerableValuesIntoMarkers()
+    {
+        // A pure IEnumerable<T> (iterator) exercises the enumerator path.
+        using var con = new MockDbConnection();
+        var cmd = con.CreateCommand();
+        var sb = new StringBuilder();
+
+        ExecuteHelper.AddInParameters(sb, cmd, "@p", Values(1, 2, 3));
+
+        Assert.Equal("(@p_0,@p_1,@p_2)", sb.ToString());
+        Assert.Equal(3, cmd.Parameters.Count);
+    }
+
+    [Fact]
+    public void AddInParametersNullOrEmptyAppendsNullToken()
     {
         using var con = new MockDbConnection();
         var cmd = con.CreateCommand();
+        var sb = new StringBuilder();
 
-        Assert.Equal("(NULL)", ExecuteHelper.AddInParameters<int>(cmd, "@p", null));
-        Assert.Equal("(NULL)", ExecuteHelper.AddInParameters(cmd, "@p", Array.Empty<int>()));
+        ExecuteHelper.AddInParameters<int>(sb, cmd, "@p", null);
+        Assert.Equal("(NULL)", sb.ToString());
+
+        sb.Clear();
+        ExecuteHelper.AddInParameters(sb, cmd, "@p", Array.Empty<int>());
+        Assert.Equal("(NULL)", sb.ToString());
+
+        sb.Clear();
+        ExecuteHelper.AddInParameters(sb, cmd, "@p", Values<int>());
+        Assert.Equal("(NULL)", sb.ToString());
+
+        Assert.Empty(cmd.Parameters);
+    }
+
+    private static IEnumerable<T> Values<T>(params T[] values)
+    {
+        foreach (var value in values)
+        {
+            yield return value;
+        }
     }
 
     // ---- AddOutParameter / AddInOutParameter / AddReturnValueParameter ----

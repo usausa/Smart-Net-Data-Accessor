@@ -1,0 +1,1 @@
+INSERT INTO BenchData (Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight) VALUES (/*@ id */0, /*@ name */'x', /*@ age */0, /*@ score */0, /*@ active */0, /*@ status */0, /*@ description */'x', /*@ category */0, /*@ tag */'x', /*@ weight */0)

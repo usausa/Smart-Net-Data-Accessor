@@ -146,7 +146,7 @@ public class QueryBenchmark
         var list = new List<BenchIntRow>();
         using var cmd = mockInt.CreateCommand();
         cmd.CommandText = "SELECT Id FROM BenchData ORDER BY Id";
-        using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
         var ordId = reader.GetOrdinal("Id");
         while (reader.Read())
         {
@@ -171,7 +171,7 @@ public class QueryBenchmark
         var list = new List<BenchWideRow>();
         using var cmd = mockWide.CreateCommand();
         cmd.CommandText = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData ORDER BY Id";
-        using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
         var ordId = reader.GetOrdinal("Id");
         var ordName = reader.GetOrdinal("Name");
         var ordAge = reader.GetOrdinal("Age");
@@ -217,7 +217,7 @@ public class QueryBenchmark
         var list = new List<BenchEnumRow>();
         using var cmd = mockEnum.CreateCommand();
         cmd.CommandText = "SELECT Id, Name, Status FROM BenchData ORDER BY Id";
-        using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
         var ordId = reader.GetOrdinal("Id");
         var ordName = reader.GetOrdinal("Name");
         var ordStatus = reader.GetOrdinal("Status");
@@ -249,7 +249,7 @@ public class QueryBenchmark
         var list = new List<BenchTicksRow>();
         using var cmd = mockTicks.CreateCommand();
         cmd.CommandText = "SELECT Id, Created FROM BenchData ORDER BY Id";
-        using var reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess);
+        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
         var ordId = reader.GetOrdinal("Id");
         var ordCreated = reader.GetOrdinal("Created");
         while (reader.Read())

@@ -130,7 +130,7 @@ public sealed class GeneratedCodeTests
         // /*@ ids */(...) → runtime IN-list expansion via AddInParameters; the single scalar
         // /*@ id */ still binds via AddInParameter. The presence of a multi-value parameter forces
         // the dynamic StringBuilderPool path.
-        Assert.Contains("AddInParameters(cmd, \"@p0\", ids", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameters(__sb, cmd, \"@p0\", ids", text, StringComparison.Ordinal);
         Assert.Contains("AddInParameter(cmd, \"@p1\", id", text, StringComparison.Ordinal);
         Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
     }
@@ -194,8 +194,8 @@ public sealed class GeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.Query", "select Id, Created from T"));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("global::TicksConverter.FromDb(__reader.GetInt64(__o.Created))", text, StringComparison.Ordinal);
-        Assert.Contains("IsDBNull(__o.Created) ? default! : global::TicksConverter.FromDb(", text, StringComparison.Ordinal);
+        Assert.Contains("global::TicksConverter.FromDb(reader.GetInt64(o.Created))", text, StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(o.Created) ? default! : global::TicksConverter.FromDb(", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -315,9 +315,43 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("cmd.ExecuteReader(global::System.Data.CommandBehavior.SequentialAccess)", text, StringComparison.Ordinal);
+        Assert.Contains("cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult)", text, StringComparison.Ordinal);
         Assert.Contains("while (__reader.Read())", text, StringComparison.Ordinal);
         Assert.Contains("__list.Add(", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OrdinalResolutionToleratesMissingColumns()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } public string Name { get; set; } = string.Empty; }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
+
+        // From はリーダー列を 1 回走査（GetName + 完全一致 switch、default で大小無視フォールバック）。欠落列は -1 のまま
+        // （GetOrdinal は使わない＝欠落列で throw しない）。
+        // From scans the reader's columns once (GetName + exact switch, case-insensitive fallback in default);
+        // an absent column stays -1 (GetOrdinal, which throws on a missing column, is not used).
+        Assert.Contains("var __ord0 = -1;", text, StringComparison.Ordinal);
+        Assert.Contains("switch (__name)", text, StringComparison.Ordinal);
+        Assert.Contains("global::System.StringComparison.OrdinalIgnoreCase", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
+        // 行マッパーは存在する列（序数 >= 0）だけプロパティへ設定する（無い列は初期値を保持）。
+        // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
+        Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
+        Assert.Contains("if (o.Name >= 0) entity.Name =", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -342,7 +376,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.ListAsync", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SequentialAccess", text, StringComparison.Ordinal);
+        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult", text, StringComparison.Ordinal);
         Assert.Contains("while (await __reader.ReadAsync(", text, StringComparison.Ordinal);
     }
 
@@ -387,6 +421,32 @@ public sealed class GeneratedCodeTests
         var text = GeneratorTestHelper.Run(source, ("Accessor.Count", "select count(*) from T")).AllGeneratedText;
 
         Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<long>(cmd.ExecuteScalar())", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExecuteScalarWithIntReturnEmitsConvertScalar()
+    {
+        // int は [Execute] では影響行数（ExecuteNonQuery）だが、[ExecuteScalar] では他のスカラー型と
+        // 同じく ExecuteScalar + ConvertScalar<int> で読む（MethodType で分岐し、型名では分岐しない）。
+        // With [Execute] an int return is the affected-row count (ExecuteNonQuery), but with
+        // [ExecuteScalar] an int reads like any other scalar via ExecuteScalar + ConvertScalar<int>
+        // (the emit branches on MethodType, not on the type name).
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [ExecuteScalar]
+                public partial int Count(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.Count", "select count(*) from T")).AllGeneratedText;
+
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<int>(cmd.ExecuteScalar())", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExecuteNonQuery", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -530,8 +590,8 @@ public sealed class GeneratedCodeTests
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, St, Age from T")).AllGeneratedText;
 
         // enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード。
-        Assert.Contains("(global::Status)__reader.GetInt32(", text, StringComparison.Ordinal);
-        Assert.Contains("IsDBNull(__o.Age)", text, StringComparison.Ordinal);
+        Assert.Contains("(global::Status)reader.GetInt32(", text, StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(o.Age)", text, StringComparison.Ordinal);
     }
 
     [Fact]

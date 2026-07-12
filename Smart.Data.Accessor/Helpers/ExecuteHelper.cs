@@ -31,12 +31,7 @@ public static class ExecuteHelper
         {
             return typed;
         }
-        var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        if (target.IsEnum)
-        {
-            return (T)Enum.ToObject(target, raw);
-        }
-        return (T)Convert.ChangeType(raw, target, CultureInfo.InvariantCulture);
+        return ConvertTo<T>(raw);
     }
 
     //--------------------------------------------------------------------------------
@@ -92,36 +87,60 @@ public static class ExecuteHelper
         return AddInParameter(cmd, name, converted, type, size);
     }
 
-    // Expands a generic IEnumerable<T> into multiple positional parameters (for SQL IN clauses).
-    // Returns the parenthesised, comma-separated parameter-marker string (e.g. "(@p_0,@p_1)").
-    // If values is null or empty, returns "(NULL)" so the resulting SQL stays valid.
-    public static string AddInParameters<T>(DbCommand cmd, string namePrefix, IEnumerable<T>? values, DbType? type = null)
+    // Expands a generic IEnumerable<T> into multiple positional parameters (for SQL IN clauses) and
+    // appends the parenthesised, comma-separated marker list (e.g. "(@p_0,@p_1)") directly to the
+    // caller's SQL builder. If values is null or empty, appends "(NULL)" so the resulting SQL stays
+    // valid. Appending into the pooled builder (instead of returning a string) avoids an intermediate
+    // string plus a second StringBuilder per call; an IReadOnlyList<T> (List<T>, array) is indexed to
+    // avoid the boxed enumerator of the IEnumerable<T> interface path.
+    public static void AddInParameters<T>(StringBuilder sb, DbCommand cmd, string namePrefix, IEnumerable<T>? values, DbType? type = null)
     {
-        if (values is null)
+        // Parameter-name digits are formatted into a stack buffer and concatenated in a single
+        // allocation per name (no intermediate index string, no interpolation-handler pool churn).
+        Span<char> digits = stackalloc char[10];
+
+        if (values is IReadOnlyList<T> list)
         {
-            return "(NULL)";
+            var count = list.Count;
+            if (count == 0)
+            {
+                sb.Append("(NULL)");
+                return;
+            }
+            for (var i = 0; i < count; i++)
+            {
+                sb.Append(i == 0 ? '(' : ',');
+                i.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
+                var parameterName = String.Concat(namePrefix, "_", digits[..written]);
+                AddInParameter(cmd, parameterName, list[i], type);
+                sb.Append(parameterName);
+            }
+            sb.Append(')');
+            return;
         }
 
-        var sb = new StringBuilder("(");
+        if (values is null)
+        {
+            sb.Append("(NULL)");
+            return;
+        }
+
         var index = 0;
         foreach (var value in values)
         {
-            if (index > 0)
-            {
-                sb.Append(',');
-            }
-            var paramName = namePrefix + "_" + index.ToString(CultureInfo.InvariantCulture);
-            AddInParameter(cmd, paramName, value, type);
-            sb.Append(paramName);
+            sb.Append(index == 0 ? '(' : ',');
+            index.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
+            var parameterName = String.Concat(namePrefix, "_", digits[..written]);
+            AddInParameter(cmd, parameterName, value, type);
+            sb.Append(parameterName);
             index++;
         }
-
         if (index == 0)
         {
-            return "(NULL)";
+            sb.Append("(NULL)");
+            return;
         }
         sb.Append(')');
-        return sb.ToString();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,39 +197,28 @@ public static class ExecuteHelper
         {
             return typed;
         }
-        var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        if (target.IsEnum)
-        {
-            return (T)Enum.ToObject(target, raw);
-        }
-        return (T)Convert.ChangeType(raw, target, CultureInfo.InvariantCulture);
+        return ConvertTo<T>(raw);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AssignValue(DbParameter parameter, object? value, DbType? type, int? size)
+    private static void AssignValue<T>(DbParameter parameter, T value, DbType? type, int? size)
     {
         if (value is null)
         {
             parameter.Value = DBNull.Value;
-            if (type.HasValue)
-            {
-                parameter.DbType = type.Value;
-            }
-            if (size.HasValue)
-            {
-                parameter.Size = size.Value;
-            }
-            return;
         }
-
-        var actual = value;
-        var actualType = actual.GetType();
-        if (actualType.IsEnum)
+        else if (value is Enum)
         {
-            actual = Convert.ChangeType(actual, Enum.GetUnderlyingType(actualType), CultureInfo.InvariantCulture);
+            // Enum values bind as their underlying primitive. For a value-type T the `is Enum` test is
+            // a JIT-time constant (the whole branch disappears for non-enum T); for reference/object
+            // typed T it is a single isinst. GetType() on the box also unwraps Nullable<TEnum>.
+            parameter.Value = Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType()), CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            parameter.Value = value;
         }
 
-        parameter.Value = actual;
         if (type.HasValue)
         {
             parameter.DbType = type.Value;
@@ -239,11 +247,32 @@ public static class ExecuteHelper
             return typed;
         }
 
-        var target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        if (target.IsEnum)
+        return ConvertTo<T>(raw);
+    }
+
+    //--------------------------------------------------------------------------------
+    // Shared coercion slow path (ConvertScalar / GetOutputValue / GetValue)
+    //--------------------------------------------------------------------------------
+
+    // Reached when the raw value exists but is not a T (e.g. a long COUNT(*) read as int).
+    // NoInlining keeps the aggressive-inlined fast paths above small at their call sites.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T ConvertTo<T>(object raw)
+    {
+        if (TypeCache<T>.IsEnum)
         {
-            return (T)Enum.ToObject(target, raw);
+            return (T)Enum.ToObject(TypeCache<T>.Target, raw);
         }
-        return (T)Convert.ChangeType(raw, target, CultureInfo.InvariantCulture);
+        return (T)Convert.ChangeType(raw, TypeCache<T>.Target, CultureInfo.InvariantCulture);
+    }
+
+    // Per-T conversion metadata resolved once. Nullable.GetUnderlyingType walks the generic
+    // definition and allocates on every call; a static generic holder reduces the per-call cost
+    // to a static field read.
+    private static class TypeCache<T>
+    {
+        public static readonly Type Target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+        public static readonly bool IsEnum = Target.IsEnum;
     }
 }
