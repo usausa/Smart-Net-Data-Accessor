@@ -10,8 +10,8 @@ using Smart.Mock.Data;
 using Xunit;
 
 // 生成コードが呼ぶ runtime ヘルパー ExecuteHelper を MockDB の DbCommand/DbParameter/DbDataReader に
-// 対して直接検証する。値変換（ConvertScalar / GetValue / GetOutputValue）とパラメータ束縛
-// （AddIn/Out/InOut/ReturnValue、null/DBNull/enum/DbType/Size、IN-list 展開）を網羅。
+// 対して直接検証する。値変換(ConvertScalar / GetValue / GetOutputValue)とパラメータ束縛
+// (AddIn/Out/InOut/ReturnValue、null/DBNull/enum/DbType/Size、IN-list 展開)を網羅。
 public sealed class ExecuteHelperTest
 {
     private static List<object[]> Rows(params object[][] rows) => [.. rows];

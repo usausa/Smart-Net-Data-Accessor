@@ -6,7 +6,7 @@ using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 
-// 種別・provider に依らない 1 メソッドの解決（テーブル名・値パラメータ・エンティティ列と束縛メタデータ）。種別選択と
+// 種別・provider に依らない 1 メソッドの解決(テーブル名・値パラメータ・エンティティ列と束縛メタデータ)。種別選択と
 // 種別固有の診断は各 provider の transform に残す。戻り値 MethodResolution は一時 DTO。
 // Provider-/kind-agnostic resolution of one method (table name, value parameters, entity columns + binding metadata).
 // Operation selection and operation-specific diagnostics stay in each provider's transform. The MethodResolution result is a transient DTO.
@@ -67,7 +67,7 @@ internal static class MethodResolver
                 SymbolEqualityComparer.Default.Equals(x.Type, entityType));
         var hasEntityType = entityType is not null;
 
-        // エンティティ型がある場合はその列（プロパティ）を列挙し、各列の束縛メタデータを解決する。
+        // エンティティ型がある場合はその列(プロパティ)を列挙し、各列の束縛メタデータを解決する。
         // When an entity type is present, enumerate its columns (properties) and resolve each column's binding metadata.
         var entityColumns = entityType is null
             ? Enumerable.Empty<EntityColumn>()
@@ -86,7 +86,7 @@ internal static class MethodResolver
             new EquatableArray<ParameterBinding>(valueParams));
     }
 
-    // メソッドの値パラメータの束縛メタデータ（[DbType] / [TypeMap] / enum。値パラメータに converter は付かない）を解決する。
+    // メソッドの値パラメータの束縛メタデータ([DbType] / [TypeMap] / enum。値パラメータに converter は付かない)を解決する。
     // Resolve a method value parameter's binding metadata ([DbType] / [TypeMap] / enum; no converter on value parameters).
     private static ParameterBinding ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps)
     {
@@ -124,7 +124,7 @@ internal static class MethodResolver
             flags);
     }
 
-    // エンティティ列の束縛メタデータ（converter / DbType / enum / null 許容）を解決する。
+    // エンティティ列の束縛メタデータ(converter / DbType / enum / null 許容)を解決する。
     // Resolve an entity column's binding metadata (converter / DbType / enum / nullability).
     private static ColumnBinding ResolveColumn(
         EntityColumn column,
@@ -199,7 +199,7 @@ internal static class MethodResolver
             flags);
     }
 
-    // エンティティ型の public インスタンスプロパティ（getter あり）を列挙し、[Ignore] を除いて列リストを作る。
+    // エンティティ型の public インスタンスプロパティ(getter あり)を列挙し、[Ignore] を除いて列リストを作る。
     // Enumerate the entity type's public instance properties (with a getter), excluding [Ignore], to build the column list.
     private static List<EntityColumn> ReadEntityColumns(INamedTypeSymbol entityType)
     {

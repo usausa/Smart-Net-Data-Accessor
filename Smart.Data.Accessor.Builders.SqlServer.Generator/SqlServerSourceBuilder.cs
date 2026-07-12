@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// SQL Server Builder の emit：種別毎の SQL 組み立て（bracket クォート、OFFSET/FETCH ページング、MERGE/OUTPUT）。プリミティブは共有 SqlEmit。
+// SQL Server Builder の emit：種別毎の SQL 組み立て(bracket クォート、OFFSET/FETCH ページング、MERGE/OUTPUT)。プリミティブは共有 SqlEmit。
 // Emit for the SQL Server builder: per-kind SQL assembly (bracket quoting, OFFSET/FETCH paging, MERGE/OUTPUT). Primitives via the shared SqlEmit.
 internal static class SqlServerSourceBuilder
 {
@@ -46,7 +46,7 @@ internal static class SqlServerSourceBuilder
         SqlEmit.CloseMethod(builder);
     }
 
-    // INSERT を組み立てる（OUTPUT 句対応）。エンティティモードはエンティティ列（[DatabaseManaged] 除外）、パラメータモードはバインドパラメータ。
+    // INSERT を組み立てる(OUTPUT 句対応)。エンティティモードはエンティティ列([DatabaseManaged] 除外)、パラメータモードはバインドパラメータ。
     // Build an INSERT (with OUTPUT). Entity mode uses entity columns (excluding [DatabaseManaged]); parameter mode uses the bind parameters.
     private static void EmitInsert(SourceBuilder builder, SqlServerInsertModel model)
     {
@@ -74,7 +74,7 @@ internal static class SqlServerSourceBuilder
         }
     }
 
-    // UPDATE を組み立てる（OUTPUT 句対応）。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティが無ければ "UPDATE T SET " のみ。
+    // UPDATE を組み立てる(OUTPUT 句対応)。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティが無ければ "UPDATE T SET " のみ。
     // Build an UPDATE (with OUTPUT). SET = non-key, non-[DatabaseManaged]; WHERE = [Key] columns. Without an entity it emits just "UPDATE T SET ".
     private static void EmitUpdate(SourceBuilder builder, SqlServerUpdateModel model)
     {
@@ -124,7 +124,7 @@ internal static class SqlServerSourceBuilder
         }
     }
 
-    // DELETE を組み立てる（OUTPUT 句対応）。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+    // DELETE を組み立てる(OUTPUT 句対応)。WHERE=バインドパラメータ([Key] 列に対応付け)。
     // Build a DELETE (with OUTPUT). WHERE = bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, SqlServerDeleteModel model)
     {
@@ -156,7 +156,7 @@ internal static class SqlServerSourceBuilder
         }
     }
 
-    // SELECT（全件）。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば OFFSET/FETCH を付ける。
+    // SELECT(全件)。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば OFFSET/FETCH を付ける。
     // Build a SELECT (all rows): SELECT * without an entity; otherwise list columns and append OFFSET/FETCH when [Limit]/[Offset] are present.
     private static void EmitSelect(SourceBuilder builder, SqlServerSelectModel model)
     {
@@ -192,7 +192,7 @@ internal static class SqlServerSourceBuilder
         }
     }
 
-    // SELECT（単一行）。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // SELECT(単一行)。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, SqlServerSelectSingleModel model)
     {
@@ -302,7 +302,7 @@ internal static class SqlServerSourceBuilder
         }
     }
 
-    // OUTPUT 句を組み立てる。outputColumns（カンマ区切りの列名）を pseudoTable（INSERTED / DELETED）の列として返す。未指定なら空文字。
+    // OUTPUT 句を組み立てる。outputColumns(カンマ区切りの列名)を pseudoTable(INSERTED / DELETED)の列として返す。未指定なら空文字。
     // Build the OUTPUT clause: render outputColumns (comma-separated) as columns of pseudoTable (INSERTED / DELETED). Empty when absent.
     private static string OutputClause(string? outputColumns, string pseudoTable)
     {
@@ -320,7 +320,7 @@ internal static class SqlServerSourceBuilder
         return " OUTPUT " + String.Join(", ", parts.Select(x => pseudoTable + "." + Quote(x)));
     }
 
-    // 識別子を角括弧でクォートする（] は ]] にエスケープ）。
+    // 識別子を角括弧でクォートする(] は ]] にエスケープ)。
     // Quote an identifier with brackets (escaping ] as ]]).
     private static string Quote(string identifier) => "[" + identifier.Replace("]", "]]") + "]";
 

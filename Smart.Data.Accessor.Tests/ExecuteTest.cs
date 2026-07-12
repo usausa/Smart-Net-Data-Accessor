@@ -71,7 +71,7 @@ public sealed class ExecuteTest
         var rows = 0;
         using (var reader = accessor.ReadAll(con))
         {
-            // WrappedReader のメタ情報委譲（FieldCount / GetName / GetOrdinal / GetFieldType）
+            // WrappedReader のメタ情報委譲(FieldCount / GetName / GetOrdinal / GetFieldType)
             Assert.Equal(4, reader.FieldCount);
             Assert.Equal("Id", reader.GetName(0));
             Assert.Equal(0, reader.GetOrdinal("Id"));
@@ -127,8 +127,8 @@ public sealed class ExecuteTest
         var accessor = new ExecuteAccessor();
         var reader = await accessor.ReadAllAsync(con, TestContext.Current.CancellationToken);
 
-        // async 経路（ExecuteReaderAsync）で取得した WrappedReader を非同期破棄
-        // （DisposeAsync → inner reader + cmd + 所有接続の dispose 連鎖）。
+        // async 経路(ExecuteReaderAsync)で取得した WrappedReader を非同期破棄
+        // (DisposeAsync → inner reader + cmd + 所有接続の dispose 連鎖)。
         Assert.Equal(4, reader.FieldCount);
         await reader.DisposeAsync().ConfigureAwait(true);
     }

@@ -12,7 +12,7 @@ internal sealed partial class DirectSqlAccessor
     [DirectSql]
     public partial int ExecRaw(DbConnection con, string sql);
 
-    // DirectSql × Query: 生 SQL で行を取得しマッピングする（2 軸モデルで新規に成立する組み合わせ）。
+    // DirectSql × Query: 生 SQL で行を取得しマッピングする(2 軸モデルで新規に成立する組み合わせ)。
     // DirectSql × Query: raw SQL that returns mapped rows (a combination newly valid under the two-axis model).
     [DirectSql]
     [Query]

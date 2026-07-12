@@ -11,7 +11,7 @@ public sealed class SqlDeleteAttribute : QueryBuilderAttribute
 
     public string? Table { get; set; }
 
-    // OUTPUT 句で DELETED 擬似表から返す列（カンマ区切り）。未指定なら OUTPUT 句なし。
+    // OUTPUT 句で DELETED 擬似表から返す列(カンマ区切り)。未指定なら OUTPUT 句なし。
     // Columns to return from the DELETED pseudo-table via an OUTPUT clause (comma-separated). No OUTPUT clause when null.
     public string? Output { get; set; }
 

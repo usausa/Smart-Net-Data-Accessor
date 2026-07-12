@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// 標準（既定）Builder の emit：種別毎の SQL 組み立て。共有プリミティブは SqlEmit、識別子クォート・ページングは本クラスの Quote/AppendPaging。
+// 標準(既定)Builder の emit：種別毎の SQL 組み立て。共有プリミティブは SqlEmit、識別子クォート・ページングは本クラスの Quote/AppendPaging。
 // Emit for the standard (default) builder: per-kind SQL assembly. Shared primitives via SqlEmit; identifier quoting / paging via this class's own Quote / AppendPaging.
 internal static class StandardSourceBuilder
 {
@@ -45,13 +45,13 @@ internal static class StandardSourceBuilder
         SqlEmit.CloseMethod(builder);
     }
 
-    // INSERT を組み立てる。エンティティモード（typeof(T) 指定）はエンティティ列（[DatabaseManaged] は除外）を、パラメータモード（Table 指定）はバインドパラメータを列・値にする。
+    // INSERT を組み立てる。エンティティモード(typeof(T) 指定)はエンティティ列([DatabaseManaged] は除外)を、パラメータモード(Table 指定)はバインドパラメータを列・値にする。
     // Build an INSERT. Entity mode (typeof(T)) uses the entity columns (excluding [DatabaseManaged]); parameter mode (Table = "...") uses the bind parameters as columns/values.
     private static void EmitInsert(SourceBuilder builder, InsertModel model)
     {
         if (model.EntityParamName is not null)
         {
-            // エンティティモード：列はエンティティのプロパティから（DB が値を管理する [DatabaseManaged] 列は除外）。
+            // エンティティモード：列はエンティティのプロパティから(DB が値を管理する [DatabaseManaged] 列は除外)。
             // Entity mode: columns from entity properties (excluding [DatabaseManaged], which the DB fills in).
             var columns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
             var columnSql = String.Join(", ", columns.Select(x => Quote(x.ColumnName)));
@@ -77,7 +77,7 @@ internal static class StandardSourceBuilder
         }
     }
 
-    // UPDATE を組み立てる。SET 句は非キー・非 [DatabaseManaged] 列、WHERE 句は [Key] 列（k_ 接頭辞）。エンティティが無い場合は "UPDATE T SET " のみ。
+    // UPDATE を組み立てる。SET 句は非キー・非 [DatabaseManaged] 列、WHERE 句は [Key] 列(k_ 接頭辞)。エンティティが無い場合は "UPDATE T SET " のみ。
     // Build an UPDATE: the SET clause uses non-key, non-[DatabaseManaged] columns; the WHERE clause uses [Key] columns (prefixed k_). Without an entity it emits just "UPDATE T SET ".
     private static void EmitUpdate(SourceBuilder builder, UpdateModel model)
     {
@@ -126,7 +126,7 @@ internal static class StandardSourceBuilder
         }
     }
 
-    // DELETE を組み立てる。WHERE 句はバインドパラメータ（先頭から [Key] 列に対応付け）。
+    // DELETE を組み立てる。WHERE 句はバインドパラメータ(先頭から [Key] 列に対応付け)。
     // Build a DELETE: the WHERE clause uses the bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, DeleteModel model)
     {
@@ -157,7 +157,7 @@ internal static class StandardSourceBuilder
         }
     }
 
-    // SELECT（全件）を組み立てる。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があればページング句を付ける。
+    // SELECT(全件)を組み立てる。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があればページング句を付ける。
     // Build a SELECT (all rows): SELECT * when there is no entity; otherwise list the columns and, if [Limit]/[Offset] are present, append the paging clause.
     private static void EmitSelect(SourceBuilder builder, SelectModel model)
     {
@@ -170,7 +170,7 @@ internal static class StandardSourceBuilder
         var sql = new StringBuilder();
         sql.Append("SELECT ").Append(String.Join(", ", model.Columns.Select(x => Quote(x.ColumnName)))).Append(" FROM ").Append(Quote(model.TableName));
 
-        // [Limit]/[Offset] パラメータがある場合のみページング句を付加する（パラメータ束縛は offset→limit の順）。
+        // [Limit]/[Offset] パラメータがある場合のみページング句を付加する(パラメータ束縛は offset→limit の順)。
         // Append the paging clause only when [Limit]/[Offset] parameters are present (params bound offset-then-limit).
         var valueParams = model.ValueParams;
         var limitParam = valueParams.FirstOrDefault(static x => x.Flags.IsLimit());
@@ -195,7 +195,7 @@ internal static class StandardSourceBuilder
         }
     }
 
-    // SELECT（単一行）を組み立てる。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // SELECT(単一行)を組み立てる。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, SelectSingleModel model)
     {
@@ -232,11 +232,11 @@ internal static class StandardSourceBuilder
         }
     }
 
-    // 識別子を二重引用符でクォートする（" は "" にエスケープ。SQLite / MySQL / PostgreSQL で有効）。
+    // 識別子を二重引用符でクォートする(" は "" にエスケープ。SQLite / MySQL / PostgreSQL で有効)。
     // Quote an identifier with double quotes (escaping " as ""; valid for SQLite / MySQL / PostgreSQL).
     private static string Quote(string identifier) => "\"" + identifier.Replace("\"", "\"\"") + "\"";
 
-    // LIMIT/OFFSET ページングを付加する（両者は独立）。
+    // LIMIT/OFFSET ページングを付加する(両者は独立)。
     // Append LIMIT/OFFSET paging (the two are independent).
     private static void AppendPaging(StringBuilder sql, string? limitMarker, string? offsetMarker)
     {

@@ -8,7 +8,7 @@ using Smart.Data.Accessor.Shared.Builders;
 using SourceGenerateHelper;
 
 // MySQL Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で per-kind Model を
-// 構築する（Operation enum は持たない）。種別固有の診断（キー欠如など）は各生成メソッドで出す。
+// 構築する(Operation enum は持たない)。種別固有の診断(キー欠如など)は各生成メソッドで出す。
 // Transform for the MySQL builder. Scans via the shared ClassScanner and resolves via MethodResolver, then builds the
 // per-kind model through an attribute-name → build-delegate table (no Operation enum). Kind diagnostics happen here.
 internal static class MySqlModelBuilder

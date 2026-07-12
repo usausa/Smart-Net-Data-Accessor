@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 using SourceGenerateHelper;
 
-// MySQL Builder の transform 出力（equatable・キャッシュキー）。
+// MySQL Builder の transform 出力(equatable・キャッシュキー)。
 // Transform output of the MySQL builder (equatable / cache key).
 internal sealed record MySqlClassModel(
     string Namespace,

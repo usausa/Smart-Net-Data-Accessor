@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// DELETE FROM。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+// DELETE FROM。WHERE=バインドパラメータ([Key] 列に対応付け)。
 // DELETE FROM. WHERE = bind parameters (mapped to key columns).
 internal sealed record MySqlDeleteModel(
     string MethodName,

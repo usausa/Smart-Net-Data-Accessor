@@ -43,7 +43,7 @@ internal static class SqlEmit
     public static void EmitCommandText(SourceBuilder builder, string sql)
         => builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(sql)).Append(";").NewLine();
 
-    // エンティティ列パラメータを ExecuteHelper.AddInParameter（converter があれば converter 共有オーバーロード）で束縛する。
+    // エンティティ列パラメータを ExecuteHelper.AddInParameter(converter があれば converter 共有オーバーロード)で束縛する。
     // Bind an entity column parameter via ExecuteHelper.AddInParameter (the converter-sharing overload when a converter applies).
     public static void EmitColumnParameter(SourceBuilder builder, string paramName, string valueExpression, ColumnBinding column)
     {
@@ -75,7 +75,7 @@ internal static class SqlEmit
             ? CodeExpressionHelper.EnumCastValue(column.EnumUnderlyingFullName, column.IsNullableEnum, valueExpression)
             : valueExpression;
 
-    // メソッドの値パラメータを ExecuteHelper.AddInParameter で束縛する（converter は付かない）。
+    // メソッドの値パラメータを ExecuteHelper.AddInParameter で束縛する(converter は付かない)。
     // Bind a method value parameter via ExecuteHelper.AddInParameter (no converter).
     public static void EmitValueParamBinding(SourceBuilder builder, ParameterBinding parameter, char marker)
         => builder.Indent()

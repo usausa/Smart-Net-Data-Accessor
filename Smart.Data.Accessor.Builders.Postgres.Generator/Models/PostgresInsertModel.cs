@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// INSERT（RETURNING 句対応）。EntityParamName があればエンティティモード、無ければパラメータモード。
+// INSERT(RETURNING 句対応)。EntityParamName があればエンティティモード、無ければパラメータモード。
 // INSERT (with RETURNING clause). Entity mode when EntityParamName is set; otherwise parameter mode.
 internal sealed record PostgresInsertModel(
     string MethodName,

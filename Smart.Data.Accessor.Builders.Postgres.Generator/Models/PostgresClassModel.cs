@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 using SourceGenerateHelper;
 
-// PostgreSQL Builder の transform 出力（equatable・キャッシュキー）。
+// PostgreSQL Builder の transform 出力(equatable・キャッシュキー)。
 // Transform output of the PostgreSQL builder (equatable / cache key).
 internal sealed record PostgresClassModel(
     string Namespace,

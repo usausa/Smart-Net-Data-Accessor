@@ -1,7 +1,7 @@
 namespace Smart.Data.Accessor.Shared.Builders;
 
-// エンティティ列の束縛メタデータ（FAWMN transform で解決）。各 provider Model にメンバとして内包される equatable DTO。単なる入れ物。
-// 列・プロパティ名 ＋ 束縛メタデータ（converter / DbType / enum）＋ オプションフラグ（Key / DatabaseManaged）。
+// エンティティ列の束縛メタデータ(FAWMN transform で解決)。各 provider Model にメンバとして内包される equatable DTO。単なる入れ物。
+// 列・プロパティ名 ＋ 束縛メタデータ(converter / DbType / enum)＋ オプションフラグ(Key / DatabaseManaged)。
 // Entity-column binding metadata resolved in the FAWMN transform; an equatable DTO embedded as a member of each provider
 // model (a plain container). Column/property names + binding metadata (converter / DbType / enum) + option flags (Key / DatabaseManaged).
 internal sealed record ColumnBinding(
@@ -14,14 +14,14 @@ internal sealed record ColumnBinding(
     int? Size,
     ColumnFlags Flags);
 
-// converter 型とその IValueConverter<TDb, TClr> 型引数 FQN（ExecuteHelper.AddInParameter<TConverter, TDb, TClr> の 3 型引数）。
+// converter 型とその IValueConverter<TDb, TClr> 型引数 FQN(ExecuteHelper.AddInParameter<TConverter, TDb, TClr> の 3 型引数)。
 // The converter type plus its IValueConverter<TDb, TClr> type-argument FQNs (the three type arguments of ExecuteHelper.AddInParameter<TConverter, TDb, TClr>).
 internal sealed record ConverterBinding(
     string ConverterTypeFullName,
     string DbTypeFullName,
     string ClrTypeFullName);
 
-// 列のオプションフラグ（DB 側の構造情報）。WHERE / INSERT の組み立てに使う。
+// 列のオプションフラグ(DB 側の構造情報)。WHERE / INSERT の組み立てに使う。
 // Column option flags (DB-side structural info) used to shape WHERE / INSERT.
 [Flags]
 internal enum ColumnFlags

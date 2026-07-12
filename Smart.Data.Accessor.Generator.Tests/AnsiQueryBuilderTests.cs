@@ -41,7 +41,7 @@ public sealed class AnsiQueryBuilderTests
         Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
-    // [BindPrefix] のバインドマーカー（既定 '@'）は Builder にも適用される。class スコープ ':' は SQL とパラメータ名の両方に効く。
+    // [BindPrefix] のバインドマーカー(既定 '@')は Builder にも適用される。class スコープ ':' は SQL とパラメータ名の両方に効く。
     // [BindPrefix] applies the bind marker (default '@') to the builder too: a class-scope ':' affects both the SQL text and the parameter names.
     [Fact]
     public void BindPrefixChangesBindMarker()
@@ -74,7 +74,7 @@ public sealed class AnsiQueryBuilderTests
         Assert.Contains("AddInParameter(cmd, \":Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
-    // method スコープの [BindPrefix] が class スコープより優先される（コアと同じ解決順 method → class → assembly → '@'）。
+    // method スコープの [BindPrefix] が class スコープより優先される(コアと同じ解決順 method → class → assembly → '@')。
     // A method-scope [BindPrefix] overrides the class scope (same resolution order as the core: method → class → assembly → '@').
     [Fact]
     public void MethodScopeBindPrefixOverridesClass()
@@ -268,7 +268,7 @@ public sealed class AnsiQueryBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains("SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Users\\\" LIMIT @limit OFFSET @offset", text, StringComparison.Ordinal);
-        // offset → limit の順で束縛される（EmitSelect）。
+        // offset → limit の順で束縛される(EmitSelect)。
         // Bound offset-then-limit (EmitSelect).
         var idxOffset = text.IndexOf("AddInParameter(cmd, \"@offset\"", StringComparison.Ordinal);
         var idxLimit = text.IndexOf("AddInParameter(cmd, \"@limit\"", StringComparison.Ordinal);

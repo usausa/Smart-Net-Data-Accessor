@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// INSERT（OUTPUT 句対応）。EntityParamName があればエンティティモード、無ければパラメータモード。
+// INSERT(OUTPUT 句対応)。EntityParamName があればエンティティモード、無ければパラメータモード。
 // INSERT (with OUTPUT clause). Entity mode when EntityParamName is set; otherwise parameter mode.
 internal sealed record SqlServerInsertModel(
     string MethodName,

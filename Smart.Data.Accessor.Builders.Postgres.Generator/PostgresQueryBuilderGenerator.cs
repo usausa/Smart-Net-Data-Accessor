@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Shared.Builders;
 
-// PostgreSQL QueryBuilder ジェネレータ（配線）。走査は共有 ClassScanner、transform は PostgresModelBuilder、出力は共有 SourceOutput＋PostgresSourceBuilder。
+// PostgreSQL QueryBuilder ジェネレータ(配線)。走査は共有 ClassScanner、transform は PostgresModelBuilder、出力は共有 SourceOutput＋PostgresSourceBuilder。
 // The PostgreSQL QueryBuilder generator (wiring). Scanning is the shared ClassScanner, the transform is PostgresModelBuilder, output is the shared SourceOutput + PostgresSourceBuilder.
 [Generator]
 public sealed class PostgresQueryBuilderGenerator : IIncrementalGenerator

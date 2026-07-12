@@ -7,8 +7,8 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// 標準（既定）Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で
-// per-kind Model を直接構築する（Operation enum は持たない）。種別固有の診断（キー欠如など）は各生成メソッドで出す。
+// 標準(既定)Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で
+// per-kind Model を直接構築する(Operation enum は持たない)。種別固有の診断(キー欠如など)は各生成メソッドで出す。
 // Transform for the standard (default) builder. Scans via the shared ClassScanner and resolves via MethodResolver, then
 // builds the per-kind model directly through an attribute-name → build-delegate table (no Operation enum). Kind-specific
 // diagnostics (missing key, etc.) are raised in each build method.
@@ -62,7 +62,7 @@ internal static class StandardModelBuilder
 
     private static UpdateModel BuildUpdate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
     {
-        // Update はエンティティ実体とキー（[Key]）が無いと SET/WHERE を組めないため診断を出す。
+        // Update はエンティティ実体とキー([Key])が無いと SET/WHERE を組めないため診断を出す。
         // Update needs an entity instance and a key ([Key]) to build SET/WHERE, so it raises a diagnostic when absent.
         if (!resolution.HasEntityType || (resolution.EntityParamName is null))
         {

@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// REPLACE INTO（列・値は INSERT と同形）。
+// REPLACE INTO(列・値は INSERT と同形)。
 // REPLACE INTO (same column/value shape as INSERT).
 internal sealed record MySqlReplaceModel(
     string MethodName,

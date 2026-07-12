@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// UPDATE（OUTPUT 句対応）。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティモードのみ。
+// UPDATE(OUTPUT 句対応)。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティモードのみ。
 // UPDATE (with OUTPUT clause). SET = non-key, non-[DatabaseManaged] columns; WHERE = [Key] columns. Entity mode only.
 internal sealed record SqlServerUpdateModel(
     string MethodName,

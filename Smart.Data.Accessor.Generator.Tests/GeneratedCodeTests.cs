@@ -340,15 +340,15 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
 
-        // From はリーダー列を 1 回走査（GetName + 完全一致 switch、default で大小無視フォールバック）。欠落列は -1 のまま
-        // （GetOrdinal は使わない＝欠落列で throw しない）。
+        // From はリーダー列を 1 回走査(GetName + 完全一致 switch、default で大小無視フォールバック)。欠落列は -1 のまま
+        // (GetOrdinal は使わない＝欠落列で throw しない)。
         // From scans the reader's columns once (GetName + exact switch, case-insensitive fallback in default);
         // an absent column stays -1 (GetOrdinal, which throws on a missing column, is not used).
         Assert.Contains("var __ord0 = -1;", text, StringComparison.Ordinal);
         Assert.Contains("switch (__name)", text, StringComparison.Ordinal);
         Assert.Contains("global::System.StringComparison.OrdinalIgnoreCase", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
-        // 行マッパーは存在する列（序数 >= 0）だけプロパティへ設定する（無い列は初期値を保持）。
+        // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
         // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
         Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
         Assert.Contains("if (o.Name >= 0) entity.Name =", text, StringComparison.Ordinal);
@@ -426,8 +426,8 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void ExecuteScalarWithIntReturnEmitsConvertScalar()
     {
-        // int は [Execute] では影響行数（ExecuteNonQuery）だが、[ExecuteScalar] では他のスカラー型と
-        // 同じく ExecuteScalar + ConvertScalar<int> で読む（MethodType で分岐し、型名では分岐しない）。
+        // int は [Execute] では影響行数(ExecuteNonQuery)だが、[ExecuteScalar] では他のスカラー型と
+        // 同じく ExecuteScalar + ConvertScalar<int> で読む(MethodType で分岐し、型名では分岐しない)。
         // With [Execute] an int return is the affected-row count (ExecuteNonQuery), but with
         // [ExecuteScalar] an int reads like any other scalar via ExecuteScalar + ConvertScalar<int>
         // (the emit branches on MethodType, not on the type name).
@@ -613,7 +613,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        // OUT パラメータは CLR 型から DbType を推論（InferDbTypeExpression）。
+        // OUT パラメータは CLR 型から DbType を推論(InferDbTypeExpression)。
         Assert.Contains("AddOutParameter(cmd, \"@total\", global::System.Data.DbType.Int32)", text, StringComparison.Ordinal);
     }
 

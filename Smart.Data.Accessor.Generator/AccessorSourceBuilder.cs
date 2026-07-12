@@ -11,7 +11,7 @@ using SourceGenerateHelper;
 internal static class AccessorSourceBuilder
 {
     // 入力パラメータの (AddInParameter 系メソッド名, 値式) を決める。[TypeHandler<>] が付いた入力パラメータは converter 共有
-    // オーバーロード AddInParameter<TConverter, TDb, TClr>(cmd, name, value) で束縛する（ヘルパーが ToDb と null を処理）。
+    // オーバーロード AddInParameter<TConverter, TDb, TClr>(cmd, name, value) で束縛する(ヘルパーが ToDb と null を処理)。
     // converter が無いパラメータは通常の AddInParameter ＋ 生成時の値式を使う。
     // Decide the (AddInParameter-family method name, value expression) for an input parameter. A [TypeHandler<>] input
     // parameter binds through the converter-sharing overload AddInParameter<TConverter, TDb, TClr>(cmd, name, value)
@@ -22,7 +22,7 @@ internal static class AccessorSourceBuilder
             : ("AddInParameter", BuildParameterValueExpression(parameter));
 
     // 入力値式を組み立てる。束縛された [TypeHandler<>] があれば TConverter.ToDb(...) で値を書き、enum 既定キャストより優先する。
-    // Nullable<TClr> の場合は HasValue ガードで、非 null なら値を ToDb へ、null なら null（→ DBNull）を渡す。
+    // Nullable<TClr> の場合は HasValue ガードで、非 null なら値を ToDb へ、null なら null(→ DBNull)を渡す。
     // Build the input value expression. A bound [TypeHandler<>] writes the value via TConverter.ToDb(...) and takes
     // priority over the enum default cast. For Nullable<TClr>, a HasValue guard passes the non-null value to ToDb,
     // otherwise null (→ DBNull).
@@ -41,12 +41,12 @@ internal static class AccessorSourceBuilder
         return CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, parameter.Name);
     }
 
-    // POCO プロパティの入力値式（{argName}.{property}）を組み立てる。プロパティが enum なら underlying へのキャストを付ける。
+    // POCO プロパティの入力値式({argName}.{property})を組み立てる。プロパティが enum なら underlying へのキャストを付ける。
     // Build the input value expression for a POCO property ({argName}.{property}), adding the enum-underlying cast when the property is an enum.
     private static string BuildPocoValueExpression(string argName, PocoBindProperty property)
     {
         var access = argName + "." + property.PropertyName;
-        // converter があれば TConverter.ToDb で入力を書く（enum キャストより優先）。
+        // converter があれば TConverter.ToDb で入力を書く(enum キャストより優先)。
         // A converter writes the input via TConverter.ToDb (priority over the enum cast).
         if (property.ConverterTypeFullName is { } converter)
         {
@@ -61,7 +61,7 @@ internal static class AccessorSourceBuilder
         return CodeExpressionHelper.EnumCastValue(property.EnumUnderlyingFullName, property.IsNullableEnum, access);
     }
 
-    // [TypeHandler<>] が付いた入力 POCO プロパティは AddInParameter<TConverter,TDb,TClr> で束縛する（ヘルパーが ToDb と null を処理）。
+    // [TypeHandler<>] が付いた入力 POCO プロパティは AddInParameter<TConverter,TDb,TClr> で束縛する(ヘルパーが ToDb と null を処理)。
     // converter が無いプロパティは生成時の値式を使う。
     // A [TypeHandler<>] input POCO property binds through AddInParameter<TConverter,TDb,TClr> (the helper calls ToDb +
     // handles null); a non-converter property uses the gen-time value expression.
@@ -70,7 +70,7 @@ internal static class AccessorSourceBuilder
             ? (CodeExpressionHelper.AddInParameterConverter(converter, property.ConverterDbTypeFullName!, property.ConverterClrTypeFullName!), argName + "." + property.PropertyName)
             : ("AddInParameter", BuildPocoValueExpression(argName, property));
 
-    // 展開した POCO プロパティ 1 つ分の Add*Parameter を出力する（ストアド / DirectSql セットアップ用）。Direction に応じて
+    // 展開した POCO プロパティ 1 つ分の Add*Parameter を出力する(ストアド / DirectSql セットアップ用)。Direction に応じて
     // OUT / InOut / 通常入力を出し分ける。
     // Emit Add*Parameter for one expanded POCO property (procedure / DirectSql setup), choosing OUT / InOut / plain input by Direction.
     private static void EmitPocoPropertyParameter(SourceBuilder builder, char bindMarker, string argName, PocoBindProperty property)
@@ -102,7 +102,7 @@ internal static class AccessorSourceBuilder
     }
 
     // [ExecuteScalar] メソッドのスカラー読み取り式を組み立てる。converter 無し＝ConvertScalar<TClr>(executeCall)。
-    // converter 有り＝DB 値を TDb として読み TConverter.FromDb で変換する（[return:] / method / class / profile のスコープ鎖で解決）。
+    // converter 有り＝DB 値を TDb として読み TConverter.FromDb で変換する([return:] / method / class / profile のスコープ鎖で解決)。
     // Build the scalar read expression for an [ExecuteScalar] method. Without a converter: ConvertScalar<TClr>(executeCall).
     // With one: read the DB value as TDb and convert via TConverter.FromDb (resolved over the [return:] / method / class / profile scope chain).
     private static string BuildScalarReadExpression(MethodModel method, string executeCall)
@@ -168,7 +168,7 @@ internal static class AccessorSourceBuilder
         return builder.ToString();
     }
 
-    // アクセサのコンストラクタを生成する。Pattern B（接続を注入）なら IDbProvider / IDbProviderSelector フィールドを、[Inject] があれば
+    // アクセサのコンストラクタを生成する。Pattern B(接続を注入)なら IDbProvider / IDbProviderSelector フィールドを、[Inject] があれば
     // 各依存フィールドを持たせ、引数で受けて代入する。Pattern A のみ＆注入無しなら EditorBrowsable(Never) の既定コンストラクタ。
     // Emit the accessor's constructor. For Pattern B (injected connection) it adds an IDbProvider / IDbProviderSelector
     // field, plus a field per [Inject] dependency, taking them as ctor parameters and assigning them. With Pattern A only
@@ -189,8 +189,8 @@ internal static class AccessorSourceBuilder
         }
 
         // Pattern B の注入フィールドは [Provider] 有無で変わる：
-        //   [Provider] 無し → IDbProvider（単一ソース。dbProvider.CreateConnection() を呼ぶ）
-        //   [Provider] 有り → IDbProviderSelector（マルチソース。providerSelector.GetProvider("name").CreateConnection() を呼ぶ）
+        //   [Provider] 無し → IDbProvider(単一ソース。dbProvider.CreateConnection() を呼ぶ)
+        //   [Provider] 有り → IDbProviderSelector(マルチソース。providerSelector.GetProvider("name").CreateConnection() を呼ぶ)
         // The Pattern B injection field depends on [Provider]:
         //   no  [Provider] → IDbProvider          (single source; calls dbProvider.CreateConnection())
         //   has [Provider] → IDbProviderSelector  (multi-source; calls providerSelector.GetProvider("name").CreateConnection())
@@ -227,7 +227,7 @@ internal static class AccessorSourceBuilder
         builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(String.Join(", ", ctorParams)).Append(")").NewLine();
         builder.BeginScope();
 
-        // 注入された必須依存（プロバイダ / [Inject]）が null のとき、最初の DB 呼び出しまで遅延させずコンストラクタで即座に失敗させる。
+        // 注入された必須依存(プロバイダ / [Inject])が null のとき、最初の DB 呼び出しまで遅延させずコンストラクタで即座に失敗させる。
         // 失敗箇所がアクセサ生成時に固定され、未登録依存の原因を追いやすくなる。
         // Fail fast in the constructor when an injected required dependency (provider / [Inject]) is null, instead of
         // deferring to the first DB call. The failure is pinned to accessor creation, making an unregistered dependency easy to trace.
@@ -260,7 +260,7 @@ internal static class AccessorSourceBuilder
     private static bool IsReaderShape(ReturnShape shape) =>
         shape is ReturnShape.Reader or ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
 
-    // content（'\n' 区切り・先頭インデント無しを前提）の各行を SourceBuilder の現在のインデントで出力する。空行はインデント無しの NewLine()。
+    // content('\n' 区切り・先頭インデント無しを前提)の各行を SourceBuilder の現在のインデントで出力する。空行はインデント無しの NewLine()。
     // Emit each line of `content` (assumed '\n'-separated with no leading indentation) at the SourceBuilder's current
     // IndentLevel; blank lines round-trip as `NewLine()` without an indent prefix.
     private static void AppendCodeLines(SourceBuilder builder, string? content)
@@ -292,14 +292,14 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // 1 メソッド分の partial 実装を生成する。OrdinalCache 構造体 → シグネチャ → 接続取得（Pattern A/B）→（reader 形は try/catch で
-    // 安全に cmd/接続を破棄）→ SQL・パラメータ準備 → 実行 →（reader 以外は）後始末、の順に出力する。
+    // 1 メソッド分の partial 実装を生成する。OrdinalCache 構造体 → シグネチャ → 接続取得(Pattern A/B)→(reader 形は try/catch で
+    // 安全に cmd/接続を破棄)→ SQL・パラメータ準備 → 実行 →(reader 以外は)後始末、の順に出力する。
     // Emit one method's partial implementation in order: the OrdinalCache struct, the signature, connection acquisition
     // (Pattern A/B), (for reader shapes) a try/catch that safely disposes cmd/connection, SQL + parameter setup, the
     // invocation, and (for non-reader shapes) cleanup.
     private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName)
     {
-        // メソッド毎の OrdinalCache 構造体（列序数を 1 クエリにつき 1 回だけ解決し、各行で再利用する）と行マッパー。
+        // メソッド毎の OrdinalCache 構造体(列序数を 1 クエリにつき 1 回だけ解決し、各行で再利用する)と行マッパー。
         // Per-method OrdinalCache struct (column ordinals resolved once per query, reused per row) and the row mapper.
         EmitOrdinalCacheStruct(builder, method);
         EmitRowMapperMethod(builder, method);
@@ -322,18 +322,18 @@ internal static class AccessorSourceBuilder
             .Append(method.Name).Append("(").Append(paramList).Append(")").NewLine();
         builder.BeginScope();
 
-        // CancellationToken 引数を探す（無ければ default）。
+        // CancellationToken 引数を探す(無ければ default)。
         // Discover the CancellationToken parameter (default when absent).
         var cancellation = method.Parameters.FirstOrDefault(x => x.IsCancellationToken);
         var cancellationExpression = cancellation?.Name ?? "default";
 
-        // reader 形（ExecuteReader）では cmd と（Pattern B の）接続の所有権を WrappedReader へ渡すため `using` を使わず、例外時のみ手動破棄する。
+        // reader 形(ExecuteReader)では cmd と(Pattern B の)接続の所有権を WrappedReader へ渡すため `using` を使わず、例外時のみ手動破棄する。
         // For reader shapes (ExecuteReader), ownership of cmd and (Pattern B) the connection transfers to WrappedReader,
         // so we avoid `using` and dispose manually only if something throws.
         var cmdKeyword = isReader ? "var" : "using var";
         var ownsConnectionForReader = isReader && (method.ConnectionPattern == ConnectionPattern.None);
 
-        // Pattern A（引数の conn/tx）／Pattern B（注入プロバイダ）の接続取得。閉じていれば開く。
+        // Pattern A(引数の conn/tx)／Pattern B(注入プロバイダ)の接続取得。閉じていれば開く。
         // Pattern A (conn/tx argument) / Pattern B (injected provider) connection acquisition; opens the connection if closed.
         string commandSource;
         switch (method.ConnectionPattern)
@@ -424,7 +424,7 @@ internal static class AccessorSourceBuilder
 
         if (isReader)
         {
-            // reader 形：cmd 使用〜WrappedReader 返却までを try/catch で包み、所有権が移る前に例外が出たら cmd（と Pattern B の接続）を破棄する。
+            // reader 形：cmd 使用〜WrappedReader 返却までを try/catch で包み、所有権が移る前に例外が出たら cmd(と Pattern B の接続)を破棄する。
             // Reader shapes: wrap from cmd usage through the WrappedReader return in try/catch so cmd (and, for Pattern B,
             // the connection) is disposed if anything throws before ownership transfers to WrappedReader.
             builder.Indent().Append("try").NewLine();
@@ -436,7 +436,7 @@ internal static class AccessorSourceBuilder
             builder.Indent().Append("cmd.CommandTimeout = ").Append(cts.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
         }
 
-        // SQL とパラメータの準備。コマンドソース（DirectSql / ストアド / QueryBuilder / 2-way SQL）で分岐する。
+        // SQL とパラメータの準備。コマンドソース(DirectSql / ストアド / QueryBuilder / 2-way SQL)で分岐する。
         // SQL and parameter setup, branching on the command source (DirectSql / stored procedure / QueryBuilder / 2-way SQL).
         if (method.SqlSource == SqlSource.DirectSql)
         {
@@ -481,7 +481,7 @@ internal static class AccessorSourceBuilder
             }
             else
             {
-                // トークン化した 2-way SQL → StringBuilder で組み立てるコードを出す（プールから借り、finally で返す）。
+                // トークン化した 2-way SQL → StringBuilder で組み立てるコードを出す(プールから借り、finally で返す)。
                 // Tokenized 2-way SQL → emit StringBuilder build code (rent from the pool, return it in finally).
                 builder.Indent().Append("var __sb = global::Smart.Data.Accessor.Helpers.StringBuilderPool.Rent();").NewLine();
                 builder.Indent().Append("try").NewLine();
@@ -529,8 +529,8 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
-    // [DirectSql] のセットアップを出力する。第 1 引数（string）を cmd.CommandText に代入し、残りの引数をパラメータとして束縛する
-    // （POCO 引数はプロパティ毎に展開、OUT/InOut はハンドル経由）。
+    // [DirectSql] のセットアップを出力する。第 1 引数(string)を cmd.CommandText に代入し、残りの引数をパラメータとして束縛する
+    // (POCO 引数はプロパティ毎に展開、OUT/InOut はハンドル経由)。
     // Emit the [DirectSql] setup: assign the first (string) argument to cmd.CommandText and bind the remaining arguments
     // as parameters (POCO arguments expand per property; OUT/InOut go through handles).
     private static void EmitDirectSqlSetup(SourceBuilder builder, MethodModel method)
@@ -623,7 +623,7 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // プロバイダ固有 DbType（[DbType<TEnum>]）の設定を出力する。生成したパラメータをプロバイダ固有型へキャストし、固有プロパティに代入する。
+    // プロバイダ固有 DbType([DbType<TEnum>])の設定を出力する。生成したパラメータをプロバイダ固有型へキャストし、固有プロパティに代入する。
     // Emit the provider-specific DbType ([DbType<TEnum>]) assignment: cast the created parameter to the provider-specific
     // type and set its native property.
     private static void EmitProviderDbTypeAssignment(SourceBuilder builder, ParameterModel parameter, string handleName)
@@ -638,7 +638,7 @@ internal static class AccessorSourceBuilder
     }
 
     // ストアドプロシージャのセットアップを出力する。CommandType=StoredProcedure と手続き名を設定し、各引数をパラメータとして束縛する
-    // （POCO 展開・OUT/InOut/ReturnValue 対応）。RETURN 値をメソッド戻り値へマップする場合は ReturnValue パラメータを追加する。
+    // (POCO 展開・OUT/InOut/ReturnValue 対応)。RETURN 値をメソッド戻り値へマップする場合は ReturnValue パラメータを追加する。
     // Emit the stored-procedure setup: set CommandType=StoredProcedure and the procedure name, then bind each argument as a
     // parameter (POCO expansion, OUT/InOut/ReturnValue). When the RETURN value maps to the method return, add a ReturnValue parameter.
     private static void EmitProcedureSetup(SourceBuilder builder, MethodModel method)
@@ -728,7 +728,7 @@ internal static class AccessorSourceBuilder
 
         if (method.MapsProcedureReturnValue)
         {
-            // ストアドの RETURN 値を捕捉する（メソッドのスカラー戻り値へマップする）。
+            // ストアドの RETURN 値を捕捉する(メソッドのスカラー戻り値へマップする)。
             // Capture the stored-procedure RETURN value (mapped to the method's scalar return value).
             builder.Indent().Append("var __returnValue = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
                 .Append(method.BindMarker).Append("__ReturnValue\", global::System.Data.DbType.Int32);").NewLine();
@@ -772,8 +772,8 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // reader（ExecuteReader）系の実行と返却を出力する。cmd/接続を WrappedReader に包んで返す。Pattern A は接続を閉じない
-    // （CloseConnection で呼び出し前の状態へ戻す）、Pattern B（接続所有）は WrappedReader が接続ごと破棄する。同期/非同期で出し分ける。
+    // reader(ExecuteReader)系の実行と返却を出力する。cmd/接続を WrappedReader に包んで返す。Pattern A は接続を閉じない
+    // (CloseConnection で呼び出し前の状態へ戻す)、Pattern B(接続所有)は WrappedReader が接続ごと破棄する。同期/非同期で出し分ける。
     // Emit execution and return for reader (ExecuteReader) shapes: wrap cmd/connection in a WrappedReader and return it.
     // Pattern A does not close the connection (CloseConnection restores the pre-call state); Pattern B (owns the connection)
     // lets WrappedReader dispose the connection too. Sync and async are emitted separately.
@@ -805,8 +805,8 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // メソッドの実行部を出力する。reader 形は EmitReaderInvocation、Execute/DirectSql は戻り値形（void/scalar/Task…）毎に
-    // ExecuteNonQuery / ExecuteScalar を出し、Query 形は下のリーダーループ（List / 単一 / yield / async）を生成する。
+    // メソッドの実行部を出力する。reader 形は EmitReaderInvocation、Execute/DirectSql は戻り値形(void/scalar/Task…)毎に
+    // ExecuteNonQuery / ExecuteScalar を出し、Query 形は下のリーダーループ(List / 単一 / yield / async)を生成する。
     // Emit the method's execution: reader shapes go to EmitReaderInvocation; Execute/DirectSql emit ExecuteNonQuery /
     // ExecuteScalar per return shape (void/scalar/Task...); Query shapes generate the reader loop below (List / single / yield / async).
     private static void EmitInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression)
@@ -837,7 +837,7 @@ internal static class AccessorSourceBuilder
                         builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
                     }
-                    // [Execute] のスカラー戻り値は影響行数（SDA0302 が int 系へ制限）。[ExecuteScalar] は int を含む任意のスカラーを
+                    // [Execute] のスカラー戻り値は影響行数(SDA0302 が int 系へ制限)。[ExecuteScalar] は int を含む任意のスカラーを
                     // ExecuteScalar + ConvertScalar で読む。
                     // An [Execute] scalar return is the affected-row count (SDA0302 restricts it to int shapes).
                     // [ExecuteScalar] reads any scalar (including int) via ExecuteScalar + ConvertScalar.
@@ -922,9 +922,9 @@ internal static class AccessorSourceBuilder
             return;
         }
 
-        // Query 形：OrdinalCache ＋ 行マッパー（__Map{Method}、AggressiveInlining の static 直呼び）を使い、読み取りループを
-        // 直接展開する（ExecuteHelper の QueryBuffer / QueryFirstOrDefault もデリゲートも使わない）。序数は名前照合で解決し
-        // 欠落列は -1（部分列 SELECT・動的列を許容。旧 GetOrdinal 方式は欠落列で throw していた）。
+        // Query 形：OrdinalCache ＋ 行マッパー(__Map{Method}、AggressiveInlining の static 直呼び)を使い、読み取りループを
+        // 直接展開する(ExecuteHelper の QueryBuffer / QueryFirstOrDefault もデリゲートも使わない)。序数は名前照合で解決し
+        // 欠落列は -1(部分列 SELECT・動的列を許容。旧 GetOrdinal 方式は欠落列で throw していた)。
         // CommandBehavior は list/iterator 形が SingleResult、単一行形が SingleResult | SingleRow。SequentialAccess は使わない：
         // 列はプロパティ宣言順で読むため ordinal 昇順アクセスを保証できず、SqlClient / Npgsql では実行時例外になり得る。
         // Query shapes use the OrdinalCache + the row mapper (__Map{Method}, an aggressively-inlined static call) with a
@@ -967,7 +967,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("return __list;").NewLine();
                 break;
             case ReturnShape.IteratorEnumerable:
-                // 行毎に yield return を出す（バッファリングしない）。OrdinalCache は最初の行が来た後に 1 回だけ取得する。
+                // 行毎に yield return を出す(バッファリングしない)。OrdinalCache は最初の行が来た後に 1 回だけ取得する。
                 // Emit a per-row `yield return` (no buffered list); OrdinalCache is captured once after the first row arrives.
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult);").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
@@ -981,7 +981,7 @@ internal static class AccessorSourceBuilder
                 builder.EndScope();
                 break;
             case ReturnShape.AsyncEnumerable:
-                // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要（無い場合 SDA0305 で警告）。
+                // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要(無い場合 SDA0305 で警告)。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
                 // [EnumeratorCancellation] (SDA0305 warns when missing).
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult, ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
@@ -1022,8 +1022,8 @@ internal static class AccessorSourceBuilder
         }
     }
 
-    // 1 列分の読み取り式（代入・ctor 引数の右辺）を組み立てる。converter（FromDb）／型別リーダー（enum キャスト含む）／
-    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き（DB NULL は default!、SDA0307）。
+    // 1 列分の読み取り式(代入・ctor 引数の右辺)を組み立てる。converter(FromDb)／型別リーダー(enum キャスト含む)／
+    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き(DB NULL は default!、SDA0307)。
     // Build one column's read expression (assignment / ctor-argument RHS): converter (FromDb), typed reader (incl. enum
     // casts), or the GetValue<T> fallback. Except for [NotNullColumn], the read carries the IsDBNull guard (DB NULL
     // falls through as default!, SDA0307).
@@ -1032,7 +1032,7 @@ internal static class AccessorSourceBuilder
         var sb = new StringBuilder();
         if (column.Converter is { } converter)
         {
-            // TDb として読み TConverter.FromDb で変換する。DB NULL ガードは型別リーダー経路と同じ（[NotNullColumn] で除外可）。
+            // TDb として読み TConverter.FromDb で変換する。DB NULL ガードは型別リーダー経路と同じ([NotNullColumn] で除外可)。
             // Read TDb then convert via TConverter.FromDb. The DB NULL guard mirrors the typed-reader path ([NotNullColumn] opts out).
             if (!column.SkipNullCheck)
             {
@@ -1056,7 +1056,7 @@ internal static class AccessorSourceBuilder
         {
             if (!column.SkipNullCheck)
             {
-                // 非 null 許容プロパティが DB NULL を受けると default! になる（SDA0307）。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
+                // 非 null 許容プロパティが DB NULL を受けると default! になる(SDA0307)。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
                 // A non-nullable property receiving DB NULL falls through as default! (SDA0307). [NotNullColumn] opts
                 // out of this check; the provider throws InvalidCastException on an actual NULL.
                 sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
@@ -1087,10 +1087,10 @@ internal static class AccessorSourceBuilder
 
     private static string RowMapperName(MethodModel method) => "__Map" + method.Name;
 
-    // 行マッパーメソッド（__Map{Method}）を生成する。序数キャッシュを受け取り 1 行分のエンティティを構築する。
-    // class/POCO は `new T()` の後、結果セットに存在する列（序数 >= 0）だけをプロパティへ設定する — 無い列は「設定しない」
-    // （default の上書きではなく、プロパティ初期化子・既定値をそのまま保つ）。record 主コンストラクタは全引数が必須のため、
-    // 無い列の引数は default! を渡す（構造上「設定しない」は不可能）。
+    // 行マッパーメソッド(__Map{Method})を生成する。序数キャッシュを受け取り 1 行分のエンティティを構築する。
+    // class/POCO は `new T()` の後、結果セットに存在する列(序数 >= 0)だけをプロパティへ設定する — 無い列は「設定しない」
+    // (default の上書きではなく、プロパティ初期化子・既定値をそのまま保つ)。record 主コンストラクタは全引数が必須のため、
+    // 無い列の引数は default! を渡す(構造上「設定しない」は不可能)。
     // Emit the row-mapper method (__Map{Method}): takes the ordinal cache and materialises one row. For a class/POCO it
     // creates `new T()` and assigns only the columns present in the result set (ordinal >= 0) — an absent column is NOT
     // assigned (property initialisers / defaults survive, rather than being overwritten with default). A record primary
@@ -1137,9 +1137,9 @@ internal static class AccessorSourceBuilder
 
     private static string OrdinalStructName(MethodModel method) => "__" + method.Name + "Ordinals";
 
-    // クエリ列の序数キャッシュ構造体（__{Method}Ordinals）を生成する。各列の序数を public int フィールドに持ち、From(reader) は
-    // リーダーの列を 1 回だけ走査（GetName + 列名 switch）して構築する（以降は行毎に再利用）。結果セットに無い列は -1 のままとし、
-    // GetOrdinal（欠落列で throw）は使わない。照合は完全一致を優先し、default 節で大小無視（GetOrdinal 相当）にフォールバックする。
+    // クエリ列の序数キャッシュ構造体(__{Method}Ordinals)を生成する。各列の序数を public int フィールドに持ち、From(reader) は
+    // リーダーの列を 1 回だけ走査(GetName + 列名 switch)して構築する(以降は行毎に再利用)。結果セットに無い列は -1 のままとし、
+    // GetOrdinal(欠落列で throw)は使わない。照合は完全一致を優先し、default 節で大小無視(GetOrdinal 相当)にフォールバックする。
     // Emit the query-column ordinal cache struct (__{Method}Ordinals): one public int field per column. From(reader) scans
     // the reader's columns once (GetName + name switch); a column absent from the result set stays -1 (GetOrdinal, which
     // throws on a missing column, is not used). Matching prefers exact names and falls back to a case-insensitive
@@ -1180,7 +1180,7 @@ internal static class AccessorSourceBuilder
         builder.Indent().Append("var __name = reader.GetName(__i);").NewLine();
         builder.Indent().Append("switch (__name)").NewLine();
         builder.BeginScope();
-        // 同名列（[Name] 重複）は 1 つの case にまとめる（case ラベル重複による CS0152 を避ける）。先勝ち（GetOrdinal 同等）。
+        // 同名列([Name] 重複)は 1 つの case にまとめる(case ラベル重複による CS0152 を避ける)。先勝ち(GetOrdinal 同等)。
         // Duplicate column names ([Name] reuse) share one case (avoids CS0152); first match wins (GetOrdinal-equivalent).
         var groups = new List<(string ColumnName, List<int> Indexes)>();
         for (var i = 0; i < columns.Count; i++)

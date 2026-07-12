@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// MySQL Builder の emit：種別毎の SQL 組み立て（バッククォート、LIMIT/OFFSET、ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE）。
+// MySQL Builder の emit：種別毎の SQL 組み立て(バッククォート、LIMIT/OFFSET、ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE)。
 // Emit for the MySQL builder: per-kind SQL assembly (backtick quoting, LIMIT/OFFSET, ON DUPLICATE KEY UPDATE / REPLACE / INSERT IGNORE).
 internal static class MySqlSourceBuilder
 {
@@ -52,7 +52,7 @@ internal static class MySqlSourceBuilder
         SqlEmit.CloseMethod(builder);
     }
 
-    // INSERT 系（INSERT INTO / REPLACE INTO / INSERT IGNORE INTO）の列・値・束縛を共通で組み立てる。verb は INTO までの先頭句。
+    // INSERT 系(INSERT INTO / REPLACE INTO / INSERT IGNORE INTO)の列・値・束縛を共通で組み立てる。verb は INTO までの先頭句。
     // エンティティモードは非 [DatabaseManaged] 列、パラメータモードはバインドパラメータを列・値にする。
     // Build the shared columns / values / bindings for the INSERT family; verb is the leading clause through INTO.
     // Entity mode uses the non-[DatabaseManaged] columns, parameter mode uses the bind parameters.
@@ -158,7 +158,7 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // DELETE を組み立てる。WHERE 句はバインドパラメータ（先頭から [Key] 列に対応付け）。
+    // DELETE を組み立てる。WHERE 句はバインドパラメータ(先頭から [Key] 列に対応付け)。
     // Build a DELETE: the WHERE clause uses the bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, MySqlDeleteModel model)
     {
@@ -189,7 +189,7 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // SELECT（全件）。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば LIMIT/OFFSET を付ける。
+    // SELECT(全件)。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば LIMIT/OFFSET を付ける。
     // Build a SELECT (all rows): SELECT * without an entity; otherwise list columns and append LIMIT/OFFSET when [Limit]/[Offset] are present.
     private static void EmitSelect(SourceBuilder builder, MySqlSelectModel model)
     {
@@ -225,7 +225,7 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // SELECT（単一行）。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // SELECT(単一行)。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, MySqlSelectSingleModel model)
     {
@@ -262,7 +262,7 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // 識別子をバッククォートでクォートする（バッククォートは 2 重化してエスケープ）。
+    // 識別子をバッククォートでクォートする(バッククォートは 2 重化してエスケープ)。
     // Quote an identifier with backticks (a backtick is escaped by doubling it).
     private static string Quote(string identifier) => "`" + identifier.Replace("`", "``") + "`";
 

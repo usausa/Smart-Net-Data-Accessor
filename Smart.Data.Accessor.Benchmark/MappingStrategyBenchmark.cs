@@ -14,10 +14,10 @@ using Dapper;
 
 using Smart.Mock.Data;
 
-// PoC: 行マッピング戦略の比較（現行 / Dapper / 新方式=reader 主導 plan）。
+// PoC: 行マッピング戦略の比較(現行 / Dapper / 新方式=reader 主導 plan)。
 //
 //  * 現行：プロパティ宣言順に GetOrdinal(名前) を 1 回解決し、型付き直接読みを直線展開。
-//          全列そろう場合のみ動作（列不足は GetOrdinal が throw）。
+//          全列そろう場合のみ動作(列不足は GetOrdinal が throw)。
 //  * 新方式：reader の列を 0..FieldCount で走査し「列→プロパティ」plan を stackalloc に構築、
 //          行ループは plan の switch dispatch。列不足・順序変更・余剰列に耐性。昇順読みなので
 //          SequentialAccess も安全。
@@ -45,8 +45,8 @@ public class MappingStrategyBenchmark
     private const string WideSql = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData";
     private const string SubsetSql = "SELECT Id, Name FROM BenchData";
 
-    // Mock は CommandText を無視し、列はモックの列定義で決まる（テキストは cosmetic）。CommandText には
-    // この定数を直接代入して CA2100（非定数 SQL）を避ける。Dapper 呼び出しには上記の記述用 SQL を渡す。
+    // Mock は CommandText を無視し、列はモックの列定義で決まる(テキストは cosmetic)。CommandText には
+    // この定数を直接代入して CA2100(非定数 SQL)を避ける。Dapper 呼び出しには上記の記述用 SQL を渡す。
     private const string CommandTextConst = "SELECT * FROM BenchData";
 
     private MockRepeatDbConnection mockWide = default!;
@@ -98,7 +98,7 @@ public class MappingStrategyBenchmark
 
         accessor = new BenchmarkAccessor();
 
-        // 正当性の簡易確認（誤マッピングを timing 前に検出する）。
+        // 正当性の簡易確認(誤マッピングを timing 前に検出する)。
         VerifyOrThrow();
     }
 
@@ -170,7 +170,7 @@ public class MappingStrategyBenchmark
     // Mapping implementations (hand-written to mirror what the generator would emit)
     // -----------------------------------------------------------------
 
-    // "列名 -> プロパティ番号" 対応（無関係列は -1）。プロパティ名はコンパイル時定数なので generator が switch を emit できる。
+    // "列名 -> プロパティ番号" 対応(無関係列は -1)。プロパティ名はコンパイル時定数なので generator が switch を emit できる。
     private static int MapWide(string name) => name switch
     {
         "Id" => 0,
@@ -186,8 +186,8 @@ public class MappingStrategyBenchmark
         _ => -1
     };
 
-    // プロパティ主導＋存在ガード（class）：序数はローカル（欠落は -1）。行ループは現行同様の straight-line で、
-    // 各プロパティに `ord < 0 ? default : read` のガードを1個足すだけ（switch/plan 配列なし）。プロパティ宣言順読み。
+    // プロパティ主導＋存在ガード(class)：序数はローカル(欠落は -1)。行ループは現行同様の straight-line で、
+    // 各プロパティに `ord < 0 ? default : read` のガードを1個足すだけ(switch/plan 配列なし)。プロパティ宣言順読み。
     private static List<BenchWideRow> PropertyGuardWide(DbConnection con)
     {
         var list = new List<BenchWideRow>();
@@ -238,7 +238,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // プロパティ主導＋存在ガード（record）：ガード式をそのまま ctor 引数に。ローカル不要。
+    // プロパティ主導＋存在ガード(record)：ガード式をそのまま ctor 引数に。ローカル不要。
     private static List<BenchWideRecord> PropertyGuardWideRecord(DbConnection con)
     {
         var list = new List<BenchWideRecord>();
@@ -285,7 +285,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 新方式（class）：plan を stackalloc し、行ループは plan の switch dispatch。reader の列数分だけ処理。
+    // 新方式(class)：plan を stackalloc し、行ループは plan の switch dispatch。reader の列数分だけ処理。
     private static List<BenchWideRow> ReaderDrivenWide(DbConnection con, CommandBehavior behavior)
     {
         var list = new List<BenchWideRow>();
@@ -295,7 +295,7 @@ public class MappingStrategyBenchmark
         if (reader.Read())
         {
             var fieldCount = reader.FieldCount;
-            // PoC は FieldCount が小さい（2/10）ため stackalloc 固定。本番は FieldCount 大で ArrayPool へ分岐する。
+            // PoC は FieldCount が小さい(2/10)ため stackalloc 固定。本番は FieldCount 大で ArrayPool へ分岐する。
             Span<int> plan = stackalloc int[fieldCount];
             for (var i = 0; i < fieldCount; i++)
             {
@@ -327,7 +327,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 新方式（record）：欠落引数は default のまま、存在列だけローカルへ読み、最後に construct。読み取りは reader の列数分。
+    // 新方式(record)：欠落引数は default のまま、存在列だけローカルへ読み、最後に construct。読み取りは reader の列数分。
     private static List<BenchWideRecord> ReaderDrivenWideRecord(DbConnection con, CommandBehavior behavior)
     {
         var list = new List<BenchWideRecord>();
@@ -337,7 +337,7 @@ public class MappingStrategyBenchmark
         if (reader.Read())
         {
             var fieldCount = reader.FieldCount;
-            // PoC は FieldCount が小さい（2/10）ため stackalloc 固定。本番は FieldCount 大で ArrayPool へ分岐する。
+            // PoC は FieldCount が小さい(2/10)ため stackalloc 固定。本番は FieldCount 大で ArrayPool へ分岐する。
             Span<int> plan = stackalloc int[fieldCount];
             for (var i = 0; i < fieldCount; i++)
             {
@@ -378,7 +378,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 現行相当（record）：GetOrdinal を 1 回、直線で全 ctor 引数を読む。
+    // 現行相当(record)：GetOrdinal を 1 回、直線で全 ctor 引数を読む。
     private static List<BenchWideRecord> CurrentWideRecord(DbConnection con)
     {
         var list = new List<BenchWideRecord>();
@@ -416,7 +416,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 現行相当（class・全一致の手書きベースライン）。
+    // 現行相当(class・全一致の手書きベースライン)。
     private static List<BenchWideRow> ManualWide(DbConnection con)
     {
         var list = new List<BenchWideRow>();
@@ -456,7 +456,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 部分列の手書き最小（返る 2 列だけを直接読む理論下限）。
+    // 部分列の手書き最小(返る 2 列だけを直接読む理論下限)。
     private static List<BenchWideRow> ManualSubset(DbConnection con)
     {
         var list = new List<BenchWideRow>();
@@ -496,7 +496,7 @@ public class MappingStrategyBenchmark
         }
 
         var subset = ReaderDrivenWide(mockSubset, CommandBehavior.SequentialAccess);
-        // 部分列：Id/Name は設定され、返らない列（例：Age）は既定値のまま。
+        // 部分列：Id/Name は設定され、返らない列(例：Age)は既定値のまま。
         if ((subset.Count != RowCount) || (subset[0].Id != 1L) || (subset[0].Name != "Name-1") || (subset[0].Age != 0))
         {
             throw new InvalidOperationException("ReaderDrivenWide (subset) produced incorrect results.");

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Shared.Builders;
 
-// MySQL QueryBuilder ジェネレータ（配線）。走査は共有 ClassScanner、transform は MySqlModelBuilder、出力は共有 SourceOutput＋MySqlSourceBuilder。
+// MySQL QueryBuilder ジェネレータ(配線)。走査は共有 ClassScanner、transform は MySqlModelBuilder、出力は共有 SourceOutput＋MySqlSourceBuilder。
 // The MySQL QueryBuilder generator (wiring). Scanning is the shared ClassScanner, the transform is MySqlModelBuilder, output is the shared SourceOutput + MySqlSourceBuilder.
 [Generator]
 public sealed class MySqlQueryBuilderGenerator : IIncrementalGenerator

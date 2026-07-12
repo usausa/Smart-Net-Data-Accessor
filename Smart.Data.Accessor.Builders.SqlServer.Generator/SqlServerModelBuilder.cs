@@ -8,7 +8,7 @@ using Smart.Data.Accessor.Shared.Builders;
 using SourceGenerateHelper;
 
 // SQL Server Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で per-kind Model を
-// 構築する（Operation enum は持たない）。SqlServer 固有の OUTPUT 列読み取りと種別固有の診断はここで行う。
+// 構築する(Operation enum は持たない)。SqlServer 固有の OUTPUT 列読み取りと種別固有の診断はここで行う。
 // Transform for the SQL Server builder. Scans via the shared ClassScanner and resolves via MethodResolver, then builds the
 // per-kind model through an attribute-name → build-delegate table (no Operation enum). SqlServer-specific OUTPUT column reading and kind diagnostics happen here.
 internal static class SqlServerModelBuilder
@@ -123,7 +123,7 @@ internal static class SqlServerModelBuilder
         return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
     }
 
-    // SqlServer 固有：属性の Output 名前引数（OUTPUT 句で返す列。カンマ区切り）を読む。未指定・空白は null。
+    // SqlServer 固有：属性の Output 名前引数(OUTPUT 句で返す列。カンマ区切り)を読む。未指定・空白は null。
     // SqlServer-specific: read the attribute's Output named argument (columns for the OUTPUT clause, comma-separated). Null when absent/blank.
     private static string? ReadOutputColumns(AttributeData attribute)
     {

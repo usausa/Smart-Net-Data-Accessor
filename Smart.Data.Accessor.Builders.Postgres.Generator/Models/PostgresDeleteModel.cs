@@ -4,7 +4,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// DELETE（RETURNING 句対応）。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+// DELETE(RETURNING 句対応)。WHERE=バインドパラメータ([Key] 列に対応付け)。
 // DELETE (with RETURNING clause). WHERE = bind parameters (mapped to key columns).
 internal sealed record PostgresDeleteModel(
     string MethodName,

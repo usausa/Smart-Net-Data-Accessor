@@ -5,9 +5,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Shared.Builders;
 
-// SQL Server QueryBuilder ジェネレータ（配線）。[SqlInsert]/…/[SqlTruncate]/[SqlMerge] が付いたメソッドに {Method}__QueryBuilder
-// ヘルパーを生成する（角括弧クォート、OFFSET/FETCH ページング、MERGE/OUTPUT）。走査は共有 ClassScanner、transform は
-// SqlServerModelBuilder、出力は共有 SourceOutput＋SqlServerSourceBuilder に委譲する（3 層）。
+// SQL Server QueryBuilder ジェネレータ(配線)。[SqlInsert]/…/[SqlTruncate]/[SqlMerge] が付いたメソッドに {Method}__QueryBuilder
+// ヘルパーを生成する(角括弧クォート、OFFSET/FETCH ページング、MERGE/OUTPUT)。走査は共有 ClassScanner、transform は
+// SqlServerModelBuilder、出力は共有 SourceOutput＋SqlServerSourceBuilder に委譲する(3 層)。
 // The SQL Server QueryBuilder generator (wiring). Scanning is the shared ClassScanner, the transform is SqlServerModelBuilder,
 // output is the shared SourceOutput + SqlServerSourceBuilder.
 [Generator]

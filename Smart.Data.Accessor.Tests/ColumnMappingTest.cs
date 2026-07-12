@@ -5,8 +5,8 @@ using Smart.Mock.Data;
 
 using Xunit;
 
-// 列マッピング戦略（PropertyGuard）の意味論を検証する：序数は名前照合（完全一致優先＋大小無視フォールバック）で解決し、
-// 結果セットに無い列は「設定しない」（プロパティ初期化子が保持される）。record は全 ctor 引数必須のため欠落列は default。
+// 列マッピング戦略(PropertyGuard)の意味論を検証する：序数は名前照合(完全一致優先＋大小無視フォールバック)で解決し、
+// 結果セットに無い列は「設定しない」(プロパティ初期化子が保持される)。record は全 ctor 引数必須のため欠落列は default。
 public sealed class ColumnMappingTest
 {
     private static List<object[]> Rows(params object[][] rows) => [.. rows];
@@ -14,7 +14,7 @@ public sealed class ColumnMappingTest
     [Fact]
     public void SubsetColumnsLeaveUnmappedPropertiesUntouched()
     {
-        // 3 プロパティ（Id / Name / Age）に対して Id 列だけ返す。Name / Age は初期化子の値が保持される。
+        // 3 プロパティ(Id / Name / Age)に対して Id 列だけ返す。Name / Age は初期化子の値が保持される。
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
             [new MockColumn(typeof(long), "Id")],
@@ -54,7 +54,7 @@ public sealed class ColumnMappingTest
     [Fact]
     public void CaseInsensitiveColumnNamesMap()
     {
-        // 列名の大小が異なっても照合される（GetOrdinal 相当の大小無視フォールバック）。
+        // 列名の大小が異なっても照合される(GetOrdinal 相当の大小無視フォールバック)。
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
             [
@@ -96,7 +96,7 @@ public sealed class ColumnMappingTest
     [Fact]
     public void RecordMissingColumnsReceiveDefaults()
     {
-        // record 主コンストラクタは全引数必須のため、欠落列の引数は default になる（string は null）。
+        // record 主コンストラクタは全引数必須のため、欠落列の引数は default になる(string は null)。
         using var con = new MockDbConnection();
         con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
             [new MockColumn(typeof(long), "Id")],

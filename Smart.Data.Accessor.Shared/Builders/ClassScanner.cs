@@ -9,9 +9,9 @@ using Smart.Data.Accessor.Shared.Helpers;
 
 using SourceGenerateHelper;
 
-// 各 provider の Builder generator が共有する [DataAccessor] クラス走査。Model 型を持たず、クラス情報（ClassScan）と
-// 対象メソッド列挙（MatchedMethod）だけを提供する。partial 検査 SDA1001 / 重複検査 SDA1002 / [BindPrefix] マーカー解決 /
-// [TypeMap]・profile スコープを共有し、per-kind Model の構築は各 provider が行う（Operation enum は持たない）。
+// 各 provider の Builder generator が共有する [DataAccessor] クラス走査。Model 型を持たず、クラス情報(ClassScan)と
+// 対象メソッド列挙(MatchedMethod)だけを提供する。partial 検査 SDA1001 / 重複検査 SDA1002 / [BindPrefix] マーカー解決 /
+// [TypeMap]・profile スコープを共有し、per-kind Model の構築は各 provider が行う(Operation enum は持たない)。
 // [DataAccessor] class scan shared by the providers' builder generators. It owns no model type; it only provides the class
 // info (ClassScan) and the target-method enumeration (MatchedMethod). The partial check SDA1001, duplicate check SDA1002,
 // [BindPrefix] marker resolution and [TypeMap]/profile scope are shared; per-kind model construction stays per provider (no Operation enum).
@@ -21,11 +21,11 @@ internal static class ClassScanner
 
     private const string BindPrefixAttributeName = "Smart.Data.Accessor.Attributes.BindPrefixAttribute";
 
-    // インクリメンタルステップ名（モデルがキャッシュ／再利用されたことをテストが観測するための名前）。全プロバイダー共通。
+    // インクリメンタルステップ名(モデルがキャッシュ／再利用されたことをテストが観測するための名前)。全プロバイダー共通。
     // The incremental step name (so tests can observe the model being cached / reused). Common to every provider.
     public const string TrackingName = "BuilderClassModel";
 
-    // クラスの名前空間・アクセシビリティ・partial 有無、[TypeMap] スコープ（class＋profile）、[BindPrefix]（assembly／class）を解決する。
+    // クラスの名前空間・アクセシビリティ・partial 有無、[TypeMap] スコープ(class＋profile)、[BindPrefix](assembly／class)を解決する。
     // Read the class namespace / accessibility / partial-ness, the [TypeMap] scope (class + profile) and [BindPrefix] (assembly / class).
     public static ClassScan ResolveClass(GeneratorAttributeSyntaxContext context)
     {
@@ -43,7 +43,7 @@ internal static class ClassScanner
         return new ClassScan(container, ns, container.Name, accessibility, isPartial, typeMaps, profile, assemblyMarker, classMarker);
     }
 
-    // 対象属性（targets）が付いたメソッドを列挙し (MatchedMethod, payload) を返す。payload は各 provider の per-kind 生成デリゲート。
+    // 対象属性(targets)が付いたメソッドを列挙し (MatchedMethod, payload) を返す。payload は各 provider の per-kind 生成デリゲート。
     // partial でなければ SDA1001、同一メソッドに複数の対象属性があれば SDA1002 を積んで除外する。
     // Enumerate methods carrying one of the target attributes, yielding (MatchedMethod, payload); the payload is each provider's
     // per-kind build delegate. Adds SDA1001 when the container is not partial, SDA1002 when one method carries multiple target attributes, and skips those.
@@ -59,7 +59,7 @@ internal static class ClassScanner
                 continue;
             }
 
-            // このメソッドに付いた対象属性を集める（複数一致＝同一メソッドへの重複指定）。
+            // このメソッドに付いた対象属性を集める(複数一致＝同一メソッドへの重複指定)。
             // Collect the target attributes present on this method (multiple matches = a duplicate specification on one method).
             var matchCount = 0;
             AttributeData? matchedAttribute = null;
@@ -110,7 +110,7 @@ internal static class ClassScanner
         }
     }
 
-    // [BindPrefix(marker)] のバインドマーカーを取り出す（無ければ null）。
+    // [BindPrefix(marker)] のバインドマーカーを取り出す(無ければ null)。
     // Extract the bind marker from [BindPrefix(marker)] (null when absent).
     private static char? ResolveBindMarker(ImmutableArray<AttributeData> attributes)
     {

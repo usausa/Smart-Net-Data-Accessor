@@ -8,7 +8,7 @@ using Smart.Data.Accessor.Shared.Builders;
 using SourceGenerateHelper;
 
 // PostgreSQL Builder の transform。共有 ClassScanner で走査し MethodResolver で解決、属性名→生成デリゲートの対応表で per-kind Model を
-// 構築する（Operation enum は持たない）。Postgres 固有の RETURNING 列読み取りと種別固有の診断はここで行う。
+// 構築する(Operation enum は持たない)。Postgres 固有の RETURNING 列読み取りと種別固有の診断はここで行う。
 // Transform for the PostgreSQL builder. Scans via the shared ClassScanner and resolves via MethodResolver, then builds the
 // per-kind model through an attribute-name → build-delegate table (no Operation enum). Postgres-specific RETURNING column reading and kind diagnostics happen here.
 internal static class PostgresModelBuilder
@@ -123,7 +123,7 @@ internal static class PostgresModelBuilder
         return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
     }
 
-    // Postgres 固有：属性の Returning 名前引数（RETURNING 句で返す列。カンマ区切り）を読む。未指定・空白は null。
+    // Postgres 固有：属性の Returning 名前引数(RETURNING 句で返す列。カンマ区切り)を読む。未指定・空白は null。
     // Postgres-specific: read the attribute's Returning named argument (columns for the RETURNING clause, comma-separated). Null when absent/blank.
     private static string? ReadReturningColumns(AttributeData attribute)
     {

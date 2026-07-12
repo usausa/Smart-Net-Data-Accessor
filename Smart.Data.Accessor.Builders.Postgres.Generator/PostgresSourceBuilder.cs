@@ -7,7 +7,7 @@ using Smart.Data.Accessor.Shared.Builders;
 
 using SourceGenerateHelper;
 
-// PostgreSQL Builder の emit：種別毎の SQL 組み立て（二重引用符、LIMIT/OFFSET、ON CONFLICT、RETURNING）。プリミティブは共有 SqlEmit。
+// PostgreSQL Builder の emit：種別毎の SQL 組み立て(二重引用符、LIMIT/OFFSET、ON CONFLICT、RETURNING)。プリミティブは共有 SqlEmit。
 // Emit for the PostgreSQL builder: per-kind SQL assembly (double-quote quoting, LIMIT/OFFSET, ON CONFLICT, RETURNING). Primitives via the shared SqlEmit.
 internal static class PostgresSourceBuilder
 {
@@ -46,7 +46,7 @@ internal static class PostgresSourceBuilder
         SqlEmit.CloseMethod(builder);
     }
 
-    // INSERT を組み立てる（RETURNING 句対応）。エンティティモードはエンティティ列（[DatabaseManaged] 除外）、パラメータモードはバインドパラメータ。
+    // INSERT を組み立てる(RETURNING 句対応)。エンティティモードはエンティティ列([DatabaseManaged] 除外)、パラメータモードはバインドパラメータ。
     // Build an INSERT (with RETURNING). Entity mode uses entity columns (excluding [DatabaseManaged]); parameter mode uses the bind parameters.
     private static void EmitInsert(SourceBuilder builder, PostgresInsertModel model)
     {
@@ -74,7 +74,7 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // UPDATE を組み立てる（RETURNING 句対応）。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティが無ければ "UPDATE T SET " のみ。
+    // UPDATE を組み立てる(RETURNING 句対応)。SET=非キー・非 [DatabaseManaged] 列、WHERE=[Key] 列。エンティティが無ければ "UPDATE T SET " のみ。
     // Build an UPDATE (with RETURNING). SET = non-key, non-[DatabaseManaged]; WHERE = [Key] columns. Without an entity it emits just "UPDATE T SET ".
     private static void EmitUpdate(SourceBuilder builder, PostgresUpdateModel model)
     {
@@ -125,7 +125,7 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // DELETE を組み立てる（RETURNING 句対応）。WHERE=バインドパラメータ（[Key] 列に対応付け）。
+    // DELETE を組み立てる(RETURNING 句対応)。WHERE=バインドパラメータ([Key] 列に対応付け)。
     // Build a DELETE (with RETURNING). WHERE = bind parameters (mapped to the key columns in order).
     private static void EmitDelete(SourceBuilder builder, PostgresDeleteModel model)
     {
@@ -158,7 +158,7 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // SELECT（全件）。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば LIMIT/OFFSET を付ける。
+    // SELECT(全件)。エンティティが無ければ SELECT *。あれば列を明示し、[Limit]/[Offset] があれば LIMIT/OFFSET を付ける。
     // Build a SELECT (all rows): SELECT * without an entity; otherwise list columns and append LIMIT/OFFSET when [Limit]/[Offset] are present.
     private static void EmitSelect(SourceBuilder builder, PostgresSelectModel model)
     {
@@ -194,7 +194,7 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // SELECT（単一行）。WHERE 句は [Key] 列に対応するバインドパラメータ。
+    // SELECT(単一行)。WHERE 句は [Key] 列に対応するバインドパラメータ。
     // Build a SELECT (single row): the WHERE clause uses bind parameters mapped to the [Key] columns.
     private static void EmitSelectSingle(SourceBuilder builder, PostgresSelectSingleModel model)
     {
@@ -275,7 +275,7 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // RETURNING 句を組み立てる。returningColumns（カンマ区切りの列名）を返す列として並べる。未指定なら空文字。
+    // RETURNING 句を組み立てる。returningColumns(カンマ区切りの列名)を返す列として並べる。未指定なら空文字。
     // Build the RETURNING clause from returningColumns (comma-separated column names). Empty when absent.
     private static string ReturningClause(string? returningColumns)
     {
@@ -293,11 +293,11 @@ internal static class PostgresSourceBuilder
         return " RETURNING " + String.Join(", ", parts.Select(Quote));
     }
 
-    // 識別子を二重引用符でクォートする（" は "" にエスケープ）。
+    // 識別子を二重引用符でクォートする(" は "" にエスケープ)。
     // Quote an identifier with double quotes (escaping " as "").
     private static string Quote(string identifier) => "\"" + identifier.Replace("\"", "\"\"") + "\"";
 
-    // LIMIT/OFFSET ページングを付加する（両者は独立）。
+    // LIMIT/OFFSET ページングを付加する(両者は独立)。
     // Append LIMIT/OFFSET paging (the two are independent).
     private static void AppendPaging(StringBuilder sql, string? limitMarker, string? offsetMarker)
     {
