@@ -28,7 +28,7 @@ internal static class MySqlModelBuilder
         (Ns + "TruncateAttribute", BuildTruncate),
         (Ns + "UpsertAttribute", BuildUpsert),
         (Ns + "ReplaceAttribute", BuildReplace),
-        (Ns + "InsertIgnoreAttribute", BuildInsertIgnore),
+        (Ns + "InsertIgnoreAttribute", BuildInsertIgnore)
     ];
 
     public static MySqlClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)

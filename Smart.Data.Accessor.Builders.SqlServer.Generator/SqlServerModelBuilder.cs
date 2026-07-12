@@ -26,7 +26,7 @@ internal static class SqlServerModelBuilder
         (Ns + "SelectAttribute", BuildSelect),
         (Ns + "SelectSingleAttribute", BuildSelectSingle),
         (Ns + "TruncateAttribute", BuildTruncate),
-        (Ns + "MergeAttribute", BuildMerge),
+        (Ns + "MergeAttribute", BuildMerge)
     ];
 
     public static SqlServerClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)

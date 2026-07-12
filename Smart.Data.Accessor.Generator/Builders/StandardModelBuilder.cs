@@ -26,7 +26,7 @@ internal static class StandardModelBuilder
         (Ns + "CountAttribute", BuildCount),
         (Ns + "SelectAttribute", BuildSelect),
         (Ns + "SelectSingleAttribute", BuildSelectSingle),
-        (Ns + "TruncateAttribute", BuildTruncate),
+        (Ns + "TruncateAttribute", BuildTruncate)
     ];
 
     public static StandardClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)

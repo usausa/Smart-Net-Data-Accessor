@@ -21,7 +21,7 @@ internal enum ParameterFlags
 {
     None = 0,
     Limit = 1,
-    Offset = 2,
+    Offset = 2
 }
 
 internal static class ParameterFlagsExtensions

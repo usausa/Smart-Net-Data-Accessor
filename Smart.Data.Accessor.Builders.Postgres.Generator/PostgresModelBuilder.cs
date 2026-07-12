@@ -26,7 +26,7 @@ internal static class PostgresModelBuilder
         (Ns + "SelectAttribute", BuildSelect),
         (Ns + "SelectSingleAttribute", BuildSelectSingle),
         (Ns + "TruncateAttribute", BuildTruncate),
-        (Ns + "UpsertAttribute", BuildUpsert),
+        (Ns + "UpsertAttribute", BuildUpsert)
     ];
 
     public static PostgresClassModel Build(GeneratorAttributeSyntaxContext context, CancellationToken cancellation)

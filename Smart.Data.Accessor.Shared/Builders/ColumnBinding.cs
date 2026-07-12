@@ -28,7 +28,7 @@ internal enum ColumnFlags
 {
     None = 0,
     Key = 1,
-    DatabaseManaged = 2,
+    DatabaseManaged = 2
 }
 
 internal static class ColumnFlagsExtensions
