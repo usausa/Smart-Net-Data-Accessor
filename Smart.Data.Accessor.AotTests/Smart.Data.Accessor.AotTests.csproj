@@ -37,7 +37,6 @@
        the native smoke. D-1 (built-in) and D-2 (M.E.DI) are fully AOT-clean. The warnings are NOT
        suppressed (left visible by policy). -->
 
-  <!-- spec §3.2: pull **\Sql\*.sql into AdditionalFiles so the generator resolves SQL by filename. -->
   <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

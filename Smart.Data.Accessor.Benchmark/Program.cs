@@ -6,6 +6,11 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        BenchmarkSwitcher.FromTypes([typeof(QueryBenchmark), typeof(ConverterBindingBenchmark), typeof(ExecuteHelperBenchmark), typeof(MappingStrategyBenchmark), typeof(OrdinalResolutionBenchmark), typeof(OrdinalResolutionMissBenchmark), typeof(DapperComparisonBenchmark)]).Run(args);
+        BenchmarkSwitcher.FromTypes([
+            typeof(QueryBenchmark),
+            typeof(ConverterBindingBenchmark),
+            typeof(ExecuteHelperBenchmark),
+            typeof(MappingStrategyBenchmark),
+            typeof(DapperComparisonBenchmark)]).Run(args);
     }
 }

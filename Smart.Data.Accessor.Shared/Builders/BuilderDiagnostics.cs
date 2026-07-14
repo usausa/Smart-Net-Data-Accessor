@@ -11,7 +11,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor InvalidContainer = new(
         id: "SDA1001",
         title: "Invalid container class",
-        messageFormat: "A QueryBuilder attribute ([Insert]/[Update]/…) must be on a method in a partial class, class=[{0}]",
+        messageFormat: "A QueryBuilder attribute ([Insert]/[Update]/…) must be on a method in a partial class. class=[{0}].",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -19,7 +19,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor QueryBuilderDuplicated = new(
         id: "SDA1002",
         title: "Multiple QueryBuilder attributes on one method",
-        messageFormat: "Method=[{0}]: more than one QueryBuilder attribute ([Insert]/[Update]/…) is present; only one is allowed",
+        messageFormat: "More than one QueryBuilder attribute ([Insert]/[Update]/…) is present; only one is allowed. method=[{0}].",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -27,7 +27,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor MissingTable = new(
         id: "SDA1003",
         title: "QueryBuilder attribute needs an entity type or a table name",
-        messageFormat: "Method=[{0}]: the QueryBuilder attribute specifies neither an entity type ([Insert(typeof(T))]) nor a table name ([Insert(Table = \"...\")])",
+        messageFormat: "The QueryBuilder attribute specifies neither an entity type ([Insert(typeof(T))]) nor a table name ([Insert(Table = \"...\")]). method=[{0}].",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -36,7 +36,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor SelectColumnsUnresolvable = new(
         id: "SDA1004",
         title: "Builder columns cannot be determined without an entity type",
-        messageFormat: "Method=[{0}]: this QueryBuilder needs an entity type (typeof(T)) to determine the column list",
+        messageFormat: "This QueryBuilder needs an entity type (typeof(T)) to determine the column list. method=[{0}].",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -45,7 +45,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor NoKeyForBuilder = new(
         id: "SDA1005",
         title: "Entity has no [Key] for the builder's WHERE/ON clause",
-        messageFormat: "Entity '{0}' has no property marked [Key]; the QueryBuilder cannot build its WHERE/ON clause for method=[{1}]",
+        messageFormat: "The entity has no property marked [Key]; the QueryBuilder cannot build its WHERE/ON clause. method=[{1}], type=[{0}].",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -53,7 +53,7 @@ internal static class BuilderDiagnostics
     public static readonly DiagnosticDescriptor TypeMapTypeHandlerConflict = new(
         id: "SDA1006",
         title: "[TypeMap] DbType conflicts with [TypeHandler]",
-        messageFormat: "[TypeMap] for type '{1}' on class=[{0}] declares a DbType that conflicts with [TypeHandler<>] on property '{2}'; [TypeHandler] takes precedence",
+        messageFormat: "[TypeMap] declares a DbType that conflicts with [TypeHandler<>] on the property; [TypeHandler] takes precedence. class=[{0}], type=[{1}], property=[{2}].",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

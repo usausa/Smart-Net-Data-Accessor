@@ -18,10 +18,6 @@
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- spec §3.2 / Sprint F #41: pull `**\$(SmartDataAccessor_SqlFolder)\*.sql`
-       (default folder name `Sql`) into AdditionalFiles via the .targets that
-       Smart.Data.Accessor ships in buildTransitive/. Direct <Import> mirrors
-       what NuGet consumers get automatically. -->
   <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

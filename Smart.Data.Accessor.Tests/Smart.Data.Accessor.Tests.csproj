@@ -27,7 +27,6 @@
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- Pull **\Sql\*.sql into AdditionalFiles so the generator resolves SQL by filename (spec §3.2). -->
   <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>
