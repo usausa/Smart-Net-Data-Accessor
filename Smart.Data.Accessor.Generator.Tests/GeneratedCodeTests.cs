@@ -340,18 +340,140 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
 
-        // From はリーダー列を 1 回走査(GetName + 完全一致 switch、default で大小無視フォールバック)。欠落列は -1 のまま
-        // (GetOrdinal は使わない＝欠落列で throw しない)。
-        // From scans the reader's columns once (GetName + exact switch, case-insensitive fallback in default);
-        // an absent column stays -1 (GetOrdinal, which throws on a missing column, is not used).
-        Assert.Contains("var __ord0 = -1;", text, StringComparison.Ordinal);
-        Assert.Contains("switch (__name)", text, StringComparison.Ordinal);
-        Assert.Contains("global::System.StringComparison.OrdinalIgnoreCase", text, StringComparison.Ordinal);
+        // __From はリーダー列を 1 回走査し、事前構築の static FrozenDictionary(OrdinalIgnoreCase、列名→グループ id)で
+        // 大小無視の照合を行う(SQL 識別子と同じ扱い、先勝ち)。欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で
+        // throw しない)。全グループ解決後は走査を打ち切る。
+        // __From scans the reader's columns once, matching case-insensitively via a prebuilt static FrozenDictionary
+        // (OrdinalIgnoreCase, column name → group id; SQL-identifier-like, first match wins); an absent column stays
+        // -1 (GetOrdinal, which throws on a missing column, is not used). The scan stops once every group is resolved.
+        Assert.Contains("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(", text, StringComparison.Ordinal);
+        Assert.Contains("global::System.StringComparer.OrdinalIgnoreCase", text, StringComparison.Ordinal);
+        Assert.Contains("[\"Id\"] = 0,", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[2]", text, StringComparison.Ordinal);
+        Assert.Contains("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 2) break;", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
         // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
         // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
         Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
         Assert.Contains("if (o.Name >= 0) entity.Name =", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InitOnlyAndRequiredPropertiesAssignInsideInitializer()
+    {
+        // init-only / required プロパティは初期化子外で代入できない(CS8852/CS9035)ため、行マッパーは
+        // `new T { ... }` 内でガード付き三項により設定する(欠落列は default!)。settable プロパティは従来どおり
+        // 存在列のみ文形式で設定する。
+        // Init-only / required properties cannot be assigned outside an object initialiser (CS8852/CS9035), so the row
+        // mapper sets them inside `new T { ... }` with a guarded conditional (absent columns receive default!).
+        // Plain settable properties keep the statement form assigned only when present.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public long Id { get; init; }
+                public required string Name { get; set; }
+                public int Age { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age from T")).AllGeneratedText;
+
+        Assert.Contains("Id = o.Id < 0 ? default! : (", text, StringComparison.Ordinal);
+        Assert.Contains("Name = o.Name < 0 ? default! : (", text, StringComparison.Ordinal);
+        Assert.Contains("if (o.Age >= 0) entity.Age =", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("entity.Id =", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("entity.Name =", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void QueryOverloadsShareOrdinalStructAndMapper()
+    {
+        // 同名オーバーロードでも序数 struct / 行マッパーは (要素型 × 列リスト) 単位で 1 度だけ emit され共有される
+        // (旧来のメソッド名由来の命名では CS0102/CS0111 の重複定義になっていた)。
+        // Same-name overloads share the ordinal struct / row mapper emitted once per (element type, column list)
+        // (method-name-derived naming used to produce duplicate definitions, CS0102/CS0111).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+
+                [Query]
+                [MethodName("ListAsync")]
+                public partial Task<IReadOnlyList<Row>> List(DbConnection con, CancellationToken cancel);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.List", "select Id from T"),
+            ("Accessor.ListAsync", "select Id from T")).AllGeneratedText;
+
+        Assert.Equal(1, CountOccurrences(text, "private readonly struct __RowOrdinals"));
+        Assert.Equal(1, CountOccurrences(text, "private static global::Row __MapRow("));
+        Assert.Equal(2, CountOccurrences(text, "__RowOrdinals.__From(__reader)"));
+    }
+
+    [Fact]
+    public void RecordIgnoredPositionalParameterReceivesDefault()
+    {
+        // record 主コンストラクタの [property: Ignore] 引数はマップ対象外だが ctor には必須のため、
+        // 行マッパーは default! を渡す(省略すると CS7036 で生成コードが壊れる)。
+        // A [property: Ignore] positional parameter is unmapped but still required by the ctor, so the row mapper
+        // passes default! (omitting the argument would break the generated code with CS7036).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed record Row(long Id, [property: Ignore] string Temp);
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("Temp: default!", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("o.Temp", text, StringComparison.Ordinal);
+    }
+
+    private static int CountOccurrences(string text, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+        return count;
     }
 
     [Fact]

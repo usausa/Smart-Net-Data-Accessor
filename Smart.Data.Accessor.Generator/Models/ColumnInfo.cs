@@ -18,4 +18,12 @@ internal sealed record ColumnInfo(
     ConverterReadBinding? Converter = null,
     // intermediate bit-preserving cast inserted between the enum cast and the (signed) reader for
     // unsigned / sbyte enum underlyings — e.g. "uint" → (MyEnum)(uint)reader.GetInt32(ordinal).
-    string? EnumUnderlyingCastFullName = null);
+    string? EnumUnderlyingCastFullName = null,
+    // true when the property is init-only or required: it cannot be assigned outside an object
+    // initializer, so the row mapper sets it inside `new T { ... }` (an absent column receives
+    // default!, like a record primary-constructor argument).
+    bool RequiresInitOnlySet = false,
+    // record primary-constructor parameter excluded by [property: Ignore]: it is not mapped (no
+    // ordinal field, no case arm) but the ctor still requires the argument, so the row mapper
+    // passes default!.
+    bool Ignored = false);

@@ -14,6 +14,9 @@ public sealed partial class BenchmarkAccessor
     public partial IReadOnlyList<BenchWideRow> QueryWide(DbConnection con);
 
     [Query]
+    public partial IReadOnlyList<BenchWideRecord> QueryWideRecord(DbConnection con);
+
+    [Query]
     public partial IReadOnlyList<BenchEnumRow> QueryWithEnum(DbConnection con);
 
     [Query]

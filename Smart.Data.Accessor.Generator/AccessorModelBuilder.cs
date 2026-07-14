@@ -772,6 +772,19 @@ internal static class AccessorModelBuilder
                 var (columns, ctorPath) = BuildColumnInfos(diagnostics, member, mapTarget, classSymbol, profileSymbol);
                 queryColumns = columns;
                 useRecordPrimaryCtor = ctorPath;
+                // SDA0312: マッピング可能な列が 1 つも無い要素型（スカラー要素・全プロパティ get-only/[Ignore] 等）は
+                // Query として成立しない。生成コードが未定義参照で壊れる前にモデル層で弾く。
+                // SDA0312: an element type with no mappable columns (scalar element, all get-only/[Ignore] properties, ...)
+                // cannot be queried; reject in the model layer before the emit would produce broken references.
+                if (!columns.Any(static x => !x.Ignored))
+                {
+                    diagnostics.Add(new DiagnosticInfo(
+                        Diagnostics.QueryElementHasNoMappableColumns,
+                        member.Locations.FirstOrDefault(),
+                        member.Name,
+                        mapTarget.Name));
+                    continue;
+                }
                 if (ctorPath)
                 {
                     // record の primary ctor パスが選択されたことをユーザーに知らせる。
@@ -1499,18 +1512,28 @@ internal static class AccessorModelBuilder
             var constructorInfos = new List<ColumnInfo>();
             foreach (var param in primaryCtor.Parameters)
             {
+                var parameterTypeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 var property = entity.GetMembers(param.Name).OfType<IPropertySymbol>().FirstOrDefault();
                 if (property is null)
                 {
+                    // 対応プロパティの無い主 ctor 引数はマップ不能だが、ctor 呼び出しには引数が必須のため
+                    // Ignored エントリとして保持し、行マッパーが default! を渡す（省略すると CS7036 で生成コードが壊れる）。
+                    // A primary-ctor parameter without a matching property cannot be mapped, but the ctor call still
+                    // requires the argument: keep an Ignored entry so the row mapper passes default! (omitting it
+                    // would break the generated code with CS7036).
+                    constructorInfos.Add(new ColumnInfo(param.Name, param.Name, parameterTypeName, null, null, Ignored: true));
                     continue;
                 }
                 var propertyAttributes = property.GetAttributes();
                 var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property);
                 if (isIgnored)
                 {
+                    // [property: Ignore] の位置引数も同様に Ignored エントリとして保持する（default! を渡す）。
+                    // A positional parameter with [property: Ignore] is likewise kept as an Ignored entry (default! is passed).
+                    constructorInfos.Add(new ColumnInfo(param.Name, column, parameterTypeName, null, null, Ignored: true));
                     continue;
                 }
-                var typeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var typeName = parameterTypeName;
                 var (typedReader, enumCast, enumUnderlyingCast) = ClassifyColumnType(param.Type);
                 var skipNullCheck = propertyAttributes.Any(x => x.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName)
                     || param.GetAttributes().Any(x => x.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
@@ -1542,7 +1565,12 @@ internal static class AccessorModelBuilder
             var skipNullCheck = propertyAttributes.Any(x => x.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
             var converter = ResolveConverterBinding(property, property.Type);
             CheckNonNullableDbNull(property.Type, name, skipNullCheck, converter);
-            infos.Add(new ColumnInfo(name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+            // init-only / required プロパティはオブジェクト初期化子内でしか設定できないため、行マッパーは
+            // `new T { ... }` 側で設定する（欠落列は default!。settable プロパティの「設定しない」とは異なる）。
+            // An init-only / required property can only be set inside an object initializer, so the row mapper
+            // assigns it in `new T { ... }` (an absent column receives default!, unlike plain settable properties).
+            var requiresInitOnlySet = property.SetMethod.IsInitOnly || property.IsRequired;
+            infos.Add(new ColumnInfo(name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast, requiresInitOnlySet));
         }
         return (infos, false);
     }

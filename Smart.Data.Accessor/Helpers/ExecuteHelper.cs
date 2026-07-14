@@ -95,6 +95,12 @@ public static class ExecuteHelper
     // avoid the boxed enumerator of the IEnumerable<T> interface path.
     public static void AddInParameters<T>(StringBuilder sb, DbCommand cmd, string namePrefix, IEnumerable<T>? values, DbType? type = null)
     {
+        if (values is null)
+        {
+            sb.Append("(NULL)");
+            return;
+        }
+
         // Parameter-name digits are formatted into a stack buffer and concatenated in a single
         // allocation per name (no intermediate index string, no interpolation-handler pool churn).
         Span<char> digits = stackalloc char[10];
@@ -109,30 +115,16 @@ public static class ExecuteHelper
             }
             for (var i = 0; i < count; i++)
             {
-                sb.Append(i == 0 ? '(' : ',');
-                i.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
-                var parameterName = String.Concat(namePrefix, "_", digits[..written]);
-                AddInParameter(cmd, parameterName, list[i], type);
-                sb.Append(parameterName);
+                AppendInParameter(sb, cmd, namePrefix, digits, i, list[i], type);
             }
             sb.Append(')');
-            return;
-        }
-
-        if (values is null)
-        {
-            sb.Append("(NULL)");
             return;
         }
 
         var index = 0;
         foreach (var value in values)
         {
-            sb.Append(index == 0 ? '(' : ',');
-            index.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
-            var parameterName = String.Concat(namePrefix, "_", digits[..written]);
-            AddInParameter(cmd, parameterName, value, type);
-            sb.Append(parameterName);
+            AppendInParameter(sb, cmd, namePrefix, digits, index, value, type);
             index++;
         }
         if (index == 0)
@@ -141,6 +133,18 @@ public static class ExecuteHelper
             return;
         }
         sb.Append(')');
+    }
+
+    // Emits one IN-list item: the separator (or the opening parenthesis for the first item), the
+    // positional parameter name ({namePrefix}_{index}, single allocation), the bind, and the marker.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AppendInParameter<T>(StringBuilder sb, DbCommand cmd, string namePrefix, Span<char> digits, int index, T value, DbType? type)
+    {
+        sb.Append(index == 0 ? '(' : ',');
+        index.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
+        var parameterName = String.Concat(namePrefix, "_", digits[..written]);
+        AddInParameter(cmd, parameterName, value, type);
+        sb.Append(parameterName);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -66,17 +66,19 @@ public sealed class BenchEnumRow
 }
 
 // 10-column record (positional / constructor-based) for the mapping-strategy PoC benchmark.
+// [property: NotNullColumn] mirrors BenchWideRow so the generated record path also skips IsDBNull,
+// keeping the record-vs-class comparison apples-to-apples (isolates ctor vs object-initializer).
 public sealed record BenchWideRecord(
-    long Id,
-    string Name,
-    int Age,
-    double Score,
-    bool Active,
-    int Status,
-    string Description,
-    int Category,
-    string Tag,
-    double Weight);
+    [property: NotNullColumn] long Id,
+    [property: NotNullColumn] string Name,
+    [property: NotNullColumn] int Age,
+    [property: NotNullColumn] double Score,
+    [property: NotNullColumn] bool Active,
+    [property: NotNullColumn] int Status,
+    [property: NotNullColumn] string Description,
+    [property: NotNullColumn] int Category,
+    [property: NotNullColumn] string Tag,
+    [property: NotNullColumn] double Weight);
 
 // GetValue<T> fallback: uint has no DbDataReader typed getter, so reads go through
 // ExecuteHelper.GetValue<uint> (per-row type coercion when the column arrives as long).

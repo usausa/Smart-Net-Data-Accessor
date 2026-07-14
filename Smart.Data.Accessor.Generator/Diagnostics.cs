@@ -345,6 +345,14 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor QueryElementHasNoMappableColumns = new(
+        id: "SDA0312",
+        title: "Query element type has no mappable columns",
+        messageFormat: "Element type '{1}' of method=[{0}] has no mappable columns (public settable/init property or record primary-constructor parameter)",
+        category: "Mapping",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     // ==================================================================
     // SDA04xx — SQL-file resolution
     // ==================================================================

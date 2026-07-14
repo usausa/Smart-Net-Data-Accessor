@@ -14,16 +14,17 @@ using Dapper;
 
 using Smart.Mock.Data;
 
-// PoC: 行マッピング戦略の比較(現行 / Dapper / 新方式=reader 主導 plan)。
+// PoC: 行マッピング戦略の比較。F18 採用判断に使った履歴的ベンチで、各手書きメソッドが戦略を再現する。
 //
-//  * 現行：プロパティ宣言順に GetOrdinal(名前) を 1 回解決し、型付き直接読みを直線展開。
-//          全列そろう場合のみ動作(列不足は GetOrdinal が throw)。
-//  * 新方式：reader の列を 0..FieldCount で走査し「列→プロパティ」plan を stackalloc に構築、
-//          行ループは plan の switch dispatch。列不足・順序変更・余剰列に耐性。昇順読みなので
-//          SequentialAccess も安全。
+//  * Manual straight-line / Current-style：旧方式(GetOrdinal 直線展開)の再現。全列そろう場合のみ動作。
+//  * ReaderDriven：reader の列を走査し「列→プロパティ」plan を stackalloc に構築、行ループは plan の
+//          switch dispatch(不採用案。per-row の間接ジャンプで全一致 2.3 倍劣化)。
+//  * PropertyGuard：直線展開＋存在ガード(採用案 F18 の原型)。
+//  * Current (generated)：**生成コードの現状**。F18 実装後は PropertyGuard 系(列名照合・欠落 -1・存在ガード)
+//          であり旧 GetOrdinal 方式ではない。部分列(Subset)でも throw せず動作する。
 //
 // シナリオ：全一致(10プロパティ/10列) と 部分列(10プロパティ/2列)。class(settable) と record(ctor)。
-// 部分列では現行は throw するため除外し、Dapper / 新方式 / 手書き最小 を比較する。
+// 旧方式ベースラインの実測値は __docs/benchmark-results.md(2026-07 マッピング戦略 PoC)の記録を参照。
 //
 // Run: dotnet run -c Release --project Smart.Data.Accessor.Benchmark -- --filter *MappingStrategyBenchmark*
 public class MappingConfig : ManualConfig

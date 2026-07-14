@@ -43,6 +43,7 @@ SDA0308 | Mapping  | Error    | Converter TClr does not match property type
 SDA0309 | Mapping  | Error    | Converter type does not implement IValueConverter<,>
 SDA0310 | Mapping  | Error    | Converter type missing static FromDb/ToDb implementation
 SDA0311 | Mapping  | Warning  | Multiple [TypeHandler] on same property
+SDA0312 | Mapping  | Error    | Query element type has no mappable columns
 SDA0401 | Usage    | Error    | SQL file not found & Builder not specified
 SDA0402 | Usage    | Error    | SQL file name collision
 SDA0403 | Usage    | Error    | [DirectSql] method must not have a corresponding SQL file

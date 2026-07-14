@@ -72,15 +72,19 @@ public sealed class DiagnosticTests
     [Fact]
     public void SqlNotFoundWhenNoSqlAndNoBuilder()
     {
+        // 要素型はマッピング可能にしておく(int だと SDA0312 が先に発火して SQL 解決に到達しない)。
+        // Keep the element type mappable (an int element would fire SDA0312 before SQL resolution is reached).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
 
             [DataAccessor]
             internal sealed partial class Accessor
             {
                 [Query]
-                public partial IReadOnlyList<int> Query();
+                public partial IReadOnlyList<Row> Query();
             }
             """;
 
@@ -280,6 +284,31 @@ public sealed class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
         Assert.Contains(diagnostics, x => x.Id == "SDA0302");
+    }
+
+    [Fact]
+    public void QueryElementHasNoMappableColumns()
+    {
+        // [Query] の要素型にマッピング可能な列(public settable/init プロパティ・record 主 ctor 引数)が無い場合は
+        // SDA0312 で弾く(旧来は生成コードが未定義参照 CS0103 で壊れていた)。
+        // A [Query] element type with no mappable columns (public settable/init property or record primary-ctor
+        // parameter) is rejected with SDA0312 (previously the generated code broke with undefined references, CS0103).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<string> List(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.List", "select Name from Data"));
+
+        Assert.Contains(diagnostics, x => x.Id == "SDA0312");
     }
 
     [Fact]

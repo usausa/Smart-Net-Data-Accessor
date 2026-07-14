@@ -94,6 +94,63 @@ public sealed class ColumnMappingTest
     }
 
     [Fact]
+    public void InitOnlyPropertiesReceiveDefaultWhenColumnMissing()
+    {
+        // init-only は `new T { ... }` 内でしか設定できないため、欠落列は default! になる(初期化子 "unset" は保持されない)。
+        // settable な Age は従来どおり未設定＝初期値保持。
+        using var con = new MockDbConnection();
+        con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
+            [new MockColumn(typeof(long), "Id")],
+            Rows([5L]))));
+
+        var accessor = new MappingAccessor();
+        var list = accessor.QueryInitEntities(con);
+
+        Assert.Single(list);
+        Assert.Equal(5L, list[0].Id);
+        Assert.Null(list[0].Name);
+        Assert.Equal(-1, list[0].Age);
+    }
+
+    [Fact]
+    public void OverloadedQueryMethodsShareMapping()
+    {
+        // 同名オーバーロード(同一エンティティ・同一列リスト)が共有 struct / マッパーで動作する。
+        using var con = new MockDbConnection();
+        con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
+            [
+                new MockColumn(typeof(long), "Id"),
+                new MockColumn(typeof(string), "Name"),
+                new MockColumn(typeof(int), "Age")
+            ],
+            Rows([1L, "Alice", 20]))));
+
+        var accessor = new MappingAccessor();
+        var list = accessor.QueryEntities(con, 20);
+
+        Assert.Single(list);
+        Assert.Equal("Alice", list[0].Name);
+        Assert.Equal(20, list[0].Age);
+    }
+
+    [Fact]
+    public void RecordIgnoredParameterReceivesDefault()
+    {
+        // [property: Ignore] の位置引数はマップされず default(null)が渡る。
+        using var con = new MockDbConnection();
+        con.SetupCommand(static cmd => cmd.SetupResult(new MockDataReader(
+            [new MockColumn(typeof(long), "Id")],
+            Rows([3L]))));
+
+        var accessor = new MappingAccessor();
+        var list = accessor.QueryIgnoredRecords(con);
+
+        Assert.Single(list);
+        Assert.Equal(3L, list[0].Id);
+        Assert.Null(list[0].Temp);
+    }
+
+    [Fact]
     public void RecordMissingColumnsReceiveDefaults()
     {
         // record 主コンストラクタは全引数必須のため、欠落列の引数は default になる(string は null)。
