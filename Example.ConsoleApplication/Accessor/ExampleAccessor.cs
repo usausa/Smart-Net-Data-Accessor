@@ -58,7 +58,13 @@ internal sealed partial class ExampleAccessor
     public partial DbDataReader QueryReader();
 
     [DirectSql]
+    [Execute]
     public partial int ExecuteDirect(string sql, [Direction(ParameterDirection.Output)] out int rows);
+
+    // Inline 2-way SQL (F19): SQL テキストを属性コンストラクタに記述し、.sql ファイルと同じパイプラインで処理する。
+    [Query]
+    [Sql("SELECT * FROM Data WHERE Type >= /*@ minType */0 ORDER BY Id")]
+    public partial IReadOnlyList<DataEntity> QueryByTypeInline(int minType);
 
     [Count(typeof(DataEntity), Table = "Data")]
     [ExecuteScalar]

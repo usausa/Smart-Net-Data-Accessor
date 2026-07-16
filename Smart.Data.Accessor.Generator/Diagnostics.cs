@@ -162,6 +162,25 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    public static readonly DiagnosticDescriptor SqlAndCommandSourceConflict = new(
+        id: "SDA0107",
+        title: "[Sql] cannot be combined with another command source",
+        messageFormat: "[Sql] cannot be combined with another command-source attribute ([DirectSql] / [Procedure] / QueryBuilder). method=[{0}].",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    // 実行種別属性(A 群)は生成マーカーであり必須。コマンドソース属性(B 群)は実行種別を既定しない。
+    // The execution-kind attribute (A-group) is the generation marker and mandatory; command-source
+    // attributes (B-group) never default it.
+    public static readonly DiagnosticDescriptor ExecutionKindMissing = new(
+        id: "SDA0108",
+        title: "Execution-kind attribute required",
+        messageFormat: "A command-source attribute ([Sql] / [DirectSql] / [Procedure] / QueryBuilder) is present but the execution-kind attribute ([Execute] / [ExecuteScalar] / [ExecuteReader] / [Query] / [QueryFirst]) is missing. method=[{0}].",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     // ==================================================================
     // SDA02xx — parameter / direction
     // ==================================================================
@@ -244,6 +263,14 @@ internal static class Diagnostics
         messageFormat: "The command-text string parameter on a [DirectSql] method cannot be annotated with [Direction]. method=[{0}], parameter=[{1}].",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SqlTextEmpty = new(
+        id: "SDA0212",
+        title: "[Sql] text is empty",
+        messageFormat: "[Sql] has an empty SQL text. method=[{0}].",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
     // ==================================================================
@@ -394,6 +421,14 @@ internal static class Diagnostics
         title: "Both SQL file and a QueryBuilder attribute are present",
         messageFormat: "Both a SQL file and a QueryBuilder attribute ([Insert]/[Update]/…) are present; resolution is ambiguous. method=[{0}], file=[{1}].",
         category: "Builder",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor SqlHasSqlFile = new(
+        id: "SDA0406",
+        title: "[Sql] method must not have a corresponding SQL file",
+        messageFormat: "[Sql] is set but a corresponding SQL file also exists. method=[{0}], file=[{1}].",
+        category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 

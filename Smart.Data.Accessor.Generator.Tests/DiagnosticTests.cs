@@ -312,6 +312,39 @@ public sealed class DiagnosticTests
     }
 
     [Fact]
+    public void QueryScalarPrimitiveReportsUnsupportedReturnInBothSyncAndAsync()
+    {
+        // スカラー形(単一プリミティブ)の誤 Query は sync/async とも SDA0301 に揃える([ExecuteScalar] を使うべきケース)。
+        // SDA0312 はコレクション要素が非マップ型の場合に限る。
+        // A scalar-shaped misuse of Query (single primitive) reports SDA0301 in both sync and async (the user should
+        // use [ExecuteScalar]); SDA0312 is reserved for an unmappable collection element.
+        const string source = """
+            using System.Threading.Tasks;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial string GetSync(DbConnection con);
+
+                [Query]
+                [MethodName("GetAsync")]
+                public partial Task<string> GetAsync(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(
+            source,
+            ("Accessor.GetSync", "select Name from Data"),
+            ("Accessor.GetAsync", "select Name from Data"));
+
+        Assert.Equal(2, diagnostics.Count(x => x.Id == "SDA0301"));
+        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0312");
+    }
+
+    [Fact]
     public void ExecuteReaderInvalidReturn()
     {
         const string source = """
@@ -395,6 +428,7 @@ public sealed class DiagnosticTests
             {
                 [Procedure("sp_Foo")]
                 [DirectSql]
+                [Execute]
                 public partial int Go(string sql);
             }
             """;
@@ -402,6 +436,126 @@ public sealed class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         Assert.Contains(diagnostics, x => x.Id == "SDA0104");
+    }
+
+    [Fact]
+    public void SqlAndCommandSourceConflict()
+    {
+        // SDA0107: [Sql] は他のコマンドソース([DirectSql] / [Procedure] / QueryBuilder 属性)と併用できない。
+        // SDA0107: [Sql] cannot be combined with another command source ([DirectSql] / [Procedure] / QueryBuilder).
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Sql("select 1")]
+                [DirectSql]
+                [Execute]
+                public partial int WithDirect(DbConnection con, string sql);
+
+                [Sql("select 1")]
+                [Procedure("usp")]
+                [Execute]
+                public partial int WithProcedure(DbConnection con);
+
+                [Sql("select 1")]
+                [Insert(typeof(Entity), Table = "Data")]
+                [Execute]
+                public partial int WithBuilder(DbConnection con, Entity entity);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Equal(3, diagnostics.Count(x => x.Id == "SDA0107"));
+    }
+
+    [Fact]
+    public void ExecutionKindMissingForCommandSourceAttributes()
+    {
+        // SDA0108: 実行種別属性(A 群)は生成マーカーであり必須。B 群(ソース)属性は実行種別を既定しない
+        // (旧仕様の [Procedure]/[DirectSql] → Execute 既定は撤回)。
+        // SDA0108: the execution-kind attribute (A-group) is the generation marker and mandatory; source
+        // attributes never default it (the former [Procedure]/[DirectSql] → Execute default is withdrawn).
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Procedure("usp")]
+                public partial int ProcOnly(DbConnection con);
+
+                [DirectSql]
+                public partial int DirectOnly(DbConnection con, string sql);
+
+                [Sql("select 1")]
+                public partial int InlineOnly(DbConnection con);
+
+                [Insert(typeof(Entity), Table = "Data")]
+                public partial int BuilderOnly(DbConnection con, Entity entity);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Equal(4, diagnostics.Count(x => x.Id == "SDA0108"));
+    }
+
+    [Fact]
+    public void SqlTextEmpty()
+    {
+        // SDA0212: [Sql("")] テキストが空 → 警告。
+        // SDA0212: [Sql("")] empty SQL text -> warning.
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Sql("")]
+                public partial int Touch(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Contains(diagnostics, x => x.Id == "SDA0212");
+    }
+
+    [Fact]
+    public void SqlHasSqlFile()
+    {
+        // SDA0406: [Sql] は対応する .sql ファイルを持ってはならない(ファイルが黙って無視され食い違う罠を防ぐ)。
+        // SDA0406: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                [Sql("select Id from Data")]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.List", "select Id from Data"));
+
+        Assert.Contains(diagnostics, x => x.Id == "SDA0406");
     }
 
     // ---- Builders generator (SDB) -----------------------------------------------------------

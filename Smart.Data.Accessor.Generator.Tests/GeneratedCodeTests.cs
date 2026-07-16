@@ -195,7 +195,7 @@ public sealed class GeneratedCodeTests
         var text = result.AllGeneratedText;
 
         Assert.Contains("global::TicksConverter.FromDb(reader.GetInt64(o.Created))", text, StringComparison.Ordinal);
-        Assert.Contains("IsDBNull(o.Created) ? default! : global::TicksConverter.FromDb(", text, StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(o.Created) ? default(global::System.DateTime)! : global::TicksConverter.FromDb(", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -323,12 +323,72 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void OrdinalResolutionToleratesMissingColumns()
     {
+        // 3 グループ(閾値超え)＝FrozenDictionary 形。narrow(1〜2 グループ)の直比較形は
+        // NarrowEntityOrdinalResolutionUsesDirectComparison で検証する。
+        // Three groups (above the threshold) = the FrozenDictionary form; the narrow (1-2 group) direct-comparison
+        // form is covered by NarrowEntityOrdinalResolutionUsesDirectComparison.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
             using Smart.Data.Accessor.Attributes;
 
-            internal sealed class Row { public long Id { get; set; } public string Name { get; set; } = string.Empty; }
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+                public string Name { get; set; } = string.Empty;
+                public int Age { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age from T")).AllGeneratedText;
+
+        // __From はリーダー列を 1 回走査し、事前構築の static FrozenDictionary(OrdinalIgnoreCase、列名→グループ id)で
+        // 大小無視の照合を行う(SQL 識別子と同じ扱い、先勝ち)。欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で
+        // throw しない)。全グループ解決後は走査を打ち切る。
+        // __From scans the reader's columns once, matching case-insensitively via a prebuilt static FrozenDictionary
+        // (OrdinalIgnoreCase, column name → group id; SQL-identifier-like, first match wins); an absent column stays
+        // -1 (GetOrdinal, which throws on a missing column, is not used). The scan stops once every group is resolved.
+        Assert.Contains("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(", text, StringComparison.Ordinal);
+        Assert.Contains("global::System.StringComparer.OrdinalIgnoreCase", text, StringComparison.Ordinal);
+        Assert.Contains("[\"Id\"] = 0,", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[3]", text, StringComparison.Ordinal);
+        Assert.Contains("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 3) break;", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
+        // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
+        // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
+        Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
+        Assert.Contains("if (o.Name >= 0) entity.Name =", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NarrowEntityOrdinalResolutionUsesDirectComparison()
+    {
+        // グループ数 1〜2 の narrow エンティティは FrozenDictionary を使わず String.Equals(OrdinalIgnoreCase) の
+        // 直比較で解決する(実測で 1 列 exact 11 倍高速・static 辞書と型初期化子も不要。benchmark-results.md
+        // 2026-07 narrow PoC)。意味論は同一：大小無視・先勝ち・欠落列 -1・全解決で走査打ち切り。
+        // A narrow entity (1-2 groups) resolves via direct String.Equals(OrdinalIgnoreCase) comparisons instead of
+        // the FrozenDictionary (measured 11x faster for 1-column exact, and the static dictionary + type initializer
+        // disappear; see benchmark-results.md, 2026-07 narrow PoC). Semantics are identical: case-insensitive,
+        // first match wins, absent columns stay -1, and the scan stops on full resolution.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+                public string Name { get; set; } = string.Empty;
+            }
 
             [DataAccessor]
             internal sealed partial class Accessor
@@ -340,35 +400,26 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name from T")).AllGeneratedText;
 
-        // __From はリーダー列を 1 回走査し、事前構築の static FrozenDictionary(OrdinalIgnoreCase、列名→グループ id)で
-        // 大小無視の照合を行う(SQL 識別子と同じ扱い、先勝ち)。欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で
-        // throw しない)。全グループ解決後は走査を打ち切る。
-        // __From scans the reader's columns once, matching case-insensitively via a prebuilt static FrozenDictionary
-        // (OrdinalIgnoreCase, column name → group id; SQL-identifier-like, first match wins); an absent column stays
-        // -1 (GetOrdinal, which throws on a missing column, is not used). The scan stops once every group is resolved.
-        Assert.Contains("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(", text, StringComparison.Ordinal);
-        Assert.Contains("global::System.StringComparer.OrdinalIgnoreCase", text, StringComparison.Ordinal);
-        Assert.Contains("[\"Id\"] = 0,", text, StringComparison.Ordinal);
-        Assert.Contains("stackalloc int[2]", text, StringComparison.Ordinal);
-        Assert.Contains("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
-        Assert.Contains("if (__resolved == 2) break;", text, StringComparison.Ordinal);
+        Assert.Contains("var __ord0 = -1;", text, StringComparison.Ordinal);
+        Assert.Contains("var __ord1 = -1;", text, StringComparison.Ordinal);
+        Assert.Contains("if ((__ord0 < 0) && global::System.String.Equals(__name, \"Id\", global::System.StringComparison.OrdinalIgnoreCase))", text, StringComparison.Ordinal);
+        Assert.Contains("else if ((__ord1 < 0) && global::System.String.Equals(__name, \"Name\", global::System.StringComparison.OrdinalIgnoreCase))", text, StringComparison.Ordinal);
+        Assert.Contains("if ((__ord1 >= 0)) break;", text, StringComparison.Ordinal);
+        Assert.Contains("return new(__ord0, __ord1);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("stackalloc", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
-        // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
-        // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
-        Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
-        Assert.Contains("if (o.Name >= 0) entity.Name =", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void InitOnlyAndRequiredPropertiesAssignInsideInitializer()
     {
         // init-only / required プロパティは初期化子外で代入できない(CS8852/CS9035)ため、行マッパーは
-        // `new T { ... }` 内でガード付き三項により設定する(欠落列は default!)。settable プロパティは従来どおり
-        // 存在列のみ文形式で設定する。
+        // `new T { ... }` 内でガード付き三項により設定する(欠落列は default(プロパティ型))。settable プロパティは
+        // 従来どおり存在列のみ文形式で設定する。
         // Init-only / required properties cannot be assigned outside an object initialiser (CS8852/CS9035), so the row
-        // mapper sets them inside `new T { ... }` with a guarded conditional (absent columns receive default!).
-        // Plain settable properties keep the statement form assigned only when present.
+        // mapper sets them inside `new T { ... }` with a guarded conditional (absent columns receive a property-typed
+        // default). Plain settable properties keep the statement form assigned only when present.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -391,8 +442,8 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age from T")).AllGeneratedText;
 
-        Assert.Contains("Id = o.Id < 0 ? default! : (", text, StringComparison.Ordinal);
-        Assert.Contains("Name = o.Name < 0 ? default! : (", text, StringComparison.Ordinal);
+        Assert.Contains("Id = o.Id < 0 ? default(long)! : (", text, StringComparison.Ordinal);
+        Assert.Contains("Name = o.Name < 0 ? default(string)! : (", text, StringComparison.Ordinal);
         Assert.Contains("if (o.Age >= 0) entity.Age =", text, StringComparison.Ordinal);
         Assert.DoesNotContain("entity.Id =", text, StringComparison.Ordinal);
         Assert.DoesNotContain("entity.Name =", text, StringComparison.Ordinal);
@@ -462,6 +513,255 @@ public sealed class GeneratedCodeTests
 
         Assert.Contains("Temp: default!", text, StringComparison.Ordinal);
         Assert.DoesNotContain("o.Temp", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RecordIgnoredParameterWithDefaultValueOmitsArgument()
+    {
+        // 宣言既定値を持つ [property: Ignore] 引数は名前付き引数ごと省略され、宣言既定値が生きる
+        // (default! を渡すと宣言既定値が null 等で上書きされてしまう)。
+        // An [property: Ignore] parameter with a declared default value omits the named argument entirely so the
+        // declared default applies (passing default! would override it with null etc.).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed record Row(long Id, [property: Ignore] string Temp, [property: Ignore] string Source = "db");
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("Temp: default!", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Source:", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenericElementTypeProducesValidGeneratedNames()
+    {
+        // ジェネリック要素型では型引数を除いた短名で命名する('<' '>' や型引数内の '.' が識別子に混入すると
+        // 生成コードがコンパイル不能になる)。閉じたジェネリック同士は連番で一意化される。
+        // A generic element type derives names from the short name with type arguments stripped ('<' '>' or dots
+        // inside type arguments would make the generated identifiers uncompilable). Distinct closed generics are
+        // uniqued with a numeric suffix.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Wrapper<T>
+            {
+                public long Id { get; set; }
+                public T Value { get; set; } = default!;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Wrapper<int>> ListInt(DbConnection con);
+
+                [Query]
+                public partial IReadOnlyList<Wrapper<long>> ListLong(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.ListInt", "select Id, Value from T"),
+            ("Accessor.ListLong", "select Id, Value from T")).AllGeneratedText;
+
+        Assert.Contains("private readonly struct __WrapperOrdinals", text, StringComparison.Ordinal);
+        Assert.Contains("private readonly struct __Wrapper1Ordinals", text, StringComparison.Ordinal);
+        Assert.Contains("private static global::Wrapper<int> __MapWrapper(", text, StringComparison.Ordinal);
+        Assert.Contains("private static global::Wrapper<long> __MapWrapper1(", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("<int>Ordinals", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RequiredUnmappedClassMembersReceiveDefaultInInitializer()
+    {
+        // マップ対象外の required メンバ([Ignore] 付き・非 public)も初期化子で default! を設定する
+        // (設定しないと生成コードが CS9035 でコンパイル不能。required は包含型と同等以上の可視性が
+        // 言語規則で保証されるため、同一アセンブリの生成コードから常に設定できる)。
+        // Required members excluded from mapping ([Ignore] / non-public) still receive default! inside the
+        // initializer (otherwise the generated code breaks with CS9035; required members are at least as visible
+        // as the containing type, so same-assembly generated code can always assign them).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+
+                [Ignore]
+                public required string Secret { get; set; }
+
+                internal required string Hidden { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("Secret = default!,", text, StringComparison.Ordinal);
+        Assert.Contains("Hidden = default!,", text, StringComparison.Ordinal);
+        Assert.Contains("if (o.Id >= 0) entity.Id", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("o.Secret", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("o.Hidden", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RecordNonPositionalRequiredMemberReceivesDefaultInInitializer()
+    {
+        // record 主 ctor 外(非位置)の required メンバはマップ対象外だが、ctor 呼び出し後の初期化子で
+        // default! を設定する(設定しないと CS9035 で生成コードが壊れる)。
+        // A required member outside the record primary ctor (non-positional) is unmapped, but the trailing
+        // initializer sets default! (otherwise the generated code breaks with CS9035).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed record Row(long Id)
+            {
+                public required string Name { get; init; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains(") { Name = default! };", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Name: ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("o.Name", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OrdinalStructCtorAssignsFieldsWithThisQualifier()
+    {
+        // 序数 struct の ctor 代入は this. 修飾する：p{n} と同名のプロパティ(＝フィールド p{n})があっても
+        // パラメータに隠蔽されず、フィールドへ正しく代入される(無修飾だとパラメータ自己代入で列 0 を誤読)。
+        // Ordinal-struct ctor assignments are this.-qualified: a property named p{n} (= field p{n}) is not
+        // shadowed by the parameter (unqualified assignment would self-assign the parameter and misread column 0).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public int p1 { get; set; }
+                public long Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select p1, Id from T")).AllGeneratedText;
+
+        Assert.Contains("this.p1 = p0;", text, StringComparison.Ordinal);
+        Assert.Contains("this.Id = p1;", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DerivedGeneratedNamesAvoidCrossCollision()
+    {
+        // 一意化は短名単位ではなく生成識別子全体で行う：エンティティ "MapFoo" の struct(__MapFooOrdinals)と
+        // エンティティ "FooOrdinals" のマッパー(__MapFooOrdinals)が交差衝突するため、後者は連番になる。
+        // Uniquing runs across ALL generated identifiers, not per short name: entity "MapFoo"'s struct
+        // (__MapFooOrdinals) and entity "FooOrdinals"'s mapper (__MapFooOrdinals) cross-collide, so the latter
+        // takes a numeric suffix.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class MapFoo { public long Id { get; set; } }
+
+            internal sealed class FooOrdinals { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<MapFoo> ListA(DbConnection con);
+
+                [Query]
+                public partial IReadOnlyList<FooOrdinals> ListB(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.ListA", "select Id from T"),
+            ("Accessor.ListB", "select Id from T")).AllGeneratedText;
+
+        Assert.Contains("private readonly struct __MapFooOrdinals", text, StringComparison.Ordinal);
+        Assert.Contains("private static global::MapFoo __MapMapFoo(", text, StringComparison.Ordinal);
+        Assert.Contains("private readonly struct __FooOrdinals1Ordinals", text, StringComparison.Ordinal);
+        Assert.Contains("private static global::FooOrdinals __MapFooOrdinals1(", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StructInternalNamesAvoidPropertyNameCollision()
+    {
+        // struct 内部名(__Columns / __From)はフィールド名＝プロパティ名と衝突し得るため、衝突時は連番になる
+        // (無対策だと CS0102 の重複定義で生成コードが壊れる)。
+        // Struct-internal names (__Columns / __From) can collide with field names (= property names); a collision
+        // takes a numeric suffix (otherwise the generated code breaks with duplicate definitions, CS0102).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+                public int __Columns { get; set; }
+                public int __From { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, __Columns, __From from T")).AllGeneratedText;
+
+        Assert.Contains("FrozenDictionary<string, int> __Columns1 =", text, StringComparison.Ordinal);
+        Assert.Contains("if (__Columns1.TryGetValue(reader.GetName(__i)", text, StringComparison.Ordinal);
+        Assert.Contains(" __From1(global::System.Data.Common.DbDataReader reader)", text, StringComparison.Ordinal);
+        Assert.Contains("__RowOrdinals.__From1(__reader)", text, StringComparison.Ordinal);
     }
 
     private static int CountOccurrences(string text, string value)
@@ -582,6 +882,7 @@ public sealed class GeneratedCodeTests
             internal sealed partial class Accessor
             {
                 [DirectSql]
+                [Execute]
                 public partial int Exec(DbConnection con, string sql, int id);
             }
             """;
@@ -590,6 +891,63 @@ public sealed class GeneratedCodeTests
 
         Assert.Contains("cmd.CommandText = sql;", text, StringComparison.Ordinal);
         Assert.Contains("AddInParameter(cmd, \"@id\", id", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InlineSqlStaticEmitsCommandTextLiteral()
+    {
+        // [Sql]: インライン 2-way SQL。静的 SQL は .sql ファイル方式と同じく CommandText リテラル直埋めになり、
+        // raw string literal の改行はトークナイザが空白 1 個に正規化する。SQL ファイルは不要。
+        // [Sql]: inline 2-way SQL. Static SQL embeds a CommandText literal exactly like the .sql-file form;
+        // newlines in the raw string literal are normalised to single spaces by the tokenizer. No SQL file needed.
+        const string source = """"
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } public string Name { get; set; } = string.Empty; }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                [Sql("""
+                    SELECT Id, Name FROM Data
+                    ORDER BY Id
+                    """)]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """";
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.CommandText = \"SELECT Id, Name FROM Data ORDER BY Id\";", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("StringBuilderPool", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InlineSqlDynamicBindsParametersAndBranches()
+    {
+        // [Sql] の 2-way ディレクティブ(/*% */ 条件分岐・/*@ */ バインド)もファイル方式と同一の動的 emit になる。
+        // 2-way directives in [Sql] (/*% */ branches, /*@ */ binds) take the same dynamic emit as the file form.
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Sql("update Data set Touched = 1 /*% if (id != null) { */ where Id = /*@ id */0 /*% } */")]
+                public partial int Touch(int? id);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
+        Assert.Contains("if (id != null) {", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(cmd, \"@p0\", id", text, StringComparison.Ordinal);
+        Assert.Contains("cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -699,6 +1057,7 @@ public sealed class GeneratedCodeTests
                 public long Id { get; set; }
                 public Status St { get; set; }
                 public int? Age { get; set; }
+                public Status? Kind { get; set; }
             }
 
             [DataAccessor]
@@ -709,11 +1068,14 @@ public sealed class GeneratedCodeTests
             }
             """;
 
-        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, St, Age from T")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, St, Age, Kind from T")).AllGeneratedText;
 
-        // enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード。
+        // enum 列は underlying へキャスト。Nullable 列は IsDBNull ガード付きで、default はプロパティ型で型付けされる。
+        // 三項式の自然型は typed アーム側に決まるため、素の default! だと DB NULL が int? へ 0 として入ってしまう。
         Assert.Contains("(global::Status)reader.GetInt32(", text, StringComparison.Ordinal);
-        Assert.Contains("IsDBNull(o.Age)", text, StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(o.Age) ? default(int?)! : ", text, StringComparison.Ordinal);
+        Assert.Contains("IsDBNull(o.Kind) ? default(global::Status?)! : ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(" ? default! : ", text, StringComparison.Ordinal);
     }
 
     [Fact]

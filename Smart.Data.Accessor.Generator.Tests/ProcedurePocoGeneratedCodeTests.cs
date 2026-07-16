@@ -92,6 +92,7 @@ public sealed class ProcedurePocoGeneratedCodeTests
             internal sealed partial class Accessor
             {
                 [DirectSql]
+                [Execute]
                 public partial void Run(string sql, Bag bag);
             }
             """;

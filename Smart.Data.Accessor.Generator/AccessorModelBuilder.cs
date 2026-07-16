@@ -23,6 +23,7 @@ internal static class AccessorModelBuilder
     private const string ExecuteScalarAttributeName = "Smart.Data.Accessor.Attributes.ExecuteScalarAttribute";
     private const string ExecuteReaderAttributeName = "Smart.Data.Accessor.Attributes.ExecuteReaderAttribute";
     private const string DirectSqlAttributeName = "Smart.Data.Accessor.Attributes.DirectSqlAttribute";
+    private const string SqlAttributeName = "Smart.Data.Accessor.Attributes.SqlAttribute";
     private const string QueryAttributeName = "Smart.Data.Accessor.Attributes.QueryAttribute";
     private const string QueryFirstAttributeName = "Smart.Data.Accessor.Attributes.QueryFirstAttribute";
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
@@ -136,6 +137,31 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
+            if (method.InlineSqlText is not null)
+            {
+                // SDA0406: [Sql] は対応する .sql を持ってはならない(ファイルが黙って無視され食い違う罠を防ぐ)。
+                // SDA0406: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
+                if (sqlMap.ContainsKey(sqlKey))
+                {
+                    diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
+                    continue;
+                }
+                // インラインのテキストを .sql と同じ 2-way パイプラインへ。SQL 解析診断は属性引数(SQL リテラル)を指す。
+                // Feed the inline text into the same 2-way pipeline as a .sql file; SQL-parse diagnostics point at the
+                // attribute argument (the SQL literal).
+                var (inlineCode, inlineStaticSql, inlineStaticParam, inlineOutputBindings, inlineUsings) =
+                    BuildSqlEmitCode(diagnostics, method.Name, method.InlineSqlLocation ?? method.Location, method.Parameters, method.InlineSqlText, method.BindMarker);
+                keptMethods.Add(method with
+                {
+                    SqlEmitCode = inlineCode,
+                    StaticSqlText = inlineStaticSql,
+                    StaticParameterCode = inlineStaticParam,
+                    OutputBindings = new EquatableArray<OutputBinding>(inlineOutputBindings.ToArray()),
+                    Usings = new EquatableArray<UsingDirective>(inlineUsings.ToArray())
+                });
+                continue;
+            }
+
             if (isDirectSql)
             {
                 // SDA0403: [DirectSql] は対応する .sql を持ってはならない。
@@ -197,7 +223,10 @@ internal static class AccessorModelBuilder
             }
             var referencedInSql = sqlMap.Any(x =>
                 x.Key.StartsWith(sqlKeyPrefix, StringComparison.Ordinal) &&
-                StringHelper.ContainsWholeWordIdentifier(x.Value, inject.Name));
+                StringHelper.ContainsWholeWordIdentifier(x.Value, inject.Name))
+                || keptMethods.Any(x =>
+                    (x.InlineSqlText is not null) &&
+                    StringHelper.ContainsWholeWordIdentifier(x.InlineSqlText, inject.Name));
             if (!referencedInSql)
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.InjectNotReferenced, model.Location, model.ClassName, inject.Name));
@@ -285,6 +314,8 @@ internal static class AccessorModelBuilder
             string? builder = null;
             string? sqlAlias = null;
             string? procedureName = null;
+            string? inlineSql = null;
+            LocationInfo? inlineSqlLocation = null;
             var isDirectSql = false;
             // SDA0103: 実行種別属性(A 群)は排他なので出現回数を数える。
             // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
@@ -350,7 +381,6 @@ internal static class AccessorModelBuilder
                     (attribute.ConstructorArguments[0].Value is string procName))
                 {
                     procedureName = procName;
-                    methodType ??= MethodType.Execute;
                     // SDA0204: [Procedure("")] 手続き名が空 → 警告。
                     // SDA0204: [Procedure("")] empty stored procedure name -> warning.
                     if (String.IsNullOrEmpty(procName))
@@ -361,21 +391,50 @@ internal static class AccessorModelBuilder
                             member.Name));
                     }
                 }
+                else if ((fullName == SqlAttributeName) &&
+                    (attribute.ConstructorArguments.Length > 0) &&
+                    (attribute.ConstructorArguments[0].Value is string sqlText))
+                {
+                    // [Sql]: インライン 2-way SQL。テキストは .sql ファイルと同じパイプラインで処理する。
+                    // 診断位置には属性の第 1 引数(SQL リテラル)を捕捉し、SQL 解析エラー(SDA05xx)が
+                    // メソッド宣言ではなく SQL 記述箇所を指すようにする。
+                    // [Sql]: inline 2-way SQL, processed by the same pipeline as a .sql file. Capture the
+                    // attribute's first argument (the SQL literal) as the location so SQL-parse diagnostics
+                    // (SDA05xx) point at the SQL text instead of the method declaration.
+                    inlineSql = sqlText;
+                    var attributeSyntax = attribute.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax;
+                    var argumentLocation = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault()?.GetLocation();
+                    inlineSqlLocation = argumentLocation is not null ? LocationInfo.CreateFrom(argumentLocation) : null;
+                    // SDA0212: [Sql("")] テキストが空 → 警告。
+                    // SDA0212: [Sql("")] empty SQL text -> warning.
+                    if (String.IsNullOrEmpty(sqlText))
+                    {
+                        diagnostics.Add(new DiagnosticInfo(
+                            Diagnostics.SqlTextEmpty,
+                            member.Locations.FirstOrDefault(),
+                            member.Name));
+                    }
+                }
             }
 
-            // [DirectSql] は SQL ファイル探索を省略する。conn/tx/cancellation を除いた最初の string 引数が実行時に cmd.CommandText を供給する。
-            // [DirectSql] short-circuits SQL file lookup; the first `string` parameter (after connection/transaction/cancellation)
-            // supplies cmd.CommandText at runtime.
-            // 実行種別を上書きせず、明示の A 群属性が無ければ Execute を既定にする(DirectSql×Query / ×ExecuteReader も成立)。
-            // Does NOT override the execution kind; absent an explicit A-group attribute it defaults to Execute
-            // (so DirectSql×Query / ×ExecuteReader are valid).
-            if (isDirectSql)
-            {
-                methodType ??= MethodType.Execute;
-            }
-
+            // SDA0108: B 群(コマンドソース)属性があるのに A 群(実行種別)属性が無い。実行種別は「この partial
+            // メソッドに実装を生成する」というマーカーであり必須。ソース属性は実行種別を既定しない
+            // (旧仕様の [Procedure]/[DirectSql] → Execute 既定は撤回。DirectSql×Query 等の直交組み合わせは
+            // 明示併用でのみ成立する)。A 群も B 群も無いメソッドは生成対象外の通常メソッドとして無視する。
+            // SDA0108: a command-source (B-group) attribute is present but no execution-kind (A-group) attribute.
+            // The execution kind is the marker that says "generate the implementation for this partial method" and
+            // is mandatory; source attributes never default it (the former [Procedure]/[DirectSql] → Execute
+            // default is withdrawn — orthogonal combinations such as DirectSql×Query require explicit pairing).
+            // A method with neither group is ignored as a plain non-generated method.
             if (methodType is null)
             {
+                if (isDirectSql || (procedureName is not null) || (builder is not null) || (inlineSql is not null))
+                {
+                    diagnostics.Add(new DiagnosticInfo(
+                        Diagnostics.ExecutionKindMissing,
+                        member.Locations.FirstOrDefault(),
+                        member.Name));
+                }
                 continue;
             }
 
@@ -408,6 +467,19 @@ internal static class AccessorModelBuilder
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.BuilderAndCommandSourceConflict,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
+                continue;
+            }
+
+            // SDA0107: [Sql] は他のコマンドソース([DirectSql] / [Procedure] / QueryBuilder 属性)と併用できない(B 群排他。
+            // SQL ファイル併用は SDA0406)。
+            // SDA0107: [Sql] cannot be combined with another command source ([DirectSql] / [Procedure] / QueryBuilder
+            // attribute) — B-group exclusivity; the SQL-file combination is SDA0406.
+            if ((inlineSql is not null) && (isDirectSql || (procedureName is not null) || (builder is not null)))
+            {
+                diagnostics.Add(new DiagnosticInfo(
+                    Diagnostics.SqlAndCommandSourceConflict,
                     member.Locations.FirstOrDefault(),
                     member.Name));
                 continue;
@@ -1013,7 +1085,9 @@ internal static class AccessorModelBuilder
                 scalarConverterName,
                 scalarConverterDbType,
                 mapsProcedureReturnValue,
-                member.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null));
+                member.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null,
+                inlineSql,
+                inlineSqlLocation));
         }
 
         if (methods.Count == 0)
@@ -1338,7 +1412,12 @@ internal static class AccessorModelBuilder
                         return ReturnShape.TaskList;
                     }
                     scalarName = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    elementSymbol = arg as INamedTypeSymbol;
+                    // 同期スカラー分岐と同様、プリミティブ(SpecialType 集合)は elementSymbol を null に保つ：
+                    // スカラー形の誤 Query は sync/async とも SDA0301 に揃える(非マップ型のコレクション要素は SDA0312)。
+                    // As in the sync scalar branch, primitives (the SpecialType set) keep elementSymbol null so a
+                    // scalar-shaped misuse of Query reports SDA0301 in both sync and async (an unmappable collection
+                    // element reports SDA0312).
+                    elementSymbol = arg.SpecialType == SpecialType.None ? arg as INamedTypeSymbol : null;
                     elementName = scalarName;
                     return ReturnShape.TaskScalar;
                 }
@@ -1358,7 +1437,9 @@ internal static class AccessorModelBuilder
                         return ReturnShape.TaskList;
                     }
                     scalarName = arg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    elementSymbol = arg as INamedTypeSymbol;
+                    // TaskScalar 分岐と同じ：プリミティブは elementSymbol を null に保ち SDA0301 へ揃える。
+                    // Same as the TaskScalar branch: primitives keep elementSymbol null and align on SDA0301.
+                    elementSymbol = arg.SpecialType == SpecialType.None ? arg as INamedTypeSymbol : null;
                     elementName = scalarName;
                     return ReturnShape.ValueTaskScalar;
                 }
@@ -1518,19 +1599,23 @@ internal static class AccessorModelBuilder
                 {
                     // 対応プロパティの無い主 ctor 引数はマップ不能だが、ctor 呼び出しには引数が必須のため
                     // Ignored エントリとして保持し、行マッパーが default! を渡す（省略すると CS7036 で生成コードが壊れる）。
+                    // 宣言既定値を持つ引数は HasDefaultValue で引数自体を省略し、宣言既定値を生かす。
                     // A primary-ctor parameter without a matching property cannot be mapped, but the ctor call still
                     // requires the argument: keep an Ignored entry so the row mapper passes default! (omitting it
-                    // would break the generated code with CS7036).
-                    constructorInfos.Add(new ColumnInfo(param.Name, param.Name, parameterTypeName, null, null, Ignored: true));
+                    // would break the generated code with CS7036). A parameter with a declared default value sets
+                    // HasDefaultValue so the argument is omitted entirely and the declared default applies.
+                    constructorInfos.Add(new ColumnInfo(param.Name, param.Name, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
                     continue;
                 }
                 var propertyAttributes = property.GetAttributes();
                 var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property);
                 if (isIgnored)
                 {
-                    // [property: Ignore] の位置引数も同様に Ignored エントリとして保持する（default! を渡す）。
-                    // A positional parameter with [property: Ignore] is likewise kept as an Ignored entry (default! is passed).
-                    constructorInfos.Add(new ColumnInfo(param.Name, column, parameterTypeName, null, null, Ignored: true));
+                    // [property: Ignore] の位置引数も同様に Ignored エントリとして保持する（default! を渡す。
+                    // 宣言既定値があれば引数省略）。
+                    // A positional parameter with [property: Ignore] is likewise kept as an Ignored entry (default!
+                    // is passed; with a declared default value the argument is omitted).
+                    constructorInfos.Add(new ColumnInfo(param.Name, column, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
                     continue;
                 }
                 var typeName = parameterTypeName;
@@ -1541,6 +1626,19 @@ internal static class AccessorModelBuilder
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
                 constructorInfos.Add(new ColumnInfo(param.Name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
+            // 主 ctor 外（非位置）の required メンバはマップ対象外だが、初期化子で設定しないと生成コードが
+            // CS9035 で壊れるため、Ignored + RequiresInitOnlySet エントリとして保持し行マッパーが default! を設定する。
+            // A required member outside the primary ctor (non-positional) is not mapped, but the generated code
+            // breaks with CS9035 unless the initializer sets it: keep an Ignored + RequiresInitOnlySet entry so
+            // the row mapper assigns default!.
+            foreach (var property in entity.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (!property.IsRequired || primaryCtor.Parameters.Any(x => x.Name == property.Name))
+                {
+                    continue;
+                }
+                constructorInfos.Add(BuildUnmappedRequiredColumn(property));
+            }
             return (constructorInfos, true);
         }
 
@@ -1549,14 +1647,29 @@ internal static class AccessorModelBuilder
         {
             if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.SetMethod is null))
             {
+                // 非 public の required メンバはマップしないが、初期化子で default! を設定しないと生成コードが
+                // CS9035 で壊れる（required は包含型と同等以上の可視性が言語規則で保証されるため、同一アセンブリの
+                // 生成コードから常に設定できる）。
+                // A non-public required member is not mapped, but the generated code breaks with CS9035 unless the
+                // initializer sets default! (required members are at least as visible as their containing type, so
+                // the generated code in the same assembly can always assign them).
+                if (property.IsRequired)
+                {
+                    infos.Add(BuildUnmappedRequiredColumn(property));
+                }
                 continue;
             }
             var propertyAttributes = property.GetAttributes();
             var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property);
-            // [Ignore] は現在どこでも「除外」を意味する。
-            // [Ignore] now means exclude everywhere.
+            // [Ignore] は現在どこでも「除外」を意味する。ただし required メンバは設定しないと CS9035 になるため
+            // default! の設定だけは行う。
+            // [Ignore] now means exclude everywhere; a required member still receives default! (CS9035 otherwise).
             if (isIgnored)
             {
+                if (property.IsRequired)
+                {
+                    infos.Add(BuildUnmappedRequiredColumn(property));
+                }
                 continue;
             }
             var name = property.Name;
@@ -1566,14 +1679,29 @@ internal static class AccessorModelBuilder
             var converter = ResolveConverterBinding(property, property.Type);
             CheckNonNullableDbNull(property.Type, name, skipNullCheck, converter);
             // init-only / required プロパティはオブジェクト初期化子内でしか設定できないため、行マッパーは
-            // `new T { ... }` 側で設定する（欠落列は default!。settable プロパティの「設定しない」とは異なる）。
+            // `new T { ... }` 側で設定する（欠落列は default(プロパティ型)。settable プロパティの「設定しない」とは異なる）。
             // An init-only / required property can only be set inside an object initializer, so the row mapper
-            // assigns it in `new T { ... }` (an absent column receives default!, unlike plain settable properties).
+            // assigns it in `new T { ... }` (an absent column receives a property-typed default, unlike plain settable properties).
             var requiresInitOnlySet = property.SetMethod.IsInitOnly || property.IsRequired;
             infos.Add(new ColumnInfo(name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast, requiresInitOnlySet));
         }
         return (infos, false);
     }
+
+    // マップ対象外だが設定必須の required メンバ（[Ignore]・非 public・record 非位置）: 序数・読み取りを持たない
+    // Ignored + RequiresInitOnlySet エントリで、行マッパーが初期化子内で default! を設定する（CS9035 回避）。
+    // A required member excluded from mapping ([Ignore] / non-public / record non-positional): an Ignored +
+    // RequiresInitOnlySet entry with no ordinal or read; the row mapper assigns default! inside the initializer
+    // (avoiding CS9035).
+    private static ColumnInfo BuildUnmappedRequiredColumn(IPropertySymbol property) =>
+        new(
+            property.Name,
+            property.Name,
+            property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            null,
+            null,
+            RequiresInitOnlySet: true,
+            Ignored: true);
 
     // CLR プロパティ型を具体的な DbDataReader.GetXxx メソッドへ対応付ける。組み込みの高速パスが無ければ null を返す
     // (その場合 emit は ExecuteHelper.GetValue<T> にフォールバックする)。Nullable<T> はアンラップし、基底型でディスパッチする。
@@ -1845,7 +1973,8 @@ internal static class AccessorModelBuilder
         {
             var name = attribute.AttributeClass?.ToDisplayString();
             if (name is ExecuteAttributeName or ExecuteScalarAttributeName or ExecuteReaderAttributeName
-                or QueryAttributeName or QueryFirstAttributeName or DirectSqlAttributeName or ProcedureAttributeName)
+                or QueryAttributeName or QueryFirstAttributeName or DirectSqlAttributeName or ProcedureAttributeName
+                or SqlAttributeName)
             {
                 return true;
             }

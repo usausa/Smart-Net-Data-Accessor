@@ -158,51 +158,13 @@ internal static class AccessorSourceBuilder
         builder.BeginScope();
         EmitConstructor(builder, model);
 
-        // Query メソッドの (要素型 × 列リスト × ctor パス) 毎に序数 struct と行マッパーを 1 度だけ生成して共有する。
-        // メソッド毎の複製を排除し、同名オーバーロードでも重複定義（CS0102/CS0111）にならない。名前は要素型の短名から
-        // 採り、列リストが異なる同短名セットには連番を付ける。
-        // Emit one ordinal struct + row mapper per distinct (element type, column list, ctor path) and share it across
-        // methods: removes per-method duplication, and same-name overloads no longer produce duplicate definitions
-        // (CS0102/CS0111). Names derive from the element type's short name, with a numeric suffix when distinct sets
-        // share a short name.
-        var methodMappings = new (string OrdinalsName, string MapperName)?[model.Methods.Count];
-        var mappingSets = new List<(string OrdinalsName, string MapperName, MethodModel Template)>();
-        var usedShortNames = new HashSet<string>(StringComparer.Ordinal);
-        for (var i = 0; i < model.Methods.Count; i++)
-        {
-            var method = model.Methods[i];
-            if ((method.QueryColumns is not { } columns) || (columns.Count == 0))
-            {
-                continue;
-            }
-            var sharedIndex = mappingSets.FindIndex(x =>
-                (x.Template.ElementTypeFullName == method.ElementTypeFullName) &&
-                (x.Template.UseRecordPrimaryConstructor == method.UseRecordPrimaryConstructor) &&
-                Equals(x.Template.QueryColumns, method.QueryColumns));
-            if (sharedIndex >= 0)
-            {
-                methodMappings[i] = (mappingSets[sharedIndex].OrdinalsName, mappingSets[sharedIndex].MapperName);
-                continue;
-            }
-            var shortName = ShortTypeName(method.ElementTypeFullName!);
-            var candidate = shortName;
-            var suffix = 1;
-            while (!usedShortNames.Add(candidate))
-            {
-                candidate = shortName + suffix.ToString(CultureInfo.InvariantCulture);
-                suffix++;
-            }
-            var ordinalsName = "__" + candidate + "Ordinals";
-            var mapperName = "__Map" + candidate;
-            methodMappings[i] = (ordinalsName, mapperName);
-            mappingSets.Add((ordinalsName, mapperName, method));
-        }
+        var (methodMappings, mappingSets) = BuildMethodMappings(model);
 
-        foreach (var (setOrdinalsName, setMapperName, setTemplate) in mappingSets)
+        foreach (var set in mappingSets)
         {
             builder.NewLine();
-            EmitOrdinalCacheStruct(builder, setOrdinalsName, setTemplate);
-            EmitRowMapperMethod(builder, setOrdinalsName, setMapperName, setTemplate);
+            EmitOrdinalCacheStruct(builder, set.OrdinalsName, set.FromName, set.Template);
+            EmitRowMapperMethod(builder, set.OrdinalsName, set.MapperName, set.Template);
         }
 
         for (var i = 0; i < model.Methods.Count; i++)
@@ -215,13 +177,145 @@ internal static class AccessorSourceBuilder
         return builder.ToString();
     }
 
-    // "global::Ns.Sub.DataEntity" → "DataEntity"（生成識別子用の短名）。
-    // "global::Ns.Sub.DataEntity" → "DataEntity" (short name for generated identifiers).
+    // Query メソッドが共有する序数 struct／行マッパー／__From の名前と emit 対象テンプレート。
+    // The shared ordinal struct / row mapper / __From names and the emit template for Query methods.
+    private sealed record MappingSet(string OrdinalsName, string MapperName, string FromName, MethodModel Template);
+
+    // Query メソッドの (要素型 × 列リスト × ctor パス) 毎に序数 struct と行マッパーを 1 度だけ生成して共有する。
+    // メソッド毎の複製を排除し、同名オーバーロードでも重複定義（CS0102/CS0111）にならない。名前は要素型の短名から
+    // 採り、衝突時は連番を付ける。一意化は短名単位ではなく生成識別子（struct 名・マッパー名）全体で行う：短名単位
+    // だと "MapFoo" の struct と "FooOrdinals" のマッパーが共に __MapFooOrdinals になる交差衝突を見逃す。struct 名は
+    // 内包フィールド名（＝プロパティ名）とも一致不可（CS0542）。__From はフィールド名と衝突し得るためセット毎に決める。
+    // Share one ordinal struct + row mapper per distinct (element type, column list, ctor path) across methods:
+    // removes per-method duplication, and same-name overloads no longer produce duplicate definitions
+    // (CS0102/CS0111). Names derive from the element type's short name with a numeric suffix on collision, uniqued
+    // across ALL generated identifiers (struct + mapper) — per-short-name tracking would miss cross collisions such
+    // as entity "MapFoo"'s struct vs entity "FooOrdinals"'s mapper, both "__MapFooOrdinals". A struct name also must
+    // not equal a contained field name (CS0542), and __From can collide with a field name, so it is chosen per set.
+    private static (MappingSet?[] MethodMappings, List<MappingSet> MappingSets) BuildMethodMappings(AccessorModel model)
+    {
+        var methodMappings = new MappingSet?[model.Methods.Count];
+        var mappingSets = new List<MappingSet>();
+        var setByKey = new Dictionary<(string ElementType, bool RecordCtor, EquatableArray<ColumnInfo> Columns), MappingSet>();
+        var usedGeneratedNames = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < model.Methods.Count; i++)
+        {
+            var method = model.Methods[i];
+            if ((method.QueryColumns is not { } columns) || (columns.Count == 0))
+            {
+                continue;
+            }
+            var key = (method.ElementTypeFullName!, method.UseRecordPrimaryConstructor, columns);
+            if (setByKey.TryGetValue(key, out var shared))
+            {
+                methodMappings[i] = shared;
+                continue;
+            }
+            var shortName = ShortTypeName(method.ElementTypeFullName!);
+            var candidate = shortName;
+            var suffix = 1;
+            string ordinalsName;
+            string mapperName;
+            while (true)
+            {
+                ordinalsName = "__" + candidate + "Ordinals";
+                mapperName = "__Map" + candidate;
+                if (!usedGeneratedNames.Contains(ordinalsName) &&
+                    !usedGeneratedNames.Contains(mapperName) &&
+                    !ContainsMappedPropertyName(columns, ordinalsName))
+                {
+                    usedGeneratedNames.Add(ordinalsName);
+                    usedGeneratedNames.Add(mapperName);
+                    break;
+                }
+                candidate = shortName + suffix.ToString(CultureInfo.InvariantCulture);
+                suffix++;
+            }
+            var set = new MappingSet(ordinalsName, mapperName, UniqueStructMemberName("__From", columns), method);
+            setByKey.Add(key, set);
+            mappingSets.Add(set);
+            methodMappings[i] = set;
+        }
+        return (methodMappings, mappingSets);
+    }
+
+    // "global::Ns.Sub.DataEntity" → "DataEntity"（生成識別子用の短名）。ジェネリック要素型では型引数リストを
+    // 除去してから最終セグメントを取る（型引数内の '.' に LastIndexOf が落ちて "Int32>" 等の不正識別子片を
+    // 切り出さないため）。@ エスケープ等の残る非識別子文字も落とし、常に有効な C# 識別子片を返す
+    // （閉じたジェネリック同士の一意化は呼び出し側の連番が行う）。
+    // "global::Ns.Sub.DataEntity" → "DataEntity" (short name for generated identifiers). For a generic element type
+    // the type-argument list is stripped before taking the last segment (LastIndexOf would otherwise land inside a
+    // type argument and cut an invalid fragment such as "Int32>"). Remaining non-identifier characters (@ escapes
+    // etc.) are dropped so the result is always a valid identifier fragment (closed generics sharing a name are
+    // uniqued by the caller's numeric suffix).
     private static string ShortTypeName(string typeFullName)
     {
-        var index = typeFullName.LastIndexOf('.');
-        var name = index >= 0 ? typeFullName[(index + 1)..] : typeFullName;
-        return name.StartsWith("global::", StringComparison.Ordinal) ? name["global::".Length..] : name;
+        var sb = new StringBuilder(typeFullName.Length);
+        var depth = 0;
+        foreach (var character in typeFullName)
+        {
+            if (character == '<')
+            {
+                depth++;
+            }
+            else if (character == '>')
+            {
+                depth--;
+            }
+            else if (depth == 0)
+            {
+                sb.Append(character);
+            }
+        }
+        var stripped = sb.ToString();
+        var index = stripped.LastIndexOf('.');
+        var name = index >= 0 ? stripped[(index + 1)..] : stripped;
+        if (name.StartsWith("global::", StringComparison.Ordinal))
+        {
+            name = name["global::".Length..];
+        }
+        sb.Clear();
+        foreach (var character in name)
+        {
+            if (Char.IsLetterOrDigit(character) || (character == '_'))
+            {
+                sb.Append(character);
+            }
+        }
+        if ((sb.Length == 0) || Char.IsDigit(sb[0]))
+        {
+            sb.Insert(0, "Entity");
+        }
+        return sb.ToString();
+    }
+
+    // 短名候補が非 Ignored 列のプロパティ名（＝序数 struct のフィールド名）と一致するかを判定する。
+    // Whether a candidate name equals a non-Ignored column's property name (= an ordinal-struct field name).
+    private static bool ContainsMappedPropertyName(EquatableArray<ColumnInfo> columns, string name)
+    {
+        foreach (var column in columns)
+        {
+            if (!column.Ignored && (column.PropertyName == name))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // struct 内部メンバ名（__From / __Columns）はフィールド名＝プロパティ名と衝突し得るため、衝突時は連番を付ける。
+    // Struct-internal member names (__From / __Columns) can collide with field names (= property names); append a
+    // numeric suffix on collision.
+    private static string UniqueStructMemberName(string baseName, EquatableArray<ColumnInfo> columns)
+    {
+        var name = baseName;
+        var suffix = 1;
+        while (ContainsMappedPropertyName(columns, name))
+        {
+            name = baseName + suffix.ToString(CultureInfo.InvariantCulture);
+            suffix++;
+        }
+        return name;
     }
 
     // アクセサのコンストラクタを生成する。Pattern B(接続を注入)なら IDbProvider / IDbProviderSelector フィールドを、[Inject] があれば
@@ -353,7 +447,7 @@ internal static class AccessorSourceBuilder
     // Emit one method's partial implementation in order: the OrdinalCache struct, the signature, connection acquisition
     // (Pattern A/B), (for reader shapes) a try/catch that safely disposes cmd/connection, SQL + parameter setup, the
     // invocation, and (for non-reader shapes) cleanup.
-    private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName, (string OrdinalsName, string MapperName)? mapping)
+    private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName, MappingSet? mapping)
     {
         var paramList = String.Join(", ", method.Parameters.Select(x =>
         {
@@ -524,7 +618,7 @@ internal static class AccessorSourceBuilder
                 // 静的 SQL の高速経路：動的分岐が無いので StringBuilderPool / try-finally を使わず CommandText リテラルとパラメータ設定を直接出す。
                 // Static SQL fast path: with no dynamic branches, emit the literal CommandText and parameter setup directly,
                 // without StringBuilderPool / try-finally.
-                builder.Indent().Append("cmd.CommandText = \"").Append(EscapeCSharpString(method.StaticSqlText)).Append("\";").NewLine();
+                builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(method.StaticSqlText)).Append(";").NewLine();
                 if (!String.IsNullOrEmpty(method.StaticParameterCode))
                 {
                     AppendCodeLines(builder, method.StaticParameterCode);
@@ -867,7 +961,7 @@ internal static class AccessorSourceBuilder
             ? "global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SingleRow"
             : "global::System.Data.CommandBehavior.SingleResult";
 
-    private static void EmitInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression, (string OrdinalsName, string MapperName)? mapping)
+    private static void EmitInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression, MappingSet? mapping)
     {
         var hasOutputs = method.OutputBindings.Count > 0;
 
@@ -992,9 +1086,8 @@ internal static class AccessorSourceBuilder
         // CommandBehavior: SingleResult for list/iterator shapes, SingleResult | SingleRow for single-row shapes.
         // SequentialAccess is not used: columns are read in property declaration order, so ascending-ordinal access
         // cannot be guaranteed and SqlClient / Npgsql could throw at runtime.
-        var (ordinalsName, mapperName) = mapping!.Value;
-        var ordStruct = ordinalsName;
-        var entityBody = mapperName + "(__reader, in __o)";
+        var ordinalFactory = mapping!.OrdinalsName + "." + mapping.FromName + "(__reader)";
+        var entityBody = mapping.MapperName + "(__reader, in __o)";
         switch (method.ReturnShape)
         {
             case ReturnShape.List:
@@ -1002,7 +1095,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("__list.Add(").Append(entityBody).Append(");").NewLine();
@@ -1016,7 +1109,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("__list.Add(").Append(entityBody).Append(");").NewLine();
@@ -1031,7 +1124,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: false)).Append(");").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("yield return ").Append(entityBody).Append(";").NewLine();
@@ -1046,7 +1139,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("do").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("yield return ").Append(entityBody).Append(";").NewLine();
@@ -1060,7 +1153,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("using var __reader = cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: true)).Append(");").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("return ").Append(entityBody).Append(";").NewLine();
                 builder.EndScope();
                 builder.Indent().Append("return default!;").NewLine();
@@ -1070,7 +1163,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: true)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
-                builder.Indent().Append("var __o = ").Append(ordStruct).Append(".__From(__reader);").NewLine();
+                builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
                 builder.Indent().Append("return ").Append(entityBody).Append(";").NewLine();
                 builder.EndScope();
                 builder.Indent().Append("return default!;").NewLine();
@@ -1082,10 +1175,10 @@ internal static class AccessorSourceBuilder
     }
 
     // 1 列分の読み取り式(代入・ctor 引数の右辺)を組み立てる。converter(FromDb)／型別リーダー(enum キャスト含む)／
-    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き(DB NULL は default!、SDA0307)。
+    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き(DB NULL は default(プロパティ型)、SDA0307)。
     // Build one column's read expression (assignment / ctor-argument RHS): converter (FromDb), typed reader (incl. enum
     // casts), or the GetValue<T> fallback. Except for [NotNullColumn], the read carries the IsDBNull guard (DB NULL
-    // falls through as default!, SDA0307).
+    // falls through as a property-typed default, SDA0307).
     private static string BuildColumnReadExpression(ColumnInfo column, string readerVariable, string ordinal)
     {
         var sb = new StringBuilder();
@@ -1096,7 +1189,7 @@ internal static class AccessorSourceBuilder
             if (!column.SkipNullCheck)
             {
                 sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
-                  .Append(" ? default! : ");
+                  .Append(" ? default(").Append(column.TypeFullName).Append(")! : ");
             }
             sb.Append(converter.ConverterTypeFullName).Append(".FromDb(");
             if (converter.DbTypedReaderMethod is not null)
@@ -1115,11 +1208,15 @@ internal static class AccessorSourceBuilder
         {
             if (!column.SkipNullCheck)
             {
-                // 非 null 許容プロパティが DB NULL を受けると default! になる(SDA0307)。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
-                // A non-nullable property receiving DB NULL falls through as default! (SDA0307). [NotNullColumn] opts
-                // out of this check; the provider throws InvalidCastException on an actual NULL.
+                // 非 null 許容プロパティが DB NULL を受けると default になる(SDA0307)。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
+                // default は必ずプロパティ型で型付けする：三項式の自然型は typed アーム側(非 nullable)に決まるため、
+                // 素の default! では int? 等の Nullable 値型が null ではなく 0 になってしまう。
+                // A non-nullable property receiving DB NULL falls through as default (SDA0307). [NotNullColumn] opts
+                // out of this check; the provider throws InvalidCastException on an actual NULL. The default MUST be
+                // typed with the property type: the conditional's natural type binds to the typed arm, so a bare
+                // default! would materialise DB NULL as 0 (not null) for nullable value types such as int?.
                 sb.Append(readerVariable).Append(".IsDBNull(").Append(ordinal).Append('.').Append(column.PropertyName).Append(')')
-                  .Append(" ? default! : ");
+                  .Append(" ? default(").Append(column.TypeFullName).Append(")! : ");
             }
             if (column.EnumCastTypeFullName is not null)
             {
@@ -1147,14 +1244,23 @@ internal static class AccessorSourceBuilder
     // 行マッパーメソッド（__Map{Entity}）を生成する。序数キャッシュを受け取り 1 行分のエンティティを構築する。
     // class/POCO：settable プロパティは `new T()` の後、結果セットに存在する列（序数 >= 0）だけを設定する — 無い列は
     // 「設定しない」（プロパティ初期化子・既定値をそのまま保つ）。init-only / required プロパティは初期化子の外で代入
-    // できないため `new T { ... }` 内でガード付き三項により設定し、無い列は default! になる。record 主コンストラクタは
-    // 全引数が必須のため、無い列・[Ignore] 引数は default! を渡す（構造上「設定しない」は不可能）。
+    // できないため `new T { ... }` 内でガード付き三項により設定し、無い列は default(プロパティ型) になる。record 主
+    // コンストラクタは全引数が必須のため、無い列は default(引数型)・[Ignore] 引数は default! を渡す（構造上「設定
+    // しない」は不可能）。ただし宣言既定値を持つ [Ignore]/プロパティ無し引数は名前付き引数ごと省略して宣言既定値を
+    // 生かす。マップ対象外の required メンバ（[Ignore]・非 public・record 非位置）は初期化子で default! を設定する
+    // （CS9035 回避）。三項内の default をプロパティ型で型付けするのは、自然型が typed アーム側に決まり素の
+    // default! では Nullable 値型が 0 になるため。引数位置の単独 default! は target-typed なのでそのままで正しい。
     // Emit the row-mapper method (__Map{Entity}): takes the ordinal cache and materialises one row. For a class/POCO,
     // settable properties are assigned after `new T()` only when the column is present (ordinal >= 0) — an absent
     // column is NOT assigned (property initialisers / defaults survive). Init-only / required properties cannot be
     // assigned outside an object initialiser, so they are set inside `new T { ... }` with a guarded conditional and
-    // receive default! when absent. A record primary constructor requires every argument, so absent / [Ignore]
-    // arguments pass default! (skipping is structurally impossible).
+    // receive a property-typed default when absent. A record primary constructor requires every argument, so absent
+    // columns pass a parameter-typed default and [Ignore] arguments pass default! (skipping is structurally
+    // impossible) — except that an [Ignore] / property-less parameter with a declared default value omits the named
+    // argument so the declared default applies. Required members excluded from mapping ([Ignore] / non-public /
+    // record non-positional) are set to default! inside the initializer (avoiding CS9035). Defaults inside a
+    // conditional MUST be typed — the natural type binds to the typed arm and a bare default! turns nullable value
+    // types into 0; a stand-alone default! in argument position is target-typed and safe.
     private static void EmitRowMapperMethod(SourceBuilder builder, string ordinalsName, string mapperName, MethodModel template)
     {
         var columns = template.QueryColumns!.Value;
@@ -1166,8 +1272,22 @@ internal static class AccessorSourceBuilder
         {
             builder.Indent().Append("return new ").Append(template.ElementTypeFullName!).Append('(');
             var first = true;
+            var hasExtraRequired = false;
             foreach (var column in columns)
             {
+                // 主 ctor 外（非位置）の required メンバは ctor 引数ではなく後段の初期化子で default! を設定する。
+                // A required member outside the primary ctor (non-positional) is set in the trailing initializer, not as a ctor argument.
+                if (column.RequiresInitOnlySet)
+                {
+                    hasExtraRequired = true;
+                    continue;
+                }
+                // 宣言既定値を持つ [Ignore]/プロパティ無し引数は名前付き引数ごと省略し、宣言既定値を生かす。
+                // An [Ignore] / property-less parameter with a declared default value omits the named argument so the declared default applies.
+                if (column.Ignored && column.HasDefaultValue)
+                {
+                    continue;
+                }
                 if (!first)
                 {
                     builder.Append(", ");
@@ -1180,11 +1300,31 @@ internal static class AccessorSourceBuilder
                 }
                 else
                 {
-                    builder.Append("o.").Append(column.PropertyName).Append(" < 0 ? default! : (")
+                    builder.Append("o.").Append(column.PropertyName).Append(" < 0 ? default(").Append(column.TypeFullName).Append(")! : (")
                         .Append(BuildColumnReadExpression(column, "reader", "o")).Append(')');
                 }
             }
-            builder.Append(");").NewLine();
+            builder.Append(')');
+            if (hasExtraRequired)
+            {
+                builder.Append(" { ");
+                var firstExtra = true;
+                foreach (var column in columns)
+                {
+                    if (!column.RequiresInitOnlySet)
+                    {
+                        continue;
+                    }
+                    if (!firstExtra)
+                    {
+                        builder.Append(", ");
+                    }
+                    firstExtra = false;
+                    builder.Append(column.PropertyName).Append(" = default!");
+                }
+                builder.Append(" }");
+            }
+            builder.Append(';').NewLine();
         }
         else
         {
@@ -1208,8 +1348,15 @@ internal static class AccessorSourceBuilder
                     {
                         continue;
                     }
+                    // マップ対象外の required（[Ignore]・非 public）は列読み取り無しで default! を設定する（CS9035 回避）。
+                    // An unmapped required member ([Ignore] / non-public) receives default! with no column read (avoiding CS9035).
+                    if (column.Ignored)
+                    {
+                        builder.Indent().Append(column.PropertyName).Append(" = default!,").NewLine();
+                        continue;
+                    }
                     builder.Indent().Append(column.PropertyName).Append(" = o.").Append(column.PropertyName)
-                        .Append(" < 0 ? default! : (").Append(BuildColumnReadExpression(column, "reader", "o")).Append("),").NewLine();
+                        .Append(" < 0 ? default(").Append(column.TypeFullName).Append(")! : (").Append(BuildColumnReadExpression(column, "reader", "o")).Append("),").NewLine();
                 }
                 builder.IndentLevel--;
                 builder.Indent().Append("};").NewLine();
@@ -1232,22 +1379,33 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
+    // __From の照合戦略閾値：グループ数がこの値以下なら FrozenDictionary を使わず String.Equals の直比較を emit する
+    // （実測で 1 列 exact 11 倍・2 列 hit-last でも 1.8 倍高速、static 辞書と型初期化子も消える。3 グループ以上は
+    // 列数が多い領域で FrozenDictionary が勝るため現行形を維持。`__docs/benchmark-results.md` 2026-07 narrow PoC）。
+    // Threshold for the __From matching strategy: at or below this group count, emit direct String.Equals comparisons
+    // instead of the FrozenDictionary (measured 11x faster for 1-column exact and still 1.8x for 2-column hit-last,
+    // and the static dictionary + type initializer disappear; 3+ groups keep the dictionary form, which wins at
+    // larger sizes — see benchmark-results.md, 2026-07 narrow PoC).
+    private const int NarrowOrdinalGroupThreshold = 2;
+
     // クエリ列の序数キャッシュ構造体（__{Entity}Ordinals）を生成する。マップ対象列毎の public int フィールドを持ち、
     // __From(reader) がリーダーの列を 1 回だけ走査して構築する（GetOrdinal は欠落列で throw するため使わない。欠落列は
-    // -1 のまま）。照合は SQL の識別子と同様に大文字小文字を区別しない：事前構築の static FrozenDictionary
-    // （OrdinalIgnoreCase、列名 → グループ id）を引き、stackalloc の序数表へ先勝ちで書き込む（実測で ToUpperInvariant
-    // switch / Dapper.AOT 式ハッシュ switch より高速・割当ゼロ、`__docs/benchmark-results.md` 2026-07 照合戦略 PoC）。
-    // 大小のみ異なる複数プロパティは同じグループ id を共有し双方が同じ序数に束縛される。全グループ解決後は走査を
-    // 打ち切る。全半角・かな種は畳み込まない（プロバイダ GetOrdinal の拡張照合より狭い、F18 の制限）。
+    // -1 のまま）。照合は SQL の識別子と同様に大文字小文字を区別しない：グループ数が NarrowOrdinalGroupThreshold 以下
+    // なら String.Equals(OrdinalIgnoreCase) の直比較＋グループ毎ローカルで解決し、超えるなら事前構築の static
+    // FrozenDictionary（OrdinalIgnoreCase、列名 → グループ id）を引いて stackalloc の序数表へ先勝ちで書き込む
+    // （実測で ToUpperInvariant switch / Dapper.AOT 式ハッシュ switch より高速・割当ゼロ、`__docs/benchmark-results.md`
+    // 2026-07 照合戦略 PoC）。大小のみ異なる複数プロパティは同じグループ id を共有し双方が同じ序数に束縛される。
+    // 全グループ解決後は走査を打ち切る。全半角・かな種は畳み込まない（プロバイダ GetOrdinal の拡張照合より狭い、F18 の制限）。
     // Emit the query-column ordinal cache struct (__{Entity}Ordinals): one public int field per mapped column, built by
     // __From(reader) scanning the reader's columns once (GetOrdinal, which throws on a missing column, is not used; an
-    // absent column stays -1). Matching is case-insensitive like SQL identifiers: a prebuilt static FrozenDictionary
-    // (OrdinalIgnoreCase, column name → group id) fills a stackalloc ordinal table first-match-wins (measured faster
-    // than the ToUpperInvariant switch / Dapper.AOT-style hash switch, zero allocation; see benchmark-results.md).
-    // Properties whose names differ only in case share a group id and both bind to the same ordinal. The scan stops
-    // once every group is resolved. Width/kana folding is NOT applied (narrower than provider GetOrdinal's extended
-    // collation; an F18 limitation).
-    private static void EmitOrdinalCacheStruct(SourceBuilder builder, string ordinalsName, MethodModel template)
+    // absent column stays -1). Matching is case-insensitive like SQL identifiers: at or below NarrowOrdinalGroupThreshold
+    // groups, direct String.Equals(OrdinalIgnoreCase) comparisons resolve into per-group locals; above it, a prebuilt
+    // static FrozenDictionary (OrdinalIgnoreCase, column name → group id) fills a stackalloc ordinal table
+    // first-match-wins (measured faster than the ToUpperInvariant switch / Dapper.AOT-style hash switch, zero
+    // allocation; see benchmark-results.md). Properties whose names differ only in case share a group id and both bind
+    // to the same ordinal. The scan stops once every group is resolved. Width/kana folding is NOT applied (narrower
+    // than provider GetOrdinal's extended collation; an F18 limitation).
+    private static void EmitOrdinalCacheStruct(SourceBuilder builder, string ordinalsName, string fromName, MethodModel template)
     {
         var columns = template.QueryColumns!.Value;
         var mapped = new List<ColumnInfo>();
@@ -1258,90 +1416,178 @@ internal static class AccessorSourceBuilder
                 mapped.Add(column);
             }
         }
+        // 静的辞書のフィールド名もフィールド名（＝プロパティ名）と衝突し得るためセット毎に決める（__From と同様）。
+        // The static dictionary's field name can also collide with a field (= property) name; choose it per set (like __From).
+        var columnsFieldName = UniqueStructMemberName("__Columns", columns);
 
-        // 列名（宣言どおりの表記）を OrdinalIgnoreCase でグルーピング。辞書キーはグループ先頭の表記 1 つだけ
-        // （大小のみ異なる重複キーは comparer 上衝突するため）。値＝グループ id。
-        // Group declared column names with OrdinalIgnoreCase. The dictionary holds one key per group (case-variant
-        // duplicates collide under the comparer); the value is the group id.
-        var groups = mapped
-            .Select(static (x, i) => (x.ColumnName, Index: i))
-            .GroupBy(static x => x.ColumnName, StringComparer.OrdinalIgnoreCase)
-            .Select(static x => (ColumnName: x.Key, Indexes: x.Select(static entry => entry.Index).ToList()))
-            .ToList();
+        // 列名（宣言どおりの表記）を OrdinalIgnoreCase でグルーピング。1 回の前進走査（get-or-add）で
+        // グループ名リスト（先勝ちの表記・出現順）と列→グループ id の逆引きを同時に構築する。
+        // 大小のみ異なる重複列名は同じグループ id を共有する。
+        // Group declared column names with OrdinalIgnoreCase: a single forward scan (get-or-add) builds the group
+        // name list (first-win spelling, in appearance order) and the column → group id lookup at the same time.
+        // Case-variant duplicate column names share a group id.
+        var groupNames = new List<string>();
         var groupIndexByColumn = new int[mapped.Count];
-        for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
+        var groupIdByName = new Dictionary<string, int>(mapped.Count, StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < mapped.Count; i++)
         {
-            foreach (var index in groups[groupIndex].Indexes)
+            var columnName = mapped[i].ColumnName;
+            if (!groupIdByName.TryGetValue(columnName, out var groupIndex))
             {
-                groupIndexByColumn[index] = groupIndex;
+                groupIndex = groupNames.Count;
+                groupIdByName.Add(columnName, groupIndex);
+                groupNames.Add(columnName);
             }
+            groupIndexByColumn[i] = groupIndex;
         }
-        var groupCountText = groups.Count.ToString(CultureInfo.InvariantCulture);
+        var groupCountText = groupNames.Count.ToString(CultureInfo.InvariantCulture);
+        var useDirectComparison = groupNames.Count <= NarrowOrdinalGroupThreshold;
 
         builder.Indent().Append("private readonly struct ").Append(ordinalsName).NewLine();
         builder.BeginScope();
-        builder.Indent().Append("private static readonly global::System.Collections.Frozen.FrozenDictionary<string, int> __Columns =").NewLine();
-        builder.IndentLevel++;
-        builder.Indent().Append("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(").NewLine();
-        builder.IndentLevel++;
-        builder.Indent().Append("new global::System.Collections.Generic.Dictionary<string, int>(").Append(groupCountText).Append(", global::System.StringComparer.OrdinalIgnoreCase)").NewLine();
-        builder.Indent().Append("{").NewLine();
-        builder.IndentLevel++;
-        for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
+        if (!useDirectComparison)
         {
-            builder.Indent().Append("[").Append(CodeExpressionHelper.StringLiteral(groups[groupIndex].ColumnName)).Append("] = ")
-                .Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(",").NewLine();
+            builder.Indent().Append("private static readonly global::System.Collections.Frozen.FrozenDictionary<string, int> ").Append(columnsFieldName).Append(" =").NewLine();
+            builder.IndentLevel++;
+            builder.Indent().Append("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(").NewLine();
+            builder.IndentLevel++;
+            builder.Indent().Append("new global::System.Collections.Generic.Dictionary<string, int>(").Append(groupCountText).Append(", global::System.StringComparer.OrdinalIgnoreCase)").NewLine();
+            builder.Indent().Append("{").NewLine();
+            builder.IndentLevel++;
+            for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
+            {
+                builder.Indent().Append("[").Append(CodeExpressionHelper.StringLiteral(groupNames[groupIndex])).Append("] = ")
+                    .Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(",").NewLine();
+            }
+            builder.IndentLevel--;
+            builder.Indent().Append("},").NewLine();
+            builder.Indent().Append("global::System.StringComparer.OrdinalIgnoreCase);").NewLine();
+            builder.IndentLevel -= 2;
+            builder.NewLine();
         }
-        builder.IndentLevel--;
-        builder.Indent().Append("},").NewLine();
-        builder.Indent().Append("global::System.StringComparer.OrdinalIgnoreCase);").NewLine();
-        builder.IndentLevel -= 2;
-        builder.NewLine();
         foreach (var column in mapped)
         {
             builder.Indent().Append("public readonly int ").Append(column.PropertyName).Append(";").NewLine();
         }
         builder.NewLine();
-        // ctor 引数は p{n} 固定。プロパティ名由来の引数名は予約語化・大小のみの重複・全小文字名の自己代入を起こし得る。
+        // ctor 引数は p{n} 固定。プロパティ名由来の引数名は予約語化・大小のみの重複・自己代入を起こし得る。
+        // 代入は this. 修飾：p{n} と同名のプロパティ（＝フィールド p{n}）があってもパラメータに隠蔽されず
+        // フィールドへ正しく代入される。
         // Ctor parameters use fixed p{n} names: property-derived names can become keywords, collide when differing
-        // only by case, or self-assign for all-lowercase properties.
+        // only by case, or self-assign. Assignments are this.-qualified so a property named p{n} (= field p{n})
+        // still assigns the field instead of the shadowing parameter.
         var ctorParams = String.Join(", ", Enumerable.Range(0, mapped.Count).Select(static x => "int p" + x.ToString(CultureInfo.InvariantCulture)));
         builder.Indent().Append("private ").Append(ordinalsName).Append("(").Append(ctorParams).Append(")").NewLine();
         builder.BeginScope();
         for (var i = 0; i < mapped.Count; i++)
         {
-            builder.Indent().Append(mapped[i].PropertyName).Append(" = p").Append(i.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
+            builder.Indent().Append("this.").Append(mapped[i].PropertyName).Append(" = p").Append(i.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
         }
         builder.EndScope();
         builder.NewLine();
-        builder.Indent().Append("public static ").Append(ordinalsName).Append(" __From(global::System.Data.Common.DbDataReader reader)").NewLine();
+        builder.Indent().Append("public static ").Append(ordinalsName).Append(' ').Append(fromName).Append("(global::System.Data.Common.DbDataReader reader)").NewLine();
         builder.BeginScope();
-        builder.Indent().Append("global::System.Span<int> __ordinals = stackalloc int[").Append(groupCountText).Append("];").NewLine();
-        builder.Indent().Append("__ordinals.Fill(-1);").NewLine();
-        builder.Indent().Append("var __resolved = 0;").NewLine();
+        if (useDirectComparison)
+        {
+            EmitDirectComparisonFromBody(builder, groupNames, groupIndexByColumn, mapped.Count);
+        }
+        else
+        {
+            builder.Indent().Append("global::System.Span<int> __ordinals = stackalloc int[").Append(groupCountText).Append("];").NewLine();
+            builder.Indent().Append("__ordinals.Fill(-1);").NewLine();
+            builder.Indent().Append("var __resolved = 0;").NewLine();
+            builder.Indent().Append("var __fieldCount = reader.FieldCount;").NewLine();
+            builder.Indent().Append("for (var __i = 0; __i < __fieldCount; __i++)").NewLine();
+            builder.BeginScope();
+            builder.Indent().Append("if (").Append(columnsFieldName).Append(".TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))").NewLine();
+            builder.BeginScope();
+            builder.Indent().Append("__ordinals[__index] = __i;").NewLine();
+            builder.Indent().Append("__resolved++;").NewLine();
+            builder.Indent().Append("if (__resolved == ").Append(groupCountText).Append(") break;").NewLine();
+            builder.EndScope();
+            builder.EndScope();
+            builder.Indent().Append("return new(");
+            for (var i = 0; i < mapped.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+                builder.Append("__ordinals[").Append(groupIndexByColumn[i].ToString(CultureInfo.InvariantCulture)).Append("]");
+            }
+            builder.Append(");").NewLine();
+        }
+        builder.EndScope();
+        builder.EndScope();
+    }
+
+    // narrow エンティティ（グループ数 <= NarrowOrdinalGroupThreshold）用の __From 本体：グループ毎の int ローカルへ
+    // String.Equals(OrdinalIgnoreCase) の直比較で先勝ち解決する。単一グループは一致時に即 break、複数グループは
+    // 自分以外が全て解決済みなら break（＝全解決で走査打ち切り、FrozenDictionary 形と同一意味論）。
+    // The __From body for narrow entities (groups <= NarrowOrdinalGroupThreshold): resolve first-match-wins into
+    // per-group int locals via direct String.Equals(OrdinalIgnoreCase) comparisons. A single group breaks on match;
+    // multiple groups break when every other group is already resolved (same stop-on-full-resolution semantics as
+    // the FrozenDictionary form).
+    private static void EmitDirectComparisonFromBody(SourceBuilder builder, List<string> groupNames, int[] groupIndexByColumn, int mappedCount)
+    {
+        for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
+        {
+            builder.Indent().Append("var __ord").Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(" = -1;").NewLine();
+        }
         builder.Indent().Append("var __fieldCount = reader.FieldCount;").NewLine();
         builder.Indent().Append("for (var __i = 0; __i < __fieldCount; __i++)").NewLine();
         builder.BeginScope();
-        builder.Indent().Append("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))").NewLine();
-        builder.BeginScope();
-        builder.Indent().Append("__ordinals[__index] = __i;").NewLine();
-        builder.Indent().Append("__resolved++;").NewLine();
-        builder.Indent().Append("if (__resolved == ").Append(groupCountText).Append(") break;").NewLine();
-        builder.EndScope();
+        if (groupNames.Count == 1)
+        {
+            builder.Indent().Append("if (global::System.String.Equals(reader.GetName(__i), ")
+                .Append(CodeExpressionHelper.StringLiteral(groupNames[0]))
+                .Append(", global::System.StringComparison.OrdinalIgnoreCase))").NewLine();
+            builder.BeginScope();
+            builder.Indent().Append("__ord0 = __i;").NewLine();
+            builder.Indent().Append("break;").NewLine();
+            builder.EndScope();
+        }
+        else
+        {
+            builder.Indent().Append("var __name = reader.GetName(__i);").NewLine();
+            for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
+            {
+                var ordinalLocal = "__ord" + groupIndex.ToString(CultureInfo.InvariantCulture);
+                builder.Indent().Append(groupIndex == 0 ? "if ((" : "else if ((").Append(ordinalLocal)
+                    .Append(" < 0) && global::System.String.Equals(__name, ")
+                    .Append(CodeExpressionHelper.StringLiteral(groupNames[groupIndex]))
+                    .Append(", global::System.StringComparison.OrdinalIgnoreCase))").NewLine();
+                builder.BeginScope();
+                builder.Indent().Append(ordinalLocal).Append(" = __i;").NewLine();
+                builder.Indent().Append("if (");
+                var first = true;
+                for (var otherIndex = 0; otherIndex < groupNames.Count; otherIndex++)
+                {
+                    if (otherIndex == groupIndex)
+                    {
+                        continue;
+                    }
+                    if (!first)
+                    {
+                        builder.Append(" && ");
+                    }
+                    first = false;
+                    builder.Append("(__ord").Append(otherIndex.ToString(CultureInfo.InvariantCulture)).Append(" >= 0)");
+                }
+                builder.Append(") break;").NewLine();
+                builder.EndScope();
+            }
+        }
         builder.EndScope();
         builder.Indent().Append("return new(");
-        for (var i = 0; i < mapped.Count; i++)
+        for (var i = 0; i < mappedCount; i++)
         {
             if (i > 0)
             {
                 builder.Append(", ");
             }
-            builder.Append("__ordinals[").Append(groupIndexByColumn[i].ToString(CultureInfo.InvariantCulture)).Append("]");
+            builder.Append("__ord").Append(groupIndexByColumn[i].ToString(CultureInfo.InvariantCulture));
         }
         builder.Append(");").NewLine();
-        builder.EndScope();
-        builder.EndScope();
     }
-
-    private static string EscapeCSharpString(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

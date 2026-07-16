@@ -74,6 +74,9 @@ internal static class Program
         var records = accessor.QueryAllAsRecord();
         Console.WriteLine($"QueryAllAsRecord -> {records.Count} record(s)  // record primary ctor");
 
+        var inline = accessor.QueryByTypeInline(0);
+        Console.WriteLine($"QueryByTypeInline(0) -> {inline.Count} row(s)  // inline 2-way SQL ([Sql])");
+
         var readerRows = 0;
         using (var reader = accessor.QueryReader())
         {

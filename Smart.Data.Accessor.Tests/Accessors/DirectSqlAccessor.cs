@@ -10,6 +10,7 @@ using Smart.Data.Accessor.Tests.Models;
 internal sealed partial class DirectSqlAccessor
 {
     [DirectSql]
+    [Execute]
     public partial int ExecRaw(DbConnection con, string sql);
 
     // DirectSql × Query: 生 SQL で行を取得しマッピングする(2 軸モデルで新規に成立する組み合わせ)。

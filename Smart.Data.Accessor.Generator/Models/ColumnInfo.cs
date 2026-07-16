@@ -19,11 +19,16 @@ internal sealed record ColumnInfo(
     // intermediate bit-preserving cast inserted between the enum cast and the (signed) reader for
     // unsigned / sbyte enum underlyings — e.g. "uint" → (MyEnum)(uint)reader.GetInt32(ordinal).
     string? EnumUnderlyingCastFullName = null,
-    // true when the property is init-only or required: it cannot be assigned outside an object
-    // initializer, so the row mapper sets it inside `new T { ... }` (an absent column receives
-    // default!, like a record primary-constructor argument).
+    // true when the member must be set inside the object initializer: an init-only / required
+    // property (cannot be assigned outside `new T { ... }`), or — combined with Ignored — a
+    // required member excluded from mapping ([Ignore] / non-public / record non-positional),
+    // which still needs `= default!` in the initializer to avoid CS9035.
     bool RequiresInitOnlySet = false,
-    // record primary-constructor parameter excluded by [property: Ignore]: it is not mapped (no
-    // ordinal field, no case arm) but the ctor still requires the argument, so the row mapper
-    // passes default!.
-    bool Ignored = false);
+    // excluded from mapping (no ordinal field, no dictionary key) but structurally still required
+    // by the construction: a record primary-constructor parameter with [property: Ignore] or
+    // without a matching property (the ctor argument passes default!), or an unmapped required
+    // member (set to default! inside the initializer).
+    bool Ignored = false,
+    // record primary-constructor parameter with a declared default value: the row mapper omits
+    // the named argument entirely so the declared default applies (instead of passing default!).
+    bool HasDefaultValue = false);

@@ -48,7 +48,8 @@ public class MappingStrategyBenchmark
 
     // Mock は CommandText を無視し、列はモックの列定義で決まる(テキストは cosmetic)。CommandText には
     // この定数を直接代入して CA2100(非定数 SQL)を避ける。Dapper 呼び出しには上記の記述用 SQL を渡す。
-    private const string CommandTextConst = "SELECT * FROM BenchData";
+    // リテラル本体は ManualMappers と共有する。
+    private const string CommandTextConst = ManualMappers.CommandText;
 
     private MockRepeatDbConnection mockWide = default!;
     private MockRepeatDbConnection mockSubset = default!;
@@ -118,7 +119,7 @@ public class MappingStrategyBenchmark
     public IReadOnlyList<BenchWideRow> FullClassCurrent() => accessor.QueryWide(mockWide);
 
     [Benchmark(Description = "Full/class: Manual straight-line")]
-    public List<BenchWideRow> FullClassManual() => ManualWide(mockWide);
+    public List<BenchWideRow> FullClassManual() => ManualMappers.QueryWide(mockWide);
 
     [Benchmark(Description = "Full/class: Dapper")]
     public List<BenchWideRow> FullClassDapper() => mockWide.Query<BenchWideRow>(WideSql).AsList();
@@ -137,7 +138,7 @@ public class MappingStrategyBenchmark
     // -----------------------------------------------------------------
 
     [Benchmark(Description = "Full/record: Current-style straight-line")]
-    public List<BenchWideRecord> FullRecordCurrent() => CurrentWideRecord(mockWide);
+    public List<BenchWideRecord> FullRecordCurrent() => ManualMappers.QueryWideRecord(mockWide);
 
     [Benchmark(Description = "Full/record: Dapper")]
     public List<BenchWideRecord> FullRecordDapper() => mockWide.Query<BenchWideRecord>(WideSql).AsList();
@@ -156,7 +157,7 @@ public class MappingStrategyBenchmark
     public IReadOnlyList<BenchWideRow> SubsetClassGenerated() => accessor.QueryWide(mockSubset);
 
     [Benchmark(Description = "Subset/class: Manual minimal")]
-    public List<BenchWideRow> SubsetClassManual() => ManualSubset(mockSubset);
+    public List<BenchWideRow> SubsetClassManual() => ManualMappers.QuerySubset(mockSubset);
 
     [Benchmark(Description = "Subset/class: Dapper")]
     public List<BenchWideRow> SubsetClassDapper() => mockSubset.Query<BenchWideRow>(SubsetSql).AsList();
@@ -379,107 +380,7 @@ public class MappingStrategyBenchmark
         return list;
     }
 
-    // 現行相当(record)：GetOrdinal を 1 回、直線で全 ctor 引数を読む。
-    private static List<BenchWideRecord> CurrentWideRecord(DbConnection con)
-    {
-        var list = new List<BenchWideRecord>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            var oAge = reader.GetOrdinal("Age");
-            var oScore = reader.GetOrdinal("Score");
-            var oActive = reader.GetOrdinal("Active");
-            var oStatus = reader.GetOrdinal("Status");
-            var oDescription = reader.GetOrdinal("Description");
-            var oCategory = reader.GetOrdinal("Category");
-            var oTag = reader.GetOrdinal("Tag");
-            var oWeight = reader.GetOrdinal("Weight");
-            do
-            {
-                list.Add(new BenchWideRecord(
-                    reader.GetInt64(oId),
-                    reader.GetString(oName),
-                    reader.GetInt32(oAge),
-                    reader.GetDouble(oScore),
-                    reader.GetBoolean(oActive),
-                    reader.GetInt32(oStatus),
-                    reader.GetString(oDescription),
-                    reader.GetInt32(oCategory),
-                    reader.GetString(oTag),
-                    reader.GetDouble(oWeight)));
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    // 現行相当(class・全一致の手書きベースライン)。
-    private static List<BenchWideRow> ManualWide(DbConnection con)
-    {
-        var list = new List<BenchWideRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            var oAge = reader.GetOrdinal("Age");
-            var oScore = reader.GetOrdinal("Score");
-            var oActive = reader.GetOrdinal("Active");
-            var oStatus = reader.GetOrdinal("Status");
-            var oDescription = reader.GetOrdinal("Description");
-            var oCategory = reader.GetOrdinal("Category");
-            var oTag = reader.GetOrdinal("Tag");
-            var oWeight = reader.GetOrdinal("Weight");
-            do
-            {
-                list.Add(new BenchWideRow
-                {
-                    Id = reader.GetInt64(oId),
-                    Name = reader.GetString(oName),
-                    Age = reader.GetInt32(oAge),
-                    Score = reader.GetDouble(oScore),
-                    Active = reader.GetBoolean(oActive),
-                    Status = reader.GetInt32(oStatus),
-                    Description = reader.GetString(oDescription),
-                    Category = reader.GetInt32(oCategory),
-                    Tag = reader.GetString(oTag),
-                    Weight = reader.GetDouble(oWeight)
-                });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    // 部分列の手書き最小(返る 2 列だけを直接読む理論下限)。
-    private static List<BenchWideRow> ManualSubset(DbConnection con)
-    {
-        var list = new List<BenchWideRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            do
-            {
-                list.Add(new BenchWideRow
-                {
-                    Id = reader.GetInt64(oId),
-                    Name = reader.GetString(oName)
-                });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
+    // 手書きベースライン(class 全一致/record/部分列)は ManualMappers に共有実装がある(DapperComparisonBenchmark と共用)。
 
     private void VerifyOrThrow()
     {

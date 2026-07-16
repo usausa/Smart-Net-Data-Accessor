@@ -24,4 +24,25 @@ internal sealed partial class MappingAccessor
 
     [Query]
     public partial IReadOnlyList<MappingIgnoredRecord> QueryIgnoredRecords(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MappingNullableEntity> QueryNullableEntities(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MappingNullableRecord> QueryNullableRecords(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MappingRequiredEntity> QueryRequiredEntities(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MappingRequiredRecord> QueryRequiredRecords(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MappingDefaultRecord> QueryDefaultRecords(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<MapCollide> QueryMapCollides(DbConnection con);
+
+    [Query]
+    public partial IReadOnlyList<CollideOrdinals> QueryCollideOrdinals(DbConnection con);
 }

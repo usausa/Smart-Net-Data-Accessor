@@ -22,6 +22,8 @@ SDA0103 | Usage    | Error    | Multiple execution-kind attributes on the same m
 SDA0104 | Builder  | Error    | [Procedure] combined with [DirectSql] (ambiguous)
 SDA0105 | Builder  | Error    | QueryBuilder attribute combined with [Procedure] / [DirectSql]
 SDA0106 | Usage    | Error    | [MethodName] is duplicated within the class
+SDA0107 | Usage    | Error    | [Sql] cannot be combined with another command source
+SDA0108 | Usage    | Error    | Execution-kind attribute required
 SDA0201 | Usage    | Error    | Duplicate [Name] on parameters or properties
 SDA0203 | Usage    | Error    | [DirectSql] method first parameter must be string
 SDA0204 | Usage    | Warning  | [Procedure] stored procedure name is empty
@@ -32,6 +34,7 @@ SDA0208 | Usage    | Error    | [Direction] conflicts with the parameter modifie
 SDA0209 | Usage    | Error    | [Direction] used on unsupported method kind
 SDA0210 | Usage    | Error    | [Direction(ReturnValue)] is not supported
 SDA0211 | Usage    | Error    | [Direction] not allowed on [DirectSql] command-text parameter
+SDA0212 | Usage    | Warning  | [Sql] text is empty
 SDA0301 | Usage    | Error    | Unsupported return type
 SDA0302 | Usage    | Error    | [Execute] return type is not int/void/Task<int>/Task
 SDA0303 | Usage    | Error    | [ExecuteReader] return type is not a reader
@@ -49,6 +52,7 @@ SDA0402 | Usage    | Error    | SQL file name collision
 SDA0403 | Usage    | Error    | [DirectSql] method must not have a corresponding SQL file
 SDA0404 | Usage    | Error    | [Procedure] method must not have a corresponding SQL file
 SDA0405 | Builder  | Error    | Both SQL file and a QueryBuilder attribute are present (ambiguous)
+SDA0406 | Usage    | Error    | [Sql] method must not have a corresponding SQL file
 SDA0501 | Sql      | Error    | Failed to tokenize SQL
 SDA0502 | Sql      | Warning  | SQL is empty
 SDA0503 | Sql      | Error    | SQL comment is not closed

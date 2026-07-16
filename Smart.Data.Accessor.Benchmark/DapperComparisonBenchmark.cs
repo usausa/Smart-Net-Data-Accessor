@@ -22,7 +22,6 @@ using Smart.Mock.Data;
 public class DapperComparisonBenchmark
 {
     private const int RowCount = 100;
-    private const string CommandTextConst = "SELECT * FROM BenchData";
     private const string IntSql = "SELECT Id FROM BenchData ORDER BY Id";
     private const string WideSql = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData ORDER BY Id";
     private const string EnumSql = "SELECT Id, Name, Status FROM BenchData ORDER BY Id";
@@ -92,7 +91,7 @@ public class DapperComparisonBenchmark
 
     [Benchmark(Baseline = true, Description = "Manual (直書き)")]
     [BenchmarkCategory("Narrow 1col")]
-    public List<BenchIntRow> NarrowManual() => ManualInt(mockInt);
+    public List<BenchIntRow> NarrowManual() => ManualMappers.QueryInt(mockInt);
 
     [Benchmark(Description = "Generated (現行)")]
     [BenchmarkCategory("Narrow 1col")]
@@ -106,7 +105,7 @@ public class DapperComparisonBenchmark
 
     [Benchmark(Baseline = true, Description = "Manual (直書き)")]
     [BenchmarkCategory("Wide class 10col")]
-    public List<BenchWideRow> WideClassManual() => ManualWide(mockWide);
+    public List<BenchWideRow> WideClassManual() => ManualMappers.QueryWide(mockWide);
 
     [Benchmark(Description = "Generated (現行)")]
     [BenchmarkCategory("Wide class 10col")]
@@ -120,7 +119,7 @@ public class DapperComparisonBenchmark
 
     [Benchmark(Baseline = true, Description = "Manual (直書き)")]
     [BenchmarkCategory("Wide record 10col")]
-    public List<BenchWideRecord> WideRecordManual() => ManualWideRecord(mockWide);
+    public List<BenchWideRecord> WideRecordManual() => ManualMappers.QueryWideRecord(mockWide);
 
     [Benchmark(Description = "Generated (現行)")]
     [BenchmarkCategory("Wide record 10col")]
@@ -134,7 +133,7 @@ public class DapperComparisonBenchmark
 
     [Benchmark(Baseline = true, Description = "Manual (直書き)")]
     [BenchmarkCategory("Enum 3col")]
-    public List<BenchEnumRow> EnumManual() => ManualEnum(mockEnum);
+    public List<BenchEnumRow> EnumManual() => ManualMappers.QueryEnum(mockEnum);
 
     [Benchmark(Description = "Generated (現行)")]
     [BenchmarkCategory("Enum 3col")]
@@ -148,7 +147,7 @@ public class DapperComparisonBenchmark
 
     [Benchmark(Baseline = true, Description = "Manual (直書き)")]
     [BenchmarkCategory("Subset 10prop/2col")]
-    public List<BenchWideRow> SubsetManual() => ManualSubset(mockSubset);
+    public List<BenchWideRow> SubsetManual() => ManualMappers.QuerySubset(mockSubset);
 
     [Benchmark(Description = "Generated (現行)")]
     [BenchmarkCategory("Subset 10prop/2col")]
@@ -158,144 +157,6 @@ public class DapperComparisonBenchmark
     [BenchmarkCategory("Subset 10prop/2col")]
     public List<BenchWideRow> SubsetDapper() => mockSubset.Query<BenchWideRow>(SubsetSql).AsList();
 
-    // ----- Manual (直書き) implementations: minimal, mirror the [NotNullColumn] direct-read shape -----
-
-    private static List<BenchIntRow> ManualInt(DbConnection con)
-    {
-        var list = new List<BenchIntRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            do
-            {
-                list.Add(new BenchIntRow { Id = reader.GetInt64(oId) });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    private static List<BenchWideRow> ManualWide(DbConnection con)
-    {
-        var list = new List<BenchWideRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            var oAge = reader.GetOrdinal("Age");
-            var oScore = reader.GetOrdinal("Score");
-            var oActive = reader.GetOrdinal("Active");
-            var oStatus = reader.GetOrdinal("Status");
-            var oDescription = reader.GetOrdinal("Description");
-            var oCategory = reader.GetOrdinal("Category");
-            var oTag = reader.GetOrdinal("Tag");
-            var oWeight = reader.GetOrdinal("Weight");
-            do
-            {
-                list.Add(new BenchWideRow
-                {
-                    Id = reader.GetInt64(oId),
-                    Name = reader.GetString(oName),
-                    Age = reader.GetInt32(oAge),
-                    Score = reader.GetDouble(oScore),
-                    Active = reader.GetBoolean(oActive),
-                    Status = reader.GetInt32(oStatus),
-                    Description = reader.GetString(oDescription),
-                    Category = reader.GetInt32(oCategory),
-                    Tag = reader.GetString(oTag),
-                    Weight = reader.GetDouble(oWeight)
-                });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    private static List<BenchWideRecord> ManualWideRecord(DbConnection con)
-    {
-        var list = new List<BenchWideRecord>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            var oAge = reader.GetOrdinal("Age");
-            var oScore = reader.GetOrdinal("Score");
-            var oActive = reader.GetOrdinal("Active");
-            var oStatus = reader.GetOrdinal("Status");
-            var oDescription = reader.GetOrdinal("Description");
-            var oCategory = reader.GetOrdinal("Category");
-            var oTag = reader.GetOrdinal("Tag");
-            var oWeight = reader.GetOrdinal("Weight");
-            do
-            {
-                list.Add(new BenchWideRecord(
-                    reader.GetInt64(oId),
-                    reader.GetString(oName),
-                    reader.GetInt32(oAge),
-                    reader.GetDouble(oScore),
-                    reader.GetBoolean(oActive),
-                    reader.GetInt32(oStatus),
-                    reader.GetString(oDescription),
-                    reader.GetInt32(oCategory),
-                    reader.GetString(oTag),
-                    reader.GetDouble(oWeight)));
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    private static List<BenchEnumRow> ManualEnum(DbConnection con)
-    {
-        var list = new List<BenchEnumRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            var oStatus = reader.GetOrdinal("Status");
-            do
-            {
-                list.Add(new BenchEnumRow
-                {
-                    Id = reader.GetInt64(oId),
-                    Name = reader.GetString(oName),
-                    Status = (BenchStatus)reader.GetInt32(oStatus)
-                });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
-
-    private static List<BenchWideRow> ManualSubset(DbConnection con)
-    {
-        var list = new List<BenchWideRow>();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = CommandTextConst;
-        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
-        if (reader.Read())
-        {
-            var oId = reader.GetOrdinal("Id");
-            var oName = reader.GetOrdinal("Name");
-            do
-            {
-                list.Add(new BenchWideRow { Id = reader.GetInt64(oId), Name = reader.GetString(oName) });
-            }
-            while (reader.Read());
-        }
-        return list;
-    }
+    // Manual (直書き) baseline は ManualMappers に共有実装がある(MappingStrategyBenchmark と共用)。
 }
 #pragma warning restore CA1001
