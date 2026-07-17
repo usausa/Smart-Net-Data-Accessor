@@ -316,19 +316,19 @@ With a real database, network/query time dominates and the differences shrink fu
 * `__docs/generator-guide.md` — how to write a third-party provider builder generator (Japanese: `generator-guide.ja.md`)
 * `Example.ConsoleApplication` / `Example.WebApplication` — runnable samples (SQLite)
 
-## TODO
+## Verification
 
-Remaining work before / after the first release:
+Beyond the unit/functional test suites, the following have been verified end to end:
 
-* **Real-database verification matrix** — run the MySQL / PostgreSQL builder dialects
-  (`ON DUPLICATE KEY UPDATE` / `ON CONFLICT` / `RETURNING`, ...) against real servers.
-  SQL Server and SQLite are already verified on real databases; MySQL / PostgreSQL are
-  currently mock-verified only.
-* **Package consumption E2E** — reference the produced nupkgs from a fresh project and verify
-  generation and execution end to end.
-* **Initial release version and release-notes flow** — the PackageIds are fixed
-  (`Usa.` prefix); the first version number and release-note operation remain to be decided.
-* Native AOT smoke on providers other than SQLite (e.g. `Microsoft.Data.SqlClient`).
-* Test harness: compile-check the generated code inside `GeneratorTestHelper`
-  (the functional test projects cover this today by actually compiling and running it).
-* TVP support (`SqlDbType.Structured` + `TypeName`) — on demand.
+* **Real databases** — the provider builder dialects run against real servers:
+  SQL Server (LocalDB: `MERGE` upsert, `OUTPUT`, paging, stored procedures),
+  PostgreSQL 17 (`ON CONFLICT DO UPDATE`, `RETURNING`, paging),
+  MySQL-compatible MariaDB 11 (`ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE`, paging),
+  and SQLite (samples and functional tests).
+* **Native AOT** — native publish + run verified with both `Microsoft.Data.Sqlite` and
+  `Microsoft.Data.SqlClient`.
+* **Package consumption** — a fresh project referencing only the produced nupkgs
+  (no project references) generates and executes correctly, including the transitive
+  `.sql` auto-import targets.
+* **Generated code compilation** — the generator test harness compiles the generated
+  code and fails on any compile error, in addition to text/diagnostic assertions.

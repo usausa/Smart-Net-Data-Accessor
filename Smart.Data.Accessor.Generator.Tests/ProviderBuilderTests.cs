@@ -122,6 +122,78 @@ public sealed class ProviderBuilderTests
         Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
+    // identity 主キー([Key]+[DatabaseManaged])の MERGE：USING(＝ON の突合値)には Id を含め、
+    // WHEN NOT MATCHED の INSERT からは除外する(LocalDB 実機で発見した 207 の回帰テスト)。
+    // MERGE with an identity primary key ([Key]+[DatabaseManaged]): the USING source (= the ON match value)
+    // must include Id while the WHEN NOT MATCHED insert excludes it (regression for the runtime error 207
+    // found against LocalDB).
+    [Fact]
+    public void SqlServerMergeWithIdentityKeyIncludesKeyInUsingButNotInsert()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                [Key]
+                [DatabaseManaged]
+                public long Id { get; set; }
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [SqlMerge(typeof(Entity), Table = "Data")]
+                [Execute]
+                public partial int Save(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains(
+            "cmd.CommandText = \"MERGE INTO [Data] AS T USING (SELECT @Id AS [Id], @Name AS [Name]) AS S ON (T.[Id] = S.[Id]) WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] WHEN NOT MATCHED THEN INSERT ([Name]) VALUES (S.[Name]);\";",
+            text,
+            StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+    }
+
+    // Output に "INSERTED."/"DELETED." 接頭辞を含めた指定も受理する(素通し quote だと
+    // INSERTED.[INSERTED.Id] という不正列名になる。LocalDB 実機で発見した回帰テスト)。
+    // The Output value may carry its own "INSERTED."/"DELETED." prefix (raw quoting would otherwise
+    // produce the invalid column INSERTED.[INSERTED.Id]; regression found against LocalDB).
+    [Fact]
+    public void SqlServerOutputAcceptsPseudoTablePrefix()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                [Key]
+                [DatabaseManaged]
+                public long Id { get; set; }
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [SqlInsert(typeof(Entity), Table = "Data", Output = "INSERTED.Id")]
+                [ExecuteScalar]
+                public partial long Insert(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("OUTPUT INSERTED.[Id]", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("INSERTED.[INSERTED.Id]", text, StringComparison.Ordinal);
+    }
+
     // A2: SQL Server OUTPUT clause (returns columns from the INSERTED pseudo-table; the Output property is provider-specific).
     [Fact]
     public void SqlServerInsertOutputEmitsOutputClause()
@@ -177,6 +249,41 @@ public sealed class ProviderBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
+    }
+
+    // auto_increment 主キー([Key]+[DatabaseManaged])の UPSERT：INSERT 列に Id を含める(除外すると新値が
+    // 採番されて重複キーにならず、常に INSERT になる。embedded Postgres 実機で発見した同種バグの回帰テスト)。
+    // Upsert with an auto_increment primary key ([Key]+[DatabaseManaged]): the INSERT list must include Id
+    // (excluding it assigns a fresh value so the duplicate never fires and every call inserts; regression for
+    // the sibling bug found against embedded Postgres).
+    [Fact]
+    public void MySqlUpsertWithIdentityKeyIncludesKeyInInsert()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                [Key]
+                [DatabaseManaged]
+                public long Id { get; set; }
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [MySqlUpsert(typeof(Entity), Table = "Data")]
+                [Execute]
+                public partial int Save(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     // A3: MySQL REPLACE INTO (same shape as INSERT).
@@ -262,6 +369,41 @@ public sealed class ProviderBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
+    }
+
+    // serial 主キー([Key]+[DatabaseManaged])の UPSERT：INSERT 列に Id を含める(除外すると serial が新値を
+    // 採番して ON CONFLICT が成立せず、常に INSERT になる。embedded Postgres 実機で発見した回帰テスト)。
+    // Upsert with a serial primary key ([Key]+[DatabaseManaged]): the INSERT list must include Id (excluding
+    // it lets the serial assign a fresh value so ON CONFLICT never fires and every call inserts; regression
+    // found against embedded Postgres).
+    [Fact]
+    public void PgUpsertWithIdentityKeyIncludesKeyInInsert()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                [Key]
+                [DatabaseManaged]
+                public long Id { get; set; }
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [PgUpsert(typeof(Entity), Table = "Data")]
+                [Execute]
+                public partial int Save(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     // A6: PostgreSQL RETURNING clause (returns the named columns; the Returning property is provider-specific).

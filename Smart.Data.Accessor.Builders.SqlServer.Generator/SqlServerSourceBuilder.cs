@@ -230,7 +230,12 @@ internal static class SqlServerSourceBuilder
     }
 
     // MERGE による UPSERT。USING で束縛値の仮想行 S を作り [Key] で突合、WHEN MATCHED で非キー・非 [DatabaseManaged] 列を更新、WHEN NOT MATCHED で INSERT。
+    // USING の仮想行には [Key] 列を必ず含める：identity 主キー([Key]+[DatabaseManaged])でも ON の突合値として必要
+    // (含めないと S に列が無く実行時エラー 207 になる)。INSERT 側は従来どおり [DatabaseManaged] を除外(identity へは挿入しない)。
     // Build a MERGE upsert: a source row S from the bound values, matched on [Key]; WHEN MATCHED updates the non-key, non-[DatabaseManaged] columns and WHEN NOT MATCHED inserts.
+    // The USING source row must always include the [Key] columns: even an identity primary key ([Key]+[DatabaseManaged])
+    // is needed as the match value in ON (omitting it leaves S without the column → runtime error 207). The INSERT side
+    // keeps excluding [DatabaseManaged] (never insert into identity).
     private static void EmitMerge(SourceBuilder builder, SqlServerMergeModel model)
     {
         if (!model.HasEntityType || (model.EntityParamName is null))
@@ -238,19 +243,20 @@ internal static class SqlServerSourceBuilder
             return;
         }
 
-        var columns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
+        var sourceColumns = model.Columns.Where(static x => x.Flags.IsKey() || !x.Flags.IsDatabaseManaged()).ToList();
+        var insertColumns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
         var keys = model.Columns.Where(static x => x.Flags.IsKey()).ToList();
         var updates = model.Columns.Where(static x => !x.Flags.IsKey() && !x.Flags.IsDatabaseManaged()).ToList();
 
         var sql = new StringBuilder();
         sql.Append("MERGE INTO ").Append(Quote(model.TableName)).Append(" AS T USING (SELECT ");
-        for (var i = 0; i < columns.Count; i++)
+        for (var i = 0; i < sourceColumns.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append(model.BindMarker).Append(columns[i].PropertyName).Append(" AS ").Append(Quote(columns[i].ColumnName));
+            sql.Append(model.BindMarker).Append(sourceColumns[i].PropertyName).Append(" AS ").Append(Quote(sourceColumns[i].ColumnName));
         }
         sql.Append(") AS S ON (");
         for (var i = 0; i < keys.Count; i++)
@@ -275,35 +281,39 @@ internal static class SqlServerSourceBuilder
             }
         }
         sql.Append(" WHEN NOT MATCHED THEN INSERT (");
-        for (var i = 0; i < columns.Count; i++)
+        for (var i = 0; i < insertColumns.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append(Quote(columns[i].ColumnName));
+            sql.Append(Quote(insertColumns[i].ColumnName));
         }
         sql.Append(") VALUES (");
-        for (var i = 0; i < columns.Count; i++)
+        for (var i = 0; i < insertColumns.Count; i++)
         {
             if (i > 0)
             {
                 sql.Append(", ");
             }
-            sql.Append("S.").Append(Quote(columns[i].ColumnName));
+            sql.Append("S.").Append(Quote(insertColumns[i].ColumnName));
         }
         sql.Append(");");
 
         SqlEmit.EmitCommandText(builder, sql.ToString());
 
-        foreach (var column in columns)
+        foreach (var column in sourceColumns)
         {
             SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
         }
     }
 
     // OUTPUT 句を組み立てる。outputColumns(カンマ区切りの列名)を pseudoTable(INSERTED / DELETED)の列として返す。未指定なら空文字。
+    // 列名に "INSERTED." / "DELETED." 接頭辞が付いていればそれを尊重する(付けない指定と両対応。素通しで quote すると
+    // INSERTED.[INSERTED.Id] という不正列名になるため)。
     // Build the OUTPUT clause: render outputColumns (comma-separated) as columns of pseudoTable (INSERTED / DELETED). Empty when absent.
+    // A column may carry its own "INSERTED." / "DELETED." prefix, which is honoured (both spellings are accepted;
+    // quoting the raw value would otherwise produce the invalid column INSERTED.[INSERTED.Id]).
     private static string OutputClause(string? outputColumns, string pseudoTable)
     {
         if (outputColumns is null)
@@ -317,7 +327,22 @@ internal static class SqlServerSourceBuilder
             return string.Empty;
         }
 
-        return " OUTPUT " + String.Join(", ", parts.Select(x => pseudoTable + "." + Quote(x)));
+        return " OUTPUT " + String.Join(", ", parts.Select(x => QualifyOutputColumn(x, pseudoTable)));
+    }
+
+    private static string QualifyOutputColumn(string column, string pseudoTable)
+    {
+        var dotIndex = column.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            var prefix = column.Substring(0, dotIndex);
+            if (prefix.Equals("INSERTED", StringComparison.OrdinalIgnoreCase) ||
+                prefix.Equals("DELETED", StringComparison.OrdinalIgnoreCase))
+            {
+                return prefix.ToUpperInvariant() + "." + Quote(column.Substring(dotIndex + 1).Trim());
+            }
+        }
+        return pseudoTable + "." + Quote(column);
     }
 
     // 識別子を角括弧でクォートする(] は ]] にエスケープ)。

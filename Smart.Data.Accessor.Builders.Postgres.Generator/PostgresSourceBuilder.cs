@@ -231,8 +231,14 @@ internal static class PostgresSourceBuilder
         }
     }
 
-    // INSERT ... ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col。INSERT 列は非 [DatabaseManaged]、突合は [Key]、更新は非キー・非 [DatabaseManaged] 列。更新対象が無ければ DO NOTHING。
-    // Build INSERT ... ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col. INSERT columns are non-[DatabaseManaged]; conflict target = [Key]; updates assign the non-key, non-[DatabaseManaged] columns. DO NOTHING when nothing to update.
+    // INSERT ... ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col。INSERT 列は「[Key] ∪ 非 [DatabaseManaged]」、
+    // 突合は [Key]、更新は非キー・非 [DatabaseManaged] 列。更新対象が無ければ DO NOTHING。
+    // UPSERT はキー値を呼び出し側が持ち込む操作なので、serial 主キー([Key]+[DatabaseManaged])でも INSERT 列に
+    // 含める(除外すると serial が新値を採番して ON CONFLICT が成立せず、常に INSERT になる)。
+    // Build INSERT ... ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col. INSERT columns = [Key] ∪ non-[DatabaseManaged];
+    // conflict target = [Key]; updates assign the non-key, non-[DatabaseManaged] columns. DO NOTHING when nothing to update.
+    // An upsert carries the key value from the caller, so even a serial primary key ([Key]+[DatabaseManaged]) must be
+    // inserted (excluding it lets the serial assign a fresh value and ON CONFLICT never fires — always a plain INSERT).
     private static void EmitUpsert(SourceBuilder builder, PostgresUpsertModel model)
     {
         if (!model.HasEntityType || (model.EntityParamName is null))
@@ -240,7 +246,7 @@ internal static class PostgresSourceBuilder
             return;
         }
 
-        var columns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
+        var columns = model.Columns.Where(static x => x.Flags.IsKey() || !x.Flags.IsDatabaseManaged()).ToList();
         var keys = model.Columns.Where(static x => x.Flags.IsKey()).ToList();
         var updates = model.Columns.Where(static x => !x.Flags.IsKey() && !x.Flags.IsDatabaseManaged()).ToList();
 

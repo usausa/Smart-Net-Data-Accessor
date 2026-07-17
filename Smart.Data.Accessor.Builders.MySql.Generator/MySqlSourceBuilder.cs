@@ -82,8 +82,14 @@ internal static class MySqlSourceBuilder
         }
     }
 
-    // INSERT ... ON DUPLICATE KEY UPDATE を組み立てる。更新は非キー・非 [DatabaseManaged] 列を `col = VALUES(col)` で。更新対象が無ければ全列。
-    // Build INSERT ... ON DUPLICATE KEY UPDATE. The update assigns the non-key, non-[DatabaseManaged] columns via `col = VALUES(col)`, falling back to all columns when there is nothing else to update.
+    // INSERT ... ON DUPLICATE KEY UPDATE を組み立てる。INSERT 列は「[Key] ∪ 非 [DatabaseManaged]」、更新は非キー・
+    // 非 [DatabaseManaged] 列を `col = VALUES(col)` で。更新対象が無ければ全列。
+    // UPSERT はキー値を呼び出し側が持ち込む操作なので、auto_increment 主キー([Key]+[DatabaseManaged])でも INSERT 列に
+    // 含める(除外すると新値が採番されて重複キーにならず、常に INSERT になる)。
+    // Build INSERT ... ON DUPLICATE KEY UPDATE. INSERT columns = [Key] ∪ non-[DatabaseManaged]; the update assigns the
+    // non-key, non-[DatabaseManaged] columns via `col = VALUES(col)`, falling back to all columns when there is nothing
+    // else to update. An upsert carries the key value from the caller, so even an auto_increment primary key
+    // ([Key]+[DatabaseManaged]) must be inserted (excluding it assigns a fresh value and the duplicate never fires).
     private static void EmitUpsert(SourceBuilder builder, MySqlUpsertModel model)
     {
         if (!model.HasEntityType || (model.EntityParamName is null))
@@ -91,7 +97,7 @@ internal static class MySqlSourceBuilder
             return;
         }
 
-        var columns = model.Columns.Where(static x => !x.Flags.IsDatabaseManaged()).ToList();
+        var columns = model.Columns.Where(static x => x.Flags.IsKey() || !x.Flags.IsDatabaseManaged()).ToList();
         var updates = model.Columns.Where(static x => !x.Flags.IsKey() && !x.Flags.IsDatabaseManaged()).ToList();
         if (updates.Count == 0)
         {
