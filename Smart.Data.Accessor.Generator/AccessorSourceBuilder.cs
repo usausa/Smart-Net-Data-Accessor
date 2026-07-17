@@ -739,8 +739,8 @@ internal static class AccessorSourceBuilder
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.ReturnValue:
-                    // SDA0210 は BuildAccessorModel で報告済みなので、ここでは出力しない。
-                    // SDA0210 is already reported in BuildAccessorModel; skip emission here.
+                    // SDA0209 は BuildAccessorModel で報告済みなので、ここでは出力しない。
+                    // SDA0209 is already reported in BuildAccessorModel; skip emission here.
                     break;
                 default:
                     if (hasProvider)

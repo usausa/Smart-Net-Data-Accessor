@@ -263,7 +263,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0010");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0004");
     }
 
     [Fact]
@@ -512,8 +512,8 @@ public sealed class DiagnosticTests
     [Fact]
     public void SqlTextEmpty()
     {
-        // SDA0212: [Sql("")] テキストが空 → 警告。
-        // SDA0212: [Sql("")] empty SQL text -> warning.
+        // SDA0211: [Sql("")] テキストが空 → 警告。
+        // SDA0211: [Sql("")] empty SQL text -> warning.
         const string source = """
             using System.Data.Common;
             using Smart.Data.Accessor.Attributes;
@@ -529,7 +529,7 @@ public sealed class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0212");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0211");
     }
 
     [Fact]

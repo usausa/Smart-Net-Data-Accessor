@@ -2,7 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Xunit;
 
-// Phase R1 diagnostics: SDA0013 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
+// Phase R1 diagnostics: SDA0007 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
 public sealed class R1DiagnosticTests
 {
     [Fact]
@@ -27,13 +27,13 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0013");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0007");
     }
 
     [Fact]
     public void ReferencedInjectNoInfo()
     {
-        // 'svc' is referenced in user code → no SDA0013. (CS0103 on the not-yet-generated field is
+        // 'svc' is referenced in user code → no SDA0007. (CS0103 on the not-yet-generated field is
         // irrelevant; the harness only inspects generator diagnostics.)
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -55,7 +55,7 @@ public sealed class R1DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0013");
+        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0007");
     }
 
     [Fact]

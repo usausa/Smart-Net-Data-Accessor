@@ -108,11 +108,11 @@ internal static class AccessorModelBuilder
     }
 
     // SQL ステージ：各メソッドの .sql を解決し、SQL ファイル衝突診断(SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound)を出し、
-    // 2-way SQL を解析してメソッドの emit フィールドへ格納し(SQL エラー時はそのメソッドを落とす)、SDA0013 の SQL 側を評価し、
+    // 2-way SQL を解析してメソッドの emit フィールドへ格納し(SQL エラー時はそのメソッドを落とす)、SDA0007 の SQL 側を評価し、
     // 検証用に /*!using*/ ディレクティブを集める。Compilation 非依存なのでキャッシュ可能。
     // SQL stage: resolve each method's .sql file, apply SQL-file conflict diagnostics (SDA0402 / SDA0403 / SDA0405 /
     // SDA0404 / SqlNotFound), parse 2-way SQL into the method's emit fields (dropping a method on SQL errors), evaluate
-    // SDA0013's SQL half, and gather /*!using*/ directives to validate. Compilation-free, so cacheable.
+    // SDA0007's SQL half, and gather /*!using*/ directives to validate. Compilation-free, so cacheable.
     internal static Result<AccessorModel> CompleteModel(
         Result<AccessorModel> result,
         ImmutableArray<(string Path, string Text)> sqlFiles,
@@ -205,8 +205,8 @@ internal static class AccessorModelBuilder
             keptMethods.Add(method);
         }
 
-        // SDA0013 (Info): [Inject] がコード(transform で算出)でも SQL でも参照されていない。
-        // SDA0013 (Info): an [Inject] referenced neither in code (computed in the transform) nor in SQL.
+        // SDA0007 (Info): [Inject] がコード(transform で算出)でも SQL でも参照されていない。
+        // SDA0007 (Info): an [Inject] referenced neither in code (computed in the transform) nor in SQL.
         var sqlKeyPrefix = model.ClassName + ".";
         foreach (var inject in model.Injects)
         {
@@ -256,9 +256,9 @@ internal static class AccessorModelBuilder
         var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
 
         // [ExecuteConfig(typeof(P))] は P の [TypeHandler] 宣言を converter 解決の最下位スコープにする。ここで解決する
-        // (検証は後段で報告。SDA0016 / SDA0017 参照)。
+        // (検証は後段で報告。SDA0010 / SDA0011 参照)。
         // [ExecuteConfig(typeof(P))] makes P's [TypeHandler] declarations the lowest converter-resolution scope. Resolved
-        // here (validation is reported later; see SDA0016 / SDA0017).
+        // here (validation is reported later; see SDA0010 / SDA0011).
         var profileSymbol = MappingAttributeHelper.ResolveProfile(classSymbol);
 
         // class / profile スコープの [TypeMap] は、マップ対象 CLR 型のパラメータに既定の DbType(＋ Size)を与える。class スコープが profile より優先。
@@ -376,8 +376,8 @@ internal static class AccessorModelBuilder
                     (attribute.ConstructorArguments[0].Value is string procName))
                 {
                     procedureName = procName;
-                    // SDA0204: [Procedure("")] 手続き名が空 → 警告。
-                    // SDA0204: [Procedure("")] empty stored procedure name -> warning.
+                    // SDA0203: [Procedure("")] 手続き名が空 → 警告。
+                    // SDA0203: [Procedure("")] empty stored procedure name -> warning.
                     if (String.IsNullOrEmpty(procName))
                     {
                         diagnostics.Add(new DiagnosticInfo(
@@ -401,8 +401,8 @@ internal static class AccessorModelBuilder
                     inlineSqlArgument = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault()?.Expression;
                     var argumentLocation = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault()?.GetLocation();
                     inlineSqlLocation = argumentLocation is not null ? LocationInfo.CreateFrom(argumentLocation) : null;
-                    // SDA0212: [Sql("")] テキストが空 → 警告。
-                    // SDA0212: [Sql("")] empty SQL text -> warning.
+                    // SDA0211: [Sql("")] テキストが空 → 警告。
+                    // SDA0211: [Sql("")] empty SQL text -> warning.
                     if (String.IsNullOrEmpty(sqlText))
                     {
                         diagnostics.Add(new DiagnosticInfo(
@@ -504,8 +504,8 @@ internal static class AccessorModelBuilder
             // 2-way-SQL parse run in the output stage (they need the .sql files); here we keep only the symbol-derived checks.
             if (isDirectSql)
             {
-                // SDA0203: (conn/tx/cancellation を除いた)最初の引数は string でなければならない。
-                // SDA0203: the first parameter (after conn/tx/cancellation) must be `string`.
+                // SDA0202: (conn/tx/cancellation を除いた)最初の引数は string でなければならない。
+                // SDA0202: the first parameter (after conn/tx/cancellation) must be `string`.
                 var firstUsable = member.Parameters.FirstOrDefault(x =>
                     (x.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) &&
                     !x.Type.InheritsFrom(WellKnownTypeNames.DbConnection) &&
@@ -893,8 +893,8 @@ internal static class AccessorModelBuilder
             IReadOnlyList<UsingDirective> methodUsings = Array.Empty<UsingDirective>();
             string? directSqlParameterName = null;
 
-            // SDA0205: 非同期 [Procedure] は out/ref パラメータを使えない。
-            // SDA0205: an async [Procedure] cannot use out/ref parameters.
+            // SDA0204: 非同期 [Procedure] は out/ref パラメータを使えない。
+            // SDA0204: an async [Procedure] cannot use out/ref parameters.
             if ((procedureName is not null) && IsAsyncShape(shape.Value))
             {
                 foreach (var parameterSymbol in member.Parameters)
@@ -910,12 +910,12 @@ internal static class AccessorModelBuilder
                 }
             }
 
-            // SDA0208 / SDA0209: [Direction] の整合性チェック。
-            //  - SDA0208: [Direction] と RefKind の不一致。
-            //  - SDA0209: [Procedure] / [Execute] / [DirectSql] 以外のメソッド種別で [Direction] を使用。
-            // SDA0208 / SDA0209: [Direction] consistency checks.
-            //  - SDA0208: [Direction] vs. RefKind mismatch.
-            //  - SDA0209: [Direction] used on a method kind other than [Procedure] / [Execute] / [DirectSql].
+            // SDA0207 / SDA0208: [Direction] の整合性チェック。
+            //  - SDA0207: [Direction] と RefKind の不一致。
+            //  - SDA0208: [Procedure] / [Execute] / [DirectSql] 以外のメソッド種別で [Direction] を使用。
+            // SDA0207 / SDA0208: [Direction] consistency checks.
+            //  - SDA0207: [Direction] vs. RefKind mismatch.
+            //  - SDA0208: [Direction] used on a method kind other than [Procedure] / [Execute] / [DirectSql].
             var directionAllowed = (methodType is MethodType.Execute or MethodType.ExecuteScalar) || isDirectSql || (procedureName is not null);
             foreach (var parameterSymbol in member.Parameters)
             {
@@ -983,10 +983,10 @@ internal static class AccessorModelBuilder
                     (x.TypeFullName == "string"));
                 directSqlParameterName = sqlParam?.Name;
 
-                // SDA0211 — SQL ソースの string パラメータに [Direction] を付けるのは無効
-                // ([Direction(ReturnValue)] はどこに付いても上で一律 SDA0210 として報告済み)。
-                // SDA0211 — [Direction] on the SQL-source string parameter is invalid.
-                // ([Direction(ReturnValue)] anywhere is reported generally above as SDA0210.)
+                // SDA0210 — SQL ソースの string パラメータに [Direction] を付けるのは無効
+                // ([Direction(ReturnValue)] はどこに付いても上で一律 SDA0209 として報告済み)。
+                // SDA0210 — [Direction] on the SQL-source string parameter is invalid.
+                // ([Direction(ReturnValue)] anywhere is reported generally above as SDA0209.)
                 foreach (var parameterSymbol in member.Parameters)
                 {
                     var parameterModel = parameters.FirstOrDefault(x => x.Name == parameterSymbol.Name);
@@ -1151,8 +1151,8 @@ internal static class AccessorModelBuilder
                 (attribute.ConstructorArguments[1].Value is string injectName) &&
                 !String.IsNullOrEmpty(injectName))
             {
-                // SDA0010: 同一クラス内で [Inject] の Name が重複している。
-                // SDA0010: duplicate [Inject] Name within the same class.
+                // SDA0004: 同一クラス内で [Inject] の Name が重複している。
+                // SDA0004: duplicate [Inject] Name within the same class.
                 if (!seenInjectNames.Add(injectName))
                 {
                     diagnostics.Add(new DiagnosticInfo(
@@ -1163,9 +1163,9 @@ internal static class AccessorModelBuilder
                     continue;
                 }
 
-                // SDA0011: [Inject] の Name が(partial)クラス内の既存フィールド/プロパティ、または予約済みプロバイダ ctor 引数
+                // SDA0005: [Inject] の Name が(partial)クラス内の既存フィールド/プロパティ、または予約済みプロバイダ ctor 引数
                 // (dbProvider / providerSelector)と衝突している。
-                // SDA0011: an [Inject] Name collides with an existing field/property in the (partial) class
+                // SDA0005: an [Inject] Name collides with an existing field/property in the (partial) class
                 // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
                 if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || (injectName is "dbProvider" or "providerSelector"))
                 {
@@ -1196,8 +1196,8 @@ internal static class AccessorModelBuilder
                 (attribute.ConstructorArguments[0].Value is string pName))
             {
                 providerName = pName;
-                // SDA0014: [Provider("")] 名前が空 → 警告。
-                // SDA0014: [Provider("")] empty name -> warning.
+                // SDA0008: [Provider("")] 名前が空 → 警告。
+                // SDA0008: [Provider("")] empty name -> warning.
                 if (String.IsNullOrEmpty(pName))
                 {
                     diagnostics.Add(new DiagnosticInfo(
@@ -1210,8 +1210,8 @@ internal static class AccessorModelBuilder
                 (attribute.ConstructorArguments.Length >= 1) &&
                 (attribute.ConstructorArguments[0].Value is INamedTypeSymbol profileType))
             {
-                // SDA0016: 対象型は [AccessorProfile] を持たねばならない。
-                // SDA0016: the target type must carry [AccessorProfile].
+                // SDA0010: 対象型は [AccessorProfile] を持たねばならない。
+                // SDA0010: the target type must carry [AccessorProfile].
                 var profileAttrs = profileType.GetAttributes();
                 var hasProfile = profileAttrs.Any(x => x.AttributeClass?.ToDisplayString() == AccessorProfileAttributeName);
                 if (!hasProfile)
@@ -1222,8 +1222,8 @@ internal static class AccessorModelBuilder
                         classSymbol.Name,
                         profileType.ToDisplayString()));
                 }
-                // SDA0017: profile 自身は [ExecuteConfig] を持ってはならない(循環参照になる)。
-                // SDA0017: the profile itself must not have [ExecuteConfig] (would be circular).
+                // SDA0011: profile 自身は [ExecuteConfig] を持ってはならない(循環参照になる)。
+                // SDA0011: the profile itself must not have [ExecuteConfig] (would be circular).
                 var profileHasConfig = profileAttrs.Any(x => x.AttributeClass?.ToDisplayString() == ExecuteConfigAttributeName);
                 if (profileHasConfig)
                 {
@@ -1237,8 +1237,8 @@ internal static class AccessorModelBuilder
 
         var requiresFactory = methods.Any(x => x.ConnectionPattern == ConnectionPattern.None);
 
-        // SDA0015: [Provider] が設定されているのに、IDbProviderSelector.GetProvider(name) を消費する Pattern B メソッドが無い。
-        // SDA0015: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
+        // SDA0009: [Provider] が設定されているのに、IDbProviderSelector.GetProvider(name) を消費する Pattern B メソッドが無い。
+        // SDA0009: [Provider] is set but no Pattern B method consumes IDbProviderSelector.GetProvider(name).
         if ((providerName is not null) && (methods.Count > 0) && !requiresFactory)
         {
             diagnostics.Add(new DiagnosticInfo(
@@ -1248,9 +1248,9 @@ internal static class AccessorModelBuilder
                 providerName));
         }
 
-        // SDA0013: コード参照側の判定をここで(symbol 由来で)計算する。SQL ファイル参照側と SDA0013 診断本体は
+        // SDA0007: コード参照側の判定をここで(symbol 由来で)計算する。SQL ファイル参照側と SDA0007 診断本体は
         // .sql を持つ出力段で評価する。結果は InjectModel.ReferencedInCode に載せて運ぶ。
-        // SDA0013: compute the code-reference half here (symbol-derived). The SQL-file-reference half and the SDA0013
+        // SDA0007: compute the code-reference half here (symbol-derived). The SQL-file-reference half and the SDA0007
         // diagnostic itself are evaluated at the output stage (which has the .sql files); the result is carried on InjectModel.ReferencedInCode.
         for (var i = 0; i < injects.Count; i++)
         {
@@ -1302,8 +1302,8 @@ internal static class AccessorModelBuilder
 
     private static bool IsLikelyResolvableInjectType(INamedTypeSymbol type)
     {
-        // SDA0012: 値型や未構築のオープンジェネリックは警告する。IServiceProvider.GetService がこれらに対して通常 null を返すため。
-        // SDA0012: warn for value types or unconstructed open generics, since IServiceProvider.GetService typically returns null for these.
+        // SDA0006: 値型や未構築のオープンジェネリックは警告する。IServiceProvider.GetService がこれらに対して通常 null を返すため。
+        // SDA0006: warn for value types or unconstructed open generics, since IServiceProvider.GetService typically returns null for these.
         if (type.IsValueType)
         {
             return false;

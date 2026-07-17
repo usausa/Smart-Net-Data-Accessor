@@ -10,9 +10,8 @@ using Microsoft.CodeAnalysis;
 //   SDA04xx  SQL-file resolution(CompleteModel: SQL-file conflicts)
 //   SDA05xx  2-way SQL parse    (BuildSqlEmitCode: tokenizer / pragma / parameter checks)
 // Builder generator diagnostics use the SDA1xxx band (see BuilderDiagnostics).
-// Retired IDs (not re-used): SDA0141 ConverterTypeNotSupported, SDA0149 EnumUnderlyingMismatch,
-// SDA0150/SDA0220-0223 user-declared Builder method validation, SDA0186/0187 /*!helper*//*!using*/ existence
-// checks. History is tracked in AnalyzerReleases.
+// 2026-07-19 に全帯域を欠番なしへ再採番済み(リリース前の破壊的変更として実施。AnalyzerReleases 台帳は不採用)。
+// Renumbered to gap-free bands on 2026-07-19 (a pre-release breaking change; the AnalyzerReleases ledger is not used).
 internal static class Diagnostics
 {
     // ==================================================================
@@ -44,7 +43,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor InjectNameDuplicated = new(
-        id: "SDA0010",
+        id: "SDA0004",
         title: "[Inject] Name is duplicated within the class",
         messageFormat: "[Inject] Name is declared more than once. class=[{0}], name=[{1}].",
         category: "Usage",
@@ -52,7 +51,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor InjectNameConflictsWithMember = new(
-        id: "SDA0011",
+        id: "SDA0005",
         title: "[Inject] Name conflicts with another member or method parameter",
         messageFormat: "[Inject] Name conflicts with an existing field, property, or method parameter. class=[{0}], name=[{1}].",
         category: "Usage",
@@ -60,7 +59,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor InjectTypeNotResolvable = new(
-        id: "SDA0012",
+        id: "SDA0006",
         title: "[Inject] Type may not resolve from IServiceProvider",
         messageFormat: "[Inject] declares a type that may not be resolvable from IServiceProvider, and runtime will throw if it is unregistered. class=[{0}], type=[{1}], name=[{2}].",
         category: "Usage",
@@ -68,7 +67,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor InjectNotReferenced = new(
-        id: "SDA0013",
+        id: "SDA0007",
         title: "[Inject] declaration is not referenced",
         messageFormat: "[Inject] Name is referenced neither in SQL (/*@ {1}.X */ etc.) nor in user code. class=[{0}], name=[{1}].",
         category: "Usage",
@@ -76,7 +75,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ProviderNameEmpty = new(
-        id: "SDA0014",
+        id: "SDA0008",
         title: "[Provider] name is empty",
         messageFormat: "[Provider] has an empty name, so IDbProviderSelector.GetProvider will receive an empty string. class=[{0}].",
         category: "Usage",
@@ -84,7 +83,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ProviderOnPatternAOnlyAccessor = new(
-        id: "SDA0015",
+        id: "SDA0009",
         title: "[Provider] has no effect on Pattern A only accessor",
         messageFormat: "[Provider] is set but the accessor has no Pattern B methods, so the name is never passed to IDbProviderSelector.GetProvider. class=[{0}], name=[{1}].",
         category: "Usage",
@@ -92,7 +91,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ExecuteConfigProfileInvalid = new(
-        id: "SDA0016",
+        id: "SDA0010",
         title: "[ExecuteConfig] target is not an [AccessorProfile]",
         messageFormat: "[ExecuteConfig] target type does not have [AccessorProfile]. class=[{0}], type=[{1}].",
         category: "Mapping",
@@ -100,7 +99,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ProfileCircularReference = new(
-        id: "SDA0017",
+        id: "SDA0011",
         title: "[AccessorProfile] class also has [ExecuteConfig]",
         messageFormat: "[AccessorProfile] class also has [ExecuteConfig], creating a circular reference. class=[{0}].",
         category: "Mapping",
@@ -206,7 +205,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DirectSqlFirstParamNotString = new(
-        id: "SDA0203",
+        id: "SDA0202",
         title: "[DirectSql] method first parameter must be string",
         messageFormat: "[DirectSql] requires the first parameter (after conn/tx/CancellationToken) to be `string` for the command text. method=[{0}].",
         category: "Usage",
@@ -214,7 +213,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ProcedureNameEmpty = new(
-        id: "SDA0204",
+        id: "SDA0203",
         title: "[Procedure] stored procedure name is empty",
         messageFormat: "[Procedure] has an empty stored procedure name. method=[{0}].",
         category: "Usage",
@@ -222,7 +221,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor AsyncProcedureRefParam = new(
-        id: "SDA0205",
+        id: "SDA0204",
         title: "async [Procedure] cannot use out/ref parameters",
         messageFormat: "async [Procedure] cannot use an out/ref parameter; switch to a synchronous method or POCO aggregation. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -230,7 +229,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DbTypeAttributeConflict = new(
-        id: "SDA0206",
+        id: "SDA0205",
         title: "Conflicting [DbType] / [DbType<TEnum>] on same parameter",
         messageFormat: "Parameter has both [DbType(DbType)] and [DbType<TEnum>], which conflict. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -238,7 +237,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DbTypeProviderEnumNotWhitelisted = new(
-        id: "SDA0207",
+        id: "SDA0206",
         title: "[DbType<TEnum>] TEnum is not in the provider enum whitelist",
         messageFormat: "Parameter uses [DbType<{2}>] where TEnum is not in the provider enum whitelist; the provider-specific DbType assignment will be skipped. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -246,7 +245,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DirectionRefKindMismatch = new(
-        id: "SDA0208",
+        id: "SDA0207",
         title: "[Direction] conflicts with the parameter modifier",
         messageFormat: "[Direction({2})] conflicts with the parameter modifier '{3}'. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -254,7 +253,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DirectionOnUnsupportedMethod = new(
-        id: "SDA0209",
+        id: "SDA0208",
         title: "[Direction] used on unsupported method kind",
         messageFormat: "Parameter has [Direction] but the method is not [Procedure] / [Execute] / [DirectSql]. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -262,7 +261,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ReturnValueDirectionNotAllowed = new(
-        id: "SDA0210",
+        id: "SDA0209",
         title: "[Direction(ReturnValue)] is not supported",
         messageFormat: "Parameter cannot use [Direction(ReturnValue)]; the stored procedure RETURN value maps to the method's scalar return value. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -270,7 +269,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor DirectSqlCommandTextDirection = new(
-        id: "SDA0211",
+        id: "SDA0210",
         title: "[Direction] not allowed on [DirectSql] command-text parameter",
         messageFormat: "The command-text string parameter on a [DirectSql] method cannot be annotated with [Direction]. method=[{0}], parameter=[{1}].",
         category: "Usage",
@@ -278,7 +277,7 @@ internal static class Diagnostics
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor SqlTextEmpty = new(
-        id: "SDA0212",
+        id: "SDA0211",
         title: "[Sql] text is empty",
         messageFormat: "[Sql] has an empty SQL text. method=[{0}].",
         category: "Usage",
