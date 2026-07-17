@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor.Extensions.DependencyInjection</PackageId>
-    <Title>Smart.Data.Accessor.Extensions.DependencyInjection</Title>
+    <PackageId>Usa.Smart.Data.Accessor.Extensions.DependencyInjection</PackageId>
+    <Title>Usa.Smart.Data.Accessor.Extensions.DependencyInjection</Title>
     <Description>DI integration for Smart.Data.Accessor source generator runtime.</Description>
     <PackageTags>sourcegenerator;dataaccessor;di;dependencyinjection</PackageTags>
   </PropertyGroup>

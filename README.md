@@ -1,6 +1,6 @@
 # Smart.Data.Accessor - Source Generator based data accessor for .NET
 
-[![NuGet](https://img.shields.io/nuget/v/Smart.Data.Accessor.svg)](https://www.nuget.org/packages/Smart.Data.Accessor)
+[![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor)
 
 ## What is this?
 
@@ -16,7 +16,7 @@ connection handling, command setup, parameter binding, and row mapping — as pl
 
 ## Getting Started (Console Application)
 
-Install [Smart.Data.Accessor](https://www.nuget.org/packages/Smart.Data.Accessor).
+Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.Accessor).
 
 Define a model and a data accessor. The accessor is a `partial class` marked `[DataAccessor]`;
 each data method is a `partial` method marked with an **execution-kind attribute**
@@ -191,9 +191,9 @@ paging with the proper dialect per provider. Provider packages add dialect featu
 
 | Package | Attributes | Extras |
 | --- | --- | --- |
-| `Smart.Data.Accessor.Builders.SqlServer` | `SqlInsert`, ... , `SqlMerge` | `OUTPUT` clause, MERGE upsert |
-| `Smart.Data.Accessor.Builders.Postgres` | `PgInsert`, ... , `PgUpsert` | `RETURNING` clause, `ON CONFLICT` upsert |
-| `Smart.Data.Accessor.Builders.MySql` | `MySqlInsert`, ... , `MySqlUpsert`, `MySqlInsertIgnore`, `MySqlReplace` | `ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE INTO` |
+| `Usa.Smart.Data.Accessor.Builders.SqlServer` | `SqlInsert`, ... , `SqlMerge` | `OUTPUT` clause, MERGE upsert |
+| `Usa.Smart.Data.Accessor.Builders.Postgres` | `PgInsert`, ... , `PgUpsert` | `RETURNING` clause, `ON CONFLICT` upsert |
+| `Usa.Smart.Data.Accessor.Builders.MySql` | `MySqlInsert`, ... , `MySqlUpsert`, `MySqlInsertIgnore`, `MySqlReplace` | `ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE INTO` |
 
 Writing a builder generator for another provider is supported and documented
 (`__docs/generator-guide.md`, Japanese: `generator-guide.ja.md`).
@@ -241,7 +241,7 @@ Two patterns, chosen per method by the signature:
   opens/closes per call.
 
 With `Microsoft.Extensions.DependencyInjection`
-([Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Smart.Data.Accessor.Extensions.DependencyInjection)):
+([Usa.Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Extensions.DependencyInjection)):
 
 ```csharp
 builder.Services.AddSingleton<IDbProvider>(
@@ -259,7 +259,7 @@ registry empty and `AddDataAccessors()` silently registers nothing:
 builder.Services.AddDataAccessors(typeof(MyAccessor).Assembly);
 ```
 
-[Smart.Data.Accessor.Resolver](https://www.nuget.org/packages/Smart.Data.Accessor.Resolver)
+[Usa.Smart.Data.Accessor.Resolver](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Resolver)
 provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Smart.Resolver)
 (`config.UseDataAccessors()`), including keyed multi-source setups.
 
@@ -279,7 +279,7 @@ provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Sm
 All misuse is reported at compile time with `SDA`-prefixed diagnostics — e.g. missing SQL file
 (SDA0401), unsupported return type (SDA0301), missing execution kind (SDA0108), entity with no
 mappable columns (SDA0312), unclosed 2-way SQL block (SDA0503, pointing inside the `[Sql]` literal).
-See `__docs/spec.md` §11 for the full catalog.
+See `__docs/spec.md`.
 
 ## Native AOT
 
@@ -305,13 +305,30 @@ With a real database, network/query time dominates and the differences shrink fu
 
 | Package | Contents |
 | --- | --- |
-| `Smart.Data.Accessor` | Runtime + core source generator + standard builders |
-| `Smart.Data.Accessor.Extensions.DependencyInjection` | `AddDataAccessors()` for Microsoft.Extensions.DependencyInjection |
-| `Smart.Data.Accessor.Resolver` | `UseDataAccessors()` for Smart.Resolver |
-| `Smart.Data.Accessor.Builders.SqlServer` / `.Postgres` / `.MySql` | Provider-specific query builders |
+| `Usa.Smart.Data.Accessor` | Runtime + core source generator + standard builders |
+| `Usa.Smart.Data.Accessor.Extensions.DependencyInjection` | `AddDataAccessors()` for Microsoft.Extensions.DependencyInjection |
+| `Usa.Smart.Data.Accessor.Resolver` | `UseDataAccessors()` for Smart.Resolver |
+| `Usa.Smart.Data.Accessor.Builders.SqlServer` / `.Postgres` / `.MySql` | Provider-specific query builders |
 
 ## Documentation
 
 * `__docs/spec.md` — full specification (attributes, mapping rules, diagnostics, generated-code shapes)
 * `__docs/generator-guide.md` — how to write a third-party provider builder generator (Japanese: `generator-guide.ja.md`)
 * `Example.ConsoleApplication` / `Example.WebApplication` — runnable samples (SQLite)
+
+## TODO
+
+Remaining work before / after the first release:
+
+* **Real-database verification matrix** — run the MySQL / PostgreSQL builder dialects
+  (`ON DUPLICATE KEY UPDATE` / `ON CONFLICT` / `RETURNING`, ...) against real servers.
+  SQL Server and SQLite are already verified on real databases; MySQL / PostgreSQL are
+  currently mock-verified only.
+* **Package consumption E2E** — reference the produced nupkgs from a fresh project and verify
+  generation and execution end to end.
+* **Initial release version and release-notes flow** — the PackageIds are fixed
+  (`Usa.` prefix); the first version number and release-note operation remain to be decided.
+* Native AOT smoke on providers other than SQLite (e.g. `Microsoft.Data.SqlClient`).
+* Test harness: compile-check the generated code inside `GeneratorTestHelper`
+  (the functional test projects cover this today by actually compiling and running it).
+* TVP support (`SqlDbType.Structured` + `TypeName`) — on demand.

@@ -1187,9 +1187,32 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void ProviderDbTypeEmitsProviderSpecificCast()
     {
+        // 生成コードは Microsoft.Data.SqlClient.SqlParameter へキャストする(実プロジェクトでは SqlClient 参照が
+        // 前提)。ハーネスは SqlClient を参照しないため、実コンパイル検証用に同名の fake を宣言する。
+        // The generated code casts to Microsoft.Data.SqlClient.SqlParameter (real projects reference SqlClient).
+        // The harness does not, so declare a same-named fake for the compile verification.
         const string source = """
             using System.Data;
             using Smart.Data.Accessor.Attributes;
+
+            namespace Microsoft.Data.SqlClient
+            {
+                internal sealed class SqlParameter : global::System.Data.Common.DbParameter
+                {
+                    public global::System.Data.SqlDbType SqlDbType { get; set; }
+                    public override global::System.Data.DbType DbType { get; set; }
+                    public override global::System.Data.ParameterDirection Direction { get; set; }
+                    public override bool IsNullable { get; set; }
+                    public override string ParameterName { get; set; } = "";
+                    public override int Size { get; set; }
+                    public override string SourceColumn { get; set; } = "";
+                    public override bool SourceColumnNullMapping { get; set; }
+                    public override object? Value { get; set; }
+                    public override void ResetDbType()
+                    {
+                    }
+                }
+            }
 
             [DataAccessor]
             internal sealed partial class Accessor

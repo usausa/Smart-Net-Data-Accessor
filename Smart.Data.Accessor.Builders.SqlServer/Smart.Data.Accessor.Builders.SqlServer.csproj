@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor.Builders.SqlServer</PackageId>
-    <Title>Smart.Data.Accessor.Builders.SqlServer</Title>
+    <PackageId>Usa.Smart.Data.Accessor.Builders.SqlServer</PackageId>
+    <Title>Usa.Smart.Data.Accessor.Builders.SqlServer</Title>
     <Description>SQL Server QueryBuilder attributes &amp; generator for Smart.Data.Accessor.</Description>
     <PackageTags>sourcegenerator;dataaccessor;builders;sqlserver</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

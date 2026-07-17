@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor.Resolver</PackageId>
-    <Title>Smart.Data.Accessor.Resolver</Title>
+    <PackageId>Usa.Smart.Data.Accessor.Resolver</PackageId>
+    <Title>Usa.Smart.Data.Accessor.Resolver</Title>
     <Description>Smart.Resolver (Usa.Smart.Resolver) integration for the Smart.Data.Accessor source generator runtime.</Description>
     <PackageTags>sourcegenerator;dataaccessor;di;ioc;resolver</PackageTags>
   </PropertyGroup>

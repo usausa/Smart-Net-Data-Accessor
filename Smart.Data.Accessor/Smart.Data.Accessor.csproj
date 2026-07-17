@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor</PackageId>
-    <Title>Smart.Data.Accessor</Title>
+    <PackageId>Usa.Smart.Data.Accessor</PackageId>
+    <Title>Usa.Smart.Data.Accessor</Title>
     <Description>Source generator based data accessor (prototype).</Description>
     <PackageTags>sourcegenerator;dataaccessor</PackageTags>
     <IncludeBuildOutput>true</IncludeBuildOutput>
@@ -30,7 +30,8 @@
     <ItemGroup>
       <TfmSpecificPackageFile Include="..\Smart.Data.Accessor.Generator\bin\$(Configuration)\netstandard2.0\Smart.Data.Accessor.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
       <TfmSpecificPackageFile Include="$(PKGSourceGenerateHelper)\lib\netstandard2.0\SourceGenerateHelper.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-      <TfmSpecificPackageFile Include="..\Smart.Data.Accessor.targets" Pack="true" PackagePath="buildTransitive\Smart.Data.Accessor.targets" Visible="false" />
+      <!-- buildTransitive の targets は「PackageId と同名」でないと NuGet が自動 import しない(PackageId=Usa. 接頭辞に追随)。 -->
+      <TfmSpecificPackageFile Include="..\Smart.Data.Accessor.targets" Pack="true" PackagePath="buildTransitive\Usa.Smart.Data.Accessor.targets" Visible="false" />
     </ItemGroup>
   </Target>
 

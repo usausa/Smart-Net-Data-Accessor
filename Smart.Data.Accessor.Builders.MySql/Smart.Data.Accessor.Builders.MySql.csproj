@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor.Builders.MySql</PackageId>
-    <Title>Smart.Data.Accessor.Builders.MySql</Title>
+    <PackageId>Usa.Smart.Data.Accessor.Builders.MySql</PackageId>
+    <Title>Usa.Smart.Data.Accessor.Builders.MySql</Title>
     <Description>MySQL QueryBuilder attributes &amp; generator for Smart.Data.Accessor.</Description>
     <PackageTags>sourcegenerator;dataaccessor;builders;mysql</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

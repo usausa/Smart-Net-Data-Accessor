@@ -45,7 +45,17 @@ internal static class GeneratorTestHelper
     // Run both generators against the given C# source plus optional SQL files. Each SQL file is
     // exposed as an AdditionalText under a "Sql" folder so the core generator's resolver picks it
     // up; name it "{ClassName}.{MethodName}" to match a method.
-    internal static RunResult Run(string source, params (string Name, string Sql)[] sqlFiles)
+    // 生成コードを加えた Compilation の実コンパイル検証を行う：生成コードに CS エラーがあれば即例外で
+    // fail させる(過去に「生成断念→CS8795 多発」を文字列 assert が素通しした既知のハーネス限界の解消)。
+    // ジェネレータが Error 診断を出したケースは生成が意図的に不完全なので検証をスキップする。
+    // Also verifies that the generated code actually COMPILES (adding it to the compilation and
+    // failing on any CS error) — closing the known harness gap where "generation aborted → a flood
+    // of CS8795" slipped past string assertions. When the generators reported an Error diagnostic,
+    // generation is intentionally incomplete and the check is skipped.
+    internal static RunResult Run(string source, params (string Name, string Sql)[] sqlFiles) =>
+        RunCore(source, verifyGeneratedCodeCompiles: true, sqlFiles);
+
+    private static RunResult RunCore(string source, bool verifyGeneratedCodeCompiles, (string Name, string Sql)[] sqlFiles)
     {
         _ = EnsureDeps.Value;
 
@@ -76,7 +86,9 @@ internal static class GeneratorTestHelper
             additionalTexts: additionalTexts,
             parseOptions: parseOptions);
 
-        var runResult = driver.RunGenerators(compilation).GetRunResult();
+        var runResult = driver
+            .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _)
+            .GetRunResult();
 
         var generated = new Dictionary<string, string>(StringComparer.Ordinal);
         var all = new StringBuilder();
@@ -90,6 +102,25 @@ internal static class GeneratorTestHelper
             }
         }
 
+        var generatorReportedError = runResult.Diagnostics.Any(static x => x.Severity == DiagnosticSeverity.Error);
+        if (verifyGeneratedCodeCompiles && !generatorReportedError)
+        {
+            var compileErrors = outputCompilation.GetDiagnostics()
+                .Where(static x => x.Severity == DiagnosticSeverity.Error)
+                .ToList();
+            if (compileErrors.Count > 0)
+            {
+                var message = new StringBuilder();
+                message.AppendLine("Generated code does not compile:");
+                foreach (var error in compileErrors)
+                {
+                    message.Append("  ").Append(error.Id).Append(": ").Append(error.GetMessage(System.Globalization.CultureInfo.InvariantCulture))
+                        .Append(" @ ").Append(error.Location.GetLineSpan().ToString()).AppendLine();
+                }
+                throw new InvalidOperationException(message.ToString());
+            }
+        }
+
         return new RunResult
         {
             Diagnostics = runResult.Diagnostics,
@@ -99,8 +130,11 @@ internal static class GeneratorTestHelper
     }
 
     // Convenience: only the SDA####/SDB#### diagnostics the generators report.
+    // 診断シナリオは生成が意図的に壊れる(partial 実装なし等)ため実コンパイル検証はしない。
+    // Diagnostic scenarios intentionally leave generation incomplete (missing partial implementations
+    // etc.), so the compile verification is not applied here.
     internal static IReadOnlyList<Diagnostic> GetDiagnostics(string source, params (string Name, string Sql)[] sqlFiles) =>
-        Run(source, sqlFiles)
+        RunCore(source, verifyGeneratedCodeCompiles: false, sqlFiles)
             .Diagnostics
             .Where(static x =>
                 x.Id.StartsWith("SDA", StringComparison.Ordinal) ||

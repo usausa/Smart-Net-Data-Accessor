@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>Smart.Data.Accessor.Builders.Postgres</PackageId>
-    <Title>Smart.Data.Accessor.Builders.Postgres</Title>
+    <PackageId>Usa.Smart.Data.Accessor.Builders.Postgres</PackageId>
+    <Title>Usa.Smart.Data.Accessor.Builders.Postgres</Title>
     <Description>PostgreSQL QueryBuilder attributes &amp; generator for Smart.Data.Accessor.</Description>
     <PackageTags>sourcegenerator;dataaccessor;builders;postgres;postgresql</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
