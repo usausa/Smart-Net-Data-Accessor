@@ -1,1005 +1,309 @@
-# Smart.Data.Accessor .NET - data accessor generator library for .NET
+# Smart.Data.Accessor - Source Generator based data accessor for .NET
 
-[![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor)
+[![NuGet](https://img.shields.io/nuget/v/Smart.Data.Accessor.svg)](https://www.nuget.org/packages/Smart.Data.Accessor)
 
 ## What is this?
 
-* Build-time data accessor generator library.
-* 2-way SQL supported.
+A **compile-time data accessor generator**. You declare `partial` methods with attributes and
+(optionally) 2-way SQL, and a Roslyn Source Generator emits the full ADO.NET implementation —
+connection handling, command setup, parameter binding, and row mapping — as plain, readable C#.
 
-## Getting Started(.NET Core Console Application)
+* **Build-time code generation** — no reflection, no IL emit, no runtime proxy. What runs is code you can read.
+* **2-way SQL** — SQL files (or inline SQL) that are valid SQL as-is, with comment-based directives for binding and dynamic conditions.
+* **Near hand-written performance** — 0.95–1.13x of hand-written ADO.NET, with identical allocations; 1.4–2.2x faster than Dapper (see [Benchmarks](#benchmarks)).
+* **Native AOT compatible** — the generated code is fully static.
+* **Compile-time diagnostics** — misuse (missing SQL file, invalid return type, unmappable entity, conflicting attributes, broken 2-way SQL, ...) fails the build with a precise `SDA` diagnostic instead of a runtime surprise.
 
-Install [Usa.Smart.Data.Accessor](https://www.nuget.org/packages/Usa.Smart.Data.Accessor).
+## Getting Started (Console Application)
 
-Create data accessor interface and model class like this.
+Install [Smart.Data.Accessor](https://www.nuget.org/packages/Smart.Data.Accessor).
+
+Define a model and a data accessor. The accessor is a `partial class` marked `[DataAccessor]`;
+each data method is a `partial` method marked with an **execution-kind attribute**
+(`[Execute]` / `[ExecuteScalar]` / `[Query]` / `[QueryFirst]` / `[ExecuteReader]`).
 
 ```csharp
 public sealed class DataEntity
 {
     public long Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
-    public string Type { get; set; }
+    public int Type { get; set; }
 }
 ```
 
 ```csharp
-using System.Collections.Generic;
-
 using Smart.Data.Accessor.Attributes;
 
 [DataAccessor]
-public interface IExampleAccessor
+public partial class ExampleAccessor
 {
     [Execute]
-    void Create();
-
-    [Insert]
-    void Insert(DataEntity entity);
+    public partial int Create();
 
     [Query]
-    List<DataEntity> QueryDataList(string type = null);
+    public partial IReadOnlyList<DataEntity> QueryDataList();
+
+    [Query]
+    public partial IReadOnlyList<DataEntity> QueryByType(int type);
 }
 ```
 
-Create an SQL file with the naming convention of interface name + method name.
+Add the SQL files under a `Sql` folder, named `{ClassName}.{MethodName}.sql`
+(the package wires `**/Sql/*.sql` as generator inputs automatically; the folder name can be
+changed with the `SmartDataAccessor_SqlFolder` MSBuild property):
 
-Methods with [Insert] attribute automatically generate SQL, so no file is required.
-
-By default, SQL files are placed in the 'Sql' subfolder of the interface file.
-
-* IExampleAccessor.Create.sql
-
-```sql
-CREATE TABLE IF NOT EXISTS Data (Id int PRIMARY KEY, Name text, Type text)
+```
+Accessor/
+  ExampleAccessor.cs
+  Sql/
+    ExampleAccessor.Create.sql
+    ExampleAccessor.QueryDataList.sql
+    ExampleAccessor.QueryByType.sql
 ```
 
-* IExampleAccessor.QueryDataList.sql
-
 ```sql
-SELECT * FROM Data
-/*% if (!String.IsNullOrEmpty(type)) { */
-WHERE Type = /*@ type */'A'
-/*% } */
+-- ExampleAccessor.QueryByType.sql
+SELECT Id, Name, Type FROM Data
+WHERE Type = /*@ type */1
+ORDER BY Id
 ```
 
-Use as follows.
+Use it. Without a `DbConnection` parameter, the accessor takes an `IDbProvider`
+(from [Usa.Smart.Data](https://www.nuget.org/packages/Usa.Smart.Data)) in its constructor and
+manages open/close per call:
 
 ```csharp
-using System;
-using System.IO;
-
-using Microsoft.Data.Sqlite;
-
 using Smart.Data;
-using Smart.Data.Accessor;
-using Smart.Data.Accessor.Engine;
 
-public static class Program
-{
-    public static void Main()
-    {
-        // Initialize
-        var engine = new ExecuteEngineConfig()
-            .ConfigureComponents(static c =>
-            {
-                c.Add<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
-            })
-            .ToEngine();
-        var factory = new DataAccessorFactory(engine);
+var accessor = new ExampleAccessor(
+    new DelegateDbProvider(() => new SqliteConnection(connectionString)));
 
-        // Create data accessor
-        var dao = factory.Create<IExampleAccessor>();
-
-        // Create
-        dao.Create();
-
-        // Insert
-        dao.Insert(new DataEntity { Id = 1L, Name = "Data-1", Type = "A" });
-        dao.Insert(new DataEntity { Id = 2L, Name = "Data-2", Type = "B" });
-        dao.Insert(new DataEntity { Id = 3L, Name = "Data-3", Type = "A" });
-
-        // Query
-        var typeA = dao.QueryDataList("A");
-        Console.WriteLine(typeA.Count); // 2
-
-        var all = dao.QueryDataList();
-        Console.WriteLine(all.Count); // 3
-    }
-}
+accessor.Create();
+var list = accessor.QueryByType(1);
 ```
+
+That is all — no configuration classes, no runtime setup. Everything is resolved at build time.
 
 ## 2-way SQL
 
-|   | Type          | Example                                     |
-|:-:|---------------|---------------------------------------------|
-| @ | parameter     | `/*@ id */`                                 |
-| # | raw parameter | `/*# order #/`                              |
-| % | code block    | `/*% if (!String.IsNullOrEmpty(name)) { */` |
-| ! | pragma        | `/*!using System.Text */`                   |
+The SQL files are **valid SQL as-is** (they run unchanged in your SQL tools); directives live in comments:
 
-### Parameter
-
-```sql
-SELECT * FROM Data WHERE Id = /*@ id */1
-```
-
-### Raw parameter
-
-```sql
-SELECT * FROM Data ORDER BY /*# order */Name
-```
-
-### Code block
+| Directive | Meaning |
+| --- | --- |
+| `/*@ name */dummy` | Bind the method parameter `name`. The literal after the comment is a placeholder for tooling and is replaced at build time |
+| `/*% if (cond) { */ ... /*% } */` | Dynamic block — the condition is real C# over the method parameters, evaluated at runtime with zero string parsing |
+| `/*@ ids */(...)` | An `IEnumerable<T>` parameter expands to an IN list at runtime (empty lists become `(NULL)`) |
+| `/*!using Ns */`, `/*!helper Type */` | Add `using` / `using static` to the generated file so the `if` conditions can call helpers |
 
 ```sql
 SELECT * FROM Data
-/*% if (IsNotNull(id)) { */
-WHERE Id >= /*@ id */0
+/*% if (name != null) { */
+WHERE Name LIKE /*@ name */'A%'
 /*% } */
+ORDER BY Id
 ```
 
-### Pragma
+Static SQL (no dynamic blocks) is embedded as a single string literal — no `StringBuilder`, no runtime work.
 
-* Using
+### Inline SQL — `[Sql]`
 
-```sql
-/*!using System.Text */
-```
-
-* Using static
+Short queries can skip the file and put the 2-way SQL directly on the method
+(same pipeline and directives; C# 11 raw string literals work well for multi-line SQL).
+SQL parse errors point at the exact position inside the literal.
 
 ```csharp
-public static class CustomScriptHelper
+[Query]
+[Sql("SELECT * FROM Data WHERE Type >= /*@ minType */0 ORDER BY Id")]
+public partial IReadOnlyList<DataEntity> QueryByTypeInline(int minType);
+```
+
+## Method model: execution kind × command source
+
+Every data method combines two orthogonal choices:
+
+* **Execution kind (required)** — how the command runs: `[Execute]` (ExecuteNonQuery),
+  `[ExecuteScalar]`, `[Query]` (rows), `[QueryFirst]` (single row or null), `[ExecuteReader]` (raw reader).
+* **Command source (optional)** — where the SQL comes from: SQL file (default), `[Sql("...")]` inline,
+  `[DirectSql]` (runtime SQL string parameter), `[Procedure("name")]` (stored procedure),
+  or a QueryBuilder attribute (`[Insert]` etc.).
+
+Combinations compose naturally (`[Query]` + `[Procedure]`, `[ExecuteReader]` + `[DirectSql]`, ...).
+The execution kind is never implied — omitting it is a compile-time error (SDA0108).
+
+Supported return shapes include `int` / `void`, scalars, `List<T>` / `IList<T>` / `IReadOnlyList<T>`,
+`IEnumerable<T>` (streaming iterator), `T?` (single row), `DbDataReader`, and the async forms
+(`Task<...>` / `ValueTask<...>` / `IAsyncEnumerable<T>`).
+
+## Row mapping
+
+Rows map to plain classes or records by **case-insensitive column-name matching**, resolved once per
+query (not per row):
+
+* Columns are matched to public settable/init properties (or record primary-constructor parameters).
+  `[Name("COL")]` overrides the name; `[Ignore]` excludes a member.
+* **Subset selects just work** — properties without a matching column are left untouched
+  (property initializers survive). Extra columns are ignored. Dynamic column sets (UNION etc.) are fine.
+* `records`, `init`-only and `required` members are fully supported.
+* DB NULL maps to `null` for nullable members and `default` for non-nullable ones.
+* `[NotNullColumn]` skips the per-column `IsDBNull` check for NOT NULL columns (hot-path opt-in).
+* `[TypeHandler(typeof(Converter))]` maps custom representations via static, AOT-friendly converters:
+
+```csharp
+public sealed class DateTimeToTicksConverter : IValueConverter<long, DateTime>
 {
-    public static bool HasValue(int? value)
-    {
-        return value.HasValue;
-    }
+    public static DateTime FromDb(long value) => new(value, DateTimeKind.Utc);
+    public static long ToDb(DateTime value) => value.Ticks;
 }
-```
 
-```sql
-/*!helper MyLibrary.CustomScriptHelper */
-SELECT * FROM Data
-/*% if (HasValue(id)) { */
-WHERE Id >= /*@ id */0
-*% } *
-```
-
-### Built-in helper
-
-```csharp
-public static class ScriptHelper
+public sealed class EventEntity
 {
-    public static bool IsNull(object value);
-
-    public static bool IsNotNull(object value);
-
-    public static bool IsEmpty(string value);
-
-    public static bool IsNotEmpty(string value);
-
-    public static bool Any(Array array);
-
-    public static bool Any(ICollection ic);
-}
-```
-
-## Supported result type
-
-Supported result type and result mapper factory implmentation.
-
-| Result mapper factory                                 | Target type            |
-|-------------------------------------------------------|------------------------|
-| Smart.Data.Accessor.Mappers.SingleResultMapperFactory | string, int, ...       |
-| Smart.Data.Accessor.Mappers.TupleResultMapperFactory  | Tuple, ValueTuple, ... |
-| Smart.Data.Accessor.Mappers.ObjectResultMapperFactory | Any class              |
-
-### SingleResultMapperFactory
-
-Map single column to type.
-
-```csharp
-[DataAccessor]
-public interface ISingleAccessor
-{
-    // SELECT Name FROM Data
-    [Query]
-    IList<string> QueryStringList();
-}
-```
-
-### TupleResultMapperFactory
-
-Map columns to tuple members.
-Tuple member constructor arguments and properties are supported as destinations.
-If the map destination cannot be found, the target moves to the next member of the tuple.
-
-```csharp
-[DataAccessor]
-public interface ITupleAccessor
-{
-    // SELECT T0.Date, T0.Amount, T1.Name, T1.Price FROM Transaction T0 INNER JOIN Master T1 ON T0.MasterId = T1.Id
-    [Query]
-    IList<ValueTuple<TransactionEntity, MasterEntity>> QueryTupleList();
-}
-```
-
-### ObjectResultMapperFactory
-
-Map columns to class.
-Constructor arguments and properties are supported as destinations.
-
-```csharp
-[DataAccessor]
-public interface ITupleAccessor
-{
-    // SELECT * FROM ...
-    [Query]
-    IList<DataEntity>> QueryDataList();
-}
-```
-
-## Attributes
-
-### Data accessor attribute
-
-* DataAccessorAttribute
-
-```csharp
-// Data accessor interface marker
-[DataAccessor]
-public interface IExampleAccessor
-{
-...
-}
-```
-
-### Method attributes
-
-* ExecuteAttribute
-
-```csharp
-[DataAccessor]
-public interface IExecuteAccessor
-{
-    // Call ExecuteNonQuery()
-    [Execute]
-    int Update(long id, string name);
-
-    [Execute]
-    ValueTask<int> UpdateAsync(long id, string name);
-}
-```
-
-* ExecuteScalarAttribute
-
-```csharp
-[DataAccessor]
-public interface IExecuteScalarAccessor
-{
-    // Call ExecuteScalar()
-    [ExecuteScalar]
-    long Count();
-
-    [ExecuteScalar]
-    ValueTask<long> CountAsync();
-}
-```
-
-* ExecuteReaderAttribute
-
-```csharp
-[DataAccessor]
-public interface IExecuteReaderAccessor
-{
-    // Call ExecuteReader()
-    [ExecuteReader]
-    IDataReader Enumerate();
-
-    [ExecuteReader]
-    ValueTask<IDataReader> EnumerateAsync();
-}
-```
-
-* QueryFirstOrDefaultAttribute
-
-```csharp
-[DataAccessor]
-public interface IQueryFirstOrDefaultAccessor
-{
-    // Call ExecuteReader() and map single object or default
-    [QueryFirstOrDefault]
-    DataEntity QueryData(long id);
-
-    [QueryFirstOrDefault]
-    ValueTask<DataEntity> QueryDataAsync(long id);
-}
-```
-
-* QueryAttribute
-
-```csharp
-[DataAccessor]
-public interface IQueryAccessor
-{
-    // Call ExecuteReader() and map object list bufferd
-    [Query]
-    IList<DataEntity> QueryBufferd();
-
-    // Call ExecuteReader() and map object enumerable non-bufferd
-    [Query]
-    IEnumerable<DataEntity> QueryNonBufferd();
-
-    [Query]
-    ValueTask<IList<DataEntity>> QueryBufferdAsync();
-
-    [Query]
-    IAsyncEnumerable<DataEntity> QueryNonBufferdAsync();
-}
-```
-
-### Mapping attributes
-
-* IgnoreAttribute
-
-```csharp
-public sealed class DataEntity
-{
-    // Ignore mapping
-    [Ignore]
-    public int IgnoreMember { get; set; }
-}
-```
-
-* NameAttribute
-
-```csharp
-public sealed class UserEntity
-{
-    // Map from USER_NAME column
-    [Name("USER_NAME")]
-    public string UserName { get; set; }
-}
-```
-
-* DirectionAttribute
-
-```csharp
-public sealed class Parameter
-{
-    // ParameterDirection.Input is used
-    [Input]
-    public int InputParameter { get; set; }
-
-    // ParameterDirection.InputOutput is used
-    [InputOutput]
-    public int InputOutputParameter { get; set; }
-
-    // ParameterDirection.Output is used
-    [Output]
-    public int OutputParameter { get; set; }
-
-    // ParameterDirection.ReturnValue is used
-    [ReturnValue]
-    public int ReturnValue { get; set; }
-}
-```
-
-### Parameter builder attributes
-
-* AnsiStringAttribute
-
-```csharp
-[DataAccessor]
-public interface IAnsiStringAccessor
-{
-    // DbType.AnsiStringFixedLength is set
-    [QueryFirstOrDefault]
-    DataEntity QueryEntity([AnsiString(3)] string id);
-}
-```
-
-* DbTypeAttribute
-
-```csharp
-public sealed class Parameter
-{
-    // DbType.AnsiStringFixedLength is set
-    [DbType(DbType.AnsiStringFixedLength, 3)]
-    public string Id { get; set; }
-}
-```
-
-```csharp
-[DataAccessor]
-public interface IDbTypeAccessor
-{
-    [QueryFirstOrDefault]
-    DataEntity QueryEntity(Parameter parameter);
-}
-```
-
-### Result parser attribute
-
-* ResultParserAttribute
-
-```csharp
-public sealed class CustomParserAttribute : ResultParserAttribute
-{
-    public override Func<object, object> CreateParser(IServiceProvider serviceProvider, Type type)
-    {
-        return x => Convert.ChangeType(x, type, CultureInfo.InvariantCulture);
-    }
-}
-```
-
-```csharp
-public sealed class ParserEntity
-{
-    // DB value parsed by CustomParserAttribute
-    [CustomParser]
-    public long Value { get; set; }
-}
-```
-
-### Injection attribute
-
-```csharp
-public sealed class Counter
-{
-    private long counter;
-
-    public long Next() => ++counter;
-}
-```
-
-```csharp
-[DataAccessor]
-[Inject(typeof(Counter), "counter")]
-public interface IInjectAccessor
-{
-...
-}
-```
-
-```sql
-INSERT INTO Data (Value) VALUES (/*@ counter.Next() */)
-```
-
-### Connection selector attribute
-
-* ProviderAttribute
-
-```csharp
-// IDbProvider named 'Primary' selected by IDbProviderSelector
-[DataAccessor]
-[Provider("Primary")]
-public interface IPrimaryAccessor
-{
-...
-}
-```
-
-```csharp
-// IDbProvider named 'Secondary' selected by IDbProviderSelector
-[DataAccessor]
-[Provider("Secondary")]
-public interface ISecondaryAccessor
-{
-...
-}
-```
-
-### Option attribute
-
-* TimeoutAttribute
-
-```csharp
-[DataAccessor]
-public interface ITimeoutAccessor
-{
-    // timeout is used for IDbCommand.CommandTimeout
-    [Execute]
-    int Execute([Timeout] int timeout);
-}
-```
-
-* CommandTimeoutAttribute
-
-```csharp
-[DataAccessor]
-public interface ICommandTimeoutAccessor
-{
-    // IDbCommand.CommandTimeout = 300000;
-    [Execute]
-    [CommandTimeout(30000)]
-    int Execute();
-}
-```
-
-## SQL builder method attributes
-
-Attributes that automatically generate SQL.
-
-It is extensible and can implement its own attributes.
-
-### Builder attribute
-
-* InsertAttribute
-
-```csharp
-[DataAccessor]
-public interface IInsertAccessor
-{
-    // DataEntity property is used
-    [Insert]
-    int Insert(DataEntity entity);
-
-    // Method arguments is used
-    [Insert(typeof(DataEntity))]
-    int Insert(long id, string name);
-}
-```
-
-* UpdateAttribute
-
-```csharp
-public sealed class UpdateValues
-{
-    [Key]
     public long Id { get; set; }
 
-    public string Name { get; set; }
+    [TypeHandler(typeof(DateTimeToTicksConverter))]
+    public DateTime OccurredAt { get; set; }
 }
 ```
 
-```csharp
-public sealed class UpdateValues
-{
-    public string Type { get; set; }
+## Query builders
 
-    public string Name { get; set; }
-}
-```
+CRUD without writing SQL — the builder attributes generate the statement from the entity shape
+(`[Key]`, `[Name]`, `[DatabaseManaged]`, `[Ignore]`):
 
 ```csharp
-[DataAccessor]
-public interface IUpdateAccessor
-{
-    // By entity key memember
-    [Update]
-    int Update(DataEntity entity);
+[Insert(typeof(DataEntity), Table = "Data")]
+[Execute]
+public partial int Insert(DataEntity entity);
 
-    // UPDATE Type and Name by id
-    [Update(typeof(DataEntity))]
-    int Update([Values] UpdateValues values, long id);
-}
+[Select(typeof(DataEntity), Table = "Data")]
+[Query]
+public partial IReadOnlyList<DataEntity> SelectAll();
+
+[Count(typeof(DataEntity), Table = "Data")]
+[ExecuteScalar]
+public partial long CountAll();
 ```
 
-* DeleteAttribute
+Standard (ANSI) builders (`[Insert]` / `[Update]` / `[Delete]` / `[Count]` / `[Select]` /
+`[SelectSingle]` / `[Truncate]`) ship in the core package; `[Limit]` / `[Offset]` parameters give
+paging with the proper dialect per provider. Provider packages add dialect features:
+
+| Package | Attributes | Extras |
+| --- | --- | --- |
+| `Smart.Data.Accessor.Builders.SqlServer` | `SqlInsert`, ... , `SqlMerge` | `OUTPUT` clause, MERGE upsert |
+| `Smart.Data.Accessor.Builders.Postgres` | `PgInsert`, ... , `PgUpsert` | `RETURNING` clause, `ON CONFLICT` upsert |
+| `Smart.Data.Accessor.Builders.MySql` | `MySqlInsert`, ... , `MySqlUpsert`, `MySqlInsertIgnore`, `MySqlReplace` | `ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE INTO` |
+
+Writing a builder generator for another provider is supported and documented
+(`__docs/generator-guide.ja.md`).
+
+## Stored procedures and output parameters
 
 ```csharp
-[DataAccessor]
-public interface IDeleteAccessor
-{
-    // Id = /*@ id */
-    [Delete]
-    int Delete(long id);
+[Procedure("usp_Calc")]
+[ExecuteScalar]
+public partial int Calc(DbConnection con, CalcArgs args);   // scalar return = procedure RETURN value
 
-    // By entity key memember
-    [Delete]
-    int Delete(DataEntity entity);
-
-    // Force option is required to delete all
-    [Delete(typeof(DataEntity), Force = true)]
-    int DeleteAll();
-
-    // Key1 = @key1 AND Key2 >= @key2
-    [Delete]
-    int Delete(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
-}
+[Procedure("usp_Conv")]
+[Execute]
+public partial void Conv(DbConnection con, ConvArgs args);
 ```
 
-* SelectAttribute
+Parameters map by name; `out` / `ref` parameters (sync) or `[Direction(Output/InputOutput)]`
+properties on a POCO argument (sync and async) receive the output values.
+
+## Raw SQL and raw readers
 
 ```csharp
-[DataAccessor]
-public interface ISelectAccessor
-{
-    // Conditoon
+// SQL passed at runtime (explicit opt-in; injection safety is the caller's responsibility)
+[DirectSql]
+[Execute]
+public partial int ExecuteDirect(string sql, [Direction(ParameterDirection.Output)] out int rows);
 
-    // Key1 = @key1 AND Key2 >= @key2
-    [Select]
-    List<DataEntity> SelectListByCondition(long key1, [Condition(Operand.GreaterEqualThan)] long key2);
-
-    // Order
-
-    // Key order is default
-    [Select]
-    List<DataEntity> SelectListKeyOrder();
-
-    // Attribute property based order
-    [Select(Order = "Name DESC")]
-    List<DataEntity> SelectListCustomOrder();
-
-    // ORDER BY /*# order */
-    [Select]
-    List<DataEntity> SelectParameterOrder([Order] string order);
-
-    //  map to other entity
-
-    // SQL is generated based on DataEntity and map to OtherEntity
-    [Select(typeof(DataEntity))]
-    List<OtherEntity> SelectListByType();
-
-    // SQL is generated with table name 'Data' and map to OtherEntity
-    [Select("Data")]
-    List<OtherEntity> SelectListByName();
-}
+// Raw reader; CommandBehavior can be opted in (the caller controls the read order,
+// so SequentialAccess is safe here for large BLOB/TEXT streaming)
+[ExecuteReader]
+[ReaderBehavior(CommandBehavior.SequentialAccess)]
+public partial DbDataReader QueryReader();
 ```
 
-* SelectSingleAttribute
+`[ExecuteReader]` returns a wrapper that disposes the command (and, for provider-owned
+connections, the connection) together with the reader — a single `using` on the caller side.
+
+## Connections and DI
+
+Two patterns, chosen per method by the signature:
+
+* **Pattern A** — the method takes a `DbConnection` (or `DbTransaction`); you own the connection.
+* **Pattern B** — no connection parameter; the accessor gets an `IDbProvider`
+  (or `IDbProviderSelector` + `[Provider("name")]` for multi-database) via its constructor and
+  opens/closes per call.
+
+With `Microsoft.Extensions.DependencyInjection`
+([Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Smart.Data.Accessor.Extensions.DependencyInjection)):
 
 ```csharp
-[DataAccessor]
-public interface ISelectAccessor
-{
-    // Id = /*@ id */
-    [SelectSingle]
-    DataEntity SelectSingle(long id);
+builder.Services.AddSingleton<IDbProvider>(
+    new DelegateDbProvider(() => new SqliteConnection(connectionString)));
+builder.Services.AddDataAccessors();   // registers every generated accessor
 
-    // By entity key memember
-    [SelectSingle]
-    DataEntity SelectSingle(DataEntity entity);
-}
+app.MapGet("/data", (ExampleAccessor accessor) => accessor.QueryDataList());
 ```
 
-* CountAttribute
+[Smart.Data.Accessor.Resolver](https://www.nuget.org/packages/Smart.Data.Accessor.Resolver)
+provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Smart.Resolver)
+(`config.UseDataAccessors()`), including keyed multi-source setups.
 
-```csharp
-[DataAccessor]
-public interface ICountAccessor
-{
-    // Count all
-    [Count(typeof(DataEntity))]
-    long CountAll();
+## Other attributes
 
-    // Count where Value >= /*@ value */
-    [Count(typeof(DataEntity))]
-    long CountAll([Condition(Operand.GreaterEqualThan)] long value);
-}
-```
+| Attribute | Purpose |
+| --- | --- |
+| `[MethodName("Alias")]` | SQL-file name alias for same-name overloads |
+| `[CommandTimeout(30)]` / `[Timeout(30)]` | `cmd.CommandTimeout` |
+| `[DbType(...)]`, `[DbType<TEnum>(...)]`, `[AnsiString]`, `[SqlSize]` | Parameter type/size qualifiers (incl. provider-specific enum types) |
+| `[BindPrefix('@')]` | Override the parameter marker per method/class/assembly |
+| `[Inject]` | Inject a service into the accessor, usable from SQL `if` conditions |
+| `[TypeMap]`, `[AccessorProfile]`, `[ExecuteConfig]` | Class/profile-scoped type mapping defaults |
 
-* ProcedureAttribute
+## Diagnostics
 
-```sql
-CREATE PROCEDURE PROC1
-    @param1 INT,
-    @param2 INT OUTPUT,
-    @param3 INT OUTPUT
-AS
-BEGIN
-    SELECT @param2 = @param2 + 1
-    SELECT @param3 = @param1 + 1
-    RETURN 100
-END
-```
+All misuse is reported at compile time with `SDA`-prefixed diagnostics — e.g. missing SQL file
+(SDA0401), unsupported return type (SDA0301), missing execution kind (SDA0108), entity with no
+mappable columns (SDA0312), unclosed 2-way SQL block (SDA0503, pointing inside the `[Sql]` literal).
+See `__docs/spec.md` §11 for the full catalog.
 
-```csharp
-public sealed class Parameter
-{
-    [Input]
-    [Name("param1")]
-    public int Parameter1 { get; set; }
+## Native AOT
 
-    [InputOutput]
-    [Name("param2")]
-    public int Parameter2 { get; set; }
+The generated code is static (no reflection); publishing with `PublishAot=true` is verified,
+including the DI integrations.
 
-    [Output]
-    [Name("param3")]
-    public int Parameter3 { get; set; }
+## Benchmarks
 
-    [ReturnValue]
-    public int ReturnValue { get; set; }
-}
-```
+Mock-connection measurements (mapping layer only, BenchmarkDotNet, .NET 10 / x64), 100 rows,
+ratio vs hand-written ADO.NET baseline:
 
-```csharp
-[DataAccessor]
-public interface IProcedureAccessor
-{
-    // Argument version
-    [Procedure("PROC1")]
-    int Execute(int param1, ref int param2, out int param3);
+| Scenario | Generated vs hand-written | vs Dapper | Allocations |
+| --- | ---: | ---: | --- |
+| 1 column | 0.95–0.98x (faster) | ~2.2x faster | identical to hand-written |
+| 3 columns (enum) | 0.97–0.99x | ~2.1x faster | identical |
+| 10 columns (class/record) | 1.02–1.07x | ~1.4–1.5x faster | identical |
+| Subset (10 props / 2 cols) | 1.10–1.13x | ~1.9x faster | identical |
 
-    // Parameter class version
-    [Procedure("PROC1")]
-    void Execute(Parameter parameter);
-}
-```
+With a real database, network/query time dominates and the differences shrink further
+(relative order unchanged).
 
-```csharp
-var param2 = 2;
-var ret = dao.Execute(1, ref param2, out var param3);
-// param2 = 3, param3 = 2, ret = 100
-```
+## Packages
 
-```csharp
-var parameter = new Parameter { Parameter1 = 1, Parameter2 = 2 };
-dao.Execute(parameter);
-// Parameter2 = 3, Parameter3 = 2, ReturnValue = 100
-```
+| Package | Contents |
+| --- | --- |
+| `Smart.Data.Accessor` | Runtime + core source generator + standard builders |
+| `Smart.Data.Accessor.Extensions.DependencyInjection` | `AddDataAccessors()` for Microsoft.Extensions.DependencyInjection |
+| `Smart.Data.Accessor.Resolver` | `UseDataAccessors()` for Smart.Resolver |
+| `Smart.Data.Accessor.Builders.SqlServer` / `.Postgres` / `.MySql` | Provider-specific query builders |
 
-### Condition attribute
+## Documentation
 
-```csharp
-// Generate condition
-
-// Kye >= /*@ key */
-[Delete]
-int Delete([Condition(Operand.GreaterEqualThan)] long key);
-
-// /*% if (IsNotNull(type)) { %//*@ type *//*% } */
-[Select]
-List<DataEntity> Select([Condition(ExcludeNull = true)] string type);
-
-// /*% if (IsNotEmpty(type)) { %//*@ type *//*% } */
-[Select]
-List<DataEntity> Select([Condition(ExcludeEmpty = true)] string typel);
-```
-
-### Value attribute
-
-* DbValueAttribute
-
-```csharp
-public sealed class DbValueEntity
-{
-    [Key]
-    public long Id { get; set; }
-
-    // DB value CURRENT_TIMESTAMP is used
-    [DbValue("CURRENT_TIMESTAMP")]
-    public string DateTime { get; set; }
-}
-```
-
-* CodeValueAttribute
-
-```csharp
-public sealed class DataEntity
-{
-    [Key]
-    public string Key { get; set; }
-
-    // Code counter.Next() is used
-    [CodeValue("counter.Next()")]
-    public long Value { get; set; }
-}
-```
-
-```csharp
-[DataAccessor]
-[Inject(typeof(Counter), "counter")]
-public interface ICodeValueAccessor
-{
-    [Insert]
-    void Insert(DataEntity entity);
-}
-```
-
-### Option builders
-
-Support database specific UPSERT, SELECT FOR UPDATE, etc.
-
-| Package | Database   |
-|-|-|
-| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.SqlServer.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.SqlServer/) | SQL Server |
-| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.MySq.svgl)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.MySql/) | MySQL |
-| [![NuGet](https://img.shields.io/nuget/v/Usa.Smart.Data.Accessor.Options.Postgres.svg)](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Options.Postgres/) | PostgreSQL |
-
-## Special arguments
-
-### DbConnection
-
-```csharp
-[DataAccessor]
-public interface IDbConnectionAccessor
-{
-    // DbConnection con is used insted of default IDbProvider connection
-    [Execute]
-    int Execute(DbConnection con);
-}
-```
-
-### DbTransaction
-
-```csharp
-[DataAccessor]
-public interface ITransactionAccessor
-{
-    // DbTransaction tx is used as transaction and connection
-    [Execute]
-    int Execute(DbTransaction tx, long id, string name);
-}
-```
-
-```csharp
-using (var tx = con.BeginTransaction())
-{
-    var effect = accessor.Execute(tx, 1L, "xxx");
-
-    tx.Commit();
-}
-```
-
-### CancellationToken
-
-```csharp
-[DataAccessor]
-public interface IExecuteCancelAsyncAccessor
-{
-    // Cancelable async method
-    [Execute]
-    ValueTask<int> ExecuteAsync(CancellationToken cancel);
-}
-```
-
-## Configuration
-
-ExecuteEngineConfig configuration.
-
-### IDbProvider
-
-```csharp
-// Default IDbProvider configuration
-var engine = new ExecuteEngineConfig()
-    .ConfigureComponents(static c => c.Add<IDbProvider>(new DelegateDbProvider(() => new SqlConnection(ConnectionString))))
-    .ToEngine();
-```
-
-```csharp
-// Use multiple provider
-config.ConfigureComponents(static c =>
-{
-    var selector = new NamedDbProviderSelector();
-    selector.AddProvider("Main", new DelegateDbProvider(() => new SqlConnection(MainConnectionString)));
-    selector.AddProvider("Sub", new DelegateDbProvider(() => new SqlConnection(SubConnectionString)));
-    c.Add<IDbProviderSelector>(selector);
-});
-```
-
-### Type map
-
-```csharp
-// Use DbType.AnsiString for string
-config.ConfigureTypeMap(map => map[typeof(string)] = DbType.AnsiString);
-```
-
-### Type handler
-
-```csharp
-public sealed class DateTimeTickTypeHandler : ITypeHandler
-{
-    public void SetValue(DbParameter parameter, object value)
-    {
-        parameter.DbType = DbType.Int64;
-        parameter.Value = ((DateTime)value).Ticks;
-    }
-
-    public Func<object, object> CreateParse(Type type)
-    {
-        return x => new DateTime((long)x);
-    }
-}
-```
-
-```csharp
-// In database, store DateTime using bigint
-config.ConfigureTypeHandlers(handlers => handlers[typeof(DateTime)] = new DateTimeTickTypeHandler());
-```
-
-### Result mapper factory
-
-```csharp
-// Implement custom result mapper factory
-public interface IResultMapperFactory
-{
-    bool IsMatch(Type type);
-
-    ResultMapper<T> CreateMapper<T>(IResultMapperCreateContext context, Type type, ColumnInfo[] columns);
-}
-```
-
-```csharp
-// Use custom result mapper factory
-config.ConfigureResultMapperFactories(mappers => mappers.Add(new CustomResultMapperFactory));
-```
-
-## ASP.NET Core integration
-
-```csharp
-services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection("Data Source=test.db")));
-
-services.AddDataAccessor(config =>
-{
-    config.AccessorAssemblies.Add(Assembly.GetExecutingAssembly());
-});
-```
-
-```csharp
-private readonly ISampleAccessor sampleAccessor;
-
-public HomeController(ISampleAccessor sampleAccessor)
-{
-    this.sampleAccessor = sampleAccessor;
-}
-```
-
-## Code generation
-
-### Config attributes
-
-* EntitySuffixAttribute
-
-Class suffix to convert table name.
-Default suffis is `Entity` and `Model`.
-
-* NamingAttribute
-
-Naming rule to convert column name.
-
-| Attribute                                             |
-|-------------------------------------------------------|
-| Smart.Data.Accessor.Configs.DefaultNamingAttribute    |
-| Smart.Data.Accessor.Configs.SnakeNamingAttribute      |
-| Smart.Data.Accessor.Configs.UpperSnakeNamingAttribute |
-| Smart.Data.Accessor.Configs.CamelNamingAttribute      |
-
-### Generated source
-
-Generated source is created at `$(ProjectDir)$(IntermediateOutputPath)SmartDataAccessor`.
-
-## Benchmark (for reference purpose only)
-
-``` ini
-
-BenchmarkDotNet=v0.13.1, OS=Windows 10.0.22621
-AMD Ryzen 9 5900X, 1 CPU, 24 logical and 12 physical cores
-.NET SDK=7.0.100
-  [Host]    : .NET 7.0.0 (7.0.22.51805), X64 RyuJIT
-  MediumRun : .NET 7.0.0 (7.0.22.51805), X64 RyuJIT
-
-Job=MediumRun  IterationCount=15  LaunchCount=2  
-WarmupCount=10  
-
-```
-|                            Method |        Mean |     Error |    StdDev |         Min |         Max |         P90 |  Gen 0 |  Gen 1 | Allocated |
-|---------------------------------- |------------:|----------:|----------:|------------:|------------:|------------:|-------:|-------:|----------:|
-|                     DapperExecute |   182.55 ns |  2.567 ns |  3.843 ns |   177.16 ns |   189.54 ns |   187.94 ns | 0.0272 |      - |     456 B |
-|                      SmartExecute |    79.19 ns |  0.407 ns |  0.610 ns |    78.00 ns |    80.43 ns |    79.78 ns | 0.0219 |      - |     368 B |
-|               DapperExecuteScalar |    59.11 ns |  0.253 ns |  0.363 ns |    58.59 ns |    60.02 ns |    59.59 ns | 0.0086 |      - |     144 B |
-|                SmartExecuteScalar |    43.55 ns |  0.198 ns |  0.291 ns |    42.78 ns |    44.11 ns |    43.92 ns | 0.0086 |      - |     144 B |
-|             DapperQueryBufferd100 | 2,467.93 ns | 12.487 ns | 18.690 ns | 2,429.29 ns | 2,505.93 ns | 2,495.21 ns | 0.3471 | 0.0038 |   5,832 B |
-|              SmartQueryBufferd100 | 1,656.82 ns |  6.230 ns |  8.733 ns | 1,642.46 ns | 1,680.08 ns | 1,666.48 ns | 0.3300 | 0.0057 |   5,536 B |
-|     SmartQueryBufferd100Optimized | 1,646.78 ns |  7.451 ns | 10.445 ns | 1,620.13 ns | 1,672.51 ns | 1,657.38 ns | 0.3300 | 0.0057 |   5,536 B |
-|         DapperQueryFirstOrDefault |   219.29 ns |  1.832 ns |  2.686 ns |   214.77 ns |   223.51 ns |   222.33 ns | 0.0253 |      - |     424 B |
-|          SmartQueryFirstOrDefault |   115.53 ns |  1.979 ns |  2.774 ns |   112.03 ns |   120.31 ns |   118.94 ns | 0.0186 |      - |     312 B |
-| SmartQueryFirstOrDefaultOptimized |    83.91 ns |  0.813 ns |  1.217 ns |    82.00 ns |    86.71 ns |    85.52 ns | 0.0186 |      - |     312 B |
-|               DapperWithCondition |   224.01 ns |  0.761 ns |  1.115 ns |   221.79 ns |   225.92 ns |   225.49 ns | 0.0491 |      - |     824 B |
-|                SmartWithCondition |    83.14 ns |  0.977 ns |  1.462 ns |    80.77 ns |    85.65 ns |    85.12 ns | 0.0219 |      - |     368 B |
-
-## Example Project
-
-* [Console example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.ConsoleApplication)
-* [Web example](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.WebApplication)
-* [Web example with Smart.Resolver](https://github.com/usausa/Smart-Net-Data-Accessor/tree/master/Example.WebApplication2)
-
-## TODO
-
-* Code generator version (1.3+).
-mo
+* `__docs/spec.md` — full specification (attributes, mapping rules, diagnostics, generated-code shapes)
+* `__docs/generator-guide.ja.md` — how to write a third-party provider builder generator
+* `Example.ConsoleApplication` / `Example.WebApplication` — runnable samples (SQLite)
