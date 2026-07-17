@@ -196,7 +196,7 @@ paging with the proper dialect per provider. Provider packages add dialect featu
 | `Smart.Data.Accessor.Builders.MySql` | `MySqlInsert`, ... , `MySqlUpsert`, `MySqlInsertIgnore`, `MySqlReplace` | `ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE INTO` |
 
 Writing a builder generator for another provider is supported and documented
-(`__docs/generator-guide.ja.md`).
+(`__docs/generator-guide.md`, Japanese: `generator-guide.ja.md`).
 
 ## Stored procedures and output parameters
 
@@ -249,6 +249,14 @@ builder.Services.AddSingleton<IDbProvider>(
 builder.Services.AddDataAccessors();   // registers every generated accessor
 
 app.MapGet("/data", (ExampleAccessor accessor) => accessor.QueryDataList());
+```
+
+When the accessors live in a **separate assembly** (a data-layer library), pass that assembly so
+its module initializers run before registration — otherwise the lazy assembly load can leave the
+registry empty and `AddDataAccessors()` silently registers nothing:
+
+```csharp
+builder.Services.AddDataAccessors(typeof(MyAccessor).Assembly);
 ```
 
 [Smart.Data.Accessor.Resolver](https://www.nuget.org/packages/Smart.Data.Accessor.Resolver)
@@ -305,5 +313,5 @@ With a real database, network/query time dominates and the differences shrink fu
 ## Documentation
 
 * `__docs/spec.md` — full specification (attributes, mapping rules, diagnostics, generated-code shapes)
-* `__docs/generator-guide.ja.md` — how to write a third-party provider builder generator
+* `__docs/generator-guide.md` — how to write a third-party provider builder generator (Japanese: `generator-guide.ja.md`)
 * `Example.ConsoleApplication` / `Example.WebApplication` — runnable samples (SQLite)

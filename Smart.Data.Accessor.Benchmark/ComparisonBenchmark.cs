@@ -1,8 +1,5 @@
 namespace Smart.Data.Accessor.Benchmark;
 
-using System.Data;
-using System.Data.Common;
-
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
@@ -37,7 +34,7 @@ public class MappingConfig : ManualConfig
 [Config(typeof(MappingConfig))]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
-public class DapperComparisonBenchmark
+public class ComparisonBenchmark
 {
     private const int RowCount = 100;
     private const string IntSql = "SELECT Id FROM BenchData ORDER BY Id";

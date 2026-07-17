@@ -18,11 +18,13 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageReference Include="Usa.Smart.Mock.Data" Version="2.13.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
+    <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Resolver\Smart.Data.Accessor.Resolver.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

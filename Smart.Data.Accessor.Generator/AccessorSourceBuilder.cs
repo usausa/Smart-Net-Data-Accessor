@@ -967,7 +967,7 @@ internal static class AccessorSourceBuilder
         (4, "KeyInfo"),
         (8, "SingleRow"),
         (16, "SequentialAccess"),
-        (32, "CloseConnection"),
+        (32, "CloseConnection")
     ];
 
     private static string CommandBehaviorText(int behavior)
