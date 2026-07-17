@@ -558,6 +558,122 @@ public sealed class DiagnosticTests
         Assert.Contains(diagnostics, x => x.Id == "SDA0406");
     }
 
+    [Fact]
+    public void SqlHasSqlFileWithMethodNameAlias()
+    {
+        // SDA0406 のファイル併存チェックは [MethodName] のエイリアスを含むキー({Class}.{Alias}.sql)で判定する。
+        // The SDA0406 file-coexistence check keys on the [MethodName] alias ({Class}.{Alias}.sql).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                [MethodName("ListAlias")]
+                [Sql("select Id from Data")]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.ListAlias", "select Id from Data"));
+
+        Assert.Contains(diagnostics, x => x.Id == "SDA0406");
+    }
+
+    [Fact]
+    public void InlineSqlParseErrorPointsInsideRawStringLiteral()
+    {
+        // SDA0503(コメント未閉塞)の位置が [Sql] の raw string literal 内の該当 "/*" を指す
+        // (ファイル方式はメソッド宣言、従来のインラインは属性引数全体しか指せなかった)。
+        // SDA0503 (unclosed comment) points at the exact "/*" inside the [Sql] raw string literal
+        // (the file form points at the method declaration; inline used to point at the whole argument).
+        const string source = """"
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Sql("""
+                    update Data set Touched = 1
+                    where Id = 1 /* broken
+                    """)]
+                public partial int Touch(DbConnection con);
+            }
+            """";
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // "/* broken" の "/" は 9 行目(0 基点)・raw literal のインデント 8 + "where Id = 1 "(13 文字) = 21 桁目。
+        // The "/" of "/* broken" sits at line 9 (0-based), column 8 (raw indent) + 13 ("where Id = 1 ") = 21.
+        var diagnostic = diagnostics.Single(x => x.Id == "SDA0503");
+        var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+        Assert.Equal(9, position.Line);
+        Assert.Equal(21, position.Character);
+    }
+
+    [Fact]
+    public void InlineSqlParseErrorPointsInsideRegularLiteral()
+    {
+        // 通常リテラル(エスケープ復号)でも SDA0504(クォート未閉塞)の位置が該当 "'" を指す。
+        // A regular literal (escape decoding) also points SDA0504 (unclosed quote) at the exact "'".
+        const string source = """
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Sql("update Data set Name = 'broken")]
+                public partial int Touch(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // "'broken" の "'" は 7 行目(0 基点)・リテラル内容開始 10 + "update Data set Name = "(23 文字) = 33 桁目。
+        // The "'" of "'broken" sits at line 7 (0-based), column 10 (content start) + 23 ("update Data set Name = ") = 33.
+        var diagnostic = diagnostics.Single(x => x.Id == "SDA0504");
+        var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+        Assert.Equal(7, position.Line);
+        Assert.Equal(33, position.Character);
+    }
+
+    [Fact]
+    public void ReaderBehaviorInvalidMethod()
+    {
+        // SDA0109: [ReaderBehavior] は [ExecuteReader] 専用(Query 形の behavior は F17 で固定)。
+        // SDA0109: [ReaderBehavior] is only valid on [ExecuteReader] (Query-shape behaviors are fixed by F17).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row { public long Id { get; set; } }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                [Sql("select Id from Data")]
+                [ReaderBehavior(CommandBehavior.SequentialAccess)]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Contains(diagnostics, x => x.Id == "SDA0109");
+    }
+
     // ---- Builders generator (SDB) -----------------------------------------------------------
 
     [Fact]

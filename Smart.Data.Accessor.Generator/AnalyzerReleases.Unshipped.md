@@ -24,6 +24,7 @@ SDA0105 | Builder  | Error    | QueryBuilder attribute combined with [Procedure]
 SDA0106 | Usage    | Error    | [MethodName] is duplicated within the class
 SDA0107 | Usage    | Error    | [Sql] cannot be combined with another command source
 SDA0108 | Usage    | Error    | Execution-kind attribute required
+SDA0109 | Usage    | Error    | [ReaderBehavior] is only valid on [ExecuteReader] methods
 SDA0201 | Usage    | Error    | Duplicate [Name] on parameters or properties
 SDA0203 | Usage    | Error    | [DirectSql] method first parameter must be string
 SDA0204 | Usage    | Warning  | [Procedure] stored procedure name is empty

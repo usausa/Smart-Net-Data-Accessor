@@ -96,4 +96,7 @@ internal sealed record MethodModel(
     string? InlineSqlText = null,
     // location of the [Sql] attribute's first argument, so SQL-parse diagnostics (SDA05xx) point
     // at the SQL literal instead of the method declaration.
-    LocationInfo? InlineSqlLocation = null);
+    LocationInfo? InlineSqlLocation = null,
+    // [ReaderBehavior]: CommandBehavior underlying value for [ExecuteReader] methods; OR-ed into
+    // the ExecuteReader(Async) call (Pattern A combines with the connection-state behavior).
+    int? ReaderBehavior = null);

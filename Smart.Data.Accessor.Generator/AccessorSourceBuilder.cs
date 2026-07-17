@@ -919,20 +919,28 @@ internal static class AccessorSourceBuilder
 
     // reader(ExecuteReader)系の実行と返却を出力する。cmd/接続を WrappedReader に包んで返す。Pattern A は接続を閉じない
     // (CloseConnection で呼び出し前の状態へ戻す)、Pattern B(接続所有)は WrappedReader が接続ごと破棄する。同期/非同期で出し分ける。
+    // [ReaderBehavior] 指定時は CommandBehavior を合成する：Pattern A は接続状態の三項に OR、Pattern B はそのまま渡す
+    // (reader 形は列の読み順を呼出側が制御するため SequentialAccess 等も安全にオプトインできる。Query 形は F17 で固定)。
     // Emit execution and return for reader (ExecuteReader) shapes: wrap cmd/connection in a WrappedReader and return it.
     // Pattern A does not close the connection (CloseConnection restores the pre-call state); Pattern B (owns the connection)
-    // lets WrappedReader dispose the connection too. Sync and async are emitted separately.
+    // lets WrappedReader dispose the connection too. Sync and async are emitted separately. With [ReaderBehavior] the
+    // CommandBehavior is composed in: Pattern A ORs it onto the connection-state conditional, Pattern B passes it as-is
+    // (the caller controls the column read order for a raw reader, so SequentialAccess etc. are safe opt-ins; Query
+    // shapes stay fixed per F17).
     private static void EmitReaderInvocation(SourceBuilder builder, MethodModel method, string cancellationExpression)
     {
         var ownsConnection = method.ConnectionPattern == ConnectionPattern.None;
         var isAsync = method.ReturnShape is ReturnShape.TaskReader or ReturnShape.ValueTaskReader;
+        var userBehavior = method.ReaderBehavior is { } behaviorValue ? CommandBehaviorText(behaviorValue) : null;
         var behaviorArg = ownsConnection
-            ? string.Empty
-            : "__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default";
+            ? userBehavior ?? string.Empty
+            : userBehavior is null
+                ? "__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default"
+                : "(__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default) | " + userBehavior;
 
         if (isAsync)
         {
-            var asyncArgs = ownsConnection
+            var asyncArgs = behaviorArg.Length == 0
                 ? cancellationExpression
                 : behaviorArg + ", " + cancellationExpression;
             builder.Indent().Append("var __reader = await cmd.ExecuteReaderAsync(").Append(asyncArgs).Append(").ConfigureAwait(false);").NewLine();
@@ -942,12 +950,55 @@ internal static class AccessorSourceBuilder
         }
         else if (ownsConnection)
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(), connection);").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("), connection);").NewLine();
         }
         else
         {
             builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("));").NewLine();
         }
+    }
+
+    // CommandBehavior の基底値を名前付きフラグの OR 式へ分解する(既知外のビットは数値キャストで残す)。
+    // Decompose a CommandBehavior underlying value into an OR of named flags (unknown bits fall back to a numeric cast).
+    private static readonly (int Flag, string Name)[] CommandBehaviorFlags =
+    [
+        (1, "SingleResult"),
+        (2, "SchemaOnly"),
+        (4, "KeyInfo"),
+        (8, "SingleRow"),
+        (16, "SequentialAccess"),
+        (32, "CloseConnection"),
+    ];
+
+    private static string CommandBehaviorText(int behavior)
+    {
+        if (behavior == 0)
+        {
+            return "global::System.Data.CommandBehavior.Default";
+        }
+        var sb = new StringBuilder();
+        var remaining = behavior;
+        foreach (var (flag, name) in CommandBehaviorFlags)
+        {
+            if ((remaining & flag) != 0)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(" | ");
+                }
+                sb.Append("global::System.Data.CommandBehavior.").Append(name);
+                remaining &= ~flag;
+            }
+        }
+        if (remaining != 0)
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(" | ");
+            }
+            sb.Append("(global::System.Data.CommandBehavior)").Append(remaining.ToString(CultureInfo.InvariantCulture));
+        }
+        return sb.ToString();
     }
 
     // メソッドの実行部を出力する。reader 形は EmitReaderInvocation、Execute/DirectSql は戻り値形(void/scalar/Task…)毎に
@@ -1380,29 +1431,31 @@ internal static class AccessorSourceBuilder
     }
 
     // __From の照合戦略閾値：グループ数がこの値以下なら FrozenDictionary を使わず String.Equals の直比較を emit する
-    // （実測で 1 列 exact 11 倍・2 列 hit-last でも 1.8 倍高速、static 辞書と型初期化子も消える。3 グループ以上は
-    // 列数が多い領域で FrozenDictionary が勝るため現行形を維持。`__docs/benchmark-results.md` 2026-07 narrow PoC）。
+    // （2026-07 PoC 実測：1〜8 グループの全形＝正順/逆順/部分列 wide で直比較が 2.5〜11 倍高速・割当ゼロ、同一長＋
+    // 共通接頭辞の縮退最悪ケースでも 3.7 倍勝ち。static 辞書と型初期化子も消える。9 グループ以上は未計測のため
+    // FrozenDictionary を維持＝計測済み上限で切る保守的閾値）。
     // Threshold for the __From matching strategy: at or below this group count, emit direct String.Equals comparisons
-    // instead of the FrozenDictionary (measured 11x faster for 1-column exact and still 1.8x for 2-column hit-last,
-    // and the static dictionary + type initializer disappear; 3+ groups keep the dictionary form, which wins at
-    // larger sizes — see benchmark-results.md, 2026-07 narrow PoC).
-    private const int NarrowOrdinalGroupThreshold = 2;
+    // instead of the FrozenDictionary (2026-07 PoC measurements: 2.5-11x faster with zero allocation across every
+    // shape — in-order / reversed / subset-in-wide — for 1-8 groups, and still 3.7x ahead in the same-length
+    // shared-prefix degenerate worst case; the static dictionary + type initializer disappear too). 9+ groups keep
+    // the dictionary form as the unmeasured region (a conservative cut at the measured bound).
+    private const int NarrowOrdinalGroupThreshold = 8;
 
     // クエリ列の序数キャッシュ構造体（__{Entity}Ordinals）を生成する。マップ対象列毎の public int フィールドを持ち、
     // __From(reader) がリーダーの列を 1 回だけ走査して構築する（GetOrdinal は欠落列で throw するため使わない。欠落列は
     // -1 のまま）。照合は SQL の識別子と同様に大文字小文字を区別しない：グループ数が NarrowOrdinalGroupThreshold 以下
     // なら String.Equals(OrdinalIgnoreCase) の直比較＋グループ毎ローカルで解決し、超えるなら事前構築の static
     // FrozenDictionary（OrdinalIgnoreCase、列名 → グループ id）を引いて stackalloc の序数表へ先勝ちで書き込む
-    // （実測で ToUpperInvariant switch / Dapper.AOT 式ハッシュ switch より高速・割当ゼロ、`__docs/benchmark-results.md`
-    // 2026-07 照合戦略 PoC）。大小のみ異なる複数プロパティは同じグループ id を共有し双方が同じ序数に束縛される。
+    // （2026-07 PoC 実測で ToUpperInvariant switch / Dapper.AOT 式ハッシュ switch より高速・割当ゼロ）。
+    // 大小のみ異なる複数プロパティは同じグループ id を共有し双方が同じ序数に束縛される。
     // 全グループ解決後は走査を打ち切る。全半角・かな種は畳み込まない（プロバイダ GetOrdinal の拡張照合より狭い、F18 の制限）。
     // Emit the query-column ordinal cache struct (__{Entity}Ordinals): one public int field per mapped column, built by
     // __From(reader) scanning the reader's columns once (GetOrdinal, which throws on a missing column, is not used; an
     // absent column stays -1). Matching is case-insensitive like SQL identifiers: at or below NarrowOrdinalGroupThreshold
     // groups, direct String.Equals(OrdinalIgnoreCase) comparisons resolve into per-group locals; above it, a prebuilt
     // static FrozenDictionary (OrdinalIgnoreCase, column name → group id) fills a stackalloc ordinal table
-    // first-match-wins (measured faster than the ToUpperInvariant switch / Dapper.AOT-style hash switch, zero
-    // allocation; see benchmark-results.md). Properties whose names differ only in case share a group id and both bind
+    // first-match-wins (2026-07 PoC measurements: faster than the ToUpperInvariant switch / Dapper.AOT-style hash
+    // switch, zero allocation). Properties whose names differ only in case share a group id and both bind
     // to the same ordinal. The scan stops once every group is resolved. Width/kana folding is NOT applied (narrower
     // than provider GetOrdinal's extended collation; an F18 limitation).
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, string ordinalsName, string fromName, MethodModel template)

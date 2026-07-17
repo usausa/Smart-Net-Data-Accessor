@@ -3,8 +3,7 @@ namespace Smart.Data.Accessor.Benchmark;
 using System.Data;
 using System.Data.Common;
 
-// 手書き(直書き)ベースライン実装を DapperComparisonBenchmark / MappingStrategyBenchmark で共有する
-// (コピーが分かれていると片方だけ直した際に両ベンチの baseline がズレる)。
+// 手書き(直書き)ベースライン実装(DapperComparisonBenchmark の baseline)。
 // Mock 接続は CommandText を無視し、列はモックの列定義で決まる(テキストは cosmetic)。
 internal static class ManualMappers
 {

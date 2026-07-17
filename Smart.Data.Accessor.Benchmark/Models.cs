@@ -65,9 +65,9 @@ public sealed class BenchEnumRow
     public BenchStatus Status { get; set; }
 }
 
-// 10-column record (positional / constructor-based) for the mapping-strategy PoC benchmark.
+// 10-column record (positional / constructor-based) for the record-vs-class comparison.
 // [property: NotNullColumn] mirrors BenchWideRow so the generated record path also skips IsDBNull,
-// keeping the record-vs-class comparison apples-to-apples (isolates ctor vs object-initializer).
+// keeping the comparison apples-to-apples (isolates ctor vs object-initializer).
 public sealed record BenchWideRecord(
     [property: NotNullColumn] long Id,
     [property: NotNullColumn] string Name,

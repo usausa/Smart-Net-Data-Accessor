@@ -323,9 +323,9 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void OrdinalResolutionToleratesMissingColumns()
     {
-        // 3 グループ(閾値超え)＝FrozenDictionary 形。narrow(1〜2 グループ)の直比較形は
+        // 9 グループ(閾値超え)＝FrozenDictionary 形。narrow(8 グループ以下)の直比較形は
         // NarrowEntityOrdinalResolutionUsesDirectComparison で検証する。
-        // Three groups (above the threshold) = the FrozenDictionary form; the narrow (1-2 group) direct-comparison
+        // Nine groups (above the threshold) = the FrozenDictionary form; the narrow (<= 8 group) direct-comparison
         // form is covered by NarrowEntityOrdinalResolutionUsesDirectComparison.
         const string source = """
             using System.Collections.Generic;
@@ -337,6 +337,12 @@ public sealed class GeneratedCodeTests
                 public long Id { get; set; }
                 public string Name { get; set; } = string.Empty;
                 public int Age { get; set; }
+                public double Score { get; set; }
+                public bool Active { get; set; }
+                public int Status { get; set; }
+                public string Description { get; set; } = string.Empty;
+                public int Category { get; set; }
+                public string Tag { get; set; } = string.Empty;
             }
 
             [DataAccessor]
@@ -347,7 +353,7 @@ public sealed class GeneratedCodeTests
             }
             """;
 
-        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age from T")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age, Score, Active, Status, Description, Category, Tag from T")).AllGeneratedText;
 
         // __From はリーダー列を 1 回走査し、事前構築の static FrozenDictionary(OrdinalIgnoreCase、列名→グループ id)で
         // 大小無視の照合を行う(SQL 識別子と同じ扱い、先勝ち)。欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で
@@ -358,9 +364,9 @@ public sealed class GeneratedCodeTests
         Assert.Contains("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(", text, StringComparison.Ordinal);
         Assert.Contains("global::System.StringComparer.OrdinalIgnoreCase", text, StringComparison.Ordinal);
         Assert.Contains("[\"Id\"] = 0,", text, StringComparison.Ordinal);
-        Assert.Contains("stackalloc int[3]", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[9]", text, StringComparison.Ordinal);
         Assert.Contains("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
-        Assert.Contains("if (__resolved == 3) break;", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 9) break;", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
         Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
         // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
@@ -372,13 +378,13 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void NarrowEntityOrdinalResolutionUsesDirectComparison()
     {
-        // グループ数 1〜2 の narrow エンティティは FrozenDictionary を使わず String.Equals(OrdinalIgnoreCase) の
-        // 直比較で解決する(実測で 1 列 exact 11 倍高速・static 辞書と型初期化子も不要。benchmark-results.md
-        // 2026-07 narrow PoC)。意味論は同一：大小無視・先勝ち・欠落列 -1・全解決で走査打ち切り。
-        // A narrow entity (1-2 groups) resolves via direct String.Equals(OrdinalIgnoreCase) comparisons instead of
-        // the FrozenDictionary (measured 11x faster for 1-column exact, and the static dictionary + type initializer
-        // disappear; see benchmark-results.md, 2026-07 narrow PoC). Semantics are identical: case-insensitive,
-        // first match wins, absent columns stay -1, and the scan stops on full resolution.
+        // グループ数 8 以下の narrow エンティティは FrozenDictionary を使わず String.Equals(OrdinalIgnoreCase) の
+        // 直比較で解決する(2026-07 PoC 実測で 1〜8 グループ全形 2.5〜11 倍高速・static 辞書と型初期化子も不要)。
+        // 意味論は同一：大小無視・先勝ち・欠落列 -1・全解決で走査打ち切り。
+        // A narrow entity (<= 8 groups) resolves via direct String.Equals(OrdinalIgnoreCase) comparisons instead of
+        // the FrozenDictionary (2026-07 PoC measurements: 2.5-11x faster across every shape for 1-8 groups, and the
+        // static dictionary + type initializer disappear). Semantics are identical: case-insensitive, first match
+        // wins, absent columns stay -1, and the scan stops on full resolution.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -733,9 +739,12 @@ public sealed class GeneratedCodeTests
     public void StructInternalNamesAvoidPropertyNameCollision()
     {
         // struct 内部名(__Columns / __From)はフィールド名＝プロパティ名と衝突し得るため、衝突時は連番になる
-        // (無対策だと CS0102 の重複定義で生成コードが壊れる)。
+        // (無対策だと CS0102 の重複定義で生成コードが壊れる)。9 グループ(閾値超え)で FrozenDictionary 形の
+        // __Columns 衝突と __From 衝突を同時に検証する(直比較形の __From 衝突は下のテスト)。
         // Struct-internal names (__Columns / __From) can collide with field names (= property names); a collision
-        // takes a numeric suffix (otherwise the generated code breaks with duplicate definitions, CS0102).
+        // takes a numeric suffix (otherwise the generated code breaks with duplicate definitions, CS0102). Nine
+        // groups (above the threshold) verify both the FrozenDictionary-form __Columns collision and the __From
+        // collision (the direct-comparison __From collision is covered below).
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -744,6 +753,12 @@ public sealed class GeneratedCodeTests
             internal sealed class Row
             {
                 public long Id { get; set; }
+                public string Name { get; set; } = string.Empty;
+                public int Age { get; set; }
+                public double Score { get; set; }
+                public bool Active { get; set; }
+                public int Status { get; set; }
+                public string Tag { get; set; } = string.Empty;
                 public int __Columns { get; set; }
                 public int __From { get; set; }
             }
@@ -756,12 +771,45 @@ public sealed class GeneratedCodeTests
             }
             """;
 
-        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, __Columns, __From from T")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age, Score, Active, Status, Tag, __Columns, __From from T")).AllGeneratedText;
 
         Assert.Contains("FrozenDictionary<string, int> __Columns1 =", text, StringComparison.Ordinal);
         Assert.Contains("if (__Columns1.TryGetValue(reader.GetName(__i)", text, StringComparison.Ordinal);
         Assert.Contains(" __From1(global::System.Data.Common.DbDataReader reader)", text, StringComparison.Ordinal);
         Assert.Contains("__RowOrdinals.__From1(__reader)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DirectComparisonFromNameAvoidsPropertyNameCollision()
+    {
+        // 直比較形(閾値以下)でも __From はフィールド名＝プロパティ名と衝突し得るため連番になる
+        // (直比較形は静的辞書を持たないので __Columns 衝突は起きない)。
+        // The direct-comparison form (at or below the threshold) also renames __From on a field-name collision
+        // (it has no static dictionary, so a __Columns collision cannot occur).
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                public long Id { get; set; }
+                public int __From { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, __From from T")).AllGeneratedText;
+
+        Assert.Contains(" __From1(global::System.Data.Common.DbDataReader reader)", text, StringComparison.Ordinal);
+        Assert.Contains("__RowOrdinals.__From1(__reader)", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
     }
 
     private static int CountOccurrences(string text, string value)
@@ -948,6 +996,41 @@ public sealed class GeneratedCodeTests
         Assert.Contains("if (id != null) {", text, StringComparison.Ordinal);
         Assert.Contains("AddInParameter(cmd, \"@p0\", id", text, StringComparison.Ordinal);
         Assert.Contains("cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReaderBehaviorComposesIntoExecuteReader()
+    {
+        // [ReaderBehavior]: Pattern A(接続引数)は接続状態の三項に OR、Pattern B(接続所有)はそのまま渡す。
+        // 複数フラグは名前付き OR に分解される。
+        // [ReaderBehavior]: Pattern A (connection argument) ORs onto the connection-state conditional; Pattern B
+        // (owned connection) passes it as-is. Multiple flags decompose into a named OR.
+        const string source = """
+            using System.Data;
+            using System.Data.Common;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [ExecuteReader]
+                [Sql("select * from Data")]
+                [ReaderBehavior(CommandBehavior.SequentialAccess)]
+                public partial DbDataReader Read(DbConnection con);
+
+                [ExecuteReader]
+                [Sql("select * from Data")]
+                [ReaderBehavior(CommandBehavior.SingleResult | CommandBehavior.SequentialAccess)]
+                public partial Task<DbDataReader> ReadAsync(CancellationToken cancel);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("cmd.ExecuteReader((__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default) | global::System.Data.CommandBehavior.SequentialAccess)", text, StringComparison.Ordinal);
+        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SequentialAccess, ", text, StringComparison.Ordinal);
     }
 
     [Fact]

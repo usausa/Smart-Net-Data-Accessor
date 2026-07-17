@@ -4,15 +4,33 @@ using System.Data;
 using System.Data.Common;
 
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Exporters;
+using BenchmarkDotNet.Jobs;
 
 using Dapper;
 
 using Smart.Mock.Data;
 
-// 現行の生成コード(最新＝FrozenDictionary 序数解決)を、直書き ADO.NET(Manual)と Dapper に対して比較する。
+// マッピング系ベンチ共通の実行設定(MediumRun・Memory 診断・P90 列)。
+// Shared run configuration for the mapping benchmarks (MediumRun, memory diagnoser, P90 column).
+public class MappingConfig : ManualConfig
+{
+    public MappingConfig()
+    {
+        AddExporter(MarkdownExporter.GitHub);
+        AddColumn(StatisticColumn.Mean, StatisticColumn.Error, StatisticColumn.StdDev, StatisticColumn.P90);
+        AddDiagnoser(MemoryDiagnoser.Default);
+        AddJob(Job.MediumRun);
+    }
+}
+
+// 現行の生成コードを、直書き ADO.NET(Manual)と Dapper に対して比較する回帰基準ベンチ。
 // 各シナリオ(列数・class/record・部分列)で Manual を baseline とし、BenchmarkDotNet の Ratio 列で性能比を出す。
 // Generated 系は本物の生成アクセサ(BenchmarkAccessor)を呼ぶ。Manual は各エンティティを直接 new する下限実装。
+// 実行系の変更後は本ベンチで「対直書き Ratio が悪化しない・Alloc Ratio 1.00 維持」を確認する。
 //
 // Run: dotnet run -c Release --project Smart.Data.Accessor.Benchmark -- --filter *DapperComparison*
 #pragma warning disable CA1001
@@ -157,6 +175,6 @@ public class DapperComparisonBenchmark
     [BenchmarkCategory("Subset 10prop/2col")]
     public List<BenchWideRow> SubsetDapper() => mockSubset.Query<BenchWideRow>(SubsetSql).AsList();
 
-    // Manual (直書き) baseline は ManualMappers に共有実装がある(MappingStrategyBenchmark と共用)。
+    // Manual (直書き) baseline の実装は ManualMappers にある。
 }
 #pragma warning restore CA1001

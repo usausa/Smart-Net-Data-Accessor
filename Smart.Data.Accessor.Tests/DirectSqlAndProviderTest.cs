@@ -60,6 +60,22 @@ public sealed class DirectSqlAndProviderTest
     }
 
     [Fact]
+    public void ReaderBehaviorOptInStillReturnsRows()
+    {
+        // [ReaderBehavior(SingleResult)] 付き reader 形が通常どおり読める(behavior は ExecuteReader 呼出へ合成される)。
+        using var con = new MockDbConnection();
+        con.SetupCommand(static cmd => cmd.SetupResult(MockData.DataReader(
+            new DataEntity { Id = 8, Name = "Ann", Type = 3, Kind = DataType.Large })));
+
+        var accessor = new DirectSqlAccessor();
+        using var reader = accessor.ReadRawSingle(con, "SELECT Id, Name, Type, Kind FROM Data");
+
+        Assert.True(reader.Read());
+        Assert.Equal("Ann", reader.GetString(reader.GetOrdinal("Name")));
+        Assert.False(reader.Read());
+    }
+
+    [Fact]
     public void PatternBResolvesConnectionFromDbProvider()
     {
         var provider = new DelegateDbProvider(static () =>

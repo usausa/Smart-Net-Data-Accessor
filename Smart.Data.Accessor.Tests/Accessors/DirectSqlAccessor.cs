@@ -1,6 +1,7 @@
 namespace Smart.Data.Accessor.Tests.Accessors;
 
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
@@ -24,4 +25,11 @@ internal sealed partial class DirectSqlAccessor
     [DirectSql]
     [ExecuteReader]
     public partial DbDataReader ReadRaw(DbConnection con, string sql);
+
+    // [ReaderBehavior]: reader 形は CommandBehavior をオプトインできる(接続状態の三項に OR される)。
+    // [ReaderBehavior]: the reader shape accepts a CommandBehavior opt-in (OR-ed onto the connection-state conditional).
+    [DirectSql]
+    [ExecuteReader]
+    [ReaderBehavior(CommandBehavior.SingleResult)]
+    public partial DbDataReader ReadRawSingle(DbConnection con, string sql);
 }

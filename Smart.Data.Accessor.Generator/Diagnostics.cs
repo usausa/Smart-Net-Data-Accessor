@@ -181,6 +181,18 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // Query 形の CommandBehavior は F17 で固定(SingleResult 等)。reader 形だけが列読み順を呼出側が
+    // 制御するため、behavior のオプトインを許す。
+    // Query-shape behaviors are fixed by design (F17, SingleResult etc.); only the reader shape lets
+    // the caller control the column read order, so only it accepts a behavior opt-in.
+    public static readonly DiagnosticDescriptor ReaderBehaviorInvalidMethod = new(
+        id: "SDA0109",
+        title: "[ReaderBehavior] is only valid on [ExecuteReader] methods",
+        messageFormat: "[ReaderBehavior] is only valid on an [ExecuteReader] method (Query-shape behaviors are fixed by design). method=[{0}].",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     // ==================================================================
     // SDA02xx — parameter / direction
     // ==================================================================

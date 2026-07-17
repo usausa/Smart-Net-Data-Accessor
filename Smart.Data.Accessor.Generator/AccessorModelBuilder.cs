@@ -5,7 +5,9 @@ using System.Data;
 using System.Globalization;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 using Smart.Data.Accessor.Generator.Helpers;
 using Smart.Data.Accessor.Generator.Models;
@@ -24,6 +26,7 @@ internal static class AccessorModelBuilder
     private const string ExecuteReaderAttributeName = "Smart.Data.Accessor.Attributes.ExecuteReaderAttribute";
     private const string DirectSqlAttributeName = "Smart.Data.Accessor.Attributes.DirectSqlAttribute";
     private const string SqlAttributeName = "Smart.Data.Accessor.Attributes.SqlAttribute";
+    private const string ReaderBehaviorAttributeName = "Smart.Data.Accessor.Attributes.ReaderBehaviorAttribute";
     private const string QueryAttributeName = "Smart.Data.Accessor.Attributes.QueryAttribute";
     private const string QueryFirstAttributeName = "Smart.Data.Accessor.Attributes.QueryFirstAttribute";
     private const string NameAttributeName = "Smart.Data.Accessor.Attributes.NameAttribute";
@@ -140,25 +143,15 @@ internal static class AccessorModelBuilder
             if (method.InlineSqlText is not null)
             {
                 // SDA0406: [Sql] は対応する .sql を持ってはならない(ファイルが黙って無視され食い違う罠を防ぐ)。
+                // 2-way SQL の解析自体は transform 段で完了している(SDA05xx をリテラル内位置で報告するため)。
                 // SDA0406: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
+                // The 2-way SQL parse itself already ran in the transform stage (so SDA05xx report in-literal positions).
                 if (sqlMap.ContainsKey(sqlKey))
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
                     continue;
                 }
-                // インラインのテキストを .sql と同じ 2-way パイプラインへ。SQL 解析診断は属性引数(SQL リテラル)を指す。
-                // Feed the inline text into the same 2-way pipeline as a .sql file; SQL-parse diagnostics point at the
-                // attribute argument (the SQL literal).
-                var (inlineCode, inlineStaticSql, inlineStaticParam, inlineOutputBindings, inlineUsings) =
-                    BuildSqlEmitCode(diagnostics, method.Name, method.InlineSqlLocation ?? method.Location, method.Parameters, method.InlineSqlText, method.BindMarker);
-                keptMethods.Add(method with
-                {
-                    SqlEmitCode = inlineCode,
-                    StaticSqlText = inlineStaticSql,
-                    StaticParameterCode = inlineStaticParam,
-                    OutputBindings = new EquatableArray<OutputBinding>(inlineOutputBindings.ToArray()),
-                    Usings = new EquatableArray<UsingDirective>(inlineUsings.ToArray())
-                });
+                keptMethods.Add(method);
                 continue;
             }
 
@@ -316,6 +309,8 @@ internal static class AccessorModelBuilder
             string? procedureName = null;
             string? inlineSql = null;
             LocationInfo? inlineSqlLocation = null;
+            ExpressionSyntax? inlineSqlArgument = null;
+            int? readerBehavior = null;
             var isDirectSql = false;
             // SDA0103: 実行種別属性(A 群)は排他なので出現回数を数える。
             // SDA0103: execution-kind attributes (A-group) are mutually exclusive; count occurrences.
@@ -403,6 +398,7 @@ internal static class AccessorModelBuilder
                     // (SDA05xx) point at the SQL text instead of the method declaration.
                     inlineSql = sqlText;
                     var attributeSyntax = attribute.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax;
+                    inlineSqlArgument = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault()?.Expression;
                     var argumentLocation = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault()?.GetLocation();
                     inlineSqlLocation = argumentLocation is not null ? LocationInfo.CreateFrom(argumentLocation) : null;
                     // SDA0212: [Sql("")] テキストが空 → 警告。
@@ -414,6 +410,12 @@ internal static class AccessorModelBuilder
                             member.Locations.FirstOrDefault(),
                             member.Name));
                     }
+                }
+                else if ((fullName == ReaderBehaviorAttributeName) &&
+                    (attribute.ConstructorArguments.Length > 0) &&
+                    (attribute.ConstructorArguments[0].Value is int behaviorValue))
+                {
+                    readerBehavior = behaviorValue;
                 }
             }
 
@@ -480,6 +482,17 @@ internal static class AccessorModelBuilder
             {
                 diagnostics.Add(new DiagnosticInfo(
                     Diagnostics.SqlAndCommandSourceConflict,
+                    member.Locations.FirstOrDefault(),
+                    member.Name));
+                continue;
+            }
+
+            // SDA0109: [ReaderBehavior] は [ExecuteReader] 専用(Query 形の behavior は F17 で固定)。
+            // SDA0109: [ReaderBehavior] is only valid on [ExecuteReader] (Query-shape behaviors are fixed by F17).
+            if ((readerBehavior is not null) && (methodType != MethodType.ExecuteReader))
+            {
+                diagnostics.Add(new DiagnosticInfo(
+                    Diagnostics.ReaderBehaviorInvalidMethod,
                     member.Locations.FirstOrDefault(),
                     member.Name));
                 continue;
@@ -1049,6 +1062,30 @@ internal static class AccessorModelBuilder
             var mapsProcedureReturnValue = (procedureName is not null) &&
                 (shape.Value is ReturnShape.Scalar or ReturnShape.TaskScalar or ReturnShape.ValueTaskScalar);
 
+            // [Sql] インラインはここで 2-way SQL を解析する(.sql と同じパイプライン)。syntax が手元にある transform 段で
+            // 行うことで、SQL 解析診断(SDA05xx)をリテラル内の正確な位置へ割り出せる(割り出せない形は属性引数全体へ
+            // フォールバック)。ファイル方式の解析は従来どおり出力段(CompleteModel)。
+            // [Sql] inline SQL parses HERE (the same pipeline as a .sql file): running in the transform stage, where the
+            // syntax is at hand, lets SQL-parse diagnostics (SDA05xx) map to the exact position inside the literal
+            // (unmappable forms fall back to the whole attribute argument). File-based parsing stays in the output
+            // stage (CompleteModel).
+            if (inlineSql is not null)
+            {
+                var (inlineCode, inlineStaticSql, inlineStaticParam, inlineOutputs, inlineUsings) = BuildSqlEmitCode(
+                    diagnostics,
+                    member.Name,
+                    inlineSqlLocation,
+                    parameters,
+                    inlineSql,
+                    methodMarker,
+                    CreateSqlOffsetLocationFactory(inlineSqlArgument));
+                sqlEmitCode = inlineCode;
+                staticSqlText = inlineStaticSql;
+                staticParameterCode = inlineStaticParam;
+                outputBindings = inlineOutputs;
+                methodUsings = inlineUsings;
+            }
+
             // SqlSource(クエリ構築方法)は MethodType と直交。同時成立しないこと(B 群)は SDA0104/0105/0405 が担保済み。
             // SqlSource (how the SQL is built) is orthogonal to MethodType; B-group exclusivity is enforced by SDA0104/0105/0405.
             var sqlSource = builder is not null ? SqlSource.QueryBuilder
@@ -1087,7 +1124,8 @@ internal static class AccessorModelBuilder
                 mapsProcedureReturnValue,
                 member.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null,
                 inlineSql,
-                inlineSqlLocation));
+                inlineSqlLocation,
+                readerBehavior));
         }
 
         if (methods.Count == 0)
@@ -1688,6 +1726,212 @@ internal static class AccessorModelBuilder
         return (infos, false);
     }
 
+    // [Sql] リテラル内の SQL 文字オフセット → ソース位置(LocationInfo)の変換関数を作る。対応形は通常リテラル
+    // (主要エスケープ)・verbatim・raw(単一行/複数行)。対応外の形(連結式・未知エスケープ等)や走査中の不一致は
+    // null を返し、呼び出し側が属性引数全体の位置へフォールバックする。
+    // Build a mapper from a character offset inside the [Sql] SQL text to a source LocationInfo. Supported forms:
+    // regular literals (common escapes), verbatim, and raw (single/multi-line). Unsupported forms (concatenation,
+    // unknown escapes, ...) or a mismatch during the walk return null, and the caller falls back to the whole
+    // attribute argument.
+    private static Func<int, LocationInfo?>? CreateSqlOffsetLocationFactory(ExpressionSyntax? argumentExpression)
+    {
+        if (argumentExpression is not LiteralExpressionSyntax literal)
+        {
+            return null;
+        }
+        var token = literal.Token;
+        var tree = token.SyntaxTree;
+        if (tree is null)
+        {
+            return null;
+        }
+        var value = token.ValueText;
+        var map = new int[value.Length + 1];
+        if (!TryBuildOffsetMap(token, token.Text, value, map))
+        {
+            return null;
+        }
+        var spanStart = token.SpanStart;
+        return offset =>
+        {
+            var index = offset < 0 ? 0 : offset > value.Length ? value.Length : offset;
+            return LocationInfo.CreateFrom(Location.Create(tree, new TextSpan(spanStart + map[index], 1)));
+        };
+    }
+
+    // value(SQL テキスト)の各文字オフセット → token.Text(引用符・エスケープ込みのソース表記)内オフセットの表を作る。
+    // 非エスケープ文字はソースと突き合わせて検証し、想定と異なる形(改行正規化等)なら false でフォールバックさせる。
+    // Build the per-character table from the value (SQL text) offsets to offsets inside token.Text (the source form
+    // with quotes/escapes). Non-escaped characters are verified against the source; any unexpected shape (newline
+    // normalisation etc.) returns false so the caller falls back.
+    private static bool TryBuildOffsetMap(SyntaxToken token, string text, string value, int[] map)
+    {
+        if (token.IsKind(SyntaxKind.SingleLineRawStringLiteralToken) || token.IsKind(SyntaxKind.MultiLineRawStringLiteralToken))
+        {
+            return TryBuildRawOffsetMap(text, value, map);
+        }
+        if (!token.IsKind(SyntaxKind.StringLiteralToken))
+        {
+            return false;
+        }
+        if (text.StartsWith("@\"", StringComparison.Ordinal))
+        {
+            // verbatim: "" が " の 1 文字になる以外は 1:1。
+            // verbatim: 1:1 except "" collapsing to a single quote.
+            var sourceIndex = 2;
+            for (var valueIndex = 0; valueIndex < value.Length; valueIndex++)
+            {
+                map[valueIndex] = sourceIndex;
+                if ((text[sourceIndex] == '"') && (sourceIndex + 1 < text.Length) && (text[sourceIndex + 1] == '"'))
+                {
+                    sourceIndex += 2;
+                }
+                else
+                {
+                    if (text[sourceIndex] != value[valueIndex])
+                    {
+                        return false;
+                    }
+                    sourceIndex++;
+                }
+            }
+            map[value.Length] = sourceIndex;
+            return true;
+        }
+        // 通常リテラル: 主要エスケープを復号しながら進める(未知のエスケープは false)。
+        // Regular literal: walk while decoding the common escapes (unknown escapes return false).
+        var s = 1;
+        var v = 0;
+        while (v < value.Length)
+        {
+            map[v] = s;
+            if (text[s] != '\\')
+            {
+                if (text[s] != value[v])
+                {
+                    return false;
+                }
+                s++;
+                v++;
+                continue;
+            }
+            var escape = text[s + 1];
+            switch (escape)
+            {
+                case 'u':
+                    s += 6;
+                    v++;
+                    break;
+                case 'U':
+                    // 基本多言語面外はサロゲート対で value 2 文字を消費する。
+                    // Outside the BMP a surrogate pair consumes two value characters.
+                    if (v + 1 < map.Length)
+                    {
+                        map[v + 1] = s;
+                    }
+                    s += 10;
+                    v += 2;
+                    break;
+                case 'x':
+                    var hexLength = 0;
+                    while ((hexLength < 4) && (s + 2 + hexLength < text.Length) && Uri.IsHexDigit(text[s + 2 + hexLength]))
+                    {
+                        hexLength++;
+                    }
+                    s += 2 + hexLength;
+                    v++;
+                    break;
+                case '\\':
+                case '"':
+                case '\'':
+                case '0':
+                case 'a':
+                case 'b':
+                case 'e':
+                case 'f':
+                case 'n':
+                case 'r':
+                case 't':
+                case 'v':
+                    s += 2;
+                    v++;
+                    break;
+                default:
+                    return false;
+            }
+        }
+        map[value.Length] = s;
+        return true;
+    }
+
+    // raw string literal 用：単一行は開き引用符直後から 1:1。複数行は閉じ引用符行のインデント幅を各行頭から除いた
+    // 領域が value(改行表現はソースのまま。突き合わせ検証で崩れたら false)。
+    // For raw string literals: single-line maps 1:1 right after the opening quotes. Multi-line strips the closing
+    // line's indentation from each line (newlines stay as in source; a mismatch during verification returns false).
+    private static bool TryBuildRawOffsetMap(string text, string value, int[] map)
+    {
+        var quoteCount = 0;
+        while ((quoteCount < text.Length) && (text[quoteCount] == '"'))
+        {
+            quoteCount++;
+        }
+        var firstNewline = text.IndexOf('\n');
+        if (firstNewline < 0)
+        {
+            // 単一行 raw: value はソース内容と完全一致。
+            // Single-line raw: the value matches the source content verbatim.
+            for (var valueIndex = 0; valueIndex <= value.Length; valueIndex++)
+            {
+                map[valueIndex] = quoteCount + valueIndex;
+            }
+            return true;
+        }
+        var bodyStart = firstNewline + 1;
+        var lastNewline = text.LastIndexOf('\n');
+        var closeLineStart = lastNewline + 1;
+        var indent = 0;
+        while ((closeLineStart + indent < text.Length) && ((text[closeLineStart + indent] == ' ') || (text[closeLineStart + indent] == '\t')))
+        {
+            indent++;
+        }
+        var s = bodyStart;
+        var v = 0;
+        while (v < value.Length)
+        {
+            // 行頭のインデントを飛ばす(空行・短い行は改行の手前まで)。
+            // Skip the per-line indentation (empty/short lines stop before the newline).
+            var skipped = 0;
+            while ((skipped < indent) && (s < text.Length) && (text[s] != '\n') && (text[s] != '\r'))
+            {
+                s++;
+                skipped++;
+            }
+            var advanced = false;
+            while ((v < value.Length) && (s < text.Length))
+            {
+                map[v] = s;
+                if (text[s] != value[v])
+                {
+                    return false;
+                }
+                var character = text[s];
+                s++;
+                v++;
+                advanced = true;
+                if (character == '\n')
+                {
+                    break;
+                }
+            }
+            if (!advanced)
+            {
+                return false;
+            }
+        }
+        map[value.Length] = s;
+        return true;
+    }
+
     // マップ対象外だが設定必須の required メンバ（[Ignore]・非 public・record 非位置）: 序数・読み取りを持たない
     // Ignored + RequiresInitOnlySet エントリで、行マッパーが初期化子内で default! を設定する（CS9035 回避）。
     // A required member excluded from mapping ([Ignore] / non-public / record non-positional): an Ignored +
@@ -2019,7 +2263,8 @@ internal static class AccessorModelBuilder
         LocationInfo? location,
         IReadOnlyList<ParameterModel> parameters,
         string sql,
-        char bindMarker)
+        char bindMarker,
+        Func<int, LocationInfo?>? offsetLocation = null)
     {
         if (String.IsNullOrWhiteSpace(sql))
         {
@@ -2049,7 +2294,13 @@ internal static class AccessorModelBuilder
             string[] args = ex.Error == SqlTokenizerError.Unknown
                 ? [methodName, ex.Message]
                 : [methodName];
-            diagnostics.Add(new DiagnosticInfo(descriptor, location, args));
+            // [Sql] インラインではエラー位置(SQL 内オフセット)をリテラル内のソース位置へ割り出す
+            // (割り出せない形は属性引数全体へフォールバック)。ファイル方式は従来どおりメソッド位置。
+            // For [Sql] inline SQL, map the error offset inside the SQL text to the exact source position
+            // inside the literal (unmappable forms fall back to the whole attribute argument); the
+            // file-based path keeps the method location.
+            var errorLocation = ex.Position >= 0 ? offsetLocation?.Invoke(ex.Position) ?? location : location;
+            diagnostics.Add(new DiagnosticInfo(descriptor, errorLocation, args));
             return (string.Empty, null, null, Array.Empty<OutputBinding>(), Array.Empty<UsingDirective>());
         }
 

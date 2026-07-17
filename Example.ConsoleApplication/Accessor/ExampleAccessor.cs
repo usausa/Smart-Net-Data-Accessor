@@ -54,7 +54,9 @@ internal sealed partial class ExampleAccessor
     [Query]
     public partial IReadOnlyList<DataEntity> QueryByIds(IEnumerable<long> ids);
 
+    // [ReaderBehavior]: reader 形は列の読み順を呼出側が制御するため SequentialAccess を安全にオプトインできる。
     [ExecuteReader]
+    [ReaderBehavior(CommandBehavior.SequentialAccess)]
     public partial DbDataReader QueryReader();
 
     [DirectSql]
