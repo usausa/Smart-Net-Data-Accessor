@@ -55,7 +55,7 @@ internal static class GeneratorTestHelper
     internal static RunResult Run(string source, params (string Name, string Sql)[] sqlFiles) =>
         RunCore(source, verifyGeneratedCodeCompiles: true, sqlFiles);
 
-    private static RunResult RunCore(string source, bool verifyGeneratedCodeCompiles, (string Name, string Sql)[] sqlFiles)
+    private static RunResult RunCore(string source, bool verifyGeneratedCodeCompiles, IEnumerable<(string Name, string Sql)> sqlFiles)
     {
         _ = EnsureDeps.Value;
 
