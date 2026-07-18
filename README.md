@@ -196,7 +196,7 @@ paging with the proper dialect per provider. Provider packages add dialect featu
 | `Usa.Smart.Data.Accessor.Builders.MySql` | `MySqlInsert`, ... , `MySqlUpsert`, `MySqlInsertIgnore`, `MySqlReplace` | `ON DUPLICATE KEY UPDATE`, `INSERT IGNORE`, `REPLACE INTO` |
 
 Writing a builder generator for another provider is supported and documented
-(`__docs/generator-guide.md`, Japanese: `generator-guide.ja.md`).
+([`docs/generator-guide.md`](docs/generator-guide.md), Japanese: [`generator-guide.ja.md`](docs/generator-guide.ja.md)).
 
 ## Stored procedures and output parameters
 
@@ -279,7 +279,6 @@ provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Sm
 All misuse is reported at compile time with `SDA`-prefixed diagnostics — e.g. missing SQL file
 (SDA0401), unsupported return type (SDA0301), missing execution kind (SDA0108), entity with no
 mappable columns (SDA0312), unclosed 2-way SQL block (SDA0503, pointing inside the `[Sql]` literal).
-See `__docs/spec.md`.
 
 ## Native AOT
 
@@ -312,8 +311,7 @@ With a real database, network/query time dominates and the differences shrink fu
 
 ## Documentation
 
-* `__docs/spec.md` — full specification (attributes, mapping rules, diagnostics, generated-code shapes)
-* `__docs/generator-guide.md` — how to write a third-party provider builder generator (Japanese: `generator-guide.ja.md`)
+* [`docs/generator-guide.md`](docs/generator-guide.md) — how to write a third-party provider builder generator (Japanese: [`generator-guide.ja.md`](docs/generator-guide.ja.md))
 * `Example.ConsoleApplication` / `Example.WebApplication` — runnable samples (SQLite)
 
 ## Verification
