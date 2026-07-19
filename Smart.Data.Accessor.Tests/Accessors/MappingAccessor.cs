@@ -45,4 +45,24 @@ internal sealed partial class MappingAccessor
 
     [Query]
     public partial IReadOnlyList<CollideOrdinals> QueryCollideOrdinals(DbConnection con);
+
+    // 閾値超え：ハッシュ switch 形の序数解決を実行する。
+    // Above the threshold: exercises the hash-switch form of ordinal resolution.
+    [Query]
+    public partial IReadOnlyList<MappingWideEntity> QueryWideEntities(DbConnection con);
+
+    // 閾値超え＋既定サンプリング位置で衝突するキー集合。
+    // Above the threshold with a key set that collides under the default sampling positions.
+    [Query]
+    public partial IReadOnlyList<MappingCollideHashEntity> QueryCollideHashEntities(DbConnection con);
+
+    // 閾値超えだがサンプリング位置を ASCII に取れず直比較へ落ちる。
+    // Above the threshold but with no ASCII-samplable positions, so it falls back to direct comparison.
+    [Query]
+    public partial IReadOnlyList<MappingNonAsciiEntity> QueryNonAsciiEntities(DbConnection con);
+
+    // 閾値超え＋ASCII/非 ASCII 混在キー：非サンプリング位置の非 ASCII を許した switch 形。
+    // Above the threshold with mixed ASCII / non-ASCII keys: the switch form tolerating non-ASCII at non-sampled positions.
+    [Query]
+    public partial IReadOnlyList<MappingMixedNameEntity> QueryMixedNameEntities(DbConnection con);
 }

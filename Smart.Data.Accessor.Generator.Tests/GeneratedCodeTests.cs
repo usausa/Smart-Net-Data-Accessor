@@ -323,10 +323,10 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void OrdinalResolutionToleratesMissingColumns()
     {
-        // 9 グループ(閾値超え)＝FrozenDictionary 形。narrow(8 グループ以下)の直比較形は
+        // 17 グループ(閾値超え)＝サンプリングハッシュ switch 形。閾値以下の直比較形は
         // NarrowEntityOrdinalResolutionUsesDirectComparison で検証する。
-        // Nine groups (above the threshold) = the FrozenDictionary form; the narrow (<= 8 group) direct-comparison
-        // form is covered by NarrowEntityOrdinalResolutionUsesDirectComparison.
+        // Seventeen groups (above the threshold) = the sampling-hash switch form; the at-or-below-threshold
+        // direct-comparison form is covered by NarrowEntityOrdinalResolutionUsesDirectComparison.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -343,6 +343,14 @@ public sealed class GeneratedCodeTests
                 public string Description { get; set; } = string.Empty;
                 public int Category { get; set; }
                 public string Tag { get; set; } = string.Empty;
+                public int Rank { get; set; }
+                public int Level { get; set; }
+                public string Note { get; set; } = string.Empty;
+                public string City { get; set; } = string.Empty;
+                public string Country { get; set; } = string.Empty;
+                public int Version { get; set; }
+                public int OwnerId { get; set; }
+                public int GroupId { get; set; }
             }
 
             [DataAccessor]
@@ -353,22 +361,29 @@ public sealed class GeneratedCodeTests
             }
             """;
 
-        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age, Score, Active, Status, Description, Category, Tag from T")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
 
-        // __From はリーダー列を 1 回走査し、事前構築の static FrozenDictionary(OrdinalIgnoreCase、列名→グループ id)で
-        // 大小無視の照合を行う(SQL 識別子と同じ扱い、先勝ち)。欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で
-        // throw しない)。全グループ解決後は走査を打ち切る。
-        // __From scans the reader's columns once, matching case-insensitively via a prebuilt static FrozenDictionary
-        // (OrdinalIgnoreCase, column name → group id; SQL-identifier-like, first match wins); an absent column stays
-        // -1 (GetOrdinal, which throws on a missing column, is not used). The scan stops once every group is resolved.
-        Assert.Contains("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(", text, StringComparison.Ordinal);
-        Assert.Contains("global::System.StringComparer.OrdinalIgnoreCase", text, StringComparison.Ordinal);
-        Assert.Contains("[\"Id\"] = 0,", text, StringComparison.Ordinal);
-        Assert.Contains("stackalloc int[9]", text, StringComparison.Ordinal);
-        Assert.Contains("if (__Columns.TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
-        Assert.Contains("if (__resolved == 9) break;", text, StringComparison.Ordinal);
+        // __From はリーダー列を 1 回走査し、__Match(列名 → グループ id)で大小無視の照合を行う(SQL 識別子と同じ扱い、
+        // 先勝ち)。__Match は長さ＋サンプリング 3 文字のハッシュで switch し、case 内の String.Equals で確定する。
+        // 欠落列は -1 のまま(GetOrdinal は使わない＝欠落列で throw しない)。全グループ解決後は走査を打ち切る。
+        // __From scans the reader's columns once and matches case-insensitively through __Match (column name → group
+        // id; SQL-identifier-like, first match wins). __Match switches on a length + 3-sampled-character hash and
+        // confirms with String.Equals inside the case. An absent column stays -1 (GetOrdinal, which throws on a
+        // missing column, is not used). The scan stops once every group is resolved.
+        Assert.Contains("private static int __Match(string name)", text, StringComparison.Ordinal);
+        Assert.Contains("var __length = name.Length;", text, StringComparison.Ordinal);
+        Assert.Contains("switch ((__length << 16) ^ (global::System.Char.ToUpperInvariant(name[", text, StringComparison.Ordinal);
+        Assert.Contains("global::System.StringComparison.OrdinalIgnoreCase) ? 0 : -1;", text, StringComparison.Ordinal);
+        Assert.Contains("default: return -1;", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[17]", text, StringComparison.Ordinal);
+        Assert.Contains("var __index = __Match(reader.GetName(__i));", text, StringComparison.Ordinal);
+        Assert.Contains("if ((__index >= 0) && (__ordinals[__index] < 0))", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 17) break;", text, StringComparison.Ordinal);
+        // 空の列名(プロバイダが無名式列に返すことがある)で name[0] が throw しないためのガード。
+        // Guards name[0] against the empty column name a provider can return for an unnamed expression.
+        Assert.Contains("if (__length == 0) return -1;", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
         // 行マッパーは存在する列(序数 >= 0)だけプロパティへ設定する(無い列は初期値を保持)。
         // The row mapper assigns only columns present in the result set (ordinal >= 0); absent columns keep their defaults.
         Assert.Contains("if (o.Id >= 0) entity.Id =", text, StringComparison.Ordinal);
@@ -376,15 +391,251 @@ public sealed class GeneratedCodeTests
     }
 
     [Fact]
+    public void SamplingPositionSearchAvoidsDefaultCollisions()
+    {
+        // 同一長＋共通接頭辞＋共通末尾は SQL でありふれた命名で、既定のサンプリング位置(先頭/中央/末尾)では
+        // item_code / item_name / item_note / item_type / item_size の 5 個が同じハッシュに落ちる。
+        // このキー集合は位置探索で衝突ゼロに解決できるため、バケット化ではなく「探索が効いていること」の検証。
+        // 回避不能な衝突のバケット化は HashSwitchBucketsUnavoidableCollisions で検証する。
+        // Equal length + shared prefix + shared final character is idiomatic SQL naming, and under the default sampling
+        // positions item_code / item_name / item_note / item_type / item_size all hash alike. This key set is fully
+        // resolvable by the position search, so this test covers the search working - not bucketing. Bucketing of
+        // collisions the search cannot avoid is covered by HashSwitchBucketsUnavoidableCollisions.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                [Name("item_code")] public string ItemCode { get; set; } = string.Empty;
+                [Name("item_name")] public string ItemName { get; set; } = string.Empty;
+                [Name("item_note")] public string ItemNote { get; set; } = string.Empty;
+                [Name("item_type")] public string ItemType { get; set; } = string.Empty;
+                [Name("item_size")] public string ItemSize { get; set; } = string.Empty;
+                [Name("item_unit")] public string ItemUnit { get; set; } = string.Empty;
+                [Name("item_rank")] public string ItemRank { get; set; } = string.Empty;
+                [Name("item_desc")] public string ItemDesc { get; set; } = string.Empty;
+                [Name("item_memo")] public string ItemMemo { get; set; } = string.Empty;
+                [Name("flag_01")] public int Flag01 { get; set; }
+                [Name("flag_02")] public int Flag02 { get; set; }
+                [Name("flag_11")] public int Flag11 { get; set; }
+                [Name("flag_12")] public int Flag12 { get; set; }
+                [Name("value_01")] public int Value01 { get; set; }
+                [Name("value_02")] public int Value02 { get; set; }
+                [Name("value_03")] public int Value03 { get; set; }
+                [Name("value_04")] public int Value04 { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
+
+        // GeneratorTestHelper.Run は生成コードをコンパイルするので、case ラベルが重複していればここで CS0152 になる。
+        // GeneratorTestHelper.Run compiles the generated code, so duplicate case labels would fail here as CS0152.
+        Assert.Contains("private static int __Match(string name)", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[17]", text, StringComparison.Ordinal);
+        Assert.Contains("\"item_code\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"item_size\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
+        // 衝突ゼロに解決できているので、全 case が単一キーの三項演算子形になる。
+        // The search resolves this set to zero collisions, so every case is the single-key ternary form.
+        Assert.DoesNotContain("OrdinalIgnoreCase)) return ", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HashSwitchBucketsUnavoidableCollisions()
+    {
+        // 長さ 8 では index 1 がどのサンプリング位置候補からも参照されない。そこだけが異なる 2 キー
+        // ("t1_value" / "t2_value" のようなテーブル接頭辞付き列名)は、どの三つ組を選んでも必ず衝突する。
+        // C# は case ラベルの重複をコンパイルエラー(CS0152)にするため、この 2 キーは 1 つの case にまとめ、
+        // case 内の String.Equals 連鎖で解決しなければならない。バケット化は最適化ではなく必須要件。
+        // At length 8, index 1 is not reachable from any candidate sampling position, so two keys differing only there
+        // (table-prefixed names like "t1_value" / "t2_value") collide under every possible triple. C# rejects duplicate
+        // case labels (CS0152), so the two keys must share one case and be separated by an Equals chain inside it.
+        // Bucketing is a requirement, not an optimization.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                [Name("t1_value")] public int T1Value { get; set; }
+                [Name("t2_value")] public int T2Value { get; set; }
+                public long Id { get; set; }
+                public string Name { get; set; } = string.Empty;
+                public int Age { get; set; }
+                public double Score { get; set; }
+                public bool Active { get; set; }
+                public int Status { get; set; }
+                public string Description { get; set; } = string.Empty;
+                public int Category { get; set; }
+                public string Tag { get; set; } = string.Empty;
+                public int Rank { get; set; }
+                public int Level { get; set; }
+                public string Note { get; set; } = string.Empty;
+                public string City { get; set; } = string.Empty;
+                public string Country { get; set; } = string.Empty;
+                public int Version { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
+
+        Assert.Contains("private static int __Match(string name)", text, StringComparison.Ordinal);
+        // 衝突した 2 キーは三項演算子形ではなく if 連鎖形になり、末尾で -1 に落ちる。
+        // The colliding pair is emitted as an if-chain rather than the ternary form, falling through to -1.
+        Assert.Contains("if (global::System.String.Equals(name, \"t1_value\", global::System.StringComparison.OrdinalIgnoreCase)) return 0;", text, StringComparison.Ordinal);
+        Assert.Contains("if (global::System.String.Equals(name, \"t2_value\", global::System.StringComparison.OrdinalIgnoreCase)) return 1;", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MixedScriptColumnNamesStillUseHashSwitch()
+    {
+        // ASCII/非 ASCII 混在キー。user_名前(長さ7)は index 5,6 に、col_дата(長さ8)は index 4..7 に非 ASCII を
+        // 持つが、両者とも ASCII 位置(0,1,2,3 等)をサンプリングできる三つ組が存在するため switch 形が選ばれる
+        // (全非 ASCII の NonAsciiColumnNamesFallBackToDirectComparison と対をなす)。全キーの長さを互いに
+        // 異ならせているので、長さ項によりどの三つ組でも衝突ゼロ＝全 case が単一キーの三項演算子形になる。
+        // GeneratorTestHelper.Run は生成コードをコンパイルするため、生成時ハッシュ定数と emit 式の不一致は
+        // ここでは検出できないが、形の選択とキー literal の埋め込みは固定できる(値の一致はランタイムテスト
+        // MixedScriptColumnNamesResolveViaHashSwitch が担う)。
+        // Mixed ASCII / non-ASCII keys. user_名前 (length 7) has non-ASCII at 5,6 and col_дата (length 8) at 4..7,
+        // but triples sampling ASCII positions (0,1,2,3 etc.) exist for both, so the switch form is chosen (the
+        // counterpart of the all-non-ASCII NonAsciiColumnNamesFallBackToDirectComparison). Every key length is
+        // distinct, so the length term guarantees zero collisions under any triple - every case is the single-key
+        // ternary form. GeneratorTestHelper.Run compiles the generated code; hash-constant agreement is covered by
+        // the runtime test MixedScriptColumnNamesResolveViaHashSwitch.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                [Name("id")] public long Id { get; set; }
+                [Name("age")] public int Age { get; set; }
+                [Name("city")] public string City { get; set; } = string.Empty;
+                [Name("email")] public string Email { get; set; } = string.Empty;
+                [Name("status")] public int Status { get; set; }
+                [Name("user_名前")] public string UserName { get; set; } = string.Empty;
+                [Name("col_дата")] public string ColDate { get; set; } = string.Empty;
+                [Name("item_code")] public string ItemCode { get; set; } = string.Empty;
+                [Name("created_at")] public string CreatedAt { get; set; } = string.Empty;
+                [Name("status_code")] public string StatusCode { get; set; } = string.Empty;
+                [Name("display_name")] public string DisplayName { get; set; } = string.Empty;
+                [Name("department_id")] public int DepartmentId { get; set; }
+                [Name("address_line_1")] public string AddressLine1 { get; set; } = string.Empty;
+                [Name("manager_user_id")] public int ManagerUserId { get; set; }
+                [Name("organization_cd1")] public string OrganizationCd1 { get; set; } = string.Empty;
+                [Name("registration_date")] public string RegistrationDate { get; set; } = string.Empty;
+                [Name("last_modified_by_x")] public string LastModifiedByX { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
+
+        // 17 グループ(閾値超え)＋安全な三つ組が存在するので switch 形。混在キーも case 内 Equals の literal に載る。
+        // Seventeen groups (above the threshold) with a safe triple available -> switch form; the mixed keys appear
+        // as literals in the in-case Equals.
+        Assert.Contains("private static int __Match(string name)", text, StringComparison.Ordinal);
+        Assert.Contains("\"user_名前\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"col_дата\"", text, StringComparison.Ordinal);
+        Assert.Contains("stackalloc int[17]", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
+        // 長さが全て異なるため衝突ゼロ＝if 連鎖形のバケットは現れない。
+        // Distinct lengths mean zero collisions - no if-chain bucket appears.
+        Assert.DoesNotContain("OrdinalIgnoreCase)) return ", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NonAsciiColumnNamesFallBackToDirectComparison()
+    {
+        // サンプリング位置を ASCII に取れない列名では switch 形の等価性を保証できないため直比較へ落とす。
+        // 理由は 2 つ：ハッシュ定数はジェネレータのランタイムで、照合は対象アプリのランタイムで計算されるので
+        // ASCII 以外では両者の Char.ToUpperInvariant が一致する保証が無い。加えてサロゲートをサンプリングすると
+        // char 単位の ToUpperInvariant がペアを見られず、OrdinalIgnoreCase では等しいのにハッシュが違う組が実在する。
+        // A key set with no ASCII-samplable triple falls back to the direct chain: the hash constant is computed by the
+        // generator's runtime and the match by the target app's runtime, and outside ASCII the two Char.ToUpperInvariant
+        // results are not guaranteed to agree. Sampling a surrogate is worse still - char-wise ToUpperInvariant cannot
+        // see the pair, and pairs exist that are OrdinalIgnoreCase-equal yet hash differently.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                [Name("社員番号")] public int P1 { get; set; }
+                [Name("氏名")] public string P2 { get; set; } = string.Empty;
+                [Name("氏名カナ")] public string P3 { get; set; } = string.Empty;
+                [Name("所属コード")] public string P4 { get; set; } = string.Empty;
+                [Name("所属名称")] public string P5 { get; set; } = string.Empty;
+                [Name("役職コード")] public string P6 { get; set; } = string.Empty;
+                [Name("入社年月日")] public string P7 { get; set; } = string.Empty;
+                [Name("退社年月日")] public string P8 { get; set; } = string.Empty;
+                [Name("生年月日")] public string P9 { get; set; } = string.Empty;
+                [Name("性別区分")] public int P10 { get; set; }
+                [Name("郵便番号")] public string P11 { get; set; } = string.Empty;
+                [Name("住所1")] public string P12 { get; set; } = string.Empty;
+                [Name("住所2")] public string P13 { get; set; } = string.Empty;
+                [Name("電話番号")] public string P14 { get; set; } = string.Empty;
+                [Name("更新日時")] public string P15 { get; set; } = string.Empty;
+                [Name("更新者")] public string P16 { get; set; } = string.Empty;
+                [Name("作成日時")] public string P17 { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
+
+        // 17 グループで閾値を超えているが、ASCII をサンプリングできないので直比較になる。
+        // Seventeen groups is above the threshold, but with no ASCII to sample it stays on direct comparison.
+        Assert.Contains("var __ord0 = -1;", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 17) break;", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("__Match", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToUpperInvariant", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NarrowEntityOrdinalResolutionUsesDirectComparison()
     {
-        // グループ数 8 以下の narrow エンティティは FrozenDictionary を使わず String.Equals(OrdinalIgnoreCase) の
-        // 直比較で解決する(2026-07 PoC 実測で 1〜8 グループ全形 2.5〜11 倍高速・static 辞書と型初期化子も不要)。
-        // 意味論は同一：大小無視・先勝ち・欠落列 -1・全解決で走査打ち切り。
-        // A narrow entity (<= 8 groups) resolves via direct String.Equals(OrdinalIgnoreCase) comparisons instead of
-        // the FrozenDictionary (2026-07 PoC measurements: 2.5-11x faster across every shape for 1-8 groups, and the
-        // static dictionary + type initializer disappear). Semantics are identical: case-insensitive, first match
-        // wins, absent columns stay -1, and the scan stops on full resolution.
+        // 閾値以下の narrow エンティティは String.Equals(OrdinalIgnoreCase) の直比較連鎖で解決する。
+        // 打ち切りは解決数カウンタ：以前は一致の度に「自分以外の全グループが解決済みか」を検査していたが、
+        // これは 1 ケースあたり N-1 比較 × N ケースに膨らむ。意味論は同一：大小無視・先勝ち・欠落列 -1・
+        // 全解決で走査打ち切り。
+        // A narrow entity (at or below the threshold) resolves via a direct String.Equals(OrdinalIgnoreCase) chain,
+        // stopping on a resolved counter. The previous form checked "is every other group resolved" on each match,
+        // which grows to N-1 comparisons per case across N cases. Semantics are identical: case-insensitive, first
+        // match wins, absent columns stay -1, and the scan stops on full resolution.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -410,11 +661,13 @@ public sealed class GeneratedCodeTests
         Assert.Contains("var __ord1 = -1;", text, StringComparison.Ordinal);
         Assert.Contains("if ((__ord0 < 0) && global::System.String.Equals(__name, \"Id\", global::System.StringComparison.OrdinalIgnoreCase))", text, StringComparison.Ordinal);
         Assert.Contains("else if ((__ord1 < 0) && global::System.String.Equals(__name, \"Name\", global::System.StringComparison.OrdinalIgnoreCase))", text, StringComparison.Ordinal);
-        Assert.Contains("if ((__ord1 >= 0)) break;", text, StringComparison.Ordinal);
+        Assert.Contains("var __resolved = 0;", text, StringComparison.Ordinal);
+        Assert.Contains("if (__resolved == 2) break;", text, StringComparison.Ordinal);
         Assert.Contains("return new(__ord0, __ord1);", text, StringComparison.Ordinal);
         Assert.DoesNotContain("FrozenDictionary", text, StringComparison.Ordinal);
         Assert.DoesNotContain("stackalloc", text, StringComparison.Ordinal);
         Assert.DoesNotContain("GetOrdinal", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("__Match", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -738,13 +991,13 @@ public sealed class GeneratedCodeTests
     [Fact]
     public void StructInternalNamesAvoidPropertyNameCollision()
     {
-        // struct 内部名(__Columns / __From)はフィールド名＝プロパティ名と衝突し得るため、衝突時は連番になる
-        // (無対策だと CS0102 の重複定義で生成コードが壊れる)。9 グループ(閾値超え)で FrozenDictionary 形の
-        // __Columns 衝突と __From 衝突を同時に検証する(直比較形の __From 衝突は下のテスト)。
-        // Struct-internal names (__Columns / __From) can collide with field names (= property names); a collision
-        // takes a numeric suffix (otherwise the generated code breaks with duplicate definitions, CS0102). Nine
-        // groups (above the threshold) verify both the FrozenDictionary-form __Columns collision and the __From
-        // collision (the direct-comparison __From collision is covered below).
+        // struct 内部名(__Match / __From)はフィールド名＝プロパティ名と衝突し得るため、衝突時は連番になる
+        // (無対策だと CS0102 の重複定義で生成コードが壊れる)。17 グループ(閾値超え)でハッシュ switch 形の
+        // __Match 衝突と __From 衝突を同時に検証する(直比較形の __From 衝突は下のテスト)。
+        // Struct-internal names (__Match / __From) can collide with field names (= property names); a collision takes
+        // a numeric suffix (otherwise the generated code breaks with duplicate definitions, CS0102). Seventeen groups
+        // (above the threshold) verify both the hash-switch-form __Match collision and the __From collision (the
+        // direct-comparison __From collision is covered below).
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -759,7 +1012,15 @@ public sealed class GeneratedCodeTests
                 public bool Active { get; set; }
                 public int Status { get; set; }
                 public string Tag { get; set; } = string.Empty;
-                public int __Columns { get; set; }
+                public int Rank { get; set; }
+                public int Level { get; set; }
+                public string Note { get; set; } = string.Empty;
+                public string City { get; set; } = string.Empty;
+                public string Country { get; set; } = string.Empty;
+                public int Version { get; set; }
+                public int OwnerId { get; set; }
+                public int GroupId { get; set; }
+                public int __Match { get; set; }
                 public int __From { get; set; }
             }
 
@@ -771,10 +1032,10 @@ public sealed class GeneratedCodeTests
             }
             """;
 
-        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Name, Age, Score, Active, Status, Tag, __Columns, __From from T")).AllGeneratedText;
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
 
-        Assert.Contains("FrozenDictionary<string, int> __Columns1 =", text, StringComparison.Ordinal);
-        Assert.Contains("if (__Columns1.TryGetValue(reader.GetName(__i)", text, StringComparison.Ordinal);
+        Assert.Contains("private static int __Match1(string name)", text, StringComparison.Ordinal);
+        Assert.Contains("var __index = __Match1(reader.GetName(__i));", text, StringComparison.Ordinal);
         Assert.Contains(" __From1(global::System.Data.Common.DbDataReader reader)", text, StringComparison.Ordinal);
         Assert.Contains("__RowOrdinals.__From1(__reader)", text, StringComparison.Ordinal);
     }

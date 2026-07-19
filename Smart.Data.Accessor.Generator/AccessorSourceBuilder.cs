@@ -1430,34 +1430,201 @@ internal static class AccessorSourceBuilder
         builder.EndScope();
     }
 
-    // __From の照合戦略閾値：グループ数がこの値以下なら FrozenDictionary を使わず String.Equals の直比較を emit する
-    // （2026-07 PoC 実測：1〜8 グループの全形＝正順/逆順/部分列 wide で直比較が 2.5〜11 倍高速・割当ゼロ、同一長＋
-    // 共通接頭辞の縮退最悪ケースでも 3.7 倍勝ち。static 辞書と型初期化子も消える。9 グループ以上は未計測のため
-    // FrozenDictionary を維持＝計測済み上限で切る保守的閾値）。
-    // Threshold for the __From matching strategy: at or below this group count, emit direct String.Equals comparisons
-    // instead of the FrozenDictionary (2026-07 PoC measurements: 2.5-11x faster with zero allocation across every
-    // shape — in-order / reversed / subset-in-wide — for 1-8 groups, and still 3.7x ahead in the same-length
-    // shared-prefix degenerate worst case; the static dictionary + type initializer disappear too). 9+ groups keep
-    // the dictionary form as the unmeasured region (a conservative cut at the measured bound).
-    private const int NarrowOrdinalGroupThreshold = 8;
+    // __From の照合戦略閾値：グループ数がこの値以下なら String.Equals の直比較連鎖、超えるならサンプリングハッシュ
+    // switch を emit する。
+    // （2026-07-18 再計測。旧実装が使っていた FrozenDictionary は 1〜32 列のどの列数・どの形状でも最速にならず、
+    // narrow 端でも switch に 2.6〜4 倍差をつけられたため全廃した。閾値は「最悪形状同士」で決めている：
+    // ジェネレータはリーダーの列順を知り得ないため、宣言順を前提に賭けると形状が外れたとき性能の崖になる。
+    // 最悪形状＝未マップ列混在での実測は 12 列で直比較 80.0ns / switch 93.8ns、16 列で 131.7ns / 131.5ns、
+    // 24 列で 292.1ns / 198.4ns。最悪同士の交点が 16 列。
+    // なお閾値を外したときの損失は旧構成より小さい：超過側の行き先が Frozen から switch に変わり、switch は
+    // どの列数でも Frozen より速いため。
+    // ⚠ 上記はいずれも __From をタイトループで回すマイクロベンチの数値。E2E（1 クエリ 1 回のコールド呼び出し、
+    // OrdinalStrategyBenchmark を 3 戦略×対照付きで 2026-07-19 に実測）では、__From はクエリ全体の 3〜5% でしかなく
+    // 3 戦略の差は実行間ノイズと同程度＝判別不能だった。つまりこの閾値はマイクロベンチの最悪形状比較に基づく
+    // 設計判断であり、E2E で検証された最適値ではない。実利は形状非依存性と生成コードの単純化（static 辞書と
+    // 型初期化子の消滅）にあり、閾値の 1〜2 段の違いが実測可能な差を生むとは考えないこと。）
+    // Threshold for the __From matching strategy: at or below this group count emit a direct String.Equals chain,
+    // above it emit a sampling-hash switch.
+    // (Re-measured 2026-07-18. The FrozenDictionary the previous implementation used above the threshold was never
+    // fastest at any column count or reader shape - even at the narrow end the switch beat it by 2.6-4x - so it was
+    // removed entirely. The threshold is set by comparing WORST shapes: the generator cannot know the reader's column
+    // order, so betting on declaration order turns a shape mismatch into a silent performance cliff. Worst shape =
+    // reader carrying unmapped columns: 12 groups 80.0ns direct / 93.8ns switch, 16 groups 131.7 / 131.5,
+    // 24 groups 292.1 / 198.4 - the worst-case crossover is 16 groups.
+    // Picking the threshold wrongly also costs less than it used to: above it the fallback is now the switch rather
+    // than the dictionary, and the switch beats the dictionary at every column count.
+    // NOTE: every number above comes from a microbenchmark spinning __From in a tight loop. End-to-end (one cold
+    // __From call per query; OrdinalStrategyBenchmark, 3 strategies with controls, measured 2026-07-19) __From is only
+    // 3-5% of a whole query and the strategies were indistinguishable from run-to-run noise. This threshold is a
+    // design judgment based on the microbenchmark's worst-shape comparison, not an E2E-validated optimum; the real
+    // wins are shape independence and simpler generated code (no static dictionary, no type initializer). Do not
+    // expect a step or two of threshold movement to produce a measurable difference.)
+    private const int NarrowOrdinalGroupThreshold = 16;
+
+    // サンプリングハッシュが読む文字位置の候補。length >= 1 のあらゆる文字列で範囲内に収まる式だけを並べる
+    // （`__length - 2` のような式は length == 1 で負になるため候補にしない）。
+    // ⚠ テスト資産がこの候補集合の「正確な中身」に依存している：長さ 8 では index 1 がどの候補からも到達不能で、
+    // そこだけが異なるキー対（t1_value / t2_value）は必ず衝突する — GeneratedCodeTests.HashSwitchBucketsUnavoidableCollisions
+    // と MappingCollideHashEntity がこれを回避不能衝突（バケット化経路）の前提として使う。候補式を追加・変更する
+    // 場合は両テストを見直すこと（生成テキスト側は落ちて教えてくれるが、ランタイム側は黙って経路を失う）。
+    // Candidate character positions for the sampling hash. Only expressions that stay in range for any string of
+    // length >= 1 (something like `__length - 2` would go negative at length == 1).
+    // NOTE: test assets depend on the EXACT contents of this set: at length 8 no candidate reaches index 1, so a key
+    // pair differing only there (t1_value / t2_value) always collides - GeneratedCodeTests.HashSwitchBucketsUnavoidableCollisions
+    // and MappingCollideHashEntity use that as the premise for the bucketing path. When adding or changing a candidate,
+    // revisit both (the generated-text test fails loudly; the runtime entity silently stops exercising the path).
+    private static readonly (string Expression, Func<int, int> Index)[] SamplingPositions =
+    [
+        ("0", static _ => 0),
+        ("__length - 1", static length => length - 1),
+        ("__length >> 1", static length => length >> 1),
+        ("__length >> 2", static length => length >> 2),
+        ("(__length * 3) >> 2", static length => (length * 3) >> 2),
+        ("(__length - 1) >> 1", static length => (length - 1) >> 1),
+        ("((__length - 1) * 3) >> 2", static length => ((length - 1) * 3) >> 2),
+        ("((__length - 1) * 7) >> 3", static length => ((length - 1) * 7) >> 3),
+        ("((__length - 1) * 5) >> 3", static length => ((length - 1) * 5) >> 3),
+        ("(__length - 1) >> 3", static length => (length - 1) >> 3)
+    ];
+
+    // 既定は FastEnum 由来の「先頭 / 中央 / 末尾」。計測したのはこの形なので、使える限りこれを選ぶ。
+    // The default is FastEnum's first / middle / last. That is the shape that was benchmarked, so it wins when usable.
+    private static readonly (int A, int B, int C) DefaultSamplingTriple = (0, 2, 1);
+
+    // 生成時にハッシュ定数を計算する。実行時に emit したコードが計算する式と必ず同じ値を返さなければならない。
+    // Compute the hash constant at generation time. It must produce exactly what the emitted expression computes at run time.
+    private static int ComputeSamplingHash(string value, (int A, int B, int C) triple)
+    {
+        var length = value.Length;
+        return (length << 16) ^
+               (Char.ToUpperInvariant(value[SamplingPositions[triple.A].Index(length)]) << 8) ^
+               (Char.ToUpperInvariant(value[SamplingPositions[triple.B].Index(length)]) << 4) ^
+               Char.ToUpperInvariant(value[SamplingPositions[triple.C].Index(length)]);
+    }
+
+    // サンプリング位置が全キーで ASCII なら、その三つ組は安全に使える。理由は 2 つあり、どちらも必要：
+    //  (1) ハッシュ定数はジェネレータのランタイムで、照合は対象アプリのランタイムで計算される。ASCII の
+    //      Char.ToUpperInvariant はランタイム版や Unicode 版に依らず一定なので、両者が一致することを保証できる。
+    //  (2) OrdinalIgnoreCase で ASCII 文字と等しくなる非 ASCII 文字は存在しない（U+017F 'ſ' は ToUpperInvariant では
+    //      'S' に畳まれるが OrdinalIgnoreCase では不一致）。よってキー側のサンプリング位置が ASCII なら、
+    //      OrdinalIgnoreCase で一致し得る実行時文字列も同じ位置が必ず ASCII になる。
+    // 逆に非 ASCII をサンプリングする三つ組は採らない。サロゲートを読む場合は char 単位の ToUpperInvariant が
+    // ペアを見られず、OrdinalIgnoreCase では等しいのにハッシュが違う組が実在する（U+10000〜U+1FFFF だけで 260 件を実測）。
+    // その場合 switch は辞書なら見つかる一致を取りこぼす。
+    // A triple is safe when every key has ASCII at all three sampled positions. Both reasons are load-bearing:
+    //  (1) The hash constant is computed by the generator's runtime, the match by the target app's runtime. For ASCII,
+    //      Char.ToUpperInvariant is fixed regardless of runtime or Unicode version, so the two provably agree.
+    //  (2) No non-ASCII character is OrdinalIgnoreCase-equal to an ASCII one (U+017F 'ſ' folds to 'S' under
+    //      ToUpperInvariant but compares unequal under OrdinalIgnoreCase). So if the key's sampled positions are ASCII,
+    //      any runtime string that could match is ASCII at those positions too.
+    // Triples that sample non-ASCII are rejected: sampling a surrogate makes char-wise ToUpperInvariant blind to the
+    // pair, and pairs exist that are OrdinalIgnoreCase-equal yet hash differently (260 measured in U+10000-U+1FFFF
+    // alone), which would make the switch miss a match the dictionary would find.
+    private static bool IsSamplingTripleSafe(List<string> groupNames, (int A, int B, int C) triple)
+    {
+        foreach (var name in groupNames)
+        {
+            var length = name.Length;
+            if ((name[SamplingPositions[triple.A].Index(length)] > 0x7F) ||
+                (name[SamplingPositions[triple.B].Index(length)] > 0x7F) ||
+                (name[SamplingPositions[triple.C].Index(length)] > 0x7F))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int CountSamplingCollisions(List<string> groupNames, (int A, int B, int C) triple)
+    {
+        // netstandard2.0 のため容量指定 ctor は使えない（キー数は高々数十なので実害なし）。
+        // netstandard2.0 has no capacity ctor for HashSet (at most a few dozen keys, so it does not matter).
+        var seen = new HashSet<int>();
+        var collisions = 0;
+        foreach (var name in groupNames)
+        {
+            if (!seen.Add(ComputeSamplingHash(name, triple)))
+            {
+                collisions++;
+            }
+        }
+        return collisions;
+    }
+
+    // switch 形に使う三つ組を選ぶ。安全な三つ組が 1 つも無ければ null（＝直比較へフォールバック）。
+    // 既定の三つ組を最優先し、それが衝突するときだけ探索する。衝突は case 内の Equals 連鎖で吸収できるので
+    // 正当性には影響しないが、`item_code / item_name / item_note / item_type / item_size` のように
+    // 同一長＋共通接頭辞＋共通末尾という SQL でありふれた命名は 5 個が 1 バケットに落ちるため、消せるなら消す。
+    // Choose the triple for the switch form; null means no safe triple exists (fall back to direct comparison).
+    // The default triple wins unless it collides. Collisions are absorbed by the per-case Equals chain so they are
+    // never a correctness problem, but idiomatic SQL naming like `item_code / item_name / item_note / item_type /
+    // item_size` (equal length, shared prefix, shared final character) puts five keys in one bucket, so it is worth
+    // searching for a triple that avoids it.
+    private static (int A, int B, int C)? SelectSamplingTriple(List<string> groupNames)
+    {
+        // 空の列名はハッシュを計算できず、emit する長さ 0 ガードで常に不一致になるため switch 形を採れない。
+        // An empty column name cannot be hashed and the emitted length-0 guard would never match it.
+        foreach (var name in groupNames)
+        {
+            if (name.Length == 0)
+            {
+                return null;
+            }
+        }
+
+        if (IsSamplingTripleSafe(groupNames, DefaultSamplingTriple) &&
+            (CountSamplingCollisions(groupNames, DefaultSamplingTriple) == 0))
+        {
+            return DefaultSamplingTriple;
+        }
+
+        (int A, int B, int C)? best = null;
+        var bestCollisions = int.MaxValue;
+        for (var a = 0; a < SamplingPositions.Length; a++)
+        {
+            for (var b = 0; b < SamplingPositions.Length; b++)
+            {
+                for (var c = 0; c < SamplingPositions.Length; c++)
+                {
+                    var candidate = (a, b, c);
+                    if (!IsSamplingTripleSafe(groupNames, candidate))
+                    {
+                        continue;
+                    }
+                    var collisions = CountSamplingCollisions(groupNames, candidate);
+                    if (collisions < bestCollisions)
+                    {
+                        bestCollisions = collisions;
+                        best = candidate;
+                        if (collisions == 0)
+                        {
+                            return best;
+                        }
+                    }
+                }
+            }
+        }
+        return best;
+    }
 
     // クエリ列の序数キャッシュ構造体（__{Entity}Ordinals）を生成する。マップ対象列毎の public int フィールドを持ち、
     // __From(reader) がリーダーの列を 1 回だけ走査して構築する（GetOrdinal は欠落列で throw するため使わない。欠落列は
-    // -1 のまま）。照合は SQL の識別子と同様に大文字小文字を区別しない：グループ数が NarrowOrdinalGroupThreshold 以下
-    // なら String.Equals(OrdinalIgnoreCase) の直比較＋グループ毎ローカルで解決し、超えるなら事前構築の static
-    // FrozenDictionary（OrdinalIgnoreCase、列名 → グループ id）を引いて stackalloc の序数表へ先勝ちで書き込む
-    // （2026-07 PoC 実測で ToUpperInvariant switch / Dapper.AOT 式ハッシュ switch より高速・割当ゼロ）。
+    // -1 のまま）。照合は SQL の識別子と同様に大文字小文字を区別しない。戦略は 2 つ：
+    //   * グループ数が NarrowOrdinalGroupThreshold 以下、またはサンプリング位置を ASCII に取れない場合
+    //     → String.Equals(OrdinalIgnoreCase) の直比較連鎖＋グループ毎ローカル
+    //   * それ以外 → 長さ＋サンプリング 3 文字のハッシュで switch し、case 内の String.Equals で確定
     // 大小のみ異なる複数プロパティは同じグループ id を共有し双方が同じ序数に束縛される。
     // 全グループ解決後は走査を打ち切る。全半角・かな種は畳み込まない（プロバイダ GetOrdinal の拡張照合より狭い、F18 の制限）。
     // Emit the query-column ordinal cache struct (__{Entity}Ordinals): one public int field per mapped column, built by
     // __From(reader) scanning the reader's columns once (GetOrdinal, which throws on a missing column, is not used; an
-    // absent column stays -1). Matching is case-insensitive like SQL identifiers: at or below NarrowOrdinalGroupThreshold
-    // groups, direct String.Equals(OrdinalIgnoreCase) comparisons resolve into per-group locals; above it, a prebuilt
-    // static FrozenDictionary (OrdinalIgnoreCase, column name → group id) fills a stackalloc ordinal table
-    // first-match-wins (2026-07 PoC measurements: faster than the ToUpperInvariant switch / Dapper.AOT-style hash
-    // switch, zero allocation). Properties whose names differ only in case share a group id and both bind
-    // to the same ordinal. The scan stops once every group is resolved. Width/kana folding is NOT applied (narrower
-    // than provider GetOrdinal's extended collation; an F18 limitation).
+    // absent column stays -1). Matching is case-insensitive like SQL identifiers. Two strategies:
+    //   * at or below NarrowOrdinalGroupThreshold groups, or when no triple can sample ASCII only
+    //     -> a direct String.Equals(OrdinalIgnoreCase) chain into per-group locals
+    //   * otherwise -> switch on a length + 3-sampled-character hash, confirmed by String.Equals inside each case
+    // Properties whose names differ only in case share a group id and both bind to the same ordinal. The scan stops
+    // once every group is resolved. Width/kana folding is NOT applied (narrower than provider GetOrdinal's extended
+    // collation; an F18 limitation).
     private static void EmitOrdinalCacheStruct(SourceBuilder builder, string ordinalsName, string fromName, MethodModel template)
     {
         var columns = template.QueryColumns!.Value;
@@ -1469,10 +1636,6 @@ internal static class AccessorSourceBuilder
                 mapped.Add(column);
             }
         }
-        // 静的辞書のフィールド名もフィールド名（＝プロパティ名）と衝突し得るためセット毎に決める（__From と同様）。
-        // The static dictionary's field name can also collide with a field (= property) name; choose it per set (like __From).
-        var columnsFieldName = UniqueStructMemberName("__Columns", columns);
-
         // 列名（宣言どおりの表記）を OrdinalIgnoreCase でグルーピング。1 回の前進走査（get-or-add）で
         // グループ名リスト（先勝ちの表記・出現順）と列→グループ id の逆引きを同時に構築する。
         // 大小のみ異なる重複列名は同じグループ id を共有する。
@@ -1494,30 +1657,21 @@ internal static class AccessorSourceBuilder
             groupIndexByColumn[i] = groupIndex;
         }
         var groupCountText = groupNames.Count.ToString(CultureInfo.InvariantCulture);
-        var useDirectComparison = groupNames.Count <= NarrowOrdinalGroupThreshold;
+        // 閾値超えでもサンプリング位置を ASCII に取れない（例：全て非 ASCII の列名、空の列名）場合は
+        // switch 形の等価性を保証できないため直比較へ落とす。直比較は Frozen より速いので退行にはならない。
+        // Above the threshold, a key set with no ASCII-samplable triple (all-non-ASCII names, an empty name) cannot
+        // guarantee the switch is equivalent, so it falls back to the direct chain - which still beats the
+        // FrozenDictionary this replaced, so it is not a regression.
+        var samplingTriple = groupNames.Count > NarrowOrdinalGroupThreshold ? SelectSamplingTriple(groupNames) : null;
+        var useDirectComparison = samplingTriple is null;
+        // 照合メソッド名もフィールド名（＝プロパティ名）と衝突し得るためセット毎に決める（__From と同様）。
+        // switch 形が確定した場合しか使わないため、直比較経路では計算しない。
+        // The match method's name can also collide with a field (= property) name; choose it per set (like __From).
+        // It is only needed once the switch form is decided, so the direct path does not compute it.
+        var matchMethodName = useDirectComparison ? String.Empty : UniqueStructMemberName("__Match", columns);
 
         builder.Indent().Append("private readonly struct ").Append(ordinalsName).NewLine();
         builder.BeginScope();
-        if (!useDirectComparison)
-        {
-            builder.Indent().Append("private static readonly global::System.Collections.Frozen.FrozenDictionary<string, int> ").Append(columnsFieldName).Append(" =").NewLine();
-            builder.IndentLevel++;
-            builder.Indent().Append("global::System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(").NewLine();
-            builder.IndentLevel++;
-            builder.Indent().Append("new global::System.Collections.Generic.Dictionary<string, int>(").Append(groupCountText).Append(", global::System.StringComparer.OrdinalIgnoreCase)").NewLine();
-            builder.Indent().Append("{").NewLine();
-            builder.IndentLevel++;
-            for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
-            {
-                builder.Indent().Append("[").Append(CodeExpressionHelper.StringLiteral(groupNames[groupIndex])).Append("] = ")
-                    .Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(",").NewLine();
-            }
-            builder.IndentLevel--;
-            builder.Indent().Append("},").NewLine();
-            builder.Indent().Append("global::System.StringComparer.OrdinalIgnoreCase);").NewLine();
-            builder.IndentLevel -= 2;
-            builder.NewLine();
-        }
         foreach (var column in mapped)
         {
             builder.Indent().Append("public readonly int ").Append(column.PropertyName).Append(";").NewLine();
@@ -1552,7 +1706,8 @@ internal static class AccessorSourceBuilder
             builder.Indent().Append("var __fieldCount = reader.FieldCount;").NewLine();
             builder.Indent().Append("for (var __i = 0; __i < __fieldCount; __i++)").NewLine();
             builder.BeginScope();
-            builder.Indent().Append("if (").Append(columnsFieldName).Append(".TryGetValue(reader.GetName(__i), out var __index) && (__ordinals[__index] < 0))").NewLine();
+            builder.Indent().Append("var __index = ").Append(matchMethodName).Append("(reader.GetName(__i));").NewLine();
+            builder.Indent().Append("if ((__index >= 0) && (__ordinals[__index] < 0))").NewLine();
             builder.BeginScope();
             builder.Indent().Append("__ordinals[__index] = __i;").NewLine();
             builder.Indent().Append("__resolved++;").NewLine();
@@ -1571,21 +1726,111 @@ internal static class AccessorSourceBuilder
             builder.Append(");").NewLine();
         }
         builder.EndScope();
+        // パターンマッチで非 null を受け、null 免除演算子（!）を使わない（コンパイラに安全性を検証させる）。
+        // Bind the non-null value via pattern matching instead of the null-forgiving operator, so the compiler
+        // verifies the safety.
+        if (samplingTriple is { } triple)
+        {
+            builder.NewLine();
+            EmitHashMatchMethod(builder, matchMethodName, groupNames, triple);
+        }
+        builder.EndScope();
+    }
+
+    // 列名 → グループ id の照合メソッドを emit する。長さ＋サンプリング 3 文字のハッシュで switch し、
+    // case 内の String.Equals(OrdinalIgnoreCase) で確定する（ハッシュはあくまで絞り込みで、判定は必ず Equals）。
+    // 同一ハッシュのキーは 1 つの case にまとめる：C# は case ラベルの重複をコンパイルエラーにするため、
+    // 衝突をバケット化するのは最適化ではなく必須要件。
+    // 長さ 0 のガードは省けない。プロバイダは無名の式列に対して空の列名を返すことがあり（SQL Server の
+    // 別名なし `SELECT 1` など）、`name[0]` が IndexOutOfRangeException になる。置き換え前の FrozenDictionary 形は
+    // これを「一致なし」として無害に処理していたので、ガードを外すと無害だった入力がクラッシュに変わる。
+    // Emit the column-name -> group-id match method: switch on a length + 3-sampled-character hash, then confirm with
+    // String.Equals(OrdinalIgnoreCase) inside the case (the hash only narrows; Equals always decides).
+    // Keys sharing a hash are merged into one case: C# rejects duplicate case labels, so bucketing collisions is a
+    // requirement, not an optimization.
+    // The length-0 guard cannot be dropped. A provider can return an empty column name for an unnamed expression
+    // (SQL Server does so for an un-aliased `SELECT 1`), which would make `name[0]` throw IndexOutOfRangeException.
+    // The FrozenDictionary form this replaces handled that harmlessly as "no match", so removing the guard would turn
+    // a harmless input into a crash.
+    private static void EmitHashMatchMethod(SourceBuilder builder, string matchMethodName, List<string> groupNames, (int A, int B, int C) triple)
+    {
+        builder.Indent().Append("private static int ").Append(matchMethodName).Append("(string name)").NewLine();
+        builder.BeginScope();
+        builder.Indent().Append("var __length = name.Length;").NewLine();
+        builder.Indent().Append("if (__length == 0) return -1;").NewLine();
+        builder.Indent().Append("switch ((__length << 16) ^ (global::System.Char.ToUpperInvariant(name[")
+            .Append(SamplingPositions[triple.A].Expression).Append("]) << 8) ^ (global::System.Char.ToUpperInvariant(name[")
+            .Append(SamplingPositions[triple.B].Expression).Append("]) << 4) ^ global::System.Char.ToUpperInvariant(name[")
+            .Append(SamplingPositions[triple.C].Expression).Append("]))").NewLine();
+        builder.BeginScope();
+
+        // ハッシュ毎にグループをまとめ、case ラベルは昇順で出す（生成結果を安定させるため）。
+        // Bucket groups by hash and emit case labels in ascending order (keeps the generated output stable).
+        var buckets = new Dictionary<int, List<int>>(groupNames.Count);
+        var hashOrder = new List<int>(groupNames.Count);
+        for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
+        {
+            var hash = ComputeSamplingHash(groupNames[groupIndex], triple);
+            if (!buckets.TryGetValue(hash, out var members))
+            {
+                members = [];
+                buckets.Add(hash, members);
+                hashOrder.Add(hash);
+            }
+            members.Add(groupIndex);
+        }
+        hashOrder.Sort();
+
+        foreach (var hash in hashOrder)
+        {
+            var members = buckets[hash];
+            builder.Indent().Append("case ").Append(hash.ToString(CultureInfo.InvariantCulture)).Append(":").NewLine();
+            builder.IndentLevel++;
+            if (members.Count == 1)
+            {
+                builder.Indent().Append("return global::System.String.Equals(name, ")
+                    .Append(CodeExpressionHelper.StringLiteral(groupNames[members[0]]))
+                    .Append(", global::System.StringComparison.OrdinalIgnoreCase) ? ")
+                    .Append(members[0].ToString(CultureInfo.InvariantCulture)).Append(" : -1;").NewLine();
+            }
+            else
+            {
+                foreach (var groupIndex in members)
+                {
+                    builder.Indent().Append("if (global::System.String.Equals(name, ")
+                        .Append(CodeExpressionHelper.StringLiteral(groupNames[groupIndex]))
+                        .Append(", global::System.StringComparison.OrdinalIgnoreCase)) return ")
+                        .Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
+                }
+                builder.Indent().Append("return -1;").NewLine();
+            }
+            builder.IndentLevel--;
+        }
+        builder.Indent().Append("default: return -1;").NewLine();
+        builder.EndScope();
         builder.EndScope();
     }
 
     // narrow エンティティ（グループ数 <= NarrowOrdinalGroupThreshold）用の __From 本体：グループ毎の int ローカルへ
     // String.Equals(OrdinalIgnoreCase) の直比較で先勝ち解決する。単一グループは一致時に即 break、複数グループは
-    // 自分以外が全て解決済みなら break（＝全解決で走査打ち切り、FrozenDictionary 形と同一意味論）。
+    // 解決数を数えてグループ総数に達したら break（＝全解決で走査打ち切り、ハッシュ switch 形と同一意味論）。
+    // 以前は一致の度に「自分以外の全グループが解決済みか」を検査していたが、これは 1 ケースあたり N-1 比較 ×
+    // N ケースに膨らむ。カウンタ形は意味論を変えずに常に同等以下のコストで済む。
+    // The previous form checked "is every other group resolved" on each match, which grows to N-1 comparisons per
+    // case across N cases; the counter is never more expensive and preserves the semantics exactly.
     // The __From body for narrow entities (groups <= NarrowOrdinalGroupThreshold): resolve first-match-wins into
     // per-group int locals via direct String.Equals(OrdinalIgnoreCase) comparisons. A single group breaks on match;
-    // multiple groups break when every other group is already resolved (same stop-on-full-resolution semantics as
-    // the FrozenDictionary form).
+    // multiple groups count resolutions and break once the count reaches the group total (same stop-on-full-resolution
+    // semantics as the hash-switch form).
     private static void EmitDirectComparisonFromBody(SourceBuilder builder, List<string> groupNames, int[] groupIndexByColumn, int mappedCount)
     {
         for (var groupIndex = 0; groupIndex < groupNames.Count; groupIndex++)
         {
             builder.Indent().Append("var __ord").Append(groupIndex.ToString(CultureInfo.InvariantCulture)).Append(" = -1;").NewLine();
+        }
+        if (groupNames.Count > 1)
+        {
+            builder.Indent().Append("var __resolved = 0;").NewLine();
         }
         builder.Indent().Append("var __fieldCount = reader.FieldCount;").NewLine();
         builder.Indent().Append("for (var __i = 0; __i < __fieldCount; __i++)").NewLine();
@@ -1612,24 +1857,10 @@ internal static class AccessorSourceBuilder
                     .Append(", global::System.StringComparison.OrdinalIgnoreCase))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append(ordinalLocal).Append(" = __i;").NewLine();
-                builder.Indent().Append("if (");
-                var first = true;
-                for (var otherIndex = 0; otherIndex < groupNames.Count; otherIndex++)
-                {
-                    if (otherIndex == groupIndex)
-                    {
-                        continue;
-                    }
-                    if (!first)
-                    {
-                        builder.Append(" && ");
-                    }
-                    first = false;
-                    builder.Append("(__ord").Append(otherIndex.ToString(CultureInfo.InvariantCulture)).Append(" >= 0)");
-                }
-                builder.Append(") break;").NewLine();
+                builder.Indent().Append("__resolved++;").NewLine();
                 builder.EndScope();
             }
+            builder.Indent().Append("if (__resolved == ").Append(groupNames.Count.ToString(CultureInfo.InvariantCulture)).Append(") break;").NewLine();
         }
         builder.EndScope();
         builder.Indent().Append("return new(");

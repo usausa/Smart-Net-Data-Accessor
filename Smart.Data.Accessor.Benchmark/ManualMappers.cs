@@ -66,6 +66,65 @@ internal static class ManualMappers
         return list;
     }
 
+    public static List<BenchExtraWideRow> QueryExtraWide(DbConnection con)
+    {
+        var list = new List<BenchExtraWideRow>();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = CommandText;
+        using var reader = cmd.ExecuteReader(CommandBehavior.SingleResult);
+        if (reader.Read())
+        {
+            var oId = reader.GetOrdinal("Id");
+            var oName = reader.GetOrdinal("Name");
+            var oAge = reader.GetOrdinal("Age");
+            var oScore = reader.GetOrdinal("Score");
+            var oActive = reader.GetOrdinal("Active");
+            var oStatus = reader.GetOrdinal("Status");
+            var oDescription = reader.GetOrdinal("Description");
+            var oCategory = reader.GetOrdinal("Category");
+            var oTag = reader.GetOrdinal("Tag");
+            var oWeight = reader.GetOrdinal("Weight");
+            var oOwner = reader.GetOrdinal("Owner");
+            var oTeam = reader.GetOrdinal("Team");
+            var oLevel = reader.GetOrdinal("Level");
+            var oPosition = reader.GetOrdinal("Position");
+            var oVersion = reader.GetOrdinal("Version");
+            var oCity = reader.GetOrdinal("City");
+            var oState = reader.GetOrdinal("State");
+            var oCountry = reader.GetOrdinal("Country");
+            var oNote = reader.GetOrdinal("Note");
+            var oMemo = reader.GetOrdinal("Memo");
+            do
+            {
+                list.Add(new BenchExtraWideRow
+                {
+                    Id = reader.GetInt64(oId),
+                    Name = reader.GetString(oName),
+                    Age = reader.GetInt32(oAge),
+                    Score = reader.GetDouble(oScore),
+                    Active = reader.GetBoolean(oActive),
+                    Status = reader.GetInt32(oStatus),
+                    Description = reader.GetString(oDescription),
+                    Category = reader.GetInt32(oCategory),
+                    Tag = reader.GetString(oTag),
+                    Weight = reader.GetDouble(oWeight),
+                    Owner = reader.GetInt32(oOwner),
+                    Team = reader.GetInt32(oTeam),
+                    Level = reader.GetInt32(oLevel),
+                    Position = reader.GetInt32(oPosition),
+                    Version = reader.GetInt32(oVersion),
+                    City = reader.GetString(oCity),
+                    State = reader.GetString(oState),
+                    Country = reader.GetString(oCountry),
+                    Note = reader.GetString(oNote),
+                    Memo = reader.GetString(oMemo)
+                });
+            }
+            while (reader.Read());
+        }
+        return list;
+    }
+
     public static List<BenchWideRecord> QueryWideRecord(DbConnection con)
     {
         var list = new List<BenchWideRecord>();

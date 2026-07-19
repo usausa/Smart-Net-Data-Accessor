@@ -13,6 +13,11 @@ public sealed partial class BenchmarkAccessor
     [Query]
     public partial IReadOnlyList<BenchWideRow> QueryWide(DbConnection con);
 
+    // 閾値超え：サンプリングハッシュ switch で序数解決される経路。
+    // Above the threshold: resolves ordinals through the sampling-hash switch.
+    [Query]
+    public partial IReadOnlyList<BenchExtraWideRow> QueryExtraWide(DbConnection con);
+
     [Query]
     public partial IReadOnlyList<BenchWideRecord> QueryWideRecord(DbConnection con);
 

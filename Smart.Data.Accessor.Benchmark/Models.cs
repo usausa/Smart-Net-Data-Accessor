@@ -53,6 +53,77 @@ public sealed class BenchWideRow
     public double Weight { get; set; }
 }
 
+// 序数解決の閾値(NarrowOrdinalGroupThreshold = 16)を超えるエンティティ。閾値以下の BenchWideRow が直比較連鎖で
+// 解決されるのに対し、こちらはサンプリングハッシュ switch で解決される。マイクロベンチは __From をタイトループで
+// 回すため構造的に直比較(1 本の大きなメソッド)へ有利に働くが、実運用の __From は 1 クエリ 1 回のコールド呼び出し。
+// ここはその実運用形で測るための入口。
+// An entity above the ordinal-resolution threshold (NarrowOrdinalGroupThreshold = 16). BenchWideRow stays on the
+// direct-comparison chain; this one resolves through the sampling-hash switch. A microbenchmark spins __From in a
+// tight loop, which structurally favours the direct form (one large method), whereas production calls __From once per
+// query, cold - this is the entry point for measuring it that way.
+public sealed class BenchExtraWideRow
+{
+    [NotNullColumn]
+    public long Id { get; set; }
+
+    [NotNullColumn]
+    public string Name { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public int Age { get; set; }
+
+    [NotNullColumn]
+    public double Score { get; set; }
+
+    [NotNullColumn]
+    public bool Active { get; set; }
+
+    [NotNullColumn]
+    public int Status { get; set; }
+
+    [NotNullColumn]
+    public string Description { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public int Category { get; set; }
+
+    [NotNullColumn]
+    public string Tag { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public double Weight { get; set; }
+
+    [NotNullColumn]
+    public int Owner { get; set; }
+
+    [NotNullColumn]
+    public int Team { get; set; }
+
+    [NotNullColumn]
+    public int Level { get; set; }
+
+    [NotNullColumn]
+    public int Position { get; set; }
+
+    [NotNullColumn]
+    public int Version { get; set; }
+
+    [NotNullColumn]
+    public string City { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public string State { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public string Country { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public string Note { get; set; } = string.Empty;
+
+    [NotNullColumn]
+    public string Memo { get; set; } = string.Empty;
+}
+
 public sealed class BenchEnumRow
 {
     [NotNullColumn]

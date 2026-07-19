@@ -1,5 +1,7 @@
 namespace Smart.Data.Accessor.Benchmark;
 
+using System.Globalization;
+
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
@@ -41,11 +43,14 @@ public class ComparisonBenchmark
     private const string WideSql = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight FROM BenchData ORDER BY Id";
     private const string EnumSql = "SELECT Id, Name, Status FROM BenchData ORDER BY Id";
     private const string SubsetSql = "SELECT Id, Name FROM BenchData ORDER BY Id";
+    private const string ExtraWideSql = "SELECT Id, Name, Age, Score, Active, Status, Description, Category, Tag, Weight, Owner, Team, Level, Position, Version, City, State, Country, Note, Memo FROM BenchData ORDER BY Id";
 
     private MockRepeatDbConnection mockInt = default!;
     private MockRepeatDbConnection mockWide = default!;
     private MockRepeatDbConnection mockEnum = default!;
     private MockRepeatDbConnection mockSubset = default!;
+    private MockRepeatDbConnection mockExtraWide = default!;
+    private MockRepeatDbConnection mockExtraWideUnmapped = default!;
     private BenchmarkAccessor accessor = default!;
 
     [GlobalSetup]
@@ -88,6 +93,24 @@ public class ComparisonBenchmark
                 new MockColumn(typeof(string), "Name")
             ],
             Enumerable.Range(1, RowCount).Select(static x => new object[] { (long)x, $"Name-{x}" })));
+
+        mockExtraWide = new MockRepeatDbConnection(new MockDataReader(
+            ExtraWideData.Columns(),
+            Enumerable.Range(1, RowCount).Select(static x => ExtraWideData.Values(x))));
+
+        // 未マップ列を挟んだ形。閾値以下の直比較連鎖は「一致しない列」ごとに全比較を走らせるので最も苦手とし、
+        // ハッシュ switch は default に落ちるだけで済む。マイクロベンチで両者の差が最大だった形状。
+        // Unmapped columns interleaved: the direct chain runs its whole comparison list for every non-matching column
+        // (its worst case) while the hash switch just falls to default. This is the shape where the microbenchmark
+        // showed the largest gap between them.
+        mockExtraWideUnmapped = new MockRepeatDbConnection(new MockDataReader(
+            [.. ExtraWideData.Columns().SelectMany(static (c, i) => new[]
+            {
+                new MockColumn(typeof(string), "unmapped_" + i.ToString(CultureInfo.InvariantCulture)),
+                c
+            })],
+            Enumerable.Range(1, RowCount).Select(static x =>
+                ExtraWideData.Values(x).SelectMany(static v => new[] { "filler", v }).ToArray())));
 #pragma warning restore CA2000
 
         accessor = new BenchmarkAccessor();
@@ -100,6 +123,8 @@ public class ComparisonBenchmark
         mockWide.Dispose();
         mockEnum.Dispose();
         mockSubset.Dispose();
+        mockExtraWide.Dispose();
+        mockExtraWideUnmapped.Dispose();
     }
 
     // ----- Narrow: 1 column (long) -----
@@ -129,6 +154,34 @@ public class ComparisonBenchmark
     [Benchmark(Description = "Dapper")]
     [BenchmarkCategory("Wide class 10col")]
     public List<BenchWideRow> WideClassDapper() => mockWide.Query<BenchWideRow>(WideSql).AsList();
+
+    // ----- Extra wide: 20 columns (閾値超え = ハッシュ switch 経路) -----
+
+    [Benchmark(Baseline = true, Description = "Manual (直書き)")]
+    [BenchmarkCategory("ExtraWide 20col")]
+    public List<BenchExtraWideRow> ExtraWideManual() => ManualMappers.QueryExtraWide(mockExtraWide);
+
+    [Benchmark(Description = "Generated (現行)")]
+    [BenchmarkCategory("ExtraWide 20col")]
+    public IReadOnlyList<BenchExtraWideRow> ExtraWideGenerated() => accessor.QueryExtraWide(mockExtraWide);
+
+    [Benchmark(Description = "Dapper")]
+    [BenchmarkCategory("ExtraWide 20col")]
+    public List<BenchExtraWideRow> ExtraWideDapper() => mockExtraWide.Query<BenchExtraWideRow>(ExtraWideSql).AsList();
+
+    // ----- Extra wide with unmapped columns: 20 mapped + 20 unmapped -----
+
+    [Benchmark(Baseline = true, Description = "Manual (直書き)")]
+    [BenchmarkCategory("ExtraWide 20col+unmapped")]
+    public List<BenchExtraWideRow> ExtraWideUnmappedManual() => ManualMappers.QueryExtraWide(mockExtraWideUnmapped);
+
+    [Benchmark(Description = "Generated (現行)")]
+    [BenchmarkCategory("ExtraWide 20col+unmapped")]
+    public IReadOnlyList<BenchExtraWideRow> ExtraWideUnmappedGenerated() => accessor.QueryExtraWide(mockExtraWideUnmapped);
+
+    [Benchmark(Description = "Dapper")]
+    [BenchmarkCategory("ExtraWide 20col+unmapped")]
+    public List<BenchExtraWideRow> ExtraWideUnmappedDapper() => mockExtraWideUnmapped.Query<BenchExtraWideRow>(ExtraWideSql).AsList();
 
     // ----- Wide record: 10 columns -----
 
