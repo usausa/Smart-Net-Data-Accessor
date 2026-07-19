@@ -570,6 +570,51 @@ public sealed class GeneratedCodeTests
     }
 
     [Fact]
+    public void ControlCharacterColumnNamesEmitEscapedLiterals()
+    {
+        // U+2028(LINE SEPARATOR)等の C# 行終端文字を含む列名が生のままリテラルへ出ると、生成コードが
+        // CS1010(定数内の改行)で壊れる。GeneratorTestHelper.Run は生成コードをコンパイルするため、
+        // エスケープ漏れはこのテスト自体が throw して検出する。StringLiteral は行終端
+        // (U+0085/U+2028/U+2029)と C0 制御文字・U+007F を \uXXXX で emit する(実行時の文字列値は不変)。
+        // テストソースは raw string literal なので \u エスケープはここでは展開されず、埋め込みソースの
+        // 通常文字列リテラルとして Roslyn が展開する＝属性値には実際の制御文字が入る。
+        // A column name carrying a C# line terminator such as U+2028 (LINE SEPARATOR) would, emitted raw, break
+        // the generated code with CS1010 (newline in constant). GeneratorTestHelper.Run compiles the generated
+        // code, so a missed escape makes this test itself throw. StringLiteral emits line terminators
+        // (U+0085/U+2028/U+2029) and C0 control characters / U+007F as \uXXXX (the runtime string value is
+        // unchanged). The test source is a raw string literal, so the \u escapes are not processed here; Roslyn
+        // expands them while parsing the embedded source's regular string literals - the attribute values carry
+        // the real control characters.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Row
+            {
+                [Name("li\u2028ne")] public long P1 { get; set; }
+                [Name("ne\u0085l")] public string P2 { get; set; } = string.Empty;
+                [Name("be\u0007ll")] public int P3 { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select * from T")).AllGeneratedText;
+
+        // 3 グループ(閾値以下)＝直比較連鎖の Equals リテラルに \uXXXX 形で載る。
+        // Three groups (below the threshold) = the escapes appear in the direct chain's Equals literals.
+        Assert.Contains("\\u2028", text, StringComparison.Ordinal);
+        Assert.Contains("\\u0085", text, StringComparison.Ordinal);
+        Assert.Contains("\\u0007", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NonAsciiColumnNamesFallBackToDirectComparison()
     {
         // サンプリング位置を ASCII に取れない列名では switch 形の等価性を保証できないため直比較へ落とす。
