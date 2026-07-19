@@ -62,22 +62,8 @@ public class ComparisonBenchmark
             Enumerable.Range(1, RowCount).Select(static x => new object[] { (long)x })));
 
         mockWide = new MockRepeatDbConnection(new MockDataReader(
-            [
-                new MockColumn(typeof(long), "Id"),
-                new MockColumn(typeof(string), "Name"),
-                new MockColumn(typeof(int), "Age"),
-                new MockColumn(typeof(double), "Score"),
-                new MockColumn(typeof(bool), "Active"),
-                new MockColumn(typeof(int), "Status"),
-                new MockColumn(typeof(string), "Description"),
-                new MockColumn(typeof(int), "Category"),
-                new MockColumn(typeof(string), "Tag"),
-                new MockColumn(typeof(double), "Weight")
-            ],
-            Enumerable.Range(1, RowCount).Select(static x => new object[]
-            {
-                (long)x, $"Name-{x}", x % 80, x * 1.5, (x % 2) == 0, x % 4, $"Description-{x}", x % 8, $"Tag-{x}", x * 0.25
-            })));
+            WideData.Columns(),
+            Enumerable.Range(1, RowCount).Select(static x => WideData.Values(x))));
 
         mockEnum = new MockRepeatDbConnection(new MockDataReader(
             [

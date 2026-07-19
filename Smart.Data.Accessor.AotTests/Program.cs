@@ -100,28 +100,55 @@ internal static class Program
         var accessor = factory.Create<AotAccessor>();
         var rows = accessor.QueryWide();
 
-        var ok = (rows.Count == 1) &&
-                 (rows[0].Id == 1L) &&
-                 (rows[0].Age == 30) &&
-                 (rows[0].City == "Tokyo") &&
-                 (rows[0].Email == "a@example.com") &&
-                 (rows[0].Status == 5) &&
-                 (rows[0].UserName == "山田") &&
-                 (rows[0].ColDate == "2026-01-01") &&
-                 (rows[0].ItemCode == "C-1") &&
-                 (rows[0].CreatedAt == "2026-07-19") &&
-                 (rows[0].StatusCode == "SC") &&
-                 (rows[0].DisplayName == "Alice Smith") &&
-                 (rows[0].DepartmentId == 10) &&
-                 (rows[0].AddressLine1 == "Chiyoda 1-1") &&
-                 (rows[0].ManagerUserId == 99) &&
-                 (rows[0].OrganizationCd1 == "ORG") &&
-                 (rows[0].RegistrationDate == "2020-04-01") &&
-                 (rows[0].LastModifiedByX == "admin") &&
-                 (rows[0].T1Value == 21) &&
-                 (rows[0].T2Value == 22);
+        // 不一致はプロパティ名と期待/実測を列挙する。&& 連鎖で OK/NG だけを返すと、CI での失敗時に
+        // どの列の照合が壊れたのか(例: ランタイム更新で ColDate だけ落ちた)を特定できない。
+        // Mismatches are listed with the property name and expected/actual values. A bare && chain reporting only
+        // OK/NG would leave a CI failure with no clue which column's matching broke (e.g. only ColDate after a
+        // runtime update).
+        var failures = new List<string>();
+        if (rows.Count != 1)
+        {
+            failures.Add($"rows.Count: expected 1, actual {rows.Count}");
+        }
+        else
+        {
+            var row = rows[0];
+            Check(failures, nameof(row.Id), 1L, row.Id);
+            Check(failures, nameof(row.Age), 30, row.Age);
+            Check(failures, nameof(row.City), "Tokyo", row.City);
+            Check(failures, nameof(row.Email), "a@example.com", row.Email);
+            Check(failures, nameof(row.Status), 5, row.Status);
+            Check(failures, nameof(row.UserName), "山田", row.UserName);
+            Check(failures, nameof(row.ColDate), "2026-01-01", row.ColDate);
+            Check(failures, nameof(row.ItemCode), "C-1", row.ItemCode);
+            Check(failures, nameof(row.CreatedAt), "2026-07-19", row.CreatedAt);
+            Check(failures, nameof(row.StatusCode), "SC", row.StatusCode);
+            Check(failures, nameof(row.DisplayName), "Alice Smith", row.DisplayName);
+            Check(failures, nameof(row.DepartmentId), 10, row.DepartmentId);
+            Check(failures, nameof(row.AddressLine1), "Chiyoda 1-1", row.AddressLine1);
+            Check(failures, nameof(row.ManagerUserId), 99, row.ManagerUserId);
+            Check(failures, nameof(row.OrganizationCd1), "ORG", row.OrganizationCd1);
+            Check(failures, nameof(row.RegistrationDate), "2020-04-01", row.RegistrationDate);
+            Check(failures, nameof(row.LastModifiedByX), "admin", row.LastModifiedByX);
+            Check(failures, nameof(row.T1Value), 21, row.T1Value);
+            Check(failures, nameof(row.T2Value), 22, row.T2Value);
+        }
+
+        var ok = failures.Count == 0;
         Console.WriteLine($"  [{(ok ? "OK" : "NG")}] D-4 wide switch: {rows.Count} row(s)");
+        foreach (var failure in failures)
+        {
+            Console.WriteLine($"        {failure}");
+        }
         return ok ? 0 : 1;
+    }
+
+    private static void Check(List<string> failures, string name, object expected, object actual)
+    {
+        if (!Equals(expected, actual))
+        {
+            failures.Add($"{name}: expected '{expected}', actual '{actual}'");
+        }
     }
 
     private static void Seed(string connectionString)
