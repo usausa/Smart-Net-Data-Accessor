@@ -14,26 +14,26 @@ internal static class ExtraWideData
 {
     public static MockColumn[] Columns() =>
     [
-        new MockColumn(typeof(long), "Id"),
-        new MockColumn(typeof(string), "Name"),
-        new MockColumn(typeof(int), "Age"),
-        new MockColumn(typeof(double), "Score"),
-        new MockColumn(typeof(bool), "Active"),
-        new MockColumn(typeof(int), "Status"),
-        new MockColumn(typeof(string), "Description"),
-        new MockColumn(typeof(int), "Category"),
-        new MockColumn(typeof(string), "Tag"),
-        new MockColumn(typeof(double), "Weight"),
-        new MockColumn(typeof(int), "Owner"),
-        new MockColumn(typeof(int), "Team"),
-        new MockColumn(typeof(int), "Level"),
-        new MockColumn(typeof(int), "Position"),
-        new MockColumn(typeof(int), "Version"),
-        new MockColumn(typeof(string), "City"),
-        new MockColumn(typeof(string), "State"),
-        new MockColumn(typeof(string), "Country"),
-        new MockColumn(typeof(string), "Note"),
-        new MockColumn(typeof(string), "Memo")
+        new(typeof(long), "Id"),
+        new(typeof(string), "Name"),
+        new(typeof(int), "Age"),
+        new(typeof(double), "Score"),
+        new(typeof(bool), "Active"),
+        new(typeof(int), "Status"),
+        new(typeof(string), "Description"),
+        new(typeof(int), "Category"),
+        new(typeof(string), "Tag"),
+        new(typeof(double), "Weight"),
+        new(typeof(int), "Owner"),
+        new(typeof(int), "Team"),
+        new(typeof(int), "Level"),
+        new(typeof(int), "Position"),
+        new(typeof(int), "Version"),
+        new(typeof(string), "City"),
+        new(typeof(string), "State"),
+        new(typeof(string), "Country"),
+        new(typeof(string), "Note"),
+        new(typeof(string), "Memo")
     ];
 
     public static object[] Values(int x) =>
