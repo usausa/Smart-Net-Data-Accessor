@@ -143,6 +143,9 @@ query (not per row):
 
 * Columns are matched to public settable/init properties (or record primary-constructor parameters).
   `[Name("COL")]` overrides the name; `[Ignore]` excludes a member.
+* `[Naming(NamingConvention.SnakeCaseLower)]` (method/class/assembly scope, like `[BindPrefix]`)
+  converts the default names instead of annotating every property — `UserId` matches `user_id`
+  without a `[Name]`. An explicit `[Name]` always wins.
 * **Subset selects just work** — properties without a matching column are left untouched
   (property initializers survive). Extra columns are ignored. Dynamic column sets (UNION etc.) are fine.
 * `records`, `init`-only and `required` members are fully supported.
@@ -187,7 +190,9 @@ public partial long CountAll();
 
 Standard (ANSI) builders (`[Insert]` / `[Update]` / `[Delete]` / `[Count]` / `[Select]` /
 `[SelectSingle]` / `[Truncate]`) ship in the core package; `[Limit]` / `[Offset]` parameters give
-paging with the proper dialect per provider. Provider packages add dialect features:
+paging with the proper dialect per provider. `[Naming(...)]` converts the default table name
+(the entity type name) and the default column names to `snake_case` etc. (`Table =` / `[Name]`
+still win). Provider packages add dialect features:
 
 | Package | Attributes | Extras |
 | --- | --- | --- |
@@ -271,6 +276,7 @@ provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Sm
 | `[CommandTimeout(30)]` / `[Timeout(30)]` | `cmd.CommandTimeout` |
 | `[DbType(...)]`, `[DbType<TEnum>(...)]`, `[AnsiString]`, `[SqlSize]` | Parameter type/size qualifiers (incl. provider-specific enum types) |
 | `[BindPrefix('@')]` | Override the parameter marker per method/class/assembly |
+| `[Naming(NamingConvention.SnakeCaseLower)]` | Default-name conversion (snake_case / lower / upper) per method/class/assembly when `[Name]` is absent |
 | `[Inject]` | Inject a service into the accessor, usable from SQL `if` conditions |
 | `[TypeMap]`, `[AccessorProfile]`, `[ExecuteConfig]` | Class/profile-scoped type mapping defaults |
 

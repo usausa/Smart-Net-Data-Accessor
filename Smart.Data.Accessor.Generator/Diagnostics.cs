@@ -106,6 +106,16 @@ internal static class Diagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    // [Naming] は assembly / class / method の全スコープに付くが、検証はコア Generator が一括して行うためこの帯に置く。
+    // [Naming] can appear at assembly / class / method scope; the core generator validates all of them, so it lives in this band.
+    public static readonly DiagnosticDescriptor NamingValueUndefined = new(
+        id: "SDA0012",
+        title: "[Naming] has an undefined NamingConvention value",
+        messageFormat: "[Naming] specifies an undefined NamingConvention value and is treated as None. value=[{0}].",
+        category: "Mapping",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     // ==================================================================
     // SDA01xx — method structure / command-source exclusivity
     // ==================================================================

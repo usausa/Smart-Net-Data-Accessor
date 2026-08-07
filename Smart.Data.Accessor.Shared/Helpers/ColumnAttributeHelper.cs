@@ -15,9 +15,9 @@ internal static class ColumnAttributeHelper
     private const string DatabaseManagedAttributeName = "Smart.Data.Accessor.Attributes.DatabaseManagedAttribute";
 
     // Reads the column-mapping attributes of an entity property. ColumnName falls back to the property
-    // name when [Name] is absent. (Consumers apply their own member-eligibility filter — accessibility,
-    // static, get/set — before/after this.)
-    public static ColumnAttributeInfo Read(IPropertySymbol property)
+    // name converted by the [Naming] convention when [Name] is absent (an explicit [Name] always wins).
+    // (Consumers apply their own member-eligibility filter — accessibility, static, get/set — before/after this.)
+    public static ColumnAttributeInfo Read(IPropertySymbol property, NamingConvention naming)
     {
         string? name = null;
         var isKey = false;
@@ -41,7 +41,7 @@ internal static class ColumnAttributeHelper
                     break;
             }
         }
-        return new ColumnAttributeInfo(name ?? property.Name, isKey, isDatabaseManaged, isIgnored);
+        return new ColumnAttributeInfo(name ?? NameConverter.Convert(property.Name, naming), isKey, isDatabaseManaged, isIgnored);
     }
 }
 

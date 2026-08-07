@@ -245,7 +245,7 @@ internal static class OracleModelBuilder
         foreach (var (matched, build) in ClassScanner.EnumerateMethods(scan, Targets, diagnostics))
         {
             cancellation.ThrowIfCancellationRequested();
-            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, diagnostics, matched.Location);
+            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, matched.Naming, diagnostics, matched.Location);
             // resolution → per-kind Build delegate creates the model; provider-specific validation
             // and diagnostics also live here.
         }
@@ -340,6 +340,7 @@ internal static class OracleSourceBuilder
 | `BuilderDiagnostics` | 〃 | Shared diagnostics SDA1001–1006 |
 | `CodeExpressionHelper` | `Shared/Helpers/` | C# string literalisation (`StringLiteral`), converter-call expressions |
 | `ColumnAttributeHelper` / `MappingAttributeHelper` / `ConverterScopeHelper` | 〃 | Reading column attributes, `[TypeMap]`, `[TypeHandler<>]` scopes (identical rules to the core generator) |
+| `NamingAttributeHelper` / `NameConverter` / `NamingConvention` | 〃 | `[Naming]` resolution (method → class → assembly, like `[BindPrefix]`) and the default-name conversion (snake_case etc.) applied by `ColumnAttributeHelper` / `MethodResolver` |
 | `WellKnownTypeNames` | `Shared/` | Constants for type-name checks |
 | `EquatableArray<T>` / `DiagnosticInfo` / `LocationInfo` / `SourceBuilder` / `InheritsFrom` etc. | NuGet `SourceGenerateHelper` | Equatable-model foundation, diagnostic transport, indented output, general Roslyn extensions |
 

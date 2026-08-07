@@ -39,7 +39,7 @@ internal static class MySqlModelBuilder
         foreach (var (matched, build) in ClassScanner.EnumerateMethods(scan, Targets, diagnostics))
         {
             cancellation.ThrowIfCancellationRequested();
-            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, diagnostics, matched.Location);
+            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, matched.Naming, diagnostics, matched.Location);
             if (resolution is null)
             {
                 continue;

@@ -231,7 +231,7 @@ internal static class OracleModelBuilder
         foreach (var (matched, build) in ClassScanner.EnumerateMethods(scan, Targets, diagnostics))
         {
             cancellation.ThrowIfCancellationRequested();
-            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, diagnostics, matched.Location);
+            var resolution = MethodResolver.Resolve(in scan, matched.Method, matched.Attribute, matched.Naming, diagnostics, matched.Location);
             // resolution → 種別毎の Build デリゲートで Model 化。プロバイダ固有の検証・診断もここで。
         }
         // OracleClassModel(equatable) を返す
@@ -320,6 +320,7 @@ internal static class OracleSourceBuilder
 | `BuilderDiagnostics` | 〃 | 共有診断 SDA1001〜1006 |
 | `CodeExpressionHelper` | `Shared/Helpers/` | C# 文字列リテラル化（`StringLiteral`）、converter 呼び出し式 |
 | `ColumnAttributeHelper` / `MappingAttributeHelper` / `ConverterScopeHelper` | 〃 | 列属性・`[TypeMap]`・`[TypeHandler<>]` スコープの読み取り（コア Generator と同一規則） |
+| `NamingAttributeHelper` / `NameConverter` / `NamingConvention` | 〃 | `[Naming]` の解決（`[BindPrefix]` と同じ method → class → assembly）と、`ColumnAttributeHelper` / `MethodResolver` が適用する既定名変換（snake_case 等） |
 | `WellKnownTypeNames` | `Shared/` | 型名判定の定数 |
 | `EquatableArray<T>` / `DiagnosticInfo` / `LocationInfo` / `SourceBuilder` / `InheritsFrom` ほか | NuGet `SourceGenerateHelper` | equatable モデル基盤・診断運搬・インデント付き出力・Roslyn 汎用拡張 |
 

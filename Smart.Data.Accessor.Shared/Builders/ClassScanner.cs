@@ -25,8 +25,8 @@ internal static class ClassScanner
     // The incremental step name (so tests can observe the model being cached / reused). Common to every provider.
     public const string TrackingName = "BuilderClassModel";
 
-    // クラスの名前空間・アクセシビリティ・partial 有無、[TypeMap] スコープ(class＋profile)、[BindPrefix](assembly／class)を解決する。
-    // Read the class namespace / accessibility / partial-ness, the [TypeMap] scope (class + profile) and [BindPrefix] (assembly / class).
+    // クラスの名前空間・アクセシビリティ・partial 有無、[TypeMap] スコープ(class＋profile)、[BindPrefix]・[Naming](assembly／class)を解決する。
+    // Read the class namespace / accessibility / partial-ness, the [TypeMap] scope (class + profile) and [BindPrefix] / [Naming] (assembly / class).
     public static ClassScan ResolveClass(GeneratorAttributeSyntaxContext context)
     {
         var container = (INamedTypeSymbol)context.TargetSymbol;
@@ -37,10 +37,19 @@ internal static class ClassScanner
         var profile = MappingAttributeHelper.ResolveProfile(container);
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(container, profile);
 
-        var assemblyMarker = container.ContainingAssembly is { } assembly ? ResolveBindMarker(assembly.GetAttributes()) : null;
-        var classMarker = ResolveBindMarker(container.GetAttributes());
+        char? assemblyMarker = null;
+        NamingConvention? assemblyNaming = null;
+        if (container.ContainingAssembly is { } assembly)
+        {
+            var assemblyAttributes = assembly.GetAttributes();
+            assemblyMarker = ResolveBindMarker(assemblyAttributes);
+            assemblyNaming = NamingAttributeHelper.Resolve(assemblyAttributes);
+        }
+        var classAttributes = container.GetAttributes();
+        var classMarker = ResolveBindMarker(classAttributes);
+        var classNaming = NamingAttributeHelper.Resolve(classAttributes);
 
-        return new ClassScan(container, ns, container.Name, accessibility, isPartial, typeMaps, profile, assemblyMarker, classMarker);
+        return new ClassScan(container, ns, container.Name, accessibility, isPartial, typeMaps, profile, assemblyMarker, classMarker, assemblyNaming, classNaming);
     }
 
     // 対象属性(targets)が付いたメソッドを列挙し (MatchedMethod, payload) を返す。payload は各 provider の per-kind 生成デリゲート。
@@ -102,11 +111,13 @@ internal static class ClassScanner
                 continue;
             }
 
-            // method スコープの [BindPrefix] が最優先、無ければ class → assembly、いずれも無ければ '@'。
-            // A method-scope [BindPrefix] wins; otherwise class → assembly; otherwise '@'.
-            var bindMarker = ResolveBindMarker(method.GetAttributes()) ?? scan.ClassMarker ?? scan.AssemblyMarker ?? '@';
+            // method スコープの [BindPrefix]・[Naming] が最優先、無ければ class → assembly、いずれも無ければ既定('@' / None)。
+            // A method-scope [BindPrefix] / [Naming] wins; otherwise class → assembly; otherwise the default ('@' / None).
+            var methodAttributes = method.GetAttributes();
+            var bindMarker = ResolveBindMarker(methodAttributes) ?? scan.ClassMarker ?? scan.AssemblyMarker ?? '@';
+            var naming = NamingAttributeHelper.Resolve(methodAttributes) ?? scan.ClassNaming ?? scan.AssemblyNaming ?? NamingConvention.None;
 
-            yield return (new MatchedMethod(method, matchedAttribute!, bindMarker, location), payload!);
+            yield return (new MatchedMethod(method, matchedAttribute!, bindMarker, naming, location), payload!);
         }
     }
 

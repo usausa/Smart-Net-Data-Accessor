@@ -7,9 +7,10 @@ using Smart.Data.Accessor.Shared.Helpers;
 using SourceGenerateHelper;
 
 // クラスレベルの走査結果(一時キャリア。ClassScanner.ResolveClass が返し transform 内で消費)。名前空間 / クラス名 /
-// アクセシビリティ / partial 有無 ＋ [TypeMap] スコープ(class＋profile)＋ [BindPrefix] の assembly / class マーカー。
+// アクセシビリティ / partial 有無 ＋ [TypeMap] スコープ(class＋profile)＋ [BindPrefix]・[Naming] の assembly / class 値。
 // Class-level scan result (a transient carrier returned by ClassScanner.ResolveClass and consumed within the transform):
-// namespace / class name / accessibility / partial-ness + the [TypeMap] scope (class+profile) + the assembly/class [BindPrefix] markers.
+// namespace / class name / accessibility / partial-ness + the [TypeMap] scope (class+profile) + the assembly/class
+// [BindPrefix] markers and [Naming] conventions.
 internal readonly record struct ClassScan(
     INamedTypeSymbol Container,
     string Namespace,
@@ -19,13 +20,17 @@ internal readonly record struct ClassScan(
     Dictionary<string, TypeMapInfo> TypeMaps,
     INamedTypeSymbol? Profile,
     char? AssemblyMarker,
-    char? ClassMarker);
+    char? ClassMarker,
+    NamingConvention? AssemblyNaming,
+    NamingConvention? ClassNaming);
 
-// 対象属性付きと判定された 1 メソッド(ClassScanner.EnumerateMethods が yield)。BindMarker は method→class→assembly→'@' で解決済み。
+// 対象属性付きと判定された 1 メソッド(ClassScanner.EnumerateMethods が yield)。BindMarker は method→class→assembly→'@'、
+// Naming は method→class→assembly→None で解決済み。
 // One method matched against the target attributes (yielded by ClassScanner.EnumerateMethods). BindMarker is already
-// resolved as method → class → assembly → '@'.
+// resolved as method → class → assembly → '@', and Naming as method → class → assembly → None.
 internal readonly record struct MatchedMethod(
     IMethodSymbol Method,
     AttributeData Attribute,
     char BindMarker,
+    NamingConvention Naming,
     LocationInfo? Location);

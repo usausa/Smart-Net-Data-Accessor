@@ -246,14 +246,38 @@ internal static class AccessorModelBuilder
         return null;
     }
 
+    // SDA0012: [Naming] が未定義の NamingConvention 値を持つ(None 扱いで続行)。属性の適用箇所を位置として報告する。
+    // Builder Generator との二重報告を避けるため、検証はコア Generator だけが行う(NamingAttributeHelper 参照)。
+    // SDA0012: [Naming] carries an undefined NamingConvention value (treated as None). Reported at the attribute
+    // application site. Only the core generator validates this so the builder generators do not double-report
+    // (see NamingAttributeHelper).
+    private static void ReportInvalidNamingValue(List<DiagnosticInfo> diagnostics, ImmutableArray<AttributeData> attributes)
+    {
+        if (NamingAttributeHelper.FindInvalid(attributes, out var value) is { } attribute)
+        {
+            diagnostics.Add(new DiagnosticInfo(
+                Diagnostics.NamingValueUndefined,
+                attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation(),
+                value.ToString(CultureInfo.InvariantCulture)));
+        }
+    }
+
     private static AccessorModel? BuildAccessorModel(
         List<DiagnosticInfo> diagnostics,
         INamedTypeSymbol classSymbol)
     {
-        var assemblyMarker = classSymbol.ContainingAssembly is { } asm
-            ? ResolveBindMarker(asm.GetAttributes())
-            : null;
-        var classMarker = ResolveBindMarker(classSymbol.GetAttributes()) ?? assemblyMarker;
+        var assemblyAttributes = classSymbol.ContainingAssembly is { } asm
+            ? asm.GetAttributes()
+            : [];
+        var classAttributes = classSymbol.GetAttributes();
+        var assemblyMarker = ResolveBindMarker(assemblyAttributes);
+        var classMarker = ResolveBindMarker(classAttributes) ?? assemblyMarker;
+
+        // [Naming] は class → assembly の順で解決する(method スコープは後段。未定義値は SDA0012 を報告して None 扱い)。
+        // [Naming] resolves class → assembly (the method scope comes later; an undefined value reports SDA0012 and degrades to None).
+        ReportInvalidNamingValue(diagnostics, assemblyAttributes);
+        ReportInvalidNamingValue(diagnostics, classAttributes);
+        var classNaming = NamingAttributeHelper.Resolve(classAttributes) ?? NamingAttributeHelper.Resolve(assemblyAttributes);
 
         // [ExecuteConfig(typeof(P))] は P の [TypeHandler] 宣言を converter 解決の最下位スコープにする。ここで解決する
         // (検証は後段で報告。SDA0010 / SDA0011 参照)。
@@ -555,6 +579,13 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
+            // method スコープの [Naming] が最優先、無ければ class → assembly、いずれも無ければ None。
+            // 適用先は Query 列マッピングの既定列名と [Procedure]/[DirectSql] の POCO 展開パラメータ名([Name] 明示は常に優先)。
+            // A method-scope [Naming] wins; otherwise class → assembly; otherwise None. It applies to the default column
+            // names of the Query mapping and the POCO-expanded parameter names of [Procedure]/[DirectSql] (an explicit [Name] always wins).
+            ReportInvalidNamingValue(diagnostics, member.GetAttributes());
+            var methodNaming = NamingAttributeHelper.Resolve(member.GetAttributes()) ?? classNaming ?? NamingConvention.None;
+
             var parameters = member.Parameters.Select(x =>
             {
                 string? dbTypeExpression = null;
@@ -704,7 +735,7 @@ internal static class AccessorModelBuilder
                     (x.RefKind == RefKind.None) &&
                     IsPocoParameter(x.Type))
                 {
-                    pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)x.Type, x.Name);
+                    pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)x.Type, x.Name, methodNaming);
                 }
 
                 // SDA0510: 旧 HasPublicMember の意味論に合わせる — 型とその基底の public プロパティ/フィールド、加えて実装インタフェースのプロパティ。
@@ -854,7 +885,7 @@ internal static class AccessorModelBuilder
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.UnsupportedReturn, member.Locations.FirstOrDefault(), member.Name, member.ReturnType.ToDisplayString()));
                     continue;
                 }
-                var (columns, ctorPath) = BuildColumnInfos(diagnostics, member, mapTarget, classSymbol, profileSymbol);
+                var (columns, ctorPath) = BuildColumnInfos(diagnostics, member, mapTarget, classSymbol, profileSymbol, methodNaming);
                 queryColumns = columns;
                 useRecordPrimaryCtor = ctorPath;
                 // SDA0312: マッピング可能な列が 1 つも無い要素型（スカラー要素・全プロパティ get-only/[Ignore] 等）は
@@ -1581,7 +1612,8 @@ internal static class AccessorModelBuilder
         IMethodSymbol method,
         INamedTypeSymbol entity,
         INamedTypeSymbol classSymbol,
-        INamedTypeSymbol? profileSymbol)
+        INamedTypeSymbol? profileSymbol,
+        NamingConvention naming)
     {
         var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
 
@@ -1646,7 +1678,7 @@ internal static class AccessorModelBuilder
                     continue;
                 }
                 var propertyAttributes = property.GetAttributes();
-                var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property);
+                var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
                 if (isIgnored)
                 {
                     // [property: Ignore] の位置引数も同様に Ignored エントリとして保持する（default! を渡す。
@@ -1698,7 +1730,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
             var propertyAttributes = property.GetAttributes();
-            var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property);
+            var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
             // [Ignore] は現在どこでも「除外」を意味する。ただし required メンバは設定しないと CS9035 になるため
             // default! の設定だけは行う。
             // [Ignore] now means exclude everywhere; a required member still receives default! (CS9035 otherwise).
@@ -2096,7 +2128,8 @@ internal static class AccessorModelBuilder
         INamedTypeSymbol classSymbol,
         INamedTypeSymbol? profileSymbol,
         INamedTypeSymbol pocoType,
-        string argName)
+        string argName,
+        NamingConvention naming)
     {
         var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
         var list = new List<PocoBindProperty>();
@@ -2177,7 +2210,7 @@ internal static class AccessorModelBuilder
             var isNullableEnumProperty = (enumUnderlying is not null) && (property.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T });
             list.Add(new PocoBindProperty(
                 property.Name,
-                paramName ?? property.Name,
+                paramName ?? NameConverter.Convert(property.Name, naming),
                 property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 direction,
                 dbTypeExpression,

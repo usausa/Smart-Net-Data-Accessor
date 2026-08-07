@@ -17,11 +17,14 @@ internal static class MethodResolver
     private const string OffsetAttributeName = "Smart.Data.Accessor.Attributes.OffsetAttribute";
 
     // 属性からエンティティ型 / Table 名を取り、テーブル名・値パラメータ・エンティティ列を解決する。テーブル名を決められなければ SDA1003 を出して null を返す。
+    // Table 名の既定(エンティティ型名)と列名・パラメータ列名の既定には [Naming] 規約が適用される(Table= / [Name] の明示は常に優先)。
     // Read the entity type / Table name from the attribute and resolve the table name, value parameters and entity columns. Returns null (after raising SDA1003) when the table cannot be determined.
+    // The [Naming] convention applies to the default table name (the entity type name) and the default column / parameter column names (an explicit Table= / [Name] always wins).
     public static MethodResolution? Resolve(
         in ClassScan scan,
         IMethodSymbol method,
         AttributeData attribute,
+        NamingConvention naming,
         List<DiagnosticInfo> diagnostics,
         LocationInfo? location)
     {
@@ -37,7 +40,7 @@ internal static class MethodResolver
             }
         }
 
-        var tableName = table ?? entityType?.Name;
+        var tableName = table ?? (entityType is null ? null : NameConverter.Convert(entityType.Name, naming));
         if (tableName is null)
         {
             diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.MissingTable, location, method.Name));
@@ -55,7 +58,7 @@ internal static class MethodResolver
         var valueParamSymbols = method.Parameters
             .Where(x => (x.Type.ToDisplayString() != WellKnownTypeNames.CancellationToken) && !x.Type.InheritsFrom(WellKnownTypeNames.DbConnection) && !x.Type.InheritsFrom(WellKnownTypeNames.DbTransaction))
             .ToList();
-        var valueParams = valueParamSymbols.Select(x => ResolveValueParam(x, typeMaps)).ToArray();
+        var valueParams = valueParamSymbols.Select(x => ResolveValueParam(x, typeMaps, naming)).ToArray();
 
         // エンティティ実体は、ページング属性が付かず型が EntityType に一致する最初の値パラメータ。
         // The entity instance is the first non-paging value parameter whose type matches EntityType.
@@ -71,7 +74,7 @@ internal static class MethodResolver
         // When an entity type is present, enumerate its columns (properties) and resolve each column's binding metadata.
         var entityColumns = entityType is null
             ? Enumerable.Empty<EntityColumn>()
-            : ReadEntityColumns(entityType);
+            : ReadEntityColumns(entityType, naming);
         var columns = entityColumns
             .Select(x => ResolveColumn(x, method, container, profile, typeMaps, diagnostics, location))
             .ToArray();
@@ -88,7 +91,7 @@ internal static class MethodResolver
 
     // メソッドの値パラメータの束縛メタデータ([DbType] / [TypeMap] / enum。値パラメータに converter は付かない)を解決する。
     // Resolve a method value parameter's binding metadata ([DbType] / [TypeMap] / enum; no converter on value parameters).
-    private static ParameterBinding ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps)
+    private static ParameterBinding ResolveValueParam(IParameterSymbol parameter, Dictionary<string, TypeMapInfo> typeMaps, NamingConvention naming)
     {
         var typeName = parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var enumUnderlying = parameter.Type.GetEnumUnderlyingType();
@@ -116,7 +119,7 @@ internal static class MethodResolver
         return new ParameterBinding(
             parameter.Name,
             typeName,
-            ColumnName(parameter),
+            ColumnName(parameter, naming),
             enumUnderlying?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             (enumUnderlying is not null) && (parameter.Type is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T }),
             dbTypeExpression,
@@ -201,7 +204,7 @@ internal static class MethodResolver
 
     // エンティティ型の public インスタンスプロパティ(getter あり)を列挙し、[Ignore] を除いて列リストを作る。
     // Enumerate the entity type's public instance properties (with a getter), excluding [Ignore], to build the column list.
-    private static List<EntityColumn> ReadEntityColumns(INamedTypeSymbol entityType)
+    private static List<EntityColumn> ReadEntityColumns(INamedTypeSymbol entityType, NamingConvention naming)
     {
         var list = new List<EntityColumn>();
         foreach (var property in entityType.GetMembers().OfType<IPropertySymbol>())
@@ -210,7 +213,7 @@ internal static class MethodResolver
             {
                 continue;
             }
-            var columnAttribute = ColumnAttributeHelper.Read(property);
+            var columnAttribute = ColumnAttributeHelper.Read(property, naming);
             if (columnAttribute.IsIgnored)
             {
                 continue;
@@ -220,12 +223,12 @@ internal static class MethodResolver
         return list;
     }
 
-    // 列名解決：[Name("...")] があればその名前、無ければパラメータ名。
-    // Column name: the [Name("...")] value if present, otherwise the parameter name.
-    private static string ColumnName(IParameterSymbol parameter)
+    // 列名解決：[Name("...")] があればその名前、無ければ [Naming] 規約を適用したパラメータ名。
+    // Column name: the [Name("...")] value if present, otherwise the parameter name converted by the [Naming] convention.
+    private static string ColumnName(IParameterSymbol parameter, NamingConvention naming)
         => parameter.GetAttributes()
             .FirstOrDefault(static x => x.AttributeClass?.ToDisplayString() == NameAttributeName)
-            ?.ConstructorArguments.FirstOrDefault().Value as string ?? parameter.Name;
+            ?.ConstructorArguments.FirstOrDefault().Value as string ?? NameConverter.Convert(parameter.Name, naming);
 
     // 指定属性がパラメータに付いているか。
     // Whether the given attribute is present on the parameter.
