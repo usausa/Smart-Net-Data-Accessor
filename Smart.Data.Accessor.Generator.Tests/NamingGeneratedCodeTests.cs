@@ -253,8 +253,9 @@ public sealed class NamingGeneratedCodeTests
     }
 
     [Fact]
-    public void UndefinedNamingValueReportsSDA0012()
+    public void NamingValueUndefined()
     {
+        // SDA0012: [Naming] cast to an enum value outside NamingConvention (treated as None).
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
