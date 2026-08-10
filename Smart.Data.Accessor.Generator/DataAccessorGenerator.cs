@@ -117,9 +117,10 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             return;
         }
         var source = AccessorSourceBuilder.Emit(model);
-        var ns = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace.Replace('.', '_');
-        var filename = $"{ns}_{model.ClassName}.g.cs";
-        context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
+        // This repository names the global namespace "global" rather than omitting the segment,
+        // which is what HintNameBuilder would do on its own. Keep the existing hint names.
+        var ns = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace;
+        context.AddSource(HintNameBuilder.Build(ns, model.ClassName), SourceText.From(source, Encoding.UTF8));
     }
 
     // 全アクセサを集約し、DI 登録に要る情報(サービス型 / 具象型 / プロバイダ要否 / [Inject] 型)を RegistryEntry に集める。

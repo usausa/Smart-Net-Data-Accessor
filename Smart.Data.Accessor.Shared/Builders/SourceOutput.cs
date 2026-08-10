@@ -1,9 +1,6 @@
 namespace Smart.Data.Accessor.Shared.Builders;
 
-using System.Text;
-
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 
 using SourceGenerateHelper;
 
@@ -62,8 +59,10 @@ internal static class SourceOutput
 
         builder.EndScope();
 
-        var nsForFile = String.IsNullOrEmpty(ns) ? "global" : ns.Replace('.', '_');
-        var filename = $"{nsForFile}_{className}.QueryBuilders{providerTag}.g.cs";
-        context.AddSource(filename, SourceText.From(builder.ToString(), Encoding.UTF8));
+        // Same "global" convention as DataAccessorGenerator: the segment is named, not omitted.
+        var nsForFile = String.IsNullOrEmpty(ns) ? "global" : ns;
+        context.AddSource(
+            HintNameBuilder.BuildWithExtension(nsForFile, $".QueryBuilders{providerTag}.g.cs", className),
+            builder);
     }
 }
