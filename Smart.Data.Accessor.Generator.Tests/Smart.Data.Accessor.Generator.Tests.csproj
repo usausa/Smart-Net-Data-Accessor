@@ -6,8 +6,6 @@
     <RootNamespace>Smart.Data.Accessor.Generator.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
-    <!-- CS1685: Generator (netstandard2.0) ships internal polyfills (Index/Range/IsExternalInit etc.)
-         that become visible via InternalsVisibleTo. They are duplicated by net10's BCL but harmless. -->
     <NoWarn>$(NoWarn);CS1685</NoWarn>
   </PropertyGroup>
 
@@ -20,33 +18,18 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
-    <!-- Roslyn driver API used directly by the incremental-cache tests (CSharpSyntaxTree etc.). -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
-    <!-- Shared CSharpGeneratorDriver harness (GeneratorTestRunner). -->
     <PackageReference Include="SourceGenerateHelper.Testing" Version="1.19.0" />
-    <!-- Kept as a direct reference even though the harness also loads it: AccessorSourceBuilderTests
-         calls the generator's SourceBuilder directly, bypassing the harness, so SourceGenerateHelper
-         must be resolvable through the normal deps.json path and not only via Assembly.LoadFrom.
-         (The generator ProjectReferences copy the DLL to the output but do not add it to deps.json.) -->
     <PackageReference Include="SourceGenerateHelper" Version="1.20.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Both generators are referenced as plain assemblies (NOT analyzers): the harness runs
-         them manually via CSharpGeneratorDriver, so they must not also be attached to this
-         project's own compilation. -->
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.SqlServer.Generator\Smart.Data.Accessor.Builders.SqlServer.Generator.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.MySql.Generator\Smart.Data.Accessor.Builders.MySql.Generator.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.Postgres.Generator\Smart.Data.Accessor.Builders.Postgres.Generator.csproj" />
-    <!-- Runtime assemblies supply the attribute types ([DataAccessor]/[Execute]/[Insert]/…) that
-         the in-memory test compilations reference. -->
     <ProjectReference Include="..\Smart.Data.Accessor\Smart.Data.Accessor.csproj" />
-    <!-- Provider runtime packages supply the provider attribute types ([Sql*]/[MySql*]/[Pg*]); the standard
-         ANSI attributes ([Insert]…[Truncate]) now come from Smart.Data.Accessor (core). The standard
-         QueryBuilder generator lives in Smart.Data.Accessor.Generator; provider generators in the
-         *.{Provider}.Generator assemblies. -->
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.SqlServer\Smart.Data.Accessor.Builders.SqlServer.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.MySql\Smart.Data.Accessor.Builders.MySql.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Builders.Postgres\Smart.Data.Accessor.Builders.Postgres.csproj" />
