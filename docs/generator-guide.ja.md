@@ -8,6 +8,23 @@
 本ガイドのコード断片は Postgres 実装を雛形にしている。まず Postgres の実物（合計 10 ファイル程度）を
 一読してから本ガイドに戻ると理解が速い。
 
+> **前提となる共通規約 — 先にこちらを読むこと**
+> 本ガイドは、エコシステム共通規約
+> [`../../Generator0-Helper/docs/generator-guide.ja.md`](../../Generator0-Helper/docs/generator-guide.ja.md)
+> （プロジェクト構成、パイプラインの単位化、モデルの命名・順序、診断、テスト、セクション規約）の上に成り立っており、
+> QueryBuilder 拡張点に固有の内容だけを追加している。
+>
+> 両者が重なる部分 — §2.1 csproj、§3 設計原則、§4 Step 4（モデル）／Step 6（診断）／Step 7（テスト）、
+> §6 落とし穴 — は**共通規約側が正**であり、本書がまだ記載していない規約も含まれる。主なものは以下：
+>
+> - 診断（`RegisterSourceOutput`）とコード生成（`SelectMany` で単位化した provider に対する
+>   `RegisterImplementationSourceOutput`）の分離
+> - マーカー属性は実行時ライブラリ側に手書きし、`RegisterPostInitializationOutput` では埋め込まない
+> - モデルの命名（主要モデルは `{Xxx}Model`／transform 内部キャリアには `Model` 接尾辞を使わない）、
+>   プロパティ定義順序、プロパティ12以上でセクションコメント必須
+> - Severity 方針：生成が不可能 → `Error`、生成は続くが意図と異なる → `Warning`
+> - 3層分割は行数ではなくテスト容易性で判断する
+
 ---
 
 ## 1. 全体アーキテクチャ：コアとの役割分担

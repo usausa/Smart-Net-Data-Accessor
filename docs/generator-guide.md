@@ -10,6 +10,26 @@ The reference implementations are the three bundled providers
 guide use the Postgres implementation as the template. Reading the actual Postgres sources first
 (about ten files in total) and then coming back to this guide is the fastest path.
 
+> **Base conventions — read this first**
+> This guide builds on the ecosystem-wide conventions in
+> [`../../Generator0-Helper/docs/generator-guide.md`](../../Generator0-Helper/docs/generator-guide.md)
+> (project layout, pipeline unitisation, model naming and ordering, diagnostics, testing, section
+> naming) and only adds what is specific to the QueryBuilder extension point.
+>
+> Where the two overlap — §2.1 csproj, §3 design principles, §4 Step 4 (models) / Step 6
+> (diagnostics) / Step 7 (tests), §6 pitfalls — **the ecosystem guide is the source of truth** and
+> carries rules this document does not yet restate, notably:
+>
+> - Splitting diagnostics (`RegisterSourceOutput`) from code emission
+>   (`RegisterImplementationSourceOutput` over a `SelectMany`-unitised provider)
+> - Marker attributes are hand-written in the runtime library, never emitted with
+>   `RegisterPostInitializationOutput`
+> - Model naming (`{Xxx}Model` for primary models; the `Model` suffix is forbidden on
+>   transform-internal carriers), property ordering, and the 12-property section-comment threshold
+> - Severity policy: generation impossible → `Error`, generation continues but differs from intent
+>   → `Warning`
+> - Three-layer split is decided by testability, not by line count
+
 ---
 
 ## 1. Architecture: how work is split with the core

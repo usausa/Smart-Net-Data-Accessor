@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="SourceGenerateHelper" Version="1.18.0" GeneratePathProperty="true" PrivateAssets="all" />
-    <PackageReference Include="Usa.Smart.Data" Version="2.10.0" />
+    <PackageReference Include="Usa.Smart.Data" Version="2.11.0" />
   </ItemGroup>
 
   <ItemGroup>

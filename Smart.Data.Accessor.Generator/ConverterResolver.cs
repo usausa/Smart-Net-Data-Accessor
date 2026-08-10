@@ -22,7 +22,7 @@ internal static class ConverterResolver
 {
     // The converter binding resolved for a single mapped value (column / parameter / scalar).
     // DbType = TDb, ClrType = TClr of IValueConverter<TDb, TClr>.
-    internal sealed record Result(string ConverterTypeFullName, ITypeSymbol DbType, ITypeSymbol ClrType);
+    internal sealed record ConverterResolution(string ConverterTypeFullName, ITypeSymbol DbType, ITypeSymbol ClrType);
 
     // The outer scope owners consulted (in order) when the member itself carries no [TypeHandler]:
     // method → accessor class → profile. Profile is the type referenced by [ExecuteConfig(typeof(P))]
@@ -32,7 +32,7 @@ internal static class ConverterResolver
     // Resolves the converter to apply to a member of type valueType. Returns null when no handler
     // applies or when validation fails (a diagnostic is reported in the latter case so the
     // mapping/binding falls back to the plain path).
-    public static Result? Resolve(
+    public static ConverterResolution? Resolve(
         List<DiagnosticInfo> diagnostics,
         IMethodSymbol method,
         string memberName,
@@ -85,7 +85,7 @@ internal static class ConverterResolver
     // Validates a selected converter and, on success, returns its binding. requireClrMatch is true
     // only for the explicit member scope (a mismatch there is SDA0308); the type-keyed scopes have
     // already filtered on TClr so a mismatch cannot occur.
-    private static Result? Validate(
+    private static ConverterResolution? Validate(
         List<DiagnosticInfo> diagnostics,
         IMethodSymbol method,
         string memberName,
@@ -130,6 +130,6 @@ internal static class ConverterResolver
             return null;
         }
 
-        return new Result(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType, clrType);
+        return new ConverterResolution(converter.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), dbType, clrType);
     }
 }

@@ -1,5 +1,6 @@
 // ReSharper disable MemberCanBePrivate.Global
 #pragma warning disable IDE0130
+#pragma warning disable CA1812
 #pragma warning disable SA1403
 [assembly: CLSCompliant(false)]
 
