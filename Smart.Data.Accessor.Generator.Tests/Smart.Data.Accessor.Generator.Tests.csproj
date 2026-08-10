@@ -20,10 +20,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
-    <!-- Roslyn driver API for the in-memory generator harness (GeneratorTestHelper). -->
+    <!-- Roslyn driver API used directly by the incremental-cache tests (CSharpSyntaxTree etc.). -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
-    <!-- Runtime dependency of both generators; needed in the test output so the in-process
-         driver can resolve SourceGenerateHelper when the generators run. -->
+    <!-- Shared CSharpGeneratorDriver harness (GeneratorTestRunner). -->
+    <PackageReference Include="SourceGenerateHelper.Testing" Version="1.18.0" />
+    <!-- Kept as a direct reference even though the harness also loads it: AccessorSourceBuilderTests
+         calls the generator's SourceBuilder directly, bypassing the harness, so SourceGenerateHelper
+         must be resolvable through the normal deps.json path and not only via Assembly.LoadFrom.
+         (The generator ProjectReferences copy the DLL to the output but do not add it to deps.json.) -->
     <PackageReference Include="SourceGenerateHelper" Version="1.18.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
