@@ -83,12 +83,6 @@ internal static class AccessorModelBuilder
             model = BuildAccessorModel(diagnostics, classSymbol);
         }
 
-        // TODO SourceGenerateHelper 2.0: model が null なら HasValue は false のままなので、
-        // DataAccessorGenerator 側の Value 判定は現状どおり動く。SelectValue へ寄せる場合は、
-        // 値 + エラー診断の Result も生成対象になる点を確認すること。
-        // TODO SourceGenerateHelper 2.0: HasValue stays false when model is null, so the Value check in
-        // DataAccessorGenerator keeps working. If this moves to SelectValue, confirm that a Result with a
-        // value plus error diagnostics should still be emitted.
         return new Result<AccessorModel>(model!, new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
     }
 
@@ -233,11 +227,6 @@ internal static class AccessorModelBuilder
         }
 
         var completedModel = model with { Methods = new EquatableArray<MethodModel>(keptMethods.ToArray()) };
-        // TODO SourceGenerateHelper 2.0: この Result は値とエラー診断を同時に持ちうる。SelectValue は
-        // 値があれば返すようになったため、SelectValue へ寄せる場合は挙動を確認すること。
-        // TODO SourceGenerateHelper 2.0: this Result can carry a value together with error diagnostics.
-        // SelectValue now returns the value whenever one is present, so verify the behavior if this moves
-        // to SelectValue.
         return new Result<AccessorModel>(
             completedModel,
             new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
