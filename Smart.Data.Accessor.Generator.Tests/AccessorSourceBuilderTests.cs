@@ -6,8 +6,6 @@ using Smart.Data.Accessor.Generator.Models;
 
 using SourceGenerateHelper;
 
-using Xunit;
-
 // AccessorSourceBuilder.Emit is a pure Model -> string function (no symbols, no Roslyn driver), so the
 // generated-code shape can be unit-tested directly from a hand-built AccessorModel — the testability win
 // of the 3-layer split. These complement GeneratedCodeTests, which exercise the full
