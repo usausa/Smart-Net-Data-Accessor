@@ -62,7 +62,7 @@ internal static class AccessorModelBuilder
         var syntax = (ClassDeclarationSyntax)context.TargetNode;
         if (context.TargetSymbol is not INamedTypeSymbol classSymbol)
         {
-            return new Result<AccessorModel>(null!, new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            return new Result<AccessorModel>(null!, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
         }
 
         AccessorModel? model = null;
@@ -83,7 +83,7 @@ internal static class AccessorModelBuilder
             model = BuildAccessorModel(diagnostics, classSymbol);
         }
 
-        return new Result<AccessorModel>(model!, new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+        return new Result<AccessorModel>(model!, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
     }
 
     private static (Dictionary<string, string> SqlMap, HashSet<string> Collided) BuildSqlMap(
@@ -121,7 +121,7 @@ internal static class AccessorModelBuilder
         var diagnostics = new List<DiagnosticInfo>(result.Diagnostics);
         if (result.Value is not { } model)
         {
-            return new Result<AccessorModel>(null!, new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            return new Result<AccessorModel>(null!, new EquatableArray<DiagnosticInfo>([.. diagnostics]));
         }
 
         var (sqlMap, collidedKeys) = BuildSqlMap(sqlFiles);
@@ -194,8 +194,8 @@ internal static class AccessorModelBuilder
                     SqlEmitCode = code,
                     StaticSqlText = staticSql,
                     StaticParameterCode = staticParam,
-                    OutputBindings = new EquatableArray<OutputBinding>(outputBindings.ToArray()),
-                    Usings = new EquatableArray<UsingDirective>(methodUsings.ToArray())
+                    OutputBindings = [with([.. outputBindings])],
+                    Usings = [with([.. methodUsings])]
                 });
                 continue;
             }
@@ -226,10 +226,10 @@ internal static class AccessorModelBuilder
             }
         }
 
-        var completedModel = model with { Methods = new EquatableArray<MethodModel>(keptMethods.ToArray()) };
+        var completedModel = model with { Methods = [with([.. keptMethods])] };
         return new Result<AccessorModel>(
             completedModel,
-            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            new EquatableArray<DiagnosticInfo>([.. diagnostics]));
     }
 
     private static char? ResolveBindMarker(ImmutableArray<AttributeData> attributes)
@@ -781,8 +781,8 @@ internal static class AccessorModelBuilder
                     converterNullableValue,
                     converterDbName,
                     converterClrName,
-                    pocoProperties is { } pp ? new EquatableArray<PocoBindProperty>(pp.ToArray()) : (EquatableArray<PocoBindProperty>?)null,
-                    new EquatableArray<string>(memberNames.ToArray()));
+                    pocoProperties is { } pp ? new EquatableArray<PocoBindProperty>([.. pp]) : (EquatableArray<PocoBindProperty>?)null,
+                    new EquatableArray<string>([.. memberNames]));
             }).ToList();
 
             // Pattern A/B 判定：DbConnection / DbTransaction パラメータの有無を走査する。
@@ -1145,7 +1145,7 @@ internal static class AccessorModelBuilder
                 sqlEmitCode,
                 staticSqlText,
                 staticParameterCode,
-                queryColumns is { } columnList ? new EquatableArray<ColumnInfo>(columnList.ToArray()) : (EquatableArray<ColumnInfo>?)null,
+                queryColumns is { } columnList ? new EquatableArray<ColumnInfo>([.. columnList]) : (EquatableArray<ColumnInfo>?)null,
                 outputBindings.ToArray(),
                 useRecordPrimaryCtor,
                 commandTimeout,
