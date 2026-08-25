@@ -2,11 +2,17 @@
 
   <PropertyGroup>
     <SmartDataAccessor_SqlFolder Condition="'$(SmartDataAccessor_SqlFolder)' == ''">Sql</SmartDataAccessor_SqlFolder>
+    <SmartDataAccessor_SkipLocalsInit Condition="'$(SmartDataAccessor_SkipLocalsInit)' == ''">true</SmartDataAccessor_SkipLocalsInit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SmartDataAccessor_SkipLocalsInit)' == 'true'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="**\$(SmartDataAccessor_SqlFolder)\*.sql" />
     <CompilerVisibleProperty Include="SmartDataAccessor_SqlFolder" />
+    <CompilerVisibleProperty Include="SmartDataAccessor_SkipLocalsInit" />
   </ItemGroup>
 
 </Project>

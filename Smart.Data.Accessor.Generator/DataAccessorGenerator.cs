@@ -5,6 +5,7 @@ using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 using Smart.Data.Accessor.Generator.Models;
@@ -14,6 +15,9 @@ using SourceGenerateHelper;
 [Generator]
 public sealed class DataAccessorGenerator : IIncrementalGenerator
 {
+    private const string SqlFolderProperty = "build_property.SmartDataAccessor_SqlFolder";
+    private const string SkipLocalsInitProperty = "build_property.SmartDataAccessor_SkipLocalsInit";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // === インクリメンタル生成パイプラインの配線(本体は配線のみで、実処理は 2 層に分離している)===
@@ -23,15 +27,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         //   AccessorModelBuilder  — transform stage: symbol -> equatable Result<AccessorModel> (model + diagnostics)
         //   AccessorSourceBuilder — emit stage: Model -> generated C# string; symbol-free, so unit-testable
 
-        // SQL フォルダ名はプロジェクト毎に MSBuild プロパティ <SmartDataAccessor_SqlFolder> で変更できる(既定 "Sql")。
-        // .targets が CompilerVisibleProperty として公開し、ここでは AnalyzerConfigOptions から読み取る。
-        // The SQL folder name is configurable per project via the <SmartDataAccessor_SqlFolder> MSBuild property
-        // (default "Sql"); the .targets exposes it as a CompilerVisibleProperty, read here from AnalyzerConfigOptions.
-        var sqlFolder = context.AnalyzerConfigOptionsProvider.Select(static (x, _) =>
-            x.GlobalOptions.TryGetValue("build_property.SmartDataAccessor_SqlFolder", out var folder) &&
-                !String.IsNullOrWhiteSpace(folder)
-                ? folder
-                : "Sql");
+        // MSBuild プロパティ由来の生成オプション。.targets が CompilerVisibleProperty として公開したものを
+        // OptionModel 1 つに束ねて流す。record の値等価性でキャッシュが効く。
+        // Generation options coming from MSBuild properties. Everything the .targets exposes as a
+        // CompilerVisibleProperty is bundled into a single OptionModel; the record's value equality keeps the
+        // pipeline cached.
+        var optionProvider = context.AnalyzerConfigOptionsProvider
+            .Select(static (provider, _) => SelectOption(provider));
 
         // 追加ファイル(AdditionalText)から .sql を集め、(ファイル名, 本文) に射影し、SQL フォルダ名と結合する。
         // Collect .sql additional files, project each to (file name, text), and combine them with the SQL folder name.
@@ -41,13 +43,13 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 FullPath: t.Path,
                 Path: Path.GetFileNameWithoutExtension(t.Path),
                 Text: t.GetText(cancellation)?.ToString() ?? string.Empty))
-            .Combine(sqlFolder)
+            .Combine(optionProvider)
             .Where(static pair =>
             {
                 // 親ディレクトリ名が {SqlFolder} に一致する .sql だけを対象にする(無関係な .sql を除外)。
                 // Keep only .sql whose parent directory name matches {SqlFolder} (excludes unrelated .sql files).
                 var parentDir = Path.GetFileName(Path.GetDirectoryName(pair.Left.FullPath));
-                return String.Equals(parentDir, pair.Right, StringComparison.OrdinalIgnoreCase);
+                return String.Equals(parentDir, pair.Right.SqlFolder, StringComparison.OrdinalIgnoreCase);
             })
             .Select(static (pair, _) => (pair.Left.Path, pair.Left.Text))
             .Collect();
@@ -79,7 +81,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // class, so RegisterSourceOutput runs once per element (= per class), emitting that class's
         // {ns}_{Class}.g.cs. Only accessors whose own Result<AccessorModel> changed are re-emitted; unchanged
         // ones stay cached and are skipped (per-class granularity).
-        context.RegisterSourceOutput(completed, static (productionContext, result) => EmitCompleted(productionContext, result));
+        context.RegisterSourceOutput(
+            completed.Combine(optionProvider),
+            static (productionContext, pair) => EmitCompleted(productionContext, pair.Left, pair.Right));
 
         // レジストリ初期化子(全アクセサを横断して集約。symbol 由来で SQL 不要)。
         // .Collect() がストリームを 1 つの ImmutableArray に畳み込み、全アクセサを一度に渡す。レジストリ
@@ -103,10 +107,32 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // (this keeps the pipeline Compilation-free and fully cached).
     }
 
+    // MSBuild プロパティを OptionModel へ束ねる。
+    // SqlFolder はプロジェクト毎に <SmartDataAccessor_SqlFolder> で変更できる(既定 "Sql")。
+    // SkipLocalsInit は <SmartDataAccessor_SkipLocalsInit> で切り替える。.targets が既定値と、属性が要求する
+    // AllowUnsafeBlocks の両方を面倒みるので、ここは値を読むだけでよい。値が取れないときに true を既定にすると
+    // .targets を取り込んでいないプロジェクトで CS0227 になりうるため、取得できたときだけ有効とする。
+    // Bundle the MSBuild properties into an OptionModel.
+    // SqlFolder is configurable per project via <SmartDataAccessor_SqlFolder> (default "Sql").
+    // SkipLocalsInit is controlled by <SmartDataAccessor_SkipLocalsInit>; the .targets supplies both its default
+    // and the AllowUnsafeBlocks the attribute needs, so this only reads the value. Defaulting a missing value to
+    // true would risk CS0227 in a project that never imported the .targets, so it counts as enabled only when
+    // the value is actually present.
+    private static OptionModel SelectOption(AnalyzerConfigOptionsProvider provider)
+    {
+        var sqlFolder = provider.GlobalOptions.TryGetValue(SqlFolderProperty, out var folder) && !String.IsNullOrWhiteSpace(folder)
+            ? folder
+            : OptionModel.Default.SqlFolder;
+        var skipLocalsInit = provider.GlobalOptions.TryGetValue(SkipLocalsInitProperty, out var value) &&
+            Boolean.TryParse(value, out var result) &&
+            result;
+        return new OptionModel(sqlFolder, skipLocalsInit);
+    }
+
     // 1 アクセサ分の出力：診断を報告し、Model があれば AccessorSourceBuilder でソースを生成して {ns}_{Class}.g.cs を追加する。
     // Emit one accessor: report its diagnostics, then (if a model exists) generate its source via
     // AccessorSourceBuilder and add it as {ns}_{Class}.g.cs.
-    private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> result)
+    private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> result, OptionModel option)
     {
         foreach (var diagnostic in result.Diagnostics)
         {
@@ -116,7 +142,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         {
             return;
         }
-        var source = AccessorSourceBuilder.Emit(model);
+        var source = AccessorSourceBuilder.Emit(model, option);
         // This repository names the global namespace "global" rather than omitting the segment,
         // which is what HintNameBuilder would do on its own. Keep the existing hint names.
         var ns = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace;
