@@ -11,6 +11,8 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <Import Project="..\Smart.Data.Accessor.targets" />
+
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageReference Include="Dapper" Version="2.1.79" />
@@ -26,7 +28,5 @@
     <Compile Remove="Generated/**/*.cs" />
     <None Include="Generated/**/*.cs" />
   </ItemGroup>
-
-  <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>

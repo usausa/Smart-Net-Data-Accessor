@@ -6,6 +6,8 @@
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
+  <Import Project="..\Smart.Data.Accessor.targets" />
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.5.26302.115" />
   </ItemGroup>
@@ -15,7 +17,5 @@
     <ProjectReference Include="..\Smart.Data.Accessor.Extensions.DependencyInjection\Smart.Data.Accessor.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
-
-  <Import Project="..\Smart.Data.Accessor.targets" />
 
 </Project>
