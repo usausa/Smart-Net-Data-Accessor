@@ -53,8 +53,8 @@ internal static class PostgresModelBuilder
             scan.Namespace,
             scan.ClassName,
             scan.Accessibility,
-            new EquatableArray<PostgresMethodModel>(methods.ToArray()),
-            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            new EquatableArray<PostgresMethodModel>(methods),
+            new EquatableArray<DiagnosticInfo>(diagnostics));
     }
 
     private static PostgresInsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)

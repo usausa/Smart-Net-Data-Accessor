@@ -145,7 +145,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 concreteName,
                 model.RequiresConnectionFactory,
                 model.ProviderName is not null,
-                new EquatableArray<string>(model.Injects.Select(static x => x.TypeFullName).ToArray()))
+                new EquatableArray<string>(model.Injects.Select(static x => x.TypeFullName)))
         ];
     }
 

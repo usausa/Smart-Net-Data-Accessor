@@ -53,8 +53,8 @@ internal static class SqlServerModelBuilder
             scan.Namespace,
             scan.ClassName,
             scan.Accessibility,
-            new EquatableArray<SqlServerMethodModel>(methods.ToArray()),
-            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            new EquatableArray<SqlServerMethodModel>(methods),
+            new EquatableArray<DiagnosticInfo>(diagnostics));
     }
 
     private static SqlServerInsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)

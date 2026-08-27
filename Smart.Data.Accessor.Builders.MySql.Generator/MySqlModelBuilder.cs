@@ -55,8 +55,8 @@ internal static class MySqlModelBuilder
             scan.Namespace,
             scan.ClassName,
             scan.Accessibility,
-            new EquatableArray<MySqlMethodModel>(methods.ToArray()),
-            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            new EquatableArray<MySqlMethodModel>(methods),
+            new EquatableArray<DiagnosticInfo>(diagnostics));
     }
 
     private static MySqlInsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)

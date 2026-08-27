@@ -53,8 +53,8 @@ internal static class StandardModelBuilder
             scan.Namespace,
             scan.ClassName,
             scan.Accessibility,
-            new EquatableArray<StandardMethodModel>(methods.ToArray()),
-            new EquatableArray<DiagnosticInfo>(diagnostics.ToArray()));
+            new EquatableArray<StandardMethodModel>(methods),
+            new EquatableArray<DiagnosticInfo>(diagnostics));
     }
 
     private static InsertModel BuildInsert(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
