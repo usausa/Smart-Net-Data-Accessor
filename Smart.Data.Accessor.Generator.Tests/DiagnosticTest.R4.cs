@@ -4,7 +4,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 using Xunit;
 
 // SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks.
-public sealed class R4DiagnosticTests
+public partial class DiagnosticTest
 {
     private const string Source = """
         using Smart.Data.Accessor.Attributes;
@@ -18,7 +18,7 @@ public sealed class R4DiagnosticTests
         """;
 
     [Fact]
-    public void UnclosedCodeBlockBraceReportsSDA0506()
+    public void Sda0506UnclosedCodeBlockBraceEmitsDiagnostic()
     {
         // The if-block opens '{' but is never closed.
         const string sql = """
@@ -33,7 +33,7 @@ public sealed class R4DiagnosticTests
     }
 
     [Fact]
-    public void ExtraClosingBraceReportsSDA0507()
+    public void Sda0507ExtraClosingBraceEmitsDiagnostic()
     {
         // A '}' appears with no matching '{'.
         const string sql = """
@@ -48,7 +48,7 @@ public sealed class R4DiagnosticTests
     }
 
     [Fact]
-    public void BalancedCodeBlocksReportNoBraceDiagnostic()
+    public void Sda0506BalancedCodeBlocksReportNoBraceDiagnosticEmitsNoDiagnostic()
     {
         const string sql = """
             update Data set Touched = 1
@@ -63,7 +63,7 @@ public sealed class R4DiagnosticTests
     }
 
     [Fact]
-    public void BracesInsideStringLiteralAreNotCounted()
+    public void Sda0506BracesInsideStringLiteralAreNotCountedEmitsNoDiagnostic()
     {
         // The "}{" literal must be ignored; only the real block braces count → balanced.
         const string sql = """

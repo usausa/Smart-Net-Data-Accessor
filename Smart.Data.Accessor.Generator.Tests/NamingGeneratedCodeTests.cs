@@ -251,23 +251,4 @@ public sealed class NamingGeneratedCodeTests
 
         Assert.Contains("AddInParameter(cmd, \"@category_id\", args.CategoryId", text, StringComparison.Ordinal);
     }
-
-    [Fact]
-    public void NamingValueUndefined()
-    {
-        // SDA0012: [Naming] cast to an enum value outside NamingConvention (treated as None).
-        const string source = """
-            using Smart.Data.Accessor.Attributes;
-
-            [DataAccessor]
-            [Naming((NamingConvention)99)]
-            internal sealed partial class Accessor
-            {
-            }
-            """;
-
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
-
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0012");
-    }
 }

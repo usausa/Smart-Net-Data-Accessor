@@ -5,10 +5,10 @@ using Xunit;
 // Verifies the reader-side [TypeHandler<>] converter validation (SDA0307–SDA0311) wired through
 // ConverterResolver. Each accessor is a [Query] (backed by a SQL file) so column mapping — and
 // thus converter resolution — runs.
-public sealed class ConverterDiagnosticTests
+public partial class DiagnosticTest
 {
     [Fact]
-    public void ConverterNotIValueConverter()
+    public void Sda0309ConverterNotIValueConverterEmitsDiagnostic()
     {
         // SDA0309: the referenced converter type does not implement IValueConverter<,>.
         const string source = """
@@ -39,7 +39,7 @@ public sealed class ConverterDiagnosticTests
     }
 
     [Fact]
-    public void ConverterTClrMismatch()
+    public void Sda0308ConverterTClrMismatchEmitsDiagnostic()
     {
         // SDA0308: converter TClr (int) does not match the property type (string).
         const string source = """
@@ -73,7 +73,7 @@ public sealed class ConverterDiagnosticTests
     }
 
     [Fact]
-    public void ConverterStaticAbstractMissing()
+    public void Sda0310ConverterStaticAbstractMissingEmitsDiagnostic()
     {
         // SDA0310: converter implements the interface only via explicit static members, so the
         // generated `TConverter.FromDb(...)` call cannot bind.
@@ -108,7 +108,7 @@ public sealed class ConverterDiagnosticTests
     }
 
     [Fact]
-    public void TypeHandlerDuplicated()
+    public void Sda0311TypeHandlerDuplicatedEmitsDiagnostic()
     {
         // SDA0311: more than one [TypeHandler] on the same property (first wins).
         const string source = """
@@ -149,7 +149,7 @@ public sealed class ConverterDiagnosticTests
     }
 
     [Fact]
-    public void NonNullableReferenceColumnReportsInfo()
+    public void Sda0307NonNullableReferenceColumnReportsInfoEmitsDiagnostic()
     {
         // SDA0307 (Info): a non-nullable reference-type column may receive DB NULL.
         const string source = """

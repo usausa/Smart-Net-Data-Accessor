@@ -219,26 +219,4 @@ public sealed class ProcedurePocoGeneratedCodeTests
         Assert.Contains("await cmd.ExecuteNonQueryAsync(", text, StringComparison.Ordinal);
         Assert.Contains("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(__returnValue)!;", text, StringComparison.Ordinal);
     }
-
-    [Fact]
-    public void ReturnValueDirectionOnArgumentReportsSDA0209()
-    {
-        const string source = """
-            using System.Data;
-            using Smart.Data.Accessor.Attributes;
-
-            [DataAccessor]
-            internal sealed partial class Accessor
-            {
-                [Procedure("usp_Foo")]
-                [Execute]
-                public partial void Foo([Direction(ParameterDirection.ReturnValue)] out int rc);
-            }
-            """;
-
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
-
-        // [Direction(ReturnValue)] is retired everywhere.
-        Assert.Contains(diagnostics, x => x.Id == "SDA0209");
-    }
 }

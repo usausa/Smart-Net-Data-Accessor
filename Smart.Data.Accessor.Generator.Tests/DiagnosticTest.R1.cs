@@ -3,10 +3,10 @@ namespace Smart.Data.Accessor.Generator.Tests;
 using Xunit;
 
 // Phase R1 diagnostics: SDA0007 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
-public sealed class R1DiagnosticTests
+public partial class DiagnosticTest
 {
     [Fact]
-    public void UnreferencedInjectReportsInfo()
+    public void Sda0007UnreferencedInjectReportsInfoEmitsDiagnostic()
     {
         // 'svc' is injected but used in neither SQL nor code.
         const string source = """
@@ -31,7 +31,7 @@ public sealed class R1DiagnosticTests
     }
 
     [Fact]
-    public void ReferencedInjectNoInfo()
+    public void Sda0007ReferencedInjectEmitsNoDiagnostic()
     {
         // 'svc' is referenced in user code → no SDA0007. (CS0103 on the not-yet-generated field is
         // irrelevant; the harness only inspects generator diagnostics.)
@@ -59,7 +59,7 @@ public sealed class R1DiagnosticTests
     }
 
     [Fact]
-    public void QueryBuilderWithProcedureConflicts()
+    public void Sda0105QueryBuilderWithProcedureConflictsEmitsDiagnostic()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;

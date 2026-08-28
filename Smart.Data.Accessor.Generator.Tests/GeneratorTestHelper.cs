@@ -69,4 +69,12 @@ internal static class GeneratorTestHelper
     // AdditionalText is needed.
     internal static (GeneratorDriver Driver, Compilation Compilation) CreateBuilderTrackingDriver(string source) =>
         new GeneratorTestRunner(new QueryBuilderGenerator()).WithTracking().CreateDriver(source);
+
+    internal static IncrementalRunResult RunIncremental(
+        string source, string addedSource, params (string Name, string Sql)[] sqlFiles) =>
+        AddSqlFiles(new GeneratorTestRunner(new DataAccessorGenerator()).WithTracking(), sqlFiles)
+            .RunIncremental(source, addedSource);
+
+    internal static IncrementalRunResult RunIncrementalBuilder(string source, string addedSource) =>
+        new GeneratorTestRunner(new QueryBuilderGenerator()).WithTracking().RunIncremental(source, addedSource);
 }
