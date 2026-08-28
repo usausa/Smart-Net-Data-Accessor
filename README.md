@@ -280,12 +280,6 @@ provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Sm
 | `[Inject]` | Inject a service into the accessor, usable from SQL `if` conditions |
 | `[TypeMap]`, `[AccessorProfile]`, `[ExecuteConfig]` | Class/profile-scoped type mapping defaults |
 
-## Diagnostics
-
-All misuse is reported at compile time with `SDA`-prefixed diagnostics — e.g. missing SQL file
-(SDA0401), unsupported return type (SDA0301), missing execution kind (SDA0108), entity with no
-mappable columns (SDA0312), unclosed 2-way SQL block (SDA0503, pointing inside the `[Sql]` literal).
-
 ## Native AOT
 
 The generated code is static (no reflection); publishing with `PublishAot=true` is verified,

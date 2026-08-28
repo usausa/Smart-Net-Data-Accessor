@@ -23,11 +23,13 @@
     <File Path="Analyzers.ruleset" />
     <File Path="CLAUDE.md" />
     <File Path="CodeCoverage.runsettings" />
+    <File Path="Diagnostics.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="Smart.Data.Accessor.sln.DotSettings" />
+    <File Path="Smart.Data.Accessor.props" />
     <File Path="Smart.Data.Accessor.targets" />
     <File Path="test.runsettings" />
   </Folder>

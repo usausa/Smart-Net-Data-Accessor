@@ -18,100 +18,100 @@ internal static class Diagnostics
     // SDA00xx — class-level
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor InvalidClass = new(
+    public static DiagnosticDescriptor InvalidClass { get; } = new(
         id: "SDA0001",
         title: "Invalid DataAccessor class",
-        messageFormat: "DataAccessor class must be declared as partial. class=[{0}].",
+        messageFormat: "Class must be declared as partial. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DataAccessorClassNested = new(
+    public static DiagnosticDescriptor DataAccessorClassNested { get; } = new(
         id: "SDA0002",
         title: "[DataAccessor] class must not be nested",
-        messageFormat: "[DataAccessor] class must be top-level and must not be nested. class=[{0}].",
+        messageFormat: "Class must not be nested. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DataAccessorClassGeneric = new(
+    public static DiagnosticDescriptor DataAccessorClassGeneric { get; } = new(
         id: "SDA0003",
         title: "[DataAccessor] class must not be generic",
-        messageFormat: "[DataAccessor] class must not be generic. class=[{0}].",
+        messageFormat: "Class must not be generic. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InjectNameDuplicated = new(
+    public static DiagnosticDescriptor InjectNameDuplicated { get; } = new(
         id: "SDA0004",
-        title: "[Inject] Name is duplicated within the class",
-        messageFormat: "[Inject] Name is declared more than once. class=[{0}], name=[{1}].",
+        title: "[Inject] Name is duplicated",
+        messageFormat: "[Inject] Name is declared more than once. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InjectNameConflictsWithMember = new(
+    public static DiagnosticDescriptor InjectNameConflictsWithMember { get; } = new(
         id: "SDA0005",
-        title: "[Inject] Name conflicts with another member or method parameter",
-        messageFormat: "[Inject] Name conflicts with an existing field, property, or method parameter. class=[{0}], name=[{1}].",
+        title: "[Inject] Name conflicts with a member",
+        messageFormat: "Name conflicts with an existing member. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InjectTypeNotResolvable = new(
+    public static DiagnosticDescriptor InjectTypeNotResolvable { get; } = new(
         id: "SDA0006",
-        title: "[Inject] Type may not resolve from IServiceProvider",
-        messageFormat: "[Inject] declares a type that may not be resolvable from IServiceProvider, and runtime will throw if it is unregistered. class=[{0}], type=[{1}], name=[{2}].",
+        title: "[Inject] Type may not resolve",
+        messageFormat: "Type may not resolve from IServiceProvider. class=[{0}], type=[{1}], name=[{2}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor InjectNotReferenced = new(
+    public static DiagnosticDescriptor InjectNotReferenced { get; } = new(
         id: "SDA0007",
         title: "[Inject] declaration is not referenced",
-        messageFormat: "[Inject] Name is referenced neither in SQL (/*@ {1}.X */ etc.) nor in user code. class=[{0}], name=[{1}].",
+        messageFormat: "[Inject] Name is never referenced. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ProviderNameEmpty = new(
+    public static DiagnosticDescriptor ProviderNameEmpty { get; } = new(
         id: "SDA0008",
         title: "[Provider] name is empty",
-        messageFormat: "[Provider] has an empty name, so IDbProviderSelector.GetProvider will receive an empty string. class=[{0}].",
+        messageFormat: "[Provider] has an empty name. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ProviderOnPatternAOnlyAccessor = new(
+    public static DiagnosticDescriptor ProviderOnPatternAOnlyAccessor { get; } = new(
         id: "SDA0009",
-        title: "[Provider] has no effect on Pattern A only accessor",
-        messageFormat: "[Provider] is set but the accessor has no Pattern B methods, so the name is never passed to IDbProviderSelector.GetProvider. class=[{0}], name=[{1}].",
+        title: "[Provider] has no effect",
+        messageFormat: "Accessor has no Pattern B method. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ExecuteConfigProfileInvalid = new(
+    public static DiagnosticDescriptor ExecuteConfigProfileInvalid { get; } = new(
         id: "SDA0010",
-        title: "[ExecuteConfig] target is not an [AccessorProfile]",
-        messageFormat: "[ExecuteConfig] target type does not have [AccessorProfile]. class=[{0}], type=[{1}].",
+        title: "[ExecuteConfig] target is invalid",
+        messageFormat: "Target type has no [AccessorProfile]. class=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ProfileCircularReference = new(
+    public static DiagnosticDescriptor ProfileCircularReference { get; } = new(
         id: "SDA0011",
-        title: "[AccessorProfile] class also has [ExecuteConfig]",
-        messageFormat: "[AccessorProfile] class also has [ExecuteConfig], creating a circular reference. class=[{0}].",
+        title: "Profile circular reference",
+        messageFormat: "Profile class also has [ExecuteConfig]. class=[{0}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     // [Naming] は assembly / class / method の全スコープに付くが、検証はコア Generator が一括して行うためこの帯に置く。
     // [Naming] can appear at assembly / class / method scope; the core generator validates all of them, so it lives in this band.
-    public static readonly DiagnosticDescriptor NamingValueUndefined = new(
+    public static DiagnosticDescriptor NamingValueUndefined { get; } = new(
         id: "SDA0012",
-        title: "[Naming] has an undefined NamingConvention value",
-        messageFormat: "[Naming] specifies an undefined NamingConvention value and is treated as None. value=[{0}].",
+        title: "Undefined NamingConvention value",
+        messageFormat: "NamingConvention value is undefined. value=[{0}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -120,61 +120,61 @@ internal static class Diagnostics
     // SDA01xx — method structure / command-source exclusivity
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor InvalidMethod = new(
+    public static DiagnosticDescriptor InvalidMethod { get; } = new(
         id: "SDA0101",
         title: "Invalid DataAccessor method",
-        messageFormat: "DataAccessor method must be a partial declaration. method=[{0}].",
+        messageFormat: "Method must be a partial declaration. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor PartialMethodAlreadyImplemented = new(
+    public static DiagnosticDescriptor PartialMethodAlreadyImplemented { get; } = new(
         id: "SDA0102",
-        title: "Partial method implementation already exists",
-        messageFormat: "A partial implementation is already present in source, so the generator cannot emit a second implementation. method=[{0}].",
+        title: "Partial implementation already exists",
+        messageFormat: "A partial implementation is already present. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     // The execution-kind attributes (A-group) are mutually exclusive.
-    public static readonly DiagnosticDescriptor ExecutionKindDuplicated = new(
+    public static DiagnosticDescriptor ExecutionKindDuplicated { get; } = new(
         id: "SDA0103",
-        title: "Multiple execution-kind attributes on the same method",
-        messageFormat: "More than one execution attribute ([Execute]/[ExecuteScalar]/[Query]/[QueryFirst]/[ExecuteReader]) is present; they are mutually exclusive. method=[{0}].",
+        title: "Multiple execution-kind attributes",
+        messageFormat: "Multiple execution-kind attributes are present. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     // [Procedure] and [DirectSql] (B-group command sources) are mutually exclusive. The QueryBuilder
     // combinations are SDA0105 (core) / SDA1002 (builder); this fills the remaining gap.
-    public static readonly DiagnosticDescriptor ProcedureDirectSqlConflict = new(
+    public static DiagnosticDescriptor ProcedureDirectSqlConflict { get; } = new(
         id: "SDA0104",
         title: "[Procedure] combined with [DirectSql]",
-        messageFormat: "[Procedure] cannot be combined with [DirectSql]; the command source is ambiguous. method=[{0}].",
+        messageFormat: "Command source is ambiguous. method=[{0}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor BuilderAndCommandSourceConflict = new(
+    public static DiagnosticDescriptor BuilderAndCommandSourceConflict { get; } = new(
         id: "SDA0105",
-        title: "QueryBuilder attribute combined with [Procedure] / [DirectSql]",
-        messageFormat: "A QueryBuilder attribute ([Insert]/[Update]/…) cannot be combined with [Procedure] or [DirectSql]; the SQL source is ambiguous. method=[{0}].",
+        title: "Conflicting command source",
+        messageFormat: "SQL source is ambiguous. method=[{0}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor MethodNameDuplicated = new(
+    public static DiagnosticDescriptor MethodNameDuplicated { get; } = new(
         id: "SDA0106",
-        title: "[MethodName] is duplicated within the class",
-        messageFormat: "[MethodName] is declared on multiple methods and would collide in SQL-file lookup. class=[{0}], name=[{1}].",
+        title: "[MethodName] is duplicated",
+        messageFormat: "[MethodName] is declared on multiple methods. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlAndCommandSourceConflict = new(
+    public static DiagnosticDescriptor SqlAndCommandSourceConflict { get; } = new(
         id: "SDA0107",
-        title: "[Sql] cannot be combined with another command source",
-        messageFormat: "[Sql] cannot be combined with another command-source attribute ([DirectSql] / [Procedure] / QueryBuilder). method=[{0}].",
+        title: "[Sql] conflicts with command source",
+        messageFormat: "[Sql] cannot be combined with another source. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -182,10 +182,10 @@ internal static class Diagnostics
     // 実行種別属性(A 群)は生成マーカーであり必須。コマンドソース属性(B 群)は実行種別を既定しない。
     // The execution-kind attribute (A-group) is the generation marker and mandatory; command-source
     // attributes (B-group) never default it.
-    public static readonly DiagnosticDescriptor ExecutionKindMissing = new(
+    public static DiagnosticDescriptor ExecutionKindMissing { get; } = new(
         id: "SDA0108",
         title: "Execution-kind attribute required",
-        messageFormat: "A command-source attribute ([Sql] / [DirectSql] / [Procedure] / QueryBuilder) is present but the execution-kind attribute ([Execute] / [ExecuteScalar] / [ExecuteReader] / [Query] / [QueryFirst]) is missing. method=[{0}].",
+        messageFormat: "Execution-kind attribute is missing. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -194,10 +194,10 @@ internal static class Diagnostics
     // 制御するため、behavior のオプトインを許す。
     // Query-shape behaviors are fixed by design (F17, SingleResult etc.); only the reader shape lets
     // the caller control the column read order, so only it accepts a behavior opt-in.
-    public static readonly DiagnosticDescriptor ReaderBehaviorInvalidMethod = new(
+    public static DiagnosticDescriptor ReaderBehaviorInvalidMethod { get; } = new(
         id: "SDA0109",
-        title: "[ReaderBehavior] is only valid on [ExecuteReader] methods",
-        messageFormat: "[ReaderBehavior] is only valid on an [ExecuteReader] method (Query-shape behaviors are fixed by design). method=[{0}].",
+        title: "[ReaderBehavior] on an invalid method",
+        messageFormat: "[ReaderBehavior] needs [ExecuteReader]. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -206,90 +206,90 @@ internal static class Diagnostics
     // SDA02xx — parameter / direction
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor NameDuplicated = new(
+    public static DiagnosticDescriptor NameDuplicated { get; } = new(
         id: "SDA0201",
-        title: "Duplicate [Name] on parameters or properties",
-        messageFormat: "Multiple parameters or properties share the same [Name]. method=[{0}], name=[{1}].",
+        title: "Duplicate [Name]",
+        messageFormat: "Multiple members share the same [Name]. method=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectSqlFirstParamNotString = new(
+    public static DiagnosticDescriptor DirectSqlFirstParamNotString { get; } = new(
         id: "SDA0202",
-        title: "[DirectSql] method first parameter must be string",
-        messageFormat: "[DirectSql] requires the first parameter (after conn/tx/CancellationToken) to be `string` for the command text. method=[{0}].",
+        title: "Invalid [DirectSql] first parameter",
+        messageFormat: "First parameter must be string. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ProcedureNameEmpty = new(
+    public static DiagnosticDescriptor ProcedureNameEmpty { get; } = new(
         id: "SDA0203",
-        title: "[Procedure] stored procedure name is empty",
-        messageFormat: "[Procedure] has an empty stored procedure name. method=[{0}].",
+        title: "[Procedure] name is empty",
+        messageFormat: "[Procedure] has an empty name. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor AsyncProcedureRefParam = new(
+    public static DiagnosticDescriptor AsyncProcedureRefParam { get; } = new(
         id: "SDA0204",
-        title: "async [Procedure] cannot use out/ref parameters",
-        messageFormat: "async [Procedure] cannot use an out/ref parameter; switch to a synchronous method or POCO aggregation. method=[{0}], parameter=[{1}].",
+        title: "async [Procedure] with out/ref parameter",
+        messageFormat: "async [Procedure] cannot use out/ref. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DbTypeAttributeConflict = new(
+    public static DiagnosticDescriptor DbTypeAttributeConflict { get; } = new(
         id: "SDA0205",
-        title: "Conflicting [DbType] / [DbType<TEnum>] on same parameter",
-        messageFormat: "Parameter has both [DbType(DbType)] and [DbType<TEnum>], which conflict. method=[{0}], parameter=[{1}].",
+        title: "Conflicting [DbType] attributes",
+        messageFormat: "[DbType] and [DbType<TEnum>] conflict. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DbTypeProviderEnumNotWhitelisted = new(
+    public static DiagnosticDescriptor DbTypeProviderEnumNotWhitelisted { get; } = new(
         id: "SDA0206",
-        title: "[DbType<TEnum>] TEnum is not in the provider enum whitelist",
-        messageFormat: "Parameter uses [DbType<{2}>] where TEnum is not in the provider enum whitelist; the provider-specific DbType assignment will be skipped. method=[{0}], parameter=[{1}].",
+        title: "TEnum is not whitelisted",
+        messageFormat: "TEnum [{2}] is not in the provider whitelist. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectionRefKindMismatch = new(
+    public static DiagnosticDescriptor DirectionRefKindMismatch { get; } = new(
         id: "SDA0207",
-        title: "[Direction] conflicts with the parameter modifier",
-        messageFormat: "[Direction({2})] conflicts with the parameter modifier '{3}'. method=[{0}], parameter=[{1}].",
+        title: "[Direction] conflicts with the modifier",
+        messageFormat: "[Direction({2})] conflicts with '{3}'. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectionOnUnsupportedMethod = new(
+    public static DiagnosticDescriptor DirectionOnUnsupportedMethod { get; } = new(
         id: "SDA0208",
-        title: "[Direction] used on unsupported method kind",
-        messageFormat: "Parameter has [Direction] but the method is not [Procedure] / [Execute] / [DirectSql]. method=[{0}], parameter=[{1}].",
+        title: "[Direction] on unsupported method",
+        messageFormat: "Method kind does not support [Direction]. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ReturnValueDirectionNotAllowed = new(
+    public static DiagnosticDescriptor ReturnValueDirectionNotAllowed { get; } = new(
         id: "SDA0209",
-        title: "[Direction(ReturnValue)] is not supported",
-        messageFormat: "Parameter cannot use [Direction(ReturnValue)]; the stored procedure RETURN value maps to the method's scalar return value. method=[{0}], parameter=[{1}].",
+        title: "[Direction(ReturnValue)] not supported",
+        messageFormat: "[Direction(ReturnValue)] is not supported. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectSqlCommandTextDirection = new(
+    public static DiagnosticDescriptor DirectSqlCommandTextDirection { get; } = new(
         id: "SDA0210",
-        title: "[Direction] not allowed on [DirectSql] command-text parameter",
-        messageFormat: "The command-text string parameter on a [DirectSql] method cannot be annotated with [Direction]. method=[{0}], parameter=[{1}].",
+        title: "[Direction] on command-text parameter",
+        messageFormat: "[Direction] is not allowed here. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlTextEmpty = new(
+    public static DiagnosticDescriptor SqlTextEmpty { get; } = new(
         id: "SDA0211",
         title: "[Sql] text is empty",
-        messageFormat: "[Sql] has an empty SQL text. method=[{0}].",
+        messageFormat: "[Sql] has an empty SQL text. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -303,100 +303,100 @@ internal static class Diagnostics
     // FromDb/ToDb (implicit interface implementation) so `TConverter.FromDb(...)` binds.
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor UnsupportedReturn = new(
+    public static DiagnosticDescriptor UnsupportedReturn { get; } = new(
         id: "SDA0301",
         title: "Unsupported return type",
-        messageFormat: "Return type is not supported. method=[{0}], type=[{1}].",
+        messageFormat: "Return type is not supported. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ExecuteReturnInvalid = new(
+    public static DiagnosticDescriptor ExecuteReturnInvalid { get; } = new(
         id: "SDA0302",
-        title: "[Execute] return type must be int/void/Task<int>/Task",
-        messageFormat: "[Execute] return type is not one of int/void/Task<int>/Task/ValueTask<int>/ValueTask. method=[{0}], type=[{1}].",
+        title: "Invalid [Execute] return type",
+        messageFormat: "[Execute] return type is not supported. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ExecuteReaderInvalidReturn = new(
+    public static DiagnosticDescriptor ExecuteReaderInvalidReturn { get; } = new(
         id: "SDA0303",
-        title: "[ExecuteReader] return type is not a reader",
-        messageFormat: "[ExecuteReader] return type is not IDataReader / DbDataReader / Task<...> / ValueTask<...>. method=[{0}], type=[{1}].",
+        title: "Invalid [ExecuteReader] return type",
+        messageFormat: "Return type is not a data reader. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ExecuteReaderRequiresUsing = new(
+    public static DiagnosticDescriptor ExecuteReaderRequiresUsing { get; } = new(
         id: "SDA0304",
-        title: "[ExecuteReader] result must be disposed by the caller",
-        messageFormat: "[ExecuteReader] returns a reader that owns its command (and connection for Pattern B); callers must dispose it with `using`. method=[{0}].",
+        title: "[ExecuteReader] result needs disposal",
+        messageFormat: "Caller must dispose the returned reader. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor AsyncEnumerableMissingEnumeratorCancellation = new(
+    public static DiagnosticDescriptor AsyncEnumerableMissingEnumeratorCancellation { get; } = new(
         id: "SDA0305",
-        title: "IAsyncEnumerable method requires [EnumeratorCancellation] CancellationToken",
-        messageFormat: "IAsyncEnumerable<T> method should declare a CancellationToken parameter annotated with [EnumeratorCancellation]. method=[{0}].",
+        title: "Missing [EnumeratorCancellation]",
+        messageFormat: "[EnumeratorCancellation] is missing. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor RecordPrimaryConstructorPath = new(
+    public static DiagnosticDescriptor RecordPrimaryConstructorPath { get; } = new(
         id: "SDA0306",
-        title: "Record entity is mapped via primary constructor",
-        messageFormat: "Entity record is mapped via its primary constructor (positional binding). method=[{0}], type=[{1}].",
+        title: "Record mapped via primary constructor",
+        messageFormat: "Entity record uses positional binding. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor NonNullableDbNull = new(
+    public static DiagnosticDescriptor NonNullableDbNull { get; } = new(
         id: "SDA0307",
-        title: "Non-nullable property may receive DB NULL",
-        messageFormat: "Property is a non-nullable reference type; DB NULL will fall through as default! (null). method=[{0}], property=[{1}].",
+        title: "Non-nullable property may get NULL",
+        messageFormat: "Non-nullable property may receive DB NULL. method=[{0}], property=[{1}]",
         category: "Mapping",
         // Info: advisory only. As a warning it would fire on nearly every non-nullable
         // reference-type column and conflict with the project's zero-warning policy.
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ConverterTClrMismatch = new(
+    public static DiagnosticDescriptor ConverterTClrMismatch { get; } = new(
         id: "SDA0308",
-        title: "Converter TClr does not match property type",
-        messageFormat: "Converter declares a TClr that does not match the property type. method=[{0}], property=[{1}].",
+        title: "Converter TClr mismatch",
+        messageFormat: "Converter TClr does not match the property. method=[{0}], property=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ConverterNotIValueConverter = new(
+    public static DiagnosticDescriptor ConverterNotIValueConverter { get; } = new(
         id: "SDA0309",
-        title: "Converter type does not implement IValueConverter<,>",
-        messageFormat: "Converter type does not implement IValueConverter<TDb, TClr>. method=[{0}], type=[{1}].",
+        title: "Invalid converter type",
+        messageFormat: "Type does not implement IValueConverter<,>. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ConverterStaticAbstractMissing = new(
+    public static DiagnosticDescriptor ConverterStaticAbstractMissing { get; } = new(
         id: "SDA0310",
-        title: "Converter type missing static abstract implementation",
-        messageFormat: "Converter type does not provide a static implementation of FromDb/ToDb. method=[{0}], type=[{1}].",
+        title: "Converter implementation is missing",
+        messageFormat: "Static FromDb/ToDb implementation is missing. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor TypeHandlerDuplicated = new(
+    public static DiagnosticDescriptor TypeHandlerDuplicated { get; } = new(
         id: "SDA0311",
         title: "Multiple [TypeHandler] on same property",
-        messageFormat: "Property has multiple [TypeHandler<>] attributes; only one converter is honored. method=[{0}], property=[{1}].",
+        messageFormat: "Only one [TypeHandler<>] is honored. method=[{0}], property=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor QueryElementHasNoMappableColumns = new(
+    public static DiagnosticDescriptor QueryElementHasNoMappableColumns { get; } = new(
         id: "SDA0312",
-        title: "Query element type has no mappable columns",
-        messageFormat: "Query element type has no mappable columns (public settable/init property or record primary-constructor parameter). method=[{0}], type=[{1}].",
+        title: "No mappable columns",
+        messageFormat: "Query element type has no mappable column. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -405,50 +405,50 @@ internal static class Diagnostics
     // SDA04xx — SQL-file resolution
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor SqlNotFound = new(
+    public static DiagnosticDescriptor SqlNotFound { get; } = new(
         id: "SDA0401",
         title: "SQL file not found",
-        messageFormat: "Neither a SQL file nor a Builder is specified; an additional file is expected. method=[{0}], file=[{1}].",
+        messageFormat: "Neither a SQL file nor a Builder is specified. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlFileNameCollision = new(
+    public static DiagnosticDescriptor SqlFileNameCollision { get; } = new(
         id: "SDA0402",
         title: "SQL file name collision",
-        messageFormat: "Multiple SQL files resolve to the same logical name. method=[{0}], name=[{1}].",
+        messageFormat: "Multiple SQL files resolve to one name. method=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor DirectSqlHasSqlFile = new(
+    public static DiagnosticDescriptor DirectSqlHasSqlFile { get; } = new(
         id: "SDA0403",
-        title: "[DirectSql] method must not have a corresponding SQL file",
-        messageFormat: "[DirectSql] method must not have a corresponding SQL file. method=[{0}], file=[{1}].",
+        title: "[DirectSql] has a SQL file",
+        messageFormat: "[DirectSql] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor ProcedureHasSqlFile = new(
+    public static DiagnosticDescriptor ProcedureHasSqlFile { get; } = new(
         id: "SDA0404",
-        title: "[Procedure] method must not have a corresponding SQL file",
-        messageFormat: "[Procedure] is set but a corresponding SQL file also exists. method=[{0}], file=[{1}].",
+        title: "[Procedure] has a SQL file",
+        messageFormat: "[Procedure] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor BuilderAndSqlBothPresent = new(
+    public static DiagnosticDescriptor BuilderAndSqlBothPresent { get; } = new(
         id: "SDA0405",
-        title: "Both SQL file and a QueryBuilder attribute are present",
-        messageFormat: "Both a SQL file and a QueryBuilder attribute ([Insert]/[Update]/…) are present; resolution is ambiguous. method=[{0}], file=[{1}].",
+        title: "SQL file conflicts with QueryBuilder",
+        messageFormat: "SQL file and QueryBuilder are both present. method=[{0}], file=[{1}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlHasSqlFile = new(
+    public static DiagnosticDescriptor SqlHasSqlFile { get; } = new(
         id: "SDA0406",
-        title: "[Sql] method must not have a corresponding SQL file",
-        messageFormat: "[Sql] is set but a corresponding SQL file also exists. method=[{0}], file=[{1}].",
+        title: "[Sql] has a SQL file",
+        messageFormat: "[Sql] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -457,82 +457,82 @@ internal static class Diagnostics
     // SDA05xx — 2-way SQL parse
     // ==================================================================
 
-    public static readonly DiagnosticDescriptor SqlTokenizeFailed = new(
+    public static DiagnosticDescriptor SqlTokenizeFailed { get; } = new(
         id: "SDA0501",
         title: "Failed to tokenize SQL",
-        messageFormat: "Failed to tokenize SQL. method=[{0}], detail=[{1}].",
+        messageFormat: "SQL could not be tokenized. method=[{0}], detail=[{1}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlEmpty = new(
+    public static DiagnosticDescriptor SqlEmpty { get; } = new(
         id: "SDA0502",
         title: "SQL is empty",
-        messageFormat: "SQL is empty. method=[{0}].",
+        messageFormat: "SQL text is empty. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlCommentNotClosed = new(
+    public static DiagnosticDescriptor SqlCommentNotClosed { get; } = new(
         id: "SDA0503",
         title: "SQL comment is not closed",
-        messageFormat: "A SQL comment is not closed. method=[{0}].",
+        messageFormat: "A SQL comment is not closed. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlQuoteNotClosed = new(
+    public static DiagnosticDescriptor SqlQuoteNotClosed { get; } = new(
         id: "SDA0504",
         title: "SQL quote is not closed",
-        messageFormat: "A SQL string literal quote is not closed. method=[{0}].",
+        messageFormat: "A SQL string literal quote is not closed. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlUnknownPragma = new(
+    public static DiagnosticDescriptor SqlUnknownPragma { get; } = new(
         id: "SDA0505",
         title: "Unknown SQL pragma",
-        messageFormat: "Unknown SQL pragma '/*!{1} */'; expected '!helper' or '!using'. method=[{0}].",
+        messageFormat: "Unknown SQL pragma '/*!{1} */'. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlCodeBlockBraceUnclosed = new(
+    public static DiagnosticDescriptor SqlCodeBlockBraceUnclosed { get; } = new(
         id: "SDA0506",
         title: "SQL code block has an unclosed brace",
-        messageFormat: "A /*% %/ code block opens a '{{' that is never closed; balance the braces across the code blocks. method=[{0}].",
+        messageFormat: "Code block has an unclosed brace. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlCodeBlockBraceExtraClose = new(
+    public static DiagnosticDescriptor SqlCodeBlockBraceExtraClose { get; } = new(
         id: "SDA0507",
-        title: "SQL code block has an unmatched closing brace",
-        messageFormat: "A /*% %/ code block has a '}}' with no matching '{{'; balance the braces across the code blocks. method=[{0}].",
+        title: "SQL code block has an extra brace",
+        messageFormat: "Code block has an unmatched closing brace. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor UndefinedSqlParameter = new(
+    public static DiagnosticDescriptor UndefinedSqlParameter { get; } = new(
         id: "SDA0508",
-        title: "SQL parameter does not match method parameters",
-        messageFormat: "SQL parameter '@{1}' is not defined as a method parameter. method=[{0}].",
+        title: "Undefined SQL parameter",
+        messageFormat: "SQL parameter '@{1}' is not a method parameter. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor UnusedMethodParameter = new(
+    public static DiagnosticDescriptor UnusedMethodParameter { get; } = new(
         id: "SDA0509",
         title: "Method parameter is unused in SQL",
-        messageFormat: "Method parameter is declared but never referenced in SQL. method=[{0}], parameter=[{1}].",
+        messageFormat: "Method parameter is never used in SQL. method=[{0}], parameter=[{1}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor SqlPropertyNotFound = new(
+    public static DiagnosticDescriptor SqlPropertyNotFound { get; } = new(
         id: "SDA0510",
-        title: "SQL property accessor does not match a property",
-        messageFormat: "/*@ {1}.{2} */ references a property that is not declared on the parameter. method=[{0}], parameter=[{1}], property=[{2}], type=[{3}].",
+        title: "SQL property is not found",
+        messageFormat: "Referenced property is not declared. method=[{0}], parameter=[{1}], property=[{2}], type=[{3}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
