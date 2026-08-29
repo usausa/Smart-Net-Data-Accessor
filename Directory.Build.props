@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>3.0.0-beta6</Version>
+    <Version>3.0.0-beta7</Version>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
