@@ -322,11 +322,37 @@ internal static class OracleSourceBuilder
   `ClassScanner`/`MethodResolver` automatically.
 - **Provider-specific diagnostics use your own ID prefix** (e.g. `ORA0001`). The `SDA` band is
   managed by the core and bundled providers — do not use it.
+- **Declare every `DiagnosticDescriptor` as a property.**
+
+  ```csharp
+  public  static          DiagnosticDescriptor InvalidTable { get; } = new(  // OK
+  private static readonly DiagnosticDescriptor InvalidTable = new(           // NG
+  ```
+
+  A field initializer brings the descriptor into scope for the `Microsoft.CodeAnalysis.Analyzers`
+  descriptor checks (RS1032 / RS2008); a property initializer does not, so no ruleset suppression
+  is needed. What decides this is the declaration form, not whether a `DiagnosticAnalyzer` exists.
+- Keep the wording in this shape.
+
+  | Field | Convention |
+  | --- | --- |
+  | `title` | A short label, 40 characters or fewer, no trailing period |
+  | `messageFormat` | One sentence stating the symptom only, prefixed with `[Xxx]` when an attribute marks the target, no trailing period |
+  | `description` / `helpLinkUri` | Unused |
+
+  ```csharp
+  messageFormat: "[OracleInsert] table name is required. method=[{0}]",
+  ```
+
+  Parameters go at the end as `name=[{0}]`, separated from the body by `. `.
+  Do not put the fix into `messageFormat`; it belongs in the documentation.
+- Document the fixes in a `Diagnostics.md` at the repository root, as a
+  `| ID | Severity | Description | How to fix |` table. Do not keep a table or a link in README.
+  Every attribute named in `messageFormat` must also appear in the Description or How to fix column.
 - This repository does **not** use the AnalyzerReleases ledger (the RS2008-family release
-  tracking): diagnostics are reported from the incremental source generators, not from
-  `DiagnosticAnalyzer` types, so RS2008 never triggers and no ledger files are needed. If you add
-  `DiagnosticAnalyzer`-based rules and want release tracking, add your own
-  `AnalyzerReleases.Shipped/Unshipped.md` as `<AdditionalFiles>`.
+  tracking): with the property declaration above RS2008 never triggers and no ledger files are
+  needed. If you want release tracking, add your own `AnalyzerReleases.Shipped/Unshipped.md` as
+  `<AdditionalFiles>`.
 
 ### Step 7 — tests
 
@@ -393,6 +419,11 @@ internal static class OracleSourceBuilder
 - [ ] `{Method}__QueryBuilder(ref BuilderContext context, ...)` generated through the shared `SqlEmit`
 - [ ] Models are internal, equatable, symbol-free (`WithTrackingName` wired)
 - [ ] Own diagnostic prefix (gap-free sequential numbering within each band)
+- [ ] Descriptors declared as properties (a field is analysed by RS1032 / RS2008)
+- [ ] `title` 40 chars or fewer, `messageFormat` states the symptom only, no trailing
+      period, prefixed with `[Xxx]` when an attribute marks the target
+- [ ] `Diagnostics.md` at the repository root, and every attribute in `messageFormat`
+      also appears in the table
 - [ ] Green across the four layers: harness / functional (Mock) / real DB / AOT
 - [ ] `--no-incremental` clean build with 0 warnings
 - [ ] NuGet ships the generator dll + `SourceGenerateHelper.dll` under `analyzers/dotnet/cs`;

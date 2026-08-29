@@ -299,9 +299,35 @@ internal static class OracleSourceBuilder
   `BuilderDiagnostics`（共有ソース）にあり、`ClassScanner`/`MethodResolver` が自動で出す。
 - **プロバイダ固有の診断はサードパーティ独自の ID プレフィックス**（例：`ORA0001`）で自前定義する。
   `SDA` 帯はコア/同梱プロバイダが採番管理しているため使わない。
+- **`DiagnosticDescriptor` はプロパティ形式で宣言する。**
+
+  ```csharp
+  public  static          DiagnosticDescriptor InvalidTable { get; } = new(  // ○
+  private static readonly DiagnosticDescriptor InvalidTable = new(           // ×
+  ```
+
+  フィールド初期化子で宣言すると `Microsoft.CodeAnalysis.Analyzers` の記述子検査（RS1032 / RS2008）が
+  解析対象に含める。プロパティ初期化子は対象外になるため、ruleset での抑止が不要になる。
+  `DiagnosticAnalyzer` 型の有無ではなくこの宣言形式で挙動が決まる点に注意。
+- 文言は次の形に揃える。
+
+  | フィールド | 規約 |
+  | --- | --- |
+  | `title` | 短いラベル。40字以内、末尾ピリオドなし |
+  | `messageFormat` | 現象のみを1文。対象を示す属性があれば先頭に `[Xxx]`。末尾ピリオドなし |
+  | `description` / `helpLinkUri` | 使わない |
+
+  ```csharp
+  messageFormat: "[OracleInsert] table name is required. method=[{0}]",
+  ```
+
+  パラメータは末尾に `name=[{0}]` 形式で並べ、本文とは `. ` で区切る。
+  対処方法は messageFormat に書かず、ドキュメントへ回す。
+- 対処方法はリポジトリ直下の `Diagnostics.md` に `| ID | Severity | Description | How to fix |` の
+  表で書く。README には表もリンクも置かない。messageFormat に書いた属性名は
+  Description か How to fix にも必ず現れるようにする。
 - 本リポジトリは AnalyzerReleases 台帳（RS2008 系のリリース追跡）を**不採用**にしている。
-  診断はインクリメンタル Source Generator から報告し `DiagnosticAnalyzer` 型を持たないため、
-  RS2008 はそもそも発火せず台帳ファイルも不要。`DiagnosticAnalyzer` ベースの規則を追加して
+  上のプロパティ形式で宣言していれば RS2008 は発火せず、台帳ファイルも不要。
   リリース追跡を使いたい場合は各自で `AnalyzerReleases.Shipped/Unshipped.md` を
   `<AdditionalFiles>` に載せればよい。
 
@@ -368,6 +394,9 @@ internal static class OracleSourceBuilder
 - [ ] `{Method}__QueryBuilder(ref BuilderContext context, ...)` 契約は共有 `SqlEmit` 経由で生成
 - [ ] Model は internal・equatable・シンボル非混入（`WithTrackingName` 済み）
 - [ ] 診断は独自プレフィックス（帯域内は欠番なしの連番）
+- [ ] 診断はプロパティ形式で宣言（フィールドだと RS1032 / RS2008 の検査対象になる）
+- [ ] title 40字以内・messageFormat は現象のみ・末尾ピリオドなし・対象属性は先頭に `[Xxx]`
+- [ ] リポジトリ直下に `Diagnostics.md` があり、messageFormat の属性名が表にも現れる
 - [ ] ハーネス／機能（Mock）／実 DB／AOT の 4 層で green
 - [ ] `--no-incremental` clean build 0 warning
 - [ ] NuGet に `analyzers/dotnet/cs` としてジェネレータ dll＋`SourceGenerateHelper.dll` を同梱、

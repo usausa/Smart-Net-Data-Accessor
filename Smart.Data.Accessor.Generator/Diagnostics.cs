@@ -21,7 +21,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor InvalidClass { get; } = new(
         id: "SDA0001",
         title: "Invalid DataAccessor class",
-        messageFormat: "Class must be declared as partial. class=[{0}]",
+        messageFormat: "[DataAccessor] class must be partial. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -29,7 +29,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor DataAccessorClassNested { get; } = new(
         id: "SDA0002",
         title: "[DataAccessor] class must not be nested",
-        messageFormat: "Class must not be nested. class=[{0}]",
+        messageFormat: "[DataAccessor] class must not be nested. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -37,7 +37,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor DataAccessorClassGeneric { get; } = new(
         id: "SDA0003",
         title: "[DataAccessor] class must not be generic",
-        messageFormat: "Class must not be generic. class=[{0}]",
+        messageFormat: "[DataAccessor] class must not be generic. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -53,7 +53,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor InjectNameConflictsWithMember { get; } = new(
         id: "SDA0005",
         title: "[Inject] Name conflicts with a member",
-        messageFormat: "Name conflicts with an existing member. class=[{0}], name=[{1}]",
+        messageFormat: "[Inject] Name conflicts with an existing member. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -61,7 +61,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor InjectTypeNotResolvable { get; } = new(
         id: "SDA0006",
         title: "[Inject] Type may not resolve",
-        messageFormat: "Type may not resolve from IServiceProvider. class=[{0}], type=[{1}], name=[{2}]",
+        messageFormat: "[Inject] type may not resolve from IServiceProvider. class=[{0}], type=[{1}], name=[{2}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -85,7 +85,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor ProviderOnPatternAOnlyAccessor { get; } = new(
         id: "SDA0009",
         title: "[Provider] has no effect",
-        messageFormat: "Accessor has no Pattern B method. class=[{0}], name=[{1}]",
+        messageFormat: "[Provider] is set but there is no Pattern B method. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
@@ -111,7 +111,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor NamingValueUndefined { get; } = new(
         id: "SDA0012",
         title: "Undefined NamingConvention value",
-        messageFormat: "NamingConvention value is undefined. value=[{0}]",
+        messageFormat: "[Naming] value is not a defined NamingConvention. value=[{0}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -123,7 +123,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor InvalidMethod { get; } = new(
         id: "SDA0101",
         title: "Invalid DataAccessor method",
-        messageFormat: "Method must be a partial declaration. method=[{0}]",
+        messageFormat: "[DataAccessor] method must be partial. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -217,7 +217,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor DirectSqlFirstParamNotString { get; } = new(
         id: "SDA0202",
         title: "Invalid [DirectSql] first parameter",
-        messageFormat: "First parameter must be string. method=[{0}]",
+        messageFormat: "[DirectSql] first parameter must be string. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -249,7 +249,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor DbTypeProviderEnumNotWhitelisted { get; } = new(
         id: "SDA0206",
         title: "TEnum is not whitelisted",
-        messageFormat: "TEnum [{2}] is not in the provider whitelist. method=[{0}], parameter=[{1}]",
+        messageFormat: "[DbType<{2}>] TEnum is not in the provider whitelist. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -322,7 +322,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor ExecuteReaderInvalidReturn { get; } = new(
         id: "SDA0303",
         title: "Invalid [ExecuteReader] return type",
-        messageFormat: "Return type is not a data reader. method=[{0}], type=[{1}]",
+        messageFormat: "[ExecuteReader] return type is not a data reader. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -330,7 +330,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor ExecuteReaderRequiresUsing { get; } = new(
         id: "SDA0304",
         title: "[ExecuteReader] result needs disposal",
-        messageFormat: "Caller must dispose the returned reader. method=[{0}]",
+        messageFormat: "[ExecuteReader] result must be disposed by the caller. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);

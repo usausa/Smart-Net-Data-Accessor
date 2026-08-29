@@ -11,7 +11,7 @@ internal static class BuilderDiagnostics
     public static DiagnosticDescriptor InvalidContainer { get; } = new(
         id: "SDA1001",
         title: "Invalid container class",
-        messageFormat: "Container class must be partial. class=[{0}]",
+        messageFormat: "QueryBuilder attribute requires a partial class. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

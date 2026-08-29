@@ -40,7 +40,7 @@
 | SDA0203 | ⚠️ Warning | `[Procedure]` has an empty stored procedure name | Give `[Procedure]` a stored procedure name |
 | SDA0204 | ❌ Error | async `[Procedure]` uses an `out`/`ref` parameter | Switch to a synchronous method, or aggregate into a POCO |
 | SDA0205 | ❌ Error | Parameter has both `[DbType(DbType)]` and `[DbType<TEnum>]` | Leave a single `[DbType]` attribute |
-| SDA0206 | ⚠️ Warning | `TEnum` is not in the provider enum whitelist, so the provider-specific `DbType` assignment is skipped | Use a whitelisted provider enum |
+| SDA0206 | ⚠️ Warning | `[DbType<TEnum>]` `TEnum` is not in the provider enum whitelist, so the provider-specific `DbType` assignment is skipped | Use a whitelisted provider enum |
 | SDA0207 | ❌ Error | `[Direction]` conflicts with the parameter modifier | Align `[Direction]` with the `out`/`ref` modifier |
 | SDA0208 | ❌ Error | Parameter has `[Direction]` but the method is not `[Procedure]` / `[Execute]` / `[DirectSql]` | Remove `[Direction]`, or change the execution kind |
 | SDA0209 | ❌ Error | `[Direction(ReturnValue)]` is not supported; the stored procedure RETURN value maps to the scalar return value of the method | Remove `[Direction(ReturnValue)]` and use the return value |
