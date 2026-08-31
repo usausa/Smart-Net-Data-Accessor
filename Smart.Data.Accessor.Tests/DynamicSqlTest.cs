@@ -25,7 +25,7 @@ public sealed class DynamicSqlTest
         accessor.QueryByOptionalId(con, null);
 
         Assert.NotNull(captured);
-        Assert.DoesNotContain("WHERE", captured!, StringComparison.Ordinal);
+        Assert.DoesNotContain("WHERE", captured, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class DynamicSqlTest
         accessor.QueryByOptionalId(con, 5);
 
         Assert.NotNull(captured);
-        Assert.Contains("WHERE Id >= @p0", captured!, StringComparison.Ordinal);
+        Assert.Contains("WHERE Id >= @p0", captured, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public sealed class DynamicSqlTest
         accessor.QueryByIds(con, [1L, 2L, 3L]);
 
         Assert.NotNull(captured);
-        Assert.Contains("@p0_0", captured!, StringComparison.Ordinal);
-        Assert.Contains("@p0_2", captured!, StringComparison.Ordinal);
+        Assert.Contains("@p0_0", captured, StringComparison.Ordinal);
+        Assert.Contains("@p0_2", captured, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -83,6 +83,6 @@ public sealed class DynamicSqlTest
         accessor.QueryByIds(con, Array.Empty<long>());
 
         Assert.NotNull(captured);
-        Assert.Contains("(NULL)", captured!, StringComparison.Ordinal);
+        Assert.Contains("(NULL)", captured, StringComparison.Ordinal);
     }
 }

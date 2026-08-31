@@ -37,6 +37,7 @@ public class BenchmarkConfig : ManualConfig
 }
 
 #pragma warning disable CA1001
+#pragma warning disable CA1002
 [Config(typeof(BenchmarkConfig))]
 public class QueryBenchmark
 {
@@ -240,4 +241,5 @@ public class QueryBenchmark
         return list;
     }
 }
+#pragma warning restore CA1002
 #pragma warning restore CA1001

@@ -13,6 +13,7 @@ internal sealed record PocoBindProperty(
     string? EnumUnderlyingFullName,
     bool IsNullableEnum,
     string HandleName,                 // __op_{ArgName}_{PropertyName} for Output / InputOutput
+
     // when set, input is written via TConverter.ToDb and OUT read as ConverterDbTypeFullName (= TDb)
     // then TConverter.FromDb. ConverterClrTypeFullName (= TClr) + ConverterDbTypeFullName feed
     // ExecuteHelper.AddInParameter<TConverter,TDb,TClr>. ConverterValueIsNullable adds a HasValue

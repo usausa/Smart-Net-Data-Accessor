@@ -143,6 +143,7 @@ public sealed class ExecuteHelperTest
 
     // ---- AddInParameters (IN-list expansion) ----
 
+#pragma warning disable CA1861
     [Fact]
     public void AddInParametersExpandsListValuesIntoMarkers()
     {
@@ -156,6 +157,7 @@ public sealed class ExecuteHelperTest
         Assert.Equal("(@p_0,@p_1,@p_2)", sb.ToString());
         Assert.Equal(3, cmd.Parameters.Count);
     }
+#pragma warning restore CA1861
 
     [Fact]
     public void AddInParametersExpandsEnumerableValuesIntoMarkers()

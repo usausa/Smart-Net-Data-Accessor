@@ -454,6 +454,7 @@ internal static class AccessorSourceBuilder
     // Emit one method's partial implementation in order: the OrdinalCache struct, the signature, connection acquisition
     // (Pattern A/B), (for reader shapes) a try/catch that safely disposes cmd/connection, SQL + parameter setup, the
     // invocation, and (for non-reader shapes) cleanup.
+#pragma warning disable CA1861
     private static void EmitMethod(SourceBuilder builder, MethodModel method, string? providerName, MappingSet? mapping)
     {
         var paramList = String.Join(", ", method.Parameters.Select(x =>
@@ -680,6 +681,7 @@ internal static class AccessorSourceBuilder
 
         builder.EndScope();
     }
+#pragma warning restore CA1861
 
     // [DirectSql] のセットアップを出力する。第 1 引数(string)を cmd.CommandText に代入し、残りの引数をパラメータとして束縛する
     // (POCO 引数はプロパティ毎に展開、OUT/InOut はハンドル経由)。
@@ -1467,7 +1469,9 @@ internal static class AccessorSourceBuilder
     // design judgment based on the microbenchmark's worst-shape comparison, not an E2E-validated optimum; the real
     // wins are shape independence and simpler generated code (no static dictionary, no type initializer). Do not
     // expect a step or two of threshold movement to produce a measurable difference.)
+#pragma warning disable SA1203
     private const int NarrowOrdinalGroupThreshold = 16;
+#pragma warning restore SA1203
 
     // サンプリングハッシュが読む文字位置の候補。length >= 1 のあらゆる文字列で範囲内に収まる式だけを並べる
     // （`__length - 2` のような式は length == 1 で負になるため候補にしない）。
@@ -1675,7 +1679,7 @@ internal static class AccessorSourceBuilder
         // switch 形が確定した場合しか使わないため、直比較経路では計算しない。
         // The match method's name can also collide with a field (= property) name; choose it per set (like __From).
         // It is only needed once the switch form is decided, so the direct path does not compute it.
-        var matchMethodName = useDirectComparison ? String.Empty : UniqueStructMemberName("__Match", columns);
+        var matchMethodName = useDirectComparison ? string.Empty : UniqueStructMemberName("__Match", columns);
 
         builder.Indent().Append("private readonly struct ").Append(ordinalsName).NewLine();
         builder.BeginScope();

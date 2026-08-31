@@ -101,7 +101,10 @@ public sealed class FactoryTest
     {
         private readonly IDbProvider provider;
 
-        public FixedSelector(IDbProvider provider) => this.provider = provider;
+        public FixedSelector(IDbProvider provider)
+        {
+            this.provider = provider;
+        }
 
         public IDbProvider GetProvider(object parameter) => provider;
     }

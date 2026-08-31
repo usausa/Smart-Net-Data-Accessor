@@ -79,6 +79,7 @@ internal sealed record MethodModel(
     bool UseRecordPrimaryConstructor,  // emit `new T(name: ...)` via record primary ctor
     int? CommandTimeoutSeconds,
     EquatableArray<UsingDirective> Usings,  // /*!helper */ / /*!using */ pragmas
+
     // non-null when a [TypeHandler<>] applies to the scalar return ([return:] / method / class /
     // profile scope). The scalar is read as ScalarConverterDbTypeFullName then converted via
     // `TConverter.FromDb(...)`. Only [ExecuteScalar] (non-int) scalar shapes use this.

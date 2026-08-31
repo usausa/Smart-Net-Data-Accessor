@@ -127,6 +127,9 @@ internal static class NodeEmitter
 
         foreach (var node in nodes)
         {
+            // UsingNode is consumed by DataAccessorGenerator at the accessor level (aggregated and
+            // emitted as file-header `using` directives). Skip it here to avoid duplicating in the
+            // method body.
             switch (node)
             {
                 case SqlNode sqlNode:
@@ -246,10 +249,6 @@ internal static class NodeEmitter
                     hasDynamicSql = true;
                     sb.Append(codeNode.Code).Append('\n');
                     break;
-
-                // UsingNode is consumed by DataAccessorGenerator at the accessor level (aggregated and
-                // emitted as file-header `using` directives). Skip it here to avoid duplicating in the
-                // method body.
             }
         }
 

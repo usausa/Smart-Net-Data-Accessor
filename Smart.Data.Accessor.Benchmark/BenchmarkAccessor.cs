@@ -4,6 +4,7 @@ using System.Data.Common;
 
 using Smart.Data.Accessor.Attributes;
 
+#pragma warning disable CA1002
 [DataAccessor]
 public sealed partial class BenchmarkAccessor
 {
@@ -51,3 +52,4 @@ public sealed partial class BenchmarkAccessor
     [Query]
     public partial IReadOnlyList<BenchUIntRow> QueryUInt(DbConnection con);
 }
+#pragma warning restore CA1002
