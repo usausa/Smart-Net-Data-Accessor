@@ -33,7 +33,6 @@ public class MappingConfig : ManualConfig
 //
 // Run: dotnet run -c Release --project Smart.Data.Accessor.Benchmark -- --filter *DapperComparison*
 #pragma warning disable CA1001
-#pragma warning disable CA1002
 [Config(typeof(MappingConfig))]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
@@ -54,10 +53,10 @@ public class ComparisonBenchmark
     private MockRepeatDbConnection mockExtraWideUnmapped = default!;
     private BenchmarkAccessor accessor = default!;
 
+#pragma warning disable CA2000
     [GlobalSetup]
     public void Setup()
     {
-#pragma warning disable CA2000
         mockInt = new MockRepeatDbConnection(new MockDataReader(
             [new MockColumn(typeof(long), "Id")],
             Enumerable.Range(1, RowCount).Select(static x => new object[] { (long)x })));
@@ -98,10 +97,10 @@ public class ComparisonBenchmark
             })],
             Enumerable.Range(1, RowCount).Select(static x =>
                 ExtraWideData.Values(x).SelectMany(static v => new[] { "filler", v }).ToArray())));
-#pragma warning restore CA2000
 
         accessor = new BenchmarkAccessor();
     }
+#pragma warning restore CA2000
 
     [GlobalCleanup]
     public void Cleanup()
@@ -214,5 +213,4 @@ public class ComparisonBenchmark
 
     // Manual (直書き) baseline の実装は ManualMappers にある。
 }
-#pragma warning restore CA1002
 #pragma warning restore CA1001

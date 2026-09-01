@@ -37,7 +37,6 @@ public class BenchmarkConfig : ManualConfig
 }
 
 #pragma warning disable CA1001
-#pragma warning disable CA1002
 [Config(typeof(BenchmarkConfig))]
 public class QueryBenchmark
 {
@@ -50,10 +49,10 @@ public class QueryBenchmark
 
     private BenchmarkAccessor accessor = default!;
 
+#pragma warning disable CA2000
     [GlobalSetup]
     public void Setup()
     {
-#pragma warning disable CA2000
         mockInt = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id")
@@ -62,15 +61,9 @@ public class QueryBenchmark
             {
                 (long)x
             })));
-#pragma warning restore CA2000
-
-#pragma warning disable CA2000
         mockWide = new MockRepeatDbConnection(new MockDataReader(
             WideData.Columns(),
             Enumerable.Range(1, RowCount).Select(static x => WideData.Values(x))));
-#pragma warning restore CA2000
-
-#pragma warning disable CA2000
         mockEnum = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
@@ -83,10 +76,8 @@ public class QueryBenchmark
                 $"Name-{x}",
                 x % 4
             })));
-#pragma warning restore CA2000
 
         var baseTicks = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
-#pragma warning disable CA2000
         mockTicks = new MockRepeatDbConnection(new MockDataReader(
             [
                 new MockColumn(typeof(long), "Id"),
@@ -97,10 +88,10 @@ public class QueryBenchmark
                 (long)x,
                 baseTicks + (x * TimeSpan.TicksPerSecond)
             })));
-#pragma warning restore CA2000
 
         accessor = new BenchmarkAccessor();
     }
+#pragma warning restore CA2000
 
     [GlobalCleanup]
     public void Cleanup()
@@ -241,5 +232,4 @@ public class QueryBenchmark
         return list;
     }
 }
-#pragma warning restore CA1002
 #pragma warning restore CA1001

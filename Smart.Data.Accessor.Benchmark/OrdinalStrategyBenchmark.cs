@@ -48,10 +48,10 @@ public class OrdinalStrategyBenchmark
     private MockRepeatDbConnection mockExtraWideUnmapped = default!;
     private BenchmarkAccessor accessor = default!;
 
+#pragma warning disable CA2000
     [GlobalSetup]
     public void Setup()
     {
-#pragma warning disable CA2000
         mockInt = new MockRepeatDbConnection(new MockDataReader(
             [new MockColumn(typeof(long), "Id")],
             Enumerable.Range(1, RowCount).Select(static x => new object[] { (long)x })));
@@ -72,10 +72,10 @@ public class OrdinalStrategyBenchmark
             })],
             Enumerable.Range(1, RowCount).Select(static x =>
                 ExtraWideData.Values(x).SelectMany(static v => new[] { "filler", v }).ToArray())));
-#pragma warning restore CA2000
 
         accessor = new BenchmarkAccessor();
     }
+#pragma warning restore CA2000
 
     [GlobalCleanup]
     public void Cleanup()

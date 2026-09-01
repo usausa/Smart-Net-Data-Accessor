@@ -1469,9 +1469,7 @@ internal static class AccessorSourceBuilder
     // design judgment based on the microbenchmark's worst-shape comparison, not an E2E-validated optimum; the real
     // wins are shape independence and simpler generated code (no static dictionary, no type initializer). Do not
     // expect a step or two of threshold movement to produce a measurable difference.)
-#pragma warning disable SA1203
     private const int NarrowOrdinalGroupThreshold = 16;
-#pragma warning restore SA1203
 
     // サンプリングハッシュが読む文字位置の候補。length >= 1 のあらゆる文字列で範囲内に収まる式だけを並べる
     // （`__length - 2` のような式は length == 1 で負になるため候補にしない）。
