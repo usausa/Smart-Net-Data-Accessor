@@ -7,6 +7,7 @@ using Smart.Mock.Data;
 
 using Xunit;
 
+// ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
 public sealed class ExecuteTest
 {
     [Fact]

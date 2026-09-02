@@ -277,6 +277,8 @@ public static class ExecuteHelper
     {
         public static readonly Type Target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
 
+#pragma warning disable CA1000
         public static readonly bool IsEnum = Target.IsEnum;
+#pragma warning restore CA1000
     }
 }
