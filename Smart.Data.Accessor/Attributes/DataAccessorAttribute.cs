@@ -4,6 +4,4 @@ using System.Diagnostics.CodeAnalysis;
 
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class DataAccessorAttribute : Attribute
-{
-}
+public sealed class DataAccessorAttribute : Attribute;

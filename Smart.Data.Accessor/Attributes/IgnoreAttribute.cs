@@ -4,6 +4,4 @@ using System.Diagnostics.CodeAnalysis;
 
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public sealed class IgnoreAttribute : Attribute
-{
-}
+public sealed class IgnoreAttribute : Attribute;

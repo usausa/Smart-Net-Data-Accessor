@@ -35,9 +35,7 @@ internal sealed partial class MethodScopeConverterAccessor
 // is the lowest resolution scope and applies to the accessor's DateTime mapping.
 [AccessorProfile]
 [TypeHandler(typeof(TicksConverter))]
-internal static class TestConverterProfile
-{
-}
+internal static class TestConverterProfile;
 
 [DataAccessor]
 [ExecuteConfig(typeof(TestConverterProfile))]

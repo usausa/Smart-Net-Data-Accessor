@@ -6,6 +6,4 @@ using System.Diagnostics.CodeAnalysis;
 // [Procedure], or a QueryBuilder-derived attribute such as [Insert]).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class ExecuteAttribute : Attribute
-{
-}
+public sealed class ExecuteAttribute : Attribute;

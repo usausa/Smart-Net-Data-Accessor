@@ -8,6 +8,4 @@ using System.Diagnostics.CodeAnalysis;
 // (EntityType / Table) it needs.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public abstract class QueryBuilderAttribute : Attribute
-{
-}
+public abstract class QueryBuilderAttribute : Attribute;

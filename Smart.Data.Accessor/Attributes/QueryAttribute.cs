@@ -6,6 +6,4 @@ using System.Diagnostics.CodeAnalysis;
 // QueryBuilder-derived attribute such as [Select]).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class QueryAttribute : Attribute
-{
-}
+public sealed class QueryAttribute : Attribute;

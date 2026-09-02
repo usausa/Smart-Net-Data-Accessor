@@ -7,6 +7,4 @@ using System.Diagnostics.CodeAnalysis;
 // explicit clarity and to force engine.ExecuteScalar<T>() routing.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class ExecuteScalarAttribute : Attribute
-{
-}
+public sealed class ExecuteScalarAttribute : Attribute;

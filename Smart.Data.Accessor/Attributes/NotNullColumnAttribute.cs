@@ -10,6 +10,4 @@ using System.Diagnostics.CodeAnalysis;
 // column per row at the cost of the SDA0307 default! fall-through.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public sealed class NotNullColumnAttribute : Attribute
-{
-}
+public sealed class NotNullColumnAttribute : Attribute;

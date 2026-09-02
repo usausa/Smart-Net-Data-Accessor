@@ -33,6 +33,7 @@ public class MappingConfig : ManualConfig
 //
 // Run: dotnet run -c Release --project Smart.Data.Accessor.Benchmark -- --filter *DapperComparison*
 #pragma warning disable CA1001
+#pragma warning disable CA1002
 [Config(typeof(MappingConfig))]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
@@ -213,4 +214,5 @@ public class ComparisonBenchmark
 
     // Manual (直書き) baseline の実装は ManualMappers にある。
 }
+#pragma warning restore CA1002
 #pragma warning restore CA1001

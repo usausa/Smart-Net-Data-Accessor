@@ -7,6 +7,4 @@ using System.Diagnostics.CodeAnalysis;
 // opt-in that preventing SQL injection is the caller's responsibility.
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class DirectSqlAttribute : Attribute
-{
-}
+public sealed class DirectSqlAttribute : Attribute;

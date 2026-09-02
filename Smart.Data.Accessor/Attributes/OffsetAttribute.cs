@@ -6,6 +6,4 @@ using System.Diagnostics.CodeAnalysis;
 // emits the dialect-specific paging clause (e.g. OFFSET … ROWS / OFFSET).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Parameter)]
-public sealed class OffsetAttribute : Attribute
-{
-}
+public sealed class OffsetAttribute : Attribute;

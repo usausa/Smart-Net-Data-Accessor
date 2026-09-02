@@ -7,6 +7,4 @@ using System.Diagnostics.CodeAnalysis;
 // [Ignore], which is excluded everywhere).
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class DatabaseManagedAttribute : Attribute
-{
-}
+public sealed class DatabaseManagedAttribute : Attribute;

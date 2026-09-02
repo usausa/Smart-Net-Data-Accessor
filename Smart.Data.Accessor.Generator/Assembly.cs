@@ -9,9 +9,7 @@ namespace System.Runtime.CompilerServices
     using System.Diagnostics.CodeAnalysis;
 
     [ExcludeFromCodeCoverage]
-    internal sealed class IsExternalInit
-    {
-    }
+    internal sealed class IsExternalInit;
 }
 
 namespace System

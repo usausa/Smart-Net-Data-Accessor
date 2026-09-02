@@ -1,5 +1,3 @@
 namespace Smart.Data.Accessor.Generator.Sql.Nodes;
 
-public abstract class NodeBase
-{
-}
+public abstract class NodeBase;
