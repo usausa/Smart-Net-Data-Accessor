@@ -5,11 +5,9 @@ using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // DataAccessorFactory / DataAccessorFactoryBuilder(DI コンテナ非使用の手動構築経路)。
 // Pattern B アクセサの IDbProvider 解決、[Inject] シングルトン注入、GetService、型キャッシュ、Build 検証。
-public sealed class FactoryTest
+public sealed class FactoryTests
 {
     private static DelegateDbProvider Provider() =>
         new(static () =>

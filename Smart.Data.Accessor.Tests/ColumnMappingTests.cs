@@ -4,12 +4,10 @@ using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // 列マッピング戦略(PropertyGuard)の意味論を検証する：序数は事前構築の FrozenDictionary(OrdinalIgnoreCase)による
 // 大小無視・先勝ち照合で解決し、結果セットに無い列は「設定しない」(プロパティ初期化子が保持される)。
 // record は全 ctor 引数必須のため欠落列は default(引数型)。
-public sealed class ColumnMappingTest
+public sealed class ColumnMappingTests
 {
     private static List<object[]> Rows(params object[][] rows) => [.. rows];
 

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // [Naming] 規約([Name] が無い場合の既定名変換)のエンドツーエンド検証。解決順は [BindPrefix] と同じ
 // method → class → assembly → None。適用先は Builder のテーブル名/列名/条件パラメータ列名、Query 結果
 // マッピングの照合列名、[Procedure]/[DirectSql] の POCO 展開パラメータ名。Table= / [Name] の明示は常に優先。

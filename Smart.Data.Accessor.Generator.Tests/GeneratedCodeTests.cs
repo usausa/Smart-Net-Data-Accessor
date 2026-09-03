@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies the shape of the generated code for 2-way SQL: the static fast path emits a literal
 // CommandText (no StringBuilderPool), while code blocks / IN-list expansion take the dynamic
 // StringBuilderPool path. Pure string assertions on the generated source — no database.

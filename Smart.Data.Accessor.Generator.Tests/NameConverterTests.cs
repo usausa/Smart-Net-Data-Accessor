@@ -2,8 +2,6 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using Smart.Data.Accessor.Shared.Helpers;
 
-using Xunit;
-
 // NameConverter([Naming] 規約の既定名変換)の単体テスト。snake_case の語分割は System.Text.Json の
 // JsonNamingPolicy と同じ規則(小文字/数字→大文字の境界、大文字連続+小文字は最後の大文字の前、既存
 // アンダースコアは維持)で、変換は冪等でなければならない。

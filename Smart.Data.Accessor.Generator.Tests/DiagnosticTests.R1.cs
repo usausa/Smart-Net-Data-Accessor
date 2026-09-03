@@ -1,9 +1,7 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Phase R1 diagnostics: SDA0007 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
-public partial class DiagnosticTest
+public partial class DiagnosticTests
 {
     [Fact]
     public void Sda0007UnreferencedInjectReportsInfoEmitsDiagnostic()

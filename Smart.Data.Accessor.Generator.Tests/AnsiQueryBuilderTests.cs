@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Per-kind SQL shape coverage for the default (ANSI) QueryBuilder provider. After the Builder restructure each
 // provider owns its own (private) per-kind emit, so the canonical shapes are asserted end-to-end through the ANSI
 // generator (double-quote quoting, LIMIT/OFFSET paging) rather than against a shared pure-emit function. Provider

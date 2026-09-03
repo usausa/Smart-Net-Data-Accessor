@@ -7,11 +7,9 @@ using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 using Smart.Resolver;
 
-using Xunit;
-
 // Verifies the Smart.Resolver integration: UseDataAccessors() binds the generator-registered
 // accessors, and a Pattern B accessor resolves its IDbProvider from the container.
-public sealed class ResolverIntegrationTest
+public sealed class ResolverIntegrationTests
 {
     [Fact]
     public void ResolvesPatternBAccessorAndExecutes()

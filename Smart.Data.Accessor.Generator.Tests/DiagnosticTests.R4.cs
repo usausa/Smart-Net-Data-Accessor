@@ -1,10 +1,8 @@
 // ReSharper disable InconsistentNaming
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks.
-public partial class DiagnosticTest
+public partial class DiagnosticTests
 {
     private const string Source = """
         using Smart.Data.Accessor.Attributes;

@@ -5,11 +5,9 @@ using System.Data;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // Converter scope chain: method / class / profile scope for [TypeHandler<>],
 // plus writer-side ToDb and scalar-return FromDb. TicksConverter maps DateTime <-> Int64 ticks.
-public sealed class ScopedConverterTest
+public sealed class ScopedConverterTests
 {
     private static readonly DateTime Expected = new(2026, 6, 2, 9, 0, 0, DateTimeKind.Utc);
 

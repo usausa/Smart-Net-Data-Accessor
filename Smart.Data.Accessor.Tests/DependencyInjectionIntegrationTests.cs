@@ -8,13 +8,11 @@ using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // M.E.DI 統合の検証：AddDataAccessors() が生成登録済みアクセサを束縛し、Pattern B アクセサが
 // コンテナから IDbProvider を解決して実行できる。Assembly 指定オーバーロードは、アクセサ別
 // アセンブリ構成でモジュール初期化子を先行実行するためのもの(同一アセンブリでは no-op で同結果。
 // 別アセンブリでの罠と解消の実機検証はマルチアセンブリ構成が必要なためテンポラリ project で実施)。
-public sealed class DependencyInjectionIntegrationTest
+public sealed class DependencyInjectionIntegrationTests
 {
     private static DelegateDbProvider CreateProvider() => new(static () =>
     {

@@ -1,10 +1,8 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies that the source generators report each wired diagnostic for the offending input,
 // and that the newly wired SDA0101 does not false-positive on ordinary helper methods.
-public partial class DiagnosticTest
+public partial class DiagnosticTests
 {
     // ---- Core generator (SDA) ---------------------------------------------------------------
 

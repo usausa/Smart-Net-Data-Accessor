@@ -3,9 +3,7 @@ namespace Smart.Data.Accessor.Tests;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public sealed class ConverterTest
+public sealed class ConverterTests
 {
     [Fact]
     public void TypeHandlerConvertsTicksToDateTimeOnRead()

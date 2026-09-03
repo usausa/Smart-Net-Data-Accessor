@@ -5,8 +5,6 @@ using System.Text;
 using Smart.Data.Accessor.Generator.Sql;
 using Smart.Data.Accessor.Generator.Sql.Nodes;
 
-using Xunit;
-
 // End-to-end checks of the SQL parsing pipeline (SqlTokenizer → SqlTokenNormalizer → NodeBuilder)
 // focused on whitespace handling around comments and query hints.
 public sealed class SqlPipelineTests

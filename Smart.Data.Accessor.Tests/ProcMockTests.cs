@@ -3,13 +3,11 @@ namespace Smart.Data.Accessor.Tests;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // Stored-procedure POCO parameter aggregation verified against the Mock —
 // input/output/InputOutput directions, scalar RETURN value mapping, and [TypeHandler] conversion
 // (ToDb on input, FromDb on output) across all directions. The Executing hook simulates the proc by
 // setting OUT parameter values; the generated write-back reads them back into the POCO.
-public sealed class ProcMockTest
+public sealed class ProcMockTests
 {
     [Fact]
     public void DirectionsAndReturnValue()

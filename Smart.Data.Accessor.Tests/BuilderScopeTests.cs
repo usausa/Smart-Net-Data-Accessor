@@ -5,10 +5,8 @@ using System.Data;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // Phase R3: Builder-side property-scope [DbType] (F3) and class-scope [TypeHandler<>] (R2 carryover).
-public sealed class BuilderScopeTest
+public sealed class BuilderScopeTests
 {
     [Fact]
     public void BuilderAppliesPropertyDbTypeAndClassScopeConverter()

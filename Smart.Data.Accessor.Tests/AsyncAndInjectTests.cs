@@ -7,9 +7,7 @@ using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public sealed class AsyncAndInjectTest
+public sealed class AsyncAndInjectTests
 {
     [Fact]
     public async Task QueryAllAsyncMapsRows()

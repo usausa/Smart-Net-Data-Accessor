@@ -5,10 +5,8 @@ using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-public sealed class ExecuteTest
+public sealed class ExecuteTests
 {
     [Fact]
     public void InsertNameBuildsParameterizedSqlAndReturnsAffected()

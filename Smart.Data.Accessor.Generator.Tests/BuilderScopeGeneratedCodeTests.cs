@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies the Builder generator honours the [TypeHandler<>] scope chain
 // (member > method > class > profile) on the write side (ToDb) and the property-scope [DbType] (F3).
 public sealed class BuilderScopeGeneratedCodeTests

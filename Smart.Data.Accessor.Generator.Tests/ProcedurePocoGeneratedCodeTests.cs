@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // POCO-argument parameter aggregation for [Procedure] / [DirectSql] — properties expand
 // into DB parameters (default Input), [Direction(Output/InputOutput)] properties are written back
 // into the same POCO object. Verified on the generated source (SQLite can't run stored procs).

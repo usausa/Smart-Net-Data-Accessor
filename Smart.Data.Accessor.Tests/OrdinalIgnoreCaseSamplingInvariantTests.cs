@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Tests;
 
-using Xunit;
-
 // 閾値超えの序数解決が emit するハッシュ switch は、次の 2 つが同時に成り立つ限りだけ
 // FrozenDictionary 形と等価になる。どちらもランタイム側の性質なので、プラットフォーム更新で崩れ得る。
 // 崩れた場合の症状は「列が黙ってマップされない」であり、テストが無ければ気付けない。
@@ -21,7 +19,7 @@ using Xunit;
 // The generator only picks triples whose sampled positions are ASCII across every key. (A) makes the generation-time
 // hash constant agree with the runtime hash; (B) means any runtime string that could match an ASCII-sampled key is
 // itself ASCII at those positions. Together the two hashes cannot disagree.
-public sealed class OrdinalIgnoreCaseSamplingInvariantTest
+public sealed class OrdinalIgnoreCaseSamplingInvariantTests
 {
     [Fact]
     public void AsciiFoldingAgreesWithOrdinalIgnoreCase()

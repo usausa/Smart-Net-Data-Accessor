@@ -4,14 +4,12 @@ using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // [Naming(SnakeCaseLower)] のエンドツーエンド実行検証。Builder の生成 SQL はテーブル名/列名が snake_case に
 // なり(バインドパラメータ名はプロパティ名のまま)、Query の結果マッピングは snake_case 列と照合される。
 // End-to-end runtime coverage for [Naming(SnakeCaseLower)]: the builder SQL carries snake_case table /
 // column names (bind parameter names stay property-based), and the Query result mapping matches
 // snake_case columns.
-public sealed class NamingTest
+public sealed class NamingTests
 {
     [Fact]
     public void InsertBuildsSnakeCaseStatement()

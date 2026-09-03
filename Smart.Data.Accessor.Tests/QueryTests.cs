@@ -5,9 +5,7 @@ using Smart.Data.Accessor.Tests.Mock;
 using Smart.Data.Accessor.Tests.Models;
 using Smart.Mock.Data;
 
-using Xunit;
-
-public sealed class QueryTest
+public sealed class QueryTests
 {
     [Fact]
     public void QueryAllMapsAllRows()

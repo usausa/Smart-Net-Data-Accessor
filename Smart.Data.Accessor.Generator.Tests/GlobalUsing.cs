@@ -1,3 +1,3 @@
 // ReSharper disable RedundantUsingDirective.Global
-#pragma warning disable SA1200
+#pragma warning disable
 global using Xunit;

@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies the generated source for the [TypeHandler<>] scope chain —
 // member > method > class > profile precedence, writer-side ToDb, and scalar-return FromDb.
 public sealed class ConverterScopeGeneratedCodeTests

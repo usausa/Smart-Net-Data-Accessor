@@ -1,11 +1,9 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies the reader-side [TypeHandler<>] converter validation (SDA0307–SDA0311) wired through
 // ConverterResolver. Each accessor is a [Query] (backed by a SQL file) so column mapping — and
 // thus converter resolution — runs.
-public partial class DiagnosticTest
+public partial class DiagnosticTests
 {
     [Fact]
     public void Sda0309ConverterNotIValueConverterEmitsDiagnostic()

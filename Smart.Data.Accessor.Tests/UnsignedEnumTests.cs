@@ -3,12 +3,10 @@ namespace Smart.Data.Accessor.Tests;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // An enum with a uint underlying is read via GetInt32 + an intermediate (uint) cast.
 // Permission.All (4_000_000_000 > int.MaxValue) is stored as the bit-equivalent negative int; the
 // signed read + reinterpret must recover it (the old GetValue<T> fallback could not).
-public sealed class UnsignedEnumTest
+public sealed class UnsignedEnumTests
 {
     [Fact]
     public void UIntEnumColumnReadsViaSignedCast()

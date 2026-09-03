@@ -3,12 +3,10 @@ namespace Smart.Data.Accessor.Tests;
 using Smart.Data.Accessor.Tests.Accessors;
 using Smart.Mock.Data;
 
-using Xunit;
-
 // [Sql](インライン 2-way SQL)の実行時挙動を検証する：静的 SQL の CommandText 直埋め(raw string literal の
 // 改行は空白 1 個に正規化)、/*% */ 条件分岐、/*@ */ バインド。SQL ファイルは一切使わない。
 // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
-public sealed class InlineSqlTest
+public sealed class InlineSqlTests
 {
     private static List<object[]> Rows(params object[][] rows) => [.. rows];
 

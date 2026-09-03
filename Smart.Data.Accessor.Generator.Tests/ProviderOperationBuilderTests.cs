@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // C1: per-operation end-to-end coverage of the three non-default providers (SqlServer / MySql / Postgres), confirming each
 // dialect's identifier quoting is applied across every standard builder operation — not just Insert/Select (ProviderBuilderTests).
 // Doubles as the B1 drift guard: the standard operations share one SQL shape across providers, differing only by quoting.

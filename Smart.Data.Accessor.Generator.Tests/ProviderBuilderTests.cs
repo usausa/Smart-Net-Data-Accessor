@@ -1,7 +1,5 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-using Xunit;
-
 // Verifies the per-provider QueryBuilder generators emit provider-correct SQL (identifier quoting + paging) and the
 // provider-specific kinds (MERGE / OUTPUT / ON DUPLICATE KEY / REPLACE / INSERT IGNORE / ON CONFLICT / RETURNING).
 // All provider attributes live in the flat Smart.Data.Accessor.Attributes namespace (Sql*/MySql*/Pg* prefixes).

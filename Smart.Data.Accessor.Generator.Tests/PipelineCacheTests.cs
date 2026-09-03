@@ -2,9 +2,7 @@ namespace Smart.Data.Accessor.Generator.Tests;
 
 using SourceGenerateHelper.Testing;
 
-using Xunit;
-
-public sealed class PipelineCacheTest
+public sealed class PipelineCacheTests
 {
     private const string AccessorSource =
         """
