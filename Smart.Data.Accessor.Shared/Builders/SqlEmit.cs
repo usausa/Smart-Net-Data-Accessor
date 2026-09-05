@@ -35,8 +35,10 @@ internal static class SqlEmit
 
     // バインドパラメータ＝値パラメータから [Limit]/[Offset] のページングパラメータを除いたもの。
     // Bind parameters = value parameters minus the [Limit]/[Offset] paging parameters.
+#pragma warning disable IDE0028
     public static List<ParameterBinding> BindParams(EquatableArray<ParameterBinding> valueParams)
         => valueParams.Where(static x => !x.Flags.IsLimit() && !x.Flags.IsOffset()).ToList();
+#pragma warning restore IDE0028
 
     // cmd.CommandText に SQL 文字列リテラルを代入する 1 行を出力する。
     // Emit the single line that assigns the SQL string literal to cmd.CommandText.

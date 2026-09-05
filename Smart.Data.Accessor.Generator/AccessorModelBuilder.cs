@@ -194,8 +194,8 @@ internal static class AccessorModelBuilder
                     SqlEmitCode = code,
                     StaticSqlText = staticSql,
                     StaticParameterCode = staticParam,
-                    OutputBindings = [with(outputBindings.ToArray())],
-                    Usings = [with(methodUsings.ToArray())]
+                    OutputBindings = new(outputBindings),
+                    Usings = new(methodUsings)
                 });
                 continue;
             }
@@ -226,7 +226,7 @@ internal static class AccessorModelBuilder
             }
         }
 
-        var completedModel = model with { Methods = [with(keptMethods.ToArray())] };
+        var completedModel = model with { Methods = new(keptMethods) };
         return new Result<AccessorModel>(
             completedModel,
             new EquatableArray<DiagnosticInfo>(diagnostics));
