@@ -72,6 +72,72 @@ public sealed class NamingGeneratedCodeTests
     }
 
     [Fact]
+    public void EntityClassNameSuppliesTableName()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [Name("Users")]
+            internal sealed class UserAccount
+            {
+                [Key]
+                public int UserId { get; set; }
+
+                public string FirstName { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            [Naming(NamingConvention.SnakeCaseLower)]
+            internal sealed partial class Accessor
+            {
+                [Insert(typeof(UserAccount))]
+                [Execute]
+                public partial int Insert(UserAccount entity);
+
+                [Delete(typeof(UserAccount))]
+                [Execute]
+                public partial int Delete(int userId);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        // クラスの [Name] がそのままテーブル名になり([Naming] 変換は掛からない)、列名は変換される。
+        // The class-level [Name] is used as the table name untouched by [Naming]; column names are still converted.
+        Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"user_id\\\", \\\"first_name\\\") VALUES (@UserId, @FirstName)", text, StringComparison.Ordinal);
+        Assert.Contains("DELETE FROM \\\"Users\\\" WHERE \\\"user_id\\\" = @userId", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExplicitTableWinsOverEntityClassName()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [Name("Accounts")]
+            internal sealed class UserAccount
+            {
+                [Key]
+                public int UserId { get; set; }
+
+                public string FirstName { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Insert(typeof(UserAccount), Table = "Users")]
+                [Execute]
+                public partial int Insert(UserAccount entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"UserId\\\", \\\"FirstName\\\") VALUES (@UserId, @FirstName)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MethodScopeNamingOverridesClassScope()
     {
         const string source = """

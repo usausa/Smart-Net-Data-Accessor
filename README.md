@@ -147,7 +147,8 @@ Rows map to plain classes or records by **case-insensitive column-name matching*
 query (not per row):
 
 * Columns are matched to public settable/init properties (or record primary-constructor parameters).
-  `[Name("COL")]` overrides the name; `[Ignore]` excludes a member.
+  `[Name("COL")]` overrides the name; `[Ignore]` excludes a member. (`[Name]` on the entity class
+  is the builder table name, see [Query builders](#query-builders).)
 * `[Naming(NamingConvention.SnakeCaseLower)]` (method/class/assembly scope, like `[BindPrefix]`)
   converts the default names instead of annotating every property — `UserId` matches `user_id`
   without a `[Name]`. An explicit `[Name]` always wins.
@@ -193,11 +194,23 @@ public partial IReadOnlyList<DataEntity> SelectAll();
 public partial long CountAll();
 ```
 
+The table name is resolved as `Table =` on the method → `[Name]` on the entity class → the entity
+type name, so a class-level `[Name]` avoids repeating `Table =` on every method:
+
+```csharp
+[Name("Data")]
+public sealed class DataEntity { ... }
+
+[Insert(typeof(DataEntity))]
+[Execute]
+public partial int Insert(DataEntity entity);   // INSERT INTO "Data" ...
+```
+
 Standard (ANSI) builders (`[Insert]` / `[Update]` / `[Delete]` / `[Count]` / `[Select]` /
 `[SelectSingle]` / `[Truncate]`) ship in the core package; `[Limit]` / `[Offset]` parameters give
 paging with the proper dialect per provider. `[Naming(...)]` converts the default table name
-(the entity type name) and the default column names to `snake_case` etc. (`Table =` / `[Name]`
-still win). Provider packages add dialect features:
+(the entity type name) and the default column names to `snake_case` etc. (`Table =`, a class-level
+`[Name]` and a property `[Name]` still win). Provider packages add dialect features:
 
 | Package | Attributes | Extras |
 | --- | --- | --- |

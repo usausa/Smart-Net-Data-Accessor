@@ -17,9 +17,9 @@ internal static class MethodResolver
     private const string OffsetAttributeName = "Smart.Data.Accessor.Attributes.OffsetAttribute";
 
     // 属性からエンティティ型 / Table 名を取り、テーブル名・値パラメータ・エンティティ列を解決する。テーブル名を決められなければ SDA1003 を出して null を返す。
-    // Table 名の既定(エンティティ型名)と列名・パラメータ列名の既定には [Naming] 規約が適用される(Table= / [Name] の明示は常に優先)。
+    // テーブル名は Table= → エンティティクラスの [Name] → エンティティ型名の順。型名と列名・パラメータ列名の既定には [Naming] 規約が適用される(Table= / [Name] の明示は常に優先)。
     // Read the entity type / Table name from the attribute and resolve the table name, value parameters and entity columns. Returns null (after raising SDA1003) when the table cannot be determined.
-    // The [Naming] convention applies to the default table name (the entity type name) and the default column / parameter column names (an explicit Table= / [Name] always wins).
+    // The table name is resolved as Table= → class-level [Name] on the entity → entity type name. The [Naming] convention applies to the type name and the default column / parameter column names (an explicit Table= / [Name] always wins).
     public static MethodResolution? Resolve(
         in ClassScan scan,
         IMethodSymbol method,
@@ -40,7 +40,7 @@ internal static class MethodResolver
             }
         }
 
-        var tableName = table ?? (entityType is null ? null : NameConverter.Convert(entityType.Name, naming));
+        var tableName = table ?? (entityType is null ? null : (EntityTableName(entityType) ?? NameConverter.Convert(entityType.Name, naming)));
         if (tableName is null)
         {
             diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.MissingTable, location, method.Name));
@@ -229,6 +229,13 @@ internal static class MethodResolver
         => parameter.GetAttributes()
             .FirstOrDefault(static x => x.AttributeClass?.ToDisplayString() == NameAttributeName)
             ?.ConstructorArguments.FirstOrDefault().Value as string ?? NameConverter.Convert(parameter.Name, naming);
+
+    // エンティティクラスに付いた [Name] をテーブル名として返す(無ければ null)。明示名なので [Naming] 変換は掛けない。
+    // Return the class-level [Name] of the entity type as the table name (null when absent). It is an explicit name, so [Naming] is not applied.
+    private static string? EntityTableName(INamedTypeSymbol entityType)
+        => entityType.GetAttributes()
+            .FirstOrDefault(static x => x.AttributeClass?.ToDisplayString() == NameAttributeName)
+            ?.ConstructorArguments.FirstOrDefault().Value as string;
 
     // 指定属性がパラメータに付いているか。
     // Whether the given attribute is present on the parameter.
