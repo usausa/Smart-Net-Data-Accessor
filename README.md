@@ -63,6 +63,11 @@ Accessor/
     ExampleAccessor.QueryByType.sql
 ```
 
+A method whose name ends with `Async` also accepts the file name with that suffix omitted, so
+`QueryDataListAsync()` resolves `ExampleAccessor.QueryDataList.sql`. The exact
+`{ClassName}.{MethodName}.sql` wins when both files exist, and a sync/async method pair can share
+a single file.
+
 ```sql
 -- ExampleAccessor.QueryByType.sql
 SELECT Id, Name, Type FROM Data

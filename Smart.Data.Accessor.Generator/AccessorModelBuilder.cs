@@ -50,6 +50,9 @@ internal static class AccessorModelBuilder
     private const string AccessorProfileAttributeName = "Smart.Data.Accessor.Attributes.AccessorProfileAttribute";
     private const string QueryBuilderAttributeName = "Smart.Data.Accessor.Attributes.QueryBuilderAttribute";
     private const string QueryBuilderMethodSuffix = "__QueryBuilder";
+    // .sql ファイル名では省略できるメソッド名の末尾。
+    // The method-name suffix that may be omitted in a .sql file name.
+    private const string AsyncMethodSuffix = "Async";
     private const char DefaultBindMarker = '@';
 
     // transform 段(symbol ステージ)：クラスレベルの検証と、symbol だけからの Model 構築を行う。等価な Result<AccessorModel> を
@@ -107,6 +110,44 @@ internal static class AccessorModelBuilder
         return (sqlMap, collidedKeys);
     }
 
+    // メソッドに対応する .sql の完全一致キー({Class}.{Method}、[MethodName] があればそのエイリアス)。
+    // The exact .sql key for a method ({Class}.{Method}, or the [MethodName] alias when present).
+    private static string MakeSqlKey(string className, MethodModel method) =>
+        $"{className}.{method.SqlAlias ?? method.Name}";
+
+    // .sql の解決キーを決める。完全一致({Class}.{Method}.sql)が最優先で、そのファイルが無い場合に限り
+    // メソッド名末尾の Async を省いたキーへフォールバックする(QueryAsync() が {Class}.Query.sql を使える)。
+    // どちらも無ければ完全一致キーを返す(SDA0401 のメッセージが宣言どおりのメソッド名になる)。
+    // Resolve the .sql key. The exact {Class}.{Method}.sql wins; only when no such file exists does it fall back
+    // to the key with the method's trailing "Async" omitted (so QueryAsync() can use {Class}.Query.sql). When
+    // neither exists the exact key is returned, so the SDA0401 message names the method as declared.
+    private static (string Key, bool IsFallback) ResolveSqlKey(
+        Dictionary<string, string> sqlMap,
+        HashSet<string> collidedKeys,
+        string className,
+        MethodModel method)
+    {
+        var exactKey = MakeSqlKey(className, method);
+        if (sqlMap.ContainsKey(exactKey) || collidedKeys.Contains(exactKey))
+        {
+            return (exactKey, false);
+        }
+
+        // メソッド名が "Async" そのものの場合は空名になるので省略しない。
+        // A method named exactly "Async" would trim to an empty name, so it is left alone.
+        var name = method.SqlAlias ?? method.Name;
+        if ((name.Length <= AsyncMethodSuffix.Length) ||
+            !name.EndsWith(AsyncMethodSuffix, StringComparison.Ordinal))
+        {
+            return (exactKey, false);
+        }
+
+        var fallbackKey = $"{className}.{name[..^AsyncMethodSuffix.Length]}";
+        return sqlMap.ContainsKey(fallbackKey) || collidedKeys.Contains(fallbackKey)
+            ? (fallbackKey, true)
+            : (exactKey, false);
+    }
+
     // SQL ステージ：各メソッドの .sql を解決し、SQL ファイル衝突診断(SDA0402 / SDA0403 / SDA0405 / SDA0404 / SqlNotFound)を出し、
     // 2-way SQL を解析してメソッドの emit フィールドへ格納し(SQL エラー時はそのメソッドを落とす)、SDA0007 の SQL 側を評価し、
     // 検証用に /*!using*/ ディレクティブを集める。Compilation 非依存なのでキャッシュ可能。
@@ -125,6 +166,16 @@ internal static class AccessorModelBuilder
         }
 
         var (sqlMap, collidedKeys) = BuildSqlMap(sqlFiles);
+        // クラス内のメソッドが完全一致で持つキーの集合。Async 省略名のフォールバックで拾ったファイルが
+        // 実は別メソッドのものだった場合に、それを自分のファイルと誤認しないために使う。
+        // Keys owned by an exact method-name match in this class. Used so a file reached through the
+        // Async-trimmed fallback is not mistaken for this method's own file when it belongs to another method.
+        var ownedKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var method in model.Methods)
+        {
+            ownedKeys.Add(MakeSqlKey(model.ClassName, method));
+        }
+
         var keptMethods = new List<MethodModel>();
         foreach (var method in model.Methods)
         {
@@ -132,9 +183,15 @@ internal static class AccessorModelBuilder
             var isBuilder = method.BuilderMethodName is not null;
             var isProcedure = method.ProcedureName is not null;
             var isDirectSql = method.SqlSource == SqlSource.DirectSql;
-            var sqlKey = $"{model.ClassName}.{method.SqlAlias ?? method.Name}";
+            var (sqlKey, isFallbackKey) = ResolveSqlKey(sqlMap, collidedKeys, model.ClassName, method);
+            // Async 省略名で拾ったキーが同クラスの別メソッドの完全一致キーなら、その .sql は持ち主のもの。
+            // 共有はできる(下の解決で使う)が、ファイル併存の診断は持ち主のメソッド側だけが報告する。
+            // When the Async-trimmed key is another method's exact key, that .sql belongs to its owner. It can
+            // still be shared (the resolution below uses it), but only the owner reports file-coexistence issues.
+            var ownedByOther = isFallbackKey && ownedKeys.Contains(sqlKey);
+            var hasOwnSqlFile = !ownedByOther && sqlMap.ContainsKey(sqlKey);
 
-            if (collidedKeys.Contains(sqlKey))
+            if (!ownedByOther && collidedKeys.Contains(sqlKey))
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlFileNameCollision, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
@@ -146,7 +203,7 @@ internal static class AccessorModelBuilder
                 // 2-way SQL の解析自体は transform 段で完了している(SDA05xx をリテラル内位置で報告するため)。
                 // SDA0406: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
                 // The 2-way SQL parse itself already ran in the transform stage (so SDA05xx report in-literal positions).
-                if (sqlMap.ContainsKey(sqlKey))
+                if (hasOwnSqlFile)
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
                     continue;
@@ -159,7 +216,7 @@ internal static class AccessorModelBuilder
             {
                 // SDA0403: [DirectSql] は対応する .sql を持ってはならない。
                 // SDA0403: [DirectSql] must not have a corresponding .sql file.
-                if (sqlMap.ContainsKey(sqlKey))
+                if (hasOwnSqlFile)
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.DirectSqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
                     continue;
@@ -168,41 +225,42 @@ internal static class AccessorModelBuilder
                 continue;
             }
 
-            sqlMap.TryGetValue(sqlKey, out var sql);
-            if ((sql is null) && !isBuilder && !isProcedure)
+            if (isBuilder || isProcedure)
+            {
+                // SDA0405 / SDA0404: Builder / Procedure は .sql を持ってはならない。
+                // SDA0405 / SDA0404: a Builder / Procedure must not have a corresponding .sql file.
+                if (hasOwnSqlFile)
+                {
+                    diagnostics.Add(new DiagnosticInfo(
+                        isBuilder ? Diagnostics.BuilderAndSqlBothPresent : Diagnostics.ProcedureHasSqlFile,
+                        method.Location,
+                        method.Name,
+                        sqlKey + ".sql"));
+                    continue;
+                }
+
+                // .sql を持たない Builder / Procedure — そのまま維持する。
+                // Builder / Procedure without a .sql file — keep as-is.
+                keptMethods.Add(method);
+                continue;
+            }
+
+            if (!sqlMap.TryGetValue(sqlKey, out var sql))
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlNotFound, method.Location, method.Name, sqlKey + ".sql"));
                 continue;
             }
-            if ((sql is not null) && isBuilder)
-            {
-                diagnostics.Add(new DiagnosticInfo(Diagnostics.BuilderAndSqlBothPresent, method.Location, method.Name, sqlKey + ".sql"));
-                continue;
-            }
-            if ((sql is not null) && isProcedure)
-            {
-                diagnostics.Add(new DiagnosticInfo(Diagnostics.ProcedureHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
-                continue;
-            }
 
-            if (sql is not null)
+            var (code, staticSql, staticParam, outputBindings, methodUsings) =
+                BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters, sql, method.BindMarker);
+            keptMethods.Add(method with
             {
-                var (code, staticSql, staticParam, outputBindings, methodUsings) =
-                    BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters, sql, method.BindMarker);
-                keptMethods.Add(method with
-                {
-                    SqlEmitCode = code,
-                    StaticSqlText = staticSql,
-                    StaticParameterCode = staticParam,
-                    OutputBindings = new(outputBindings),
-                    Usings = new(methodUsings)
-                });
-                continue;
-            }
-
-            // .sql を持たない Builder / Procedure — そのまま維持する。
-            // Builder / Procedure without a .sql file — keep as-is.
-            keptMethods.Add(method);
+                SqlEmitCode = code,
+                StaticSqlText = staticSql,
+                StaticParameterCode = staticParam,
+                OutputBindings = new(outputBindings),
+                Usings = new(methodUsings)
+            });
         }
 
         // SDA0007 (Info): [Inject] がコード(transform で算出)でも SQL でも参照されていない。
