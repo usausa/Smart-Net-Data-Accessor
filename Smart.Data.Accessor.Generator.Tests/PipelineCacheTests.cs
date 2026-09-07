@@ -78,6 +78,33 @@ public sealed class PipelineCacheTests
         internal sealed class Unrelated;
         """;
 
+    private const string AccessorWithRegistrationSource =
+        """
+        using System.Collections.Generic;
+        using Microsoft.Extensions.DependencyInjection;
+        using Smart.Data.Accessor.Attributes;
+
+        internal sealed class Entity
+        {
+            public long Id { get; set; }
+
+            public string Name { get; set; } = "";
+        }
+
+        [DataAccessor]
+        internal sealed partial class Accessor
+        {
+            [Query]
+            public partial IReadOnlyList<Entity> All();
+        }
+
+        internal static partial class Registration
+        {
+            [DataAccessorRegistration]
+            public static partial IServiceCollection AddDataAccessors(this IServiceCollection services);
+        }
+        """;
+
     // ------------------------------------------------------------
     // Accessor
     // ------------------------------------------------------------
@@ -102,6 +129,34 @@ public sealed class PipelineCacheTests
 
         // Assert
         Assert.Contains(result.OutputReasons, static x => x.IsChanged());
+    }
+
+    // ------------------------------------------------------------
+    // Registration
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void UnrelatedEditKeepsRegistrationCached()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncrementalWithServiceCollection(AccessorWithRegistrationSource, UnrelatedSource, ("Accessor.All", "select Id, Name from T"), ("AddedAccessor.All", "select Id, Name from T"));
+
+        // Assert
+        Assert.Equal(result.FirstGeneratedText, result.SecondGeneratedText);
+        Assert.NotEmpty(result.OutputReasons);
+        Assert.DoesNotContain(result.OutputReasons, static x => x.IsChanged());
+    }
+
+    [Fact]
+    public void AccessorAddedRebuildsRegistration()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncrementalWithServiceCollection(AccessorWithRegistrationSource, AccessorAddedSource, ("Accessor.All", "select Id, Name from T"), ("AddedAccessor.All", "select Id, Name from T"));
+
+        // Assert
+        Assert.Contains(result.OutputReasons, static x => x.IsChanged());
+        Assert.DoesNotContain("AddSingleton<global::AddedAccessor>", result.FirstGeneratedText, StringComparison.Ordinal);
+        Assert.Contains("AddSingleton<global::AddedAccessor>", result.SecondGeneratedText, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------

@@ -263,20 +263,38 @@ Two patterns, chosen per method by the signature:
   (or `IDbProviderSelector` + `[Provider("name")]` for multi-database) via its constructor and
   opens/closes per call.
 
-With `Microsoft.Extensions.DependencyInjection`
-([Usa.Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Extensions.DependencyInjection)):
+With `Microsoft.Extensions.DependencyInjection`, declare a `static partial` extension method marked
+`[DataAccessorRegistration]`. The generator fills in the implementation: every accessor of the
+compilation is registered as a singleton whose constructor dependencies (`IDbProvider` /
+`IDbProviderSelector` and `[Inject]` services) are resolved from the provider.
+
+```csharp
+public static partial class ServiceCollectionExtensions
+{
+    [DataAccessorRegistration]
+    public static partial IServiceCollection AddDataAccessors(this IServiceCollection services);
+}
+```
 
 ```csharp
 builder.Services.AddSingleton<IDbProvider>(
     new DelegateDbProvider(() => new SqliteConnection(connectionString)));
-builder.Services.AddDataAccessors();   // registers every generated accessor
+builder.Services.AddDataAccessors();   // generated: AddSingleton<T>(static p => new T(p.GetRequiredService<IDbProvider>()))
 
 app.MapGet("/data", (ExampleAccessor accessor) => accessor.QueryDataList());
 ```
 
-When the accessors live in a **separate assembly** (a data-layer library), pass that assembly so
-its module initializers run before registration — otherwise the lazy assembly load can leave the
-registry empty and `AddDataAccessors()` silently registers nothing:
+* `Namespace = "MyApp.Data"` limits the method to the accessors of that namespace and its sub-namespaces; several attributes union
+* An accessor is registered under its first implemented interface, or under the concrete type when it has none
+* The declaring project needs `Microsoft.Extensions.DependencyInjection.Abstractions`. A library declares the method itself (`public`) and the application calls it
+* The generated code is static (`new` plus `GetRequiredService<T>()`), so it stays on the Native AOT path
+
+The runtime alternative
+[Usa.Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Extensions.DependencyInjection)
+offers `AddDataAccessors()`, which registers the accessors recorded by the generated module
+initializers. When the accessors live in a **separate assembly** (a data-layer library), pass that
+assembly so its module initializers run before registration — otherwise the lazy assembly load can
+leave the registry empty and `AddDataAccessors()` silently registers nothing:
 
 ```csharp
 builder.Services.AddDataAccessors(typeof(MyAccessor).Assembly);
@@ -296,6 +314,7 @@ provides the same for [Usa.Smart.Resolver](https://www.nuget.org/packages/Usa.Sm
 | `[BindPrefix('@')]` | Override the parameter marker per method/class/assembly |
 | `[Naming(NamingConvention.SnakeCaseLower)]` | Default-name conversion (snake_case / lower / upper) per method/class/assembly when `[Name]` is absent |
 | `[Inject]` | Inject a service into the accessor, usable from SQL `if` conditions |
+| `[DataAccessorRegistration]` | Marks a `static partial` `IServiceCollection` extension whose body the generator fills with the accessor registrations (`Namespace` narrows the set) |
 | `[TypeMap]`, `[AccessorProfile]`, `[ExecuteConfig]` | Class/profile-scoped type mapping defaults |
 
 ## Native AOT

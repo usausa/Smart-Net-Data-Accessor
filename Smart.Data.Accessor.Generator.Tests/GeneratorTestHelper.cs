@@ -75,6 +75,22 @@ internal static class GeneratorTestHelper
         AddSqlFiles(new GeneratorTestRunner(new DataAccessorGenerator()).WithTracking(), sqlFiles)
             .RunIncremental(source, addedSource);
 
+    // [DataAccessorRegistration] scenarios declare IServiceCollection extension methods and the generated
+    // implementation calls the M.E.DI registration extensions, so the abstractions assembly is referenced.
+    private static GeneratorTestRunner WithServiceCollection(GeneratorTestRunner runner) =>
+        runner.WithReference(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly);
+
+    internal static GeneratorTestResult RunWithServiceCollection(string source, params (string Name, string Sql)[] sqlFiles) =>
+        WithServiceCollection(CreateRunner(sqlFiles)).VerifyCompiles().Run(source);
+
+    internal static IReadOnlyList<Diagnostic> GetDiagnosticsWithServiceCollection(string source, params (string Name, string Sql)[] sqlFiles) =>
+        WithServiceCollection(CreateRunner(sqlFiles)).GetDiagnostics(source);
+
+    internal static IncrementalRunResult RunIncrementalWithServiceCollection(
+        string source, string addedSource, params (string Name, string Sql)[] sqlFiles) =>
+        WithServiceCollection(AddSqlFiles(new GeneratorTestRunner(new DataAccessorGenerator()).WithTracking(), sqlFiles))
+            .RunIncremental(source, addedSource);
+
     internal static IncrementalRunResult RunIncrementalBuilder(string source, string addedSource) =>
         new GeneratorTestRunner(new QueryBuilderGenerator()).WithTracking().RunIncremental(source, addedSource);
 }

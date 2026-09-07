@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Smart.Data.Accessor.Resolver;
 using Smart.Resolver;
 
-// NativeAOT smoke test: the generator-produced accessor is exercised through the three DI paths
-// (built-in factory / Microsoft.Extensions.DependencyInjection / Smart.Resolver). Returns 0 when
-// every path maps the seeded rows, 1 otherwise.
+// NativeAOT smoke test: the generator-produced accessor is exercised through the four DI paths
+// (built-in factory / Microsoft.Extensions.DependencyInjection / Smart.Resolver / the generated
+// [DataAccessorRegistration] method). Returns 0 when every path maps the seeded rows, 1 otherwise.
 internal static class Program
 {
     public static int Main()
@@ -25,6 +25,7 @@ internal static class Program
             failed += RunMicrosoftDependencyInjection(connectionString);
             failed += RunResolver(connectionString);
             failed += RunWide(connectionString);
+            failed += RunRegistrationMethod(connectionString);
 
             Console.WriteLine(failed == 0 ? "AOT smoke: ALL PASS" : "AOT smoke: FAILED");
             return failed == 0 ? 0 : 1;
@@ -59,6 +60,19 @@ internal static class Program
         using var provider = services.BuildServiceProvider();
         var accessor = provider.GetRequiredService<AotAccessor>();
         return Report("D-2 M.E.DI", accessor.QueryAll());
+    }
+
+    // D-5: Microsoft.Extensions.DependencyInjection through the generated [DataAccessorRegistration] method
+    // (AddAotDataAccessors -> GetRequiredService<T>()).
+    private static int RunRegistrationMethod(string connectionString)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDbProvider>(new DelegateDbProvider(() => new SqliteConnection(connectionString)));
+        services.AddAotDataAccessors();
+
+        using var provider = services.BuildServiceProvider();
+        var accessor = provider.GetRequiredService<AotAccessor>();
+        return Report("D-5 M.E.DI registration", accessor.QueryAll());
     }
 
     // D-3: Smart.Resolver (UseDataAccessors -> resolver.Get<T>()).

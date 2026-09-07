@@ -90,6 +90,13 @@
 | SDA0509 | ℹ️ Info | Method parameter is declared but never referenced in SQL | Remove the parameter, or reference it in SQL |
 | SDA0510 | ⚠️ Warning | `/*@ x.y */` references a property that is not declared on the parameter | Correct the property name, or add the property |
 
+## DI registration
+
+| ID | Severity | Description | How to fix |
+|---|---|---|---|
+| SDA0601 | ❌ Error | `[DataAccessorRegistration]` method is not a `static partial` extension method taking and returning `IServiceCollection` | Declare `static partial IServiceCollection M(this IServiceCollection services);` in a `static partial class` |
+| SDA0602 | ⚠️ Warning | No `[DataAccessor]` class matches the registration method, so it registers nothing | Add an accessor, or correct the `Namespace` filter |
+
 ## Query builder
 
 | ID | Severity | Description | How to fix |

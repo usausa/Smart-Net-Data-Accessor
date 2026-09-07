@@ -52,4 +52,59 @@ public sealed class DependencyInjectionIntegrationTests
         Assert.Equal(2, list.Count);
         Assert.Equal("Bob", list[1].Name);
     }
+
+    // [DataAccessorRegistration]: the generated implementation of TestRegistration registers the accessors
+    // with static factories (new + GetRequiredService), independent of DataAccessorRegistry.
+
+    [Fact]
+    public void RegistrationMethodRegistersAccessorsAndExecutes()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDbProvider>(CreateProvider());
+        services.AddTestDataAccessors();
+
+        using var provider = services.BuildServiceProvider();
+        var accessor = provider.GetRequiredService<ProviderAccessor>();
+        var list = accessor.QueryAll();
+
+        Assert.Equal(2, list.Count);
+        Assert.Equal("Alice", list[0].Name);
+    }
+
+    [Fact]
+    public void RegistrationMethodResolvesInjectedDependency()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDbProvider>(CreateProvider());
+        services.AddSingleton<ICounter>(new Counter());
+        services.AddTestDataAccessors();
+
+        using var provider = services.BuildServiceProvider();
+        var accessor = provider.GetRequiredService<InjectAccessor>();
+
+        Assert.Equal(1, accessor.UseInjected());
+        Assert.Equal(2, accessor.UseInjected());
+    }
+
+    [Fact]
+    public void RegistrationMethodWithNamespaceFilterRegistersMatchingAccessors()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDbProvider>(CreateProvider());
+        services.AddTestAccessorsNamespace();
+
+        using var provider = services.BuildServiceProvider();
+        var accessor = provider.GetRequiredService<ProviderAccessor>();
+        var list = accessor.QueryAll();
+
+        Assert.Equal(2, list.Count);
+        Assert.Equal("Bob", list[1].Name);
+    }
+
+    private sealed class Counter : ICounter
+    {
+        private int value;
+
+        public int Next() => ++value;
+    }
 }

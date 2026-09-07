@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 //   SDA03xx  return/mapping     (return-type shapes, reader, converter, [TypeHandler])
 //   SDA04xx  SQL-file resolution(CompleteModel: SQL-file conflicts)
 //   SDA05xx  2-way SQL parse    (BuildSqlEmitCode: tokenizer / pragma / parameter checks)
+//   SDA06xx  DI registration    (RegistrationModelBuilder: [DataAccessorRegistration] method shape / targets)
 // Builder generator diagnostics use the SDA1xxx band (see BuilderDiagnostics).
 // 2026-07-19 に全帯域を欠番なしへ再採番済み(リリース前の破壊的変更として実施。AnalyzerReleases 台帳は不採用)。
 // Renumbered to gap-free bands on 2026-07-19 (a pre-release breaking change; the AnalyzerReleases ledger is not used).
@@ -534,6 +535,26 @@ internal static class Diagnostics
         title: "SQL property is not found",
         messageFormat: "Referenced property is not declared. method=[{0}], parameter=[{1}], property=[{2}], type=[{3}]",
         category: "Sql",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    // ==================================================================
+    // SDA06xx — DI registration method
+    // ==================================================================
+
+    public static DiagnosticDescriptor InvalidRegistrationMethod { get; } = new(
+        id: "SDA0601",
+        title: "Invalid DataAccessorRegistration method",
+        messageFormat: "[DataAccessorRegistration] method must be a static partial extension of IServiceCollection returning IServiceCollection. method=[{0}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static DiagnosticDescriptor RegistrationNoTarget { get; } = new(
+        id: "SDA0602",
+        title: "No DataAccessor to register",
+        messageFormat: "No [DataAccessor] class matches the registration. method=[{0}]",
+        category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 }
