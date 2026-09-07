@@ -100,6 +100,24 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             .Collect();
         context.RegisterSourceOutput(registryEntries, static (productionContext, all) => EmitRegistry(productionContext, all));
 
+        // [DataAccessorRegistration] partial メソッド(IServiceCollection 拡張)。宣言を transform 段で検証して Model 化し、
+        // レジストリと同じアクセサ集合と結合して実装部を出力する。宣言の引数型が IServiceCollection であること自体が
+        // M.E.DI 抽象への参照の証明なので、Compilation は参照しない。
+        // [DataAccessorRegistration] partial methods (IServiceCollection extensions). Each declaration is validated and
+        // modeled in the transform stage, then combined with the same accessor set as the registry to emit the
+        // implementation part. The IServiceCollection parameter type of the declaration proves the M.E.DI abstractions
+        // reference, so the Compilation is never consulted.
+        var registrationMethods = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                RegistrationModelBuilder.DataAccessorRegistrationAttributeName,
+                static (x, _) => x is MethodDeclarationSyntax,
+                static (context, _) => RegistrationModelBuilder.BuildMethodResult(context))
+            .WithTrackingName("RegistrationMethodResult")
+            .Collect();
+        context.RegisterSourceOutput(
+            registrationMethods.Combine(registryEntries),
+            static (productionContext, pair) => EmitRegistrations(productionContext, pair.Left, pair.Right));
+
         // /*!using*/ と /*!helper*/ は Compilation に対して検証しない。無効な名前空間・ヘルパー型は生成された
         // using 行の C# エラーとして現れるため、専用診断は出さない(パイプラインを Compilation 非依存・完全キャッシュに保つ)。
         // /*!using*/ and /*!helper*/ are not validated against the Compilation. An invalid namespace or helper
@@ -167,6 +185,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         return
         [
             new RegistryEntry(
+                model.Namespace,
                 model.ServiceTypeFullName ?? concreteName,
                 concreteName,
                 model.RequiresConnectionFactory,
@@ -185,6 +204,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     }
 
     private sealed record RegistryEntry(
+        string Namespace,
         string ServiceTypeName,
         string ConcreteTypeName,
         bool RequiresProvider,
@@ -209,18 +229,9 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.BeginScope();
         foreach (var entry in entries)
         {
-            var args = new List<string>();
-            if (entry.RequiresProvider)
-            {
-                var providerName = entry.MultiProvider
-                    ? "global::Smart.Data.IDbProviderSelector"
-                    : "global::Smart.Data.IDbProvider";
-                args.Add($"({providerName})provider.GetService(typeof({providerName}))!");
-            }
-            foreach (var injectName in entry.InjectTypeFqs)
-            {
-                args.Add($"({injectName})provider.GetService(typeof({injectName}))!");
-            }
+            var args = EnumerateDependencyTypes(entry)
+                .Select(static x => $"({x})provider.GetService(typeof({x}))!")
+                .ToList();
             builder.Indent()
                 .Append("global::Smart.Data.Accessor.DataAccessorRegistry.Register<")
                 .Append(entry.ServiceTypeName)
@@ -234,5 +245,168 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         builder.EndScope();
         builder.EndScope();
         return builder.ToString();
+    }
+
+    // 生成コンストラクタの引数順(プロバイダ → [Inject])で依存型を列挙する。レジストリ初期化子と登録メソッドで共用。
+    // Enumerates the dependency types in the generated constructor's parameter order (provider, then [Inject]).
+    // Shared by the registry initializer and the registration methods.
+    private static IEnumerable<string> EnumerateDependencyTypes(RegistryEntry entry)
+    {
+        if (entry.RequiresProvider)
+        {
+            yield return entry.MultiProvider
+                ? "global::Smart.Data.IDbProviderSelector"
+                : "global::Smart.Data.IDbProvider";
+        }
+        foreach (var injectName in entry.InjectTypeFqs)
+        {
+            yield return injectName;
+        }
+    }
+
+    // [DataAccessorRegistration] メソッドの実装部を出力する。診断を報告し、有効な宣言を(名前空間, クラス)単位にまとめて
+    // {ns}_{Class}.Registration.g.cs を 1 ファイルずつ出力する。
+    // Emits the implementation parts of the [DataAccessorRegistration] methods: reports the diagnostics, groups the
+    // valid declarations by (namespace, class) and emits one {ns}_{Class}.Registration.g.cs per class.
+    private static void EmitRegistrations(
+        SourceProductionContext context,
+        ImmutableArray<Result<RegistrationMethodModel>> methods,
+        ImmutableArray<RegistryEntry> entries)
+    {
+        var groups = new List<(string Namespace, string ClassName, List<RegistrationMethodModel> Methods)>();
+        foreach (var result in methods)
+        {
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+            }
+            if (result.Value is not { } model)
+            {
+                continue;
+            }
+
+            var index = groups.FindIndex(x => (x.Namespace == model.Namespace) && (x.ClassName == model.ClassName));
+            if (index < 0)
+            {
+                groups.Add((model.Namespace, model.ClassName, [model]));
+            }
+            else
+            {
+                groups[index].Methods.Add(model);
+            }
+        }
+
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        // 出力を安定させるため具象型名順に並べる。
+        // Ordered by concrete type name so the output is stable.
+        var sorted = entries
+            .OrderBy(static x => x.ConcreteTypeName, StringComparer.Ordinal)
+            .ToList();
+        foreach (var (ns, className, classMethods) in groups)
+        {
+            var source = EmitRegistrationClass(context, ns, className, classMethods, sorted);
+            var hintNamespace = String.IsNullOrEmpty(ns) ? "global" : ns;
+            context.AddSource(HintNameBuilder.BuildWithExtension(hintNamespace, ".Registration.g.cs", className), SourceText.From(source, Encoding.UTF8));
+        }
+    }
+
+    private static string EmitRegistrationClass(
+        SourceProductionContext context,
+        string ns,
+        string className,
+        List<RegistrationMethodModel> methods,
+        List<RegistryEntry> entries)
+    {
+        var builder = new SourceBuilder();
+        builder.AutoGenerated();
+        builder.EnableNullable();
+        builder.Indent().Append("#pragma warning disable").NewLine();
+        builder.NewLine();
+
+        if (!String.IsNullOrEmpty(ns))
+        {
+            builder.Namespace(ns);
+            builder.NewLine();
+        }
+
+        builder.Indent().Append("partial class ").Append(className).NewLine();
+        builder.BeginScope();
+        for (var i = 0; i < methods.Count; i++)
+        {
+            if (i > 0)
+            {
+                builder.NewLine();
+            }
+            EmitRegistrationMethod(context, builder, methods[i], entries);
+        }
+        builder.EndScope();
+        return builder.ToString();
+    }
+
+    // 1 メソッド分：対象アクセサごとに AddSingleton<サービス型>(services, static provider => new 具象型(依存...)) を出力する。
+    // 依存は provider.GetRequiredService<T>() で解決する。対象が 0 件なら SDA0602 を報告し、空の本体を出力する。
+    // One method: emits AddSingleton<Service>(services, static provider => new Concrete(dependencies...)) per target
+    // accessor, resolving the dependencies through provider.GetRequiredService<T>(). With no target it reports
+    // SDA0602 and emits an empty body.
+    private static void EmitRegistrationMethod(
+        SourceProductionContext context,
+        SourceBuilder builder,
+        RegistrationMethodModel method,
+        IEnumerable<RegistryEntry> entries)
+    {
+        var targets = entries.Where(x => IsRegistrationTarget(method, x)).ToList();
+        if (targets.Count == 0)
+        {
+            context.ReportDiagnostic(new DiagnosticInfo(Diagnostics.RegistrationNoTarget, method.Location, method.MethodName).ToDiagnostic());
+        }
+
+        builder.Indent()
+            .Append(method.Accessibility.ToText())
+            .Append(" static partial global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
+            .Append(method.MethodName)
+            .Append("(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)")
+            .NewLine();
+        builder.BeginScope();
+        foreach (var entry in targets)
+        {
+            var args = EnumerateDependencyTypes(entry)
+                .Select(static x => $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{x}>(provider)")
+                .ToList();
+            builder.Indent()
+                .Append("global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<")
+                .Append(entry.ServiceTypeName)
+                .Append(">(services, static provider => new ")
+                .Append(entry.ConcreteTypeName)
+                .Append("(")
+                .Append(String.Join(", ", args))
+                .Append("));")
+                .NewLine();
+        }
+        builder.Indent().Append("return services;").NewLine();
+        builder.EndScope();
+    }
+
+    // Namespace 未指定なら全件。指定時はその名前空間と、その配下(前方一致 + '.')を対象にする。
+    // No Namespace selects everything; a filter matches the namespace itself and everything below it (prefix + '.').
+    private static bool IsRegistrationTarget(RegistrationMethodModel method, RegistryEntry entry)
+    {
+        if (method.RegisterAll)
+        {
+            return true;
+        }
+
+        foreach (var filter in method.NamespaceFilters)
+        {
+            if ((entry.Namespace == filter) || entry.Namespace.StartsWith(filter + ".", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
