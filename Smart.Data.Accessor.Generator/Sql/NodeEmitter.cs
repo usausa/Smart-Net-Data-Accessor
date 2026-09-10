@@ -239,10 +239,14 @@ internal static class NodeEmitter
                 }
 
                 case RawSqlNode rawSqlNode:
+                    // /*# expr */ substitutes the expression value into the SQL text itself (a dynamic
+                    // ORDER BY column etc.) instead of binding a parameter. StringBuilder.Append resolves
+                    // the overload from the expression type, so a non-nullable value type works as well
+                    // (a null-conditional would not compile there) and a null value appends nothing.
                     hasDynamicSql = true;
-                    sb.Append("__sb.Append((")
+                    sb.Append("__sb.Append(")
                         .Append(rawSqlNode.Source)
-                        .Append(")?.ToString() ?? string.Empty);\n");
+                        .Append(");\n");
                     break;
 
                 case CodeNode codeNode:

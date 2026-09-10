@@ -121,6 +121,25 @@ public sealed class SqlPipelineTests
     }
 
     // ----------------------------------------------------------------------------
+    // A hint is part of the SQL text, so it does not push the statement onto the
+    // dynamic (StringBuilder) path: EmitStatic returns the literal, not the
+    // "[dynamic SQL ...]" marker. This is the hint example from README.md.
+    // ----------------------------------------------------------------------------
+
+    [Fact]
+    public void HintKeepsStaticSqlPath()
+    {
+        const string sql =
+            "SELECT /*+ INDEX(Data IX_Data_Type) */ Id, Name, Type FROM Data" +
+            "\r\n" +
+            "WHERE Type = /*@ type */1";
+
+        Assert.Equal(
+            "SELECT /*+ INDEX(Data IX_Data_Type) */ Id, Name, Type FROM Data WHERE Type = @p0",
+            EmitStatic(sql, "type"));
+    }
+
+    // ----------------------------------------------------------------------------
     // Direct tokenizer-level test for the marker classification (no normalizer /
     // NodeBuilder pass). Makes it easy to see which classes a comment maps to.
     // ----------------------------------------------------------------------------

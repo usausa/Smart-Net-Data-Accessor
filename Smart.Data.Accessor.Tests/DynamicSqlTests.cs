@@ -67,6 +67,28 @@ public sealed class DynamicSqlTests
     }
 
     [Fact]
+    public void RawMarkerSubstitutesArgumentIntoSqlText()
+    {
+        string? captured = null;
+        using var con = new MockDbConnection();
+        con.SetupCommand(cmd =>
+        {
+            cmd.Executing = x => captured = x.CommandText;
+            cmd.SetupResult(MockData.DataReader(
+                new DataEntity { Id = 1, Name = "Alice", Type = 1, Kind = DataType.Small }));
+        });
+
+        var accessor = new DynamicAccessor();
+        accessor.QueryOrderBy(con, "Name DESC");
+
+        // The value lands in the SQL text itself (the /*# sort */Id dummy column is replaced),
+        // so no parameter is bound for it.
+        Assert.NotNull(captured);
+        Assert.EndsWith("ORDER BY Name DESC", captured, StringComparison.Ordinal);
+        Assert.DoesNotContain("@p", captured, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InClauseEmptyCollectionExpandsToNull()
     {
         string? captured = null;

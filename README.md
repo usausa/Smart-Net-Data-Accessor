@@ -100,6 +100,8 @@ The SQL files are **valid SQL as-is** (they run unchanged in your SQL tools); di
 | `/*@ name */dummy` | Bind the method parameter `name`. The literal after the comment is a placeholder for tooling and is replaced at build time |
 | `/*% if (cond) { */ ... /*% } */` | Dynamic block — the condition is real C# over the method parameters, evaluated at runtime with zero string parsing |
 | `/*@ ids */(...)` | An `IEnumerable<T>` parameter expands to an IN list at runtime (empty lists become `(NULL)`) |
+| `/*# expr */dummy` | **Raw substitution** — the value of the C# expression becomes part of the SQL text itself (a sort column, `ASC` / `DESC`, ...), not a bound parameter |
+| `/*+ hint */` | Query hint — emitted into the SQL text verbatim (plain `/* */` and `--` comments are stripped) |
 | `/*!using Ns */`, `/*!helper Type */` | Add `using` / `using static` to the generated file so the `if` conditions can call helpers |
 
 ```sql
@@ -111,6 +113,72 @@ ORDER BY Id
 ```
 
 Static SQL (no dynamic blocks) is embedded as a single string literal — no `StringBuilder`, no runtime work.
+
+### Raw substitution — `/*# expr */`
+
+`/*@ name */` always produces a bound parameter, and a parameter can never stand for an *identifier* —
+a column name, a sort direction, a table name. That is what `/*# expr */` is for: the value of the
+expression is written into the SQL text itself.
+
+```csharp
+[Query]
+public partial IReadOnlyList<DataEntity> QueryOrderBy(string sort);
+```
+
+```sql
+SELECT Id, Name, Type FROM Data ORDER BY /*# sort */Id
+```
+
+`QueryOrderBy("Name DESC")` runs `... ORDER BY Name DESC`. As with `/*@ */`, the literal after the
+comment (`Id`) is only a placeholder that keeps the file valid SQL, and is replaced at build time.
+
+* The expression is plain C# over the method parameters — `/*# sort */`, `/*# args.Sort */`,
+  `/*# Resolve(sort) */` — and is appended with `StringBuilder.Append`, so any type works
+  (`string`, `int`, an enum, ...) and `null` appends nothing.
+* **The value is not escaped or quoted — this is string concatenation into SQL.** Never substitute
+  unvalidated input. Take a closed set (an enum) and map it to the column name in a `/*!helper */`
+  class, so the SQL text can only ever be one of your own strings:
+
+  ```csharp
+  public static class SortHelper
+  {
+      public static string Resolve(SortKey key) => key switch
+      {
+          SortKey.Name => "Name",
+          SortKey.Type => "Type DESC",
+          _ => "Id"
+      };
+  }
+  ```
+
+  ```sql
+  /*!helper MyApp.SortHelper */
+  SELECT Id, Name, Type FROM Data ORDER BY /*# Resolve(sort) */Id
+  ```
+
+* A raw marker makes the statement dynamic, so it is built through `StringBuilderPool` at runtime
+  instead of being emitted as a single string literal.
+* Only `/*@ */` names are matched against the method parameters; the text of `/*# */` is emitted as-is,
+  so a typo surfaces as a C# compile error on the generated line.
+
+### Query hints — `/*+ ... */`
+
+Ordinary comments never reach `cmd.CommandText` — a `/* ... */` block or a `--` line comment collapses
+into a single space in the emitted SQL. Optimizer hints are written as comments too, so they get their
+own marker: `/*+ ... */` is passed through verbatim.
+
+```sql
+SELECT /*+ INDEX(Data IX_Data_Type) */ Id, Name, Type FROM Data
+WHERE Type = /*@ type */1
+```
+
+* The hint stays exactly where it is written, and the spacing on each side follows the source — a
+  database that expects the hint immediately after `SELECT` gets it there.
+* The body is normalized to `/*+ body */`, so `/*+INDEX(t i)*/` is emitted as `/*+ INDEX(t i) */`.
+* The text is never interpreted; it goes to the database as-is (Oracle / MySQL-style comment hints —
+  SQL Server's `OPTION (...)` is plain SQL and needs no marker).
+* A hint does not make the statement dynamic: SQL with hints but no dynamic blocks is still emitted as
+  a single string literal.
 
 ### Inline SQL — `[Sql]`
 
@@ -253,6 +321,10 @@ public partial DbDataReader QueryReader();
 
 `[ExecuteReader]` returns a wrapper that disposes the command (and, for provider-owned
 connections, the connection) together with the reader — a single `using` on the caller side.
+
+`[DirectSql]` replaces the whole statement. To substitute a single fragment — a sort column, a table
+name — into an otherwise normal 2-way SQL statement, use the `/*# expr */` marker instead
+(*Raw substitution* under [2-way SQL](#2-way-sql)).
 
 ## Connections and DI
 

@@ -152,8 +152,78 @@ public sealed class GeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.Run", "delete from Data order by /*# order */col"));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("__sb.Append((order)?.ToString() ?? string.Empty);", text, StringComparison.Ordinal);
+        Assert.Contains("__sb.Append(order);", text, StringComparison.Ordinal);
         Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RawSqlAcceptsValueTypeArgument()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal enum SortOrder
+            {
+                Ascending,
+                Descending
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Run(SortOrder order, int top);
+            }
+            """;
+
+        // A raw marker over a non-nullable value type (enum / int) must compile as well: the emitted
+        // Append() relies on overload resolution instead of a null-conditional (which is a CS0023 on a
+        // non-nullable value type). The harness compiles the generated code, so a regression fails here.
+        var result = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.Run", "delete from Data where Id < /*# top */0 order by Id /*# order */asc"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("__sb.Append(top);", text, StringComparison.Ordinal);
+        Assert.Contains("__sb.Append(order);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RawSqlCallsHelperFromPragma()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            namespace App;
+
+            internal enum SortKey
+            {
+                Id,
+                Name
+            }
+
+            internal static class SortHelper
+            {
+                public static string Resolve(SortKey key) => key == SortKey.Name ? "Name" : "Id";
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Run(SortKey sort);
+            }
+            """;
+
+        // The injection-safe raw pattern: a closed set (enum) mapped to a column name by a
+        // /*!helper */ class, so the substituted text can only be one of the helper's own strings.
+        var result = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.Run", "/*!helper App.SortHelper */\r\ndelete from Data order by /*# Resolve(sort) */Id"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("using static App.SortHelper;", text, StringComparison.Ordinal);
+        Assert.Contains("__sb.Append(Resolve(sort));", text, StringComparison.Ordinal);
     }
 
     [Fact]
