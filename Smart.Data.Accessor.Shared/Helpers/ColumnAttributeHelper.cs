@@ -21,6 +21,7 @@ internal static class ColumnAttributeHelper
     {
         string? name = null;
         var isKey = false;
+        var keyOrder = 0;
         var isDatabaseManaged = false;
         var isIgnored = false;
         foreach (var attribute in property.GetAttributes())
@@ -32,6 +33,7 @@ internal static class ColumnAttributeHelper
                     break;
                 case KeyAttributeName:
                     isKey = true;
+                    keyOrder = (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is int order) ? order : 0;
                     break;
                 case DatabaseManagedAttributeName:
                     isDatabaseManaged = true;
@@ -41,10 +43,10 @@ internal static class ColumnAttributeHelper
                     break;
             }
         }
-        return new ColumnAttributeInfo(name ?? NameConverter.Convert(property.Name, naming), isKey, isDatabaseManaged, isIgnored);
+        return new ColumnAttributeInfo(name ?? NameConverter.Convert(property.Name, naming), isKey, keyOrder, isDatabaseManaged, isIgnored);
     }
 }
 
 // Equatable result of column-mapping attribute reading (an Info shared as a Model member, not a
 // generator Mapping Model).
-internal readonly record struct ColumnAttributeInfo(string ColumnName, bool IsKey, bool IsDatabaseManaged, bool IsIgnored);
+internal readonly record struct ColumnAttributeInfo(string ColumnName, bool IsKey, int KeyOrder, bool IsDatabaseManaged, bool IsIgnored);

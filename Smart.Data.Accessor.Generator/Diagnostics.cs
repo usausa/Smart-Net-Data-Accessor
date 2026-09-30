@@ -2,6 +2,8 @@ namespace Smart.Data.Accessor.Generator;
 
 using Microsoft.CodeAnalysis;
 
+using SourceGenerateHelper;
+
 // Core DataAccessor generator diagnostics. IDs follow a phase-based banding aligned with the pipeline:
 //   SDA00xx  class-level        (BuildClassResult: class structure + class attributes [Inject]/[Provider]/[ExecuteConfig])
 //   SDA01xx  method structure   (method partial / command-source exclusivity A-group・B-group)
@@ -25,7 +27,8 @@ internal static class Diagnostics
         messageFormat: "[DataAccessor] class must be partial. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DataAccessorClassNested { get; } = new(
         id: "SDA0002",
@@ -33,7 +36,8 @@ internal static class Diagnostics
         messageFormat: "[DataAccessor] class must not be nested. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DataAccessorClassGeneric { get; } = new(
         id: "SDA0003",
@@ -41,7 +45,8 @@ internal static class Diagnostics
         messageFormat: "[DataAccessor] class must not be generic. class=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor InjectNameDuplicated { get; } = new(
         id: "SDA0004",
@@ -49,7 +54,8 @@ internal static class Diagnostics
         messageFormat: "[Inject] Name is declared more than once. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor InjectNameConflictsWithMember { get; } = new(
         id: "SDA0005",
@@ -57,7 +63,8 @@ internal static class Diagnostics
         messageFormat: "[Inject] Name conflicts with an existing member. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor InjectTypeNotResolvable { get; } = new(
         id: "SDA0006",
@@ -97,7 +104,8 @@ internal static class Diagnostics
         messageFormat: "Target type has no [AccessorProfile]. class=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ProfileCircularReference { get; } = new(
         id: "SDA0011",
@@ -105,7 +113,8 @@ internal static class Diagnostics
         messageFormat: "Profile class also has [ExecuteConfig]. class=[{0}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // [Naming] は assembly / class / method の全スコープに付くが、検証はコア Generator が一括して行うためこの帯に置く。
     // [Naming] can appear at assembly / class / method scope; the core generator validates all of them, so it lives in this band.
@@ -114,8 +123,44 @@ internal static class Diagnostics
         title: "Undefined NamingConvention value",
         messageFormat: "[Naming] value is not a defined NamingConvention. value=[{0}]",
         category: "Mapping",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
+
+    public static DiagnosticDescriptor DataAccessorClassKind { get; } = new(
+        id: "SDA0013",
+        title: "Unsupported DataAccessor class",
+        messageFormat: "[DataAccessor] class must not be static, abstract, a record or file-local. class=[{0}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
+
+    public static DiagnosticDescriptor HintNameCollision { get; } = new(
+        id: "SDA0014",
+        title: "Class name differs only in case",
+        messageFormat: "Class name differs only in case from another class, and its source is not generated. class=[{0}], other=[{1}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
+
+    public static DiagnosticDescriptor InvalidPropertyValue { get; } = new(
+        id: "SDA0015",
+        title: "Invalid MSBuild property value",
+        messageFormat: "MSBuild property value is not valid, and the default is used. property=[{0}], value=[{1}]",
+        category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    public static DiagnosticDescriptor UndefinedEnumValue { get; } = new(
+        id: "SDA0016",
+        title: "Undefined enum value",
+        messageFormat: "Attribute argument is not a defined enum value, and is not used. attribute=[{0}], value=[{1}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // ==================================================================
     // SDA01xx — method structure / command-source exclusivity
@@ -127,7 +172,8 @@ internal static class Diagnostics
         messageFormat: "[DataAccessor] method must be partial. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor PartialMethodAlreadyImplemented { get; } = new(
         id: "SDA0102",
@@ -135,7 +181,8 @@ internal static class Diagnostics
         messageFormat: "A partial implementation is already present. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // The execution-kind attributes (A-group) are mutually exclusive.
     public static DiagnosticDescriptor ExecutionKindDuplicated { get; } = new(
@@ -144,7 +191,8 @@ internal static class Diagnostics
         messageFormat: "Multiple execution-kind attributes are present. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // [Procedure] and [DirectSql] (B-group command sources) are mutually exclusive. The QueryBuilder
     // combinations are SDA0105 (core) / SDA1002 (builder); this fills the remaining gap.
@@ -154,7 +202,8 @@ internal static class Diagnostics
         messageFormat: "Command source is ambiguous. method=[{0}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor BuilderAndCommandSourceConflict { get; } = new(
         id: "SDA0105",
@@ -162,7 +211,8 @@ internal static class Diagnostics
         messageFormat: "SQL source is ambiguous. method=[{0}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor MethodNameDuplicated { get; } = new(
         id: "SDA0106",
@@ -170,7 +220,8 @@ internal static class Diagnostics
         messageFormat: "[MethodName] is declared on multiple methods. class=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlAndCommandSourceConflict { get; } = new(
         id: "SDA0107",
@@ -178,7 +229,8 @@ internal static class Diagnostics
         messageFormat: "[Sql] cannot be combined with another source. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // 実行種別属性(A 群)は生成マーカーであり必須。コマンドソース属性(B 群)は実行種別を既定しない。
     // The execution-kind attribute (A-group) is the generation marker and mandatory; command-source
@@ -189,7 +241,8 @@ internal static class Diagnostics
         messageFormat: "Execution-kind attribute is missing. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // Query 形の CommandBehavior は F17 で固定(SingleResult 等)。reader 形だけが列読み順を呼出側が
     // 制御するため、behavior のオプトインを許す。
@@ -201,7 +254,8 @@ internal static class Diagnostics
         messageFormat: "[ReaderBehavior] needs [ExecuteReader]. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // ==================================================================
     // SDA02xx — parameter / direction
@@ -213,7 +267,8 @@ internal static class Diagnostics
         messageFormat: "Multiple members share the same [Name]. method=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DirectSqlFirstParamNotString { get; } = new(
         id: "SDA0202",
@@ -221,7 +276,8 @@ internal static class Diagnostics
         messageFormat: "[DirectSql] first parameter must be string. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ProcedureNameEmpty { get; } = new(
         id: "SDA0203",
@@ -237,7 +293,8 @@ internal static class Diagnostics
         messageFormat: "async [Procedure] cannot use out/ref. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DbTypeAttributeConflict { get; } = new(
         id: "SDA0205",
@@ -245,7 +302,8 @@ internal static class Diagnostics
         messageFormat: "[DbType] and [DbType<TEnum>] conflict. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DbTypeProviderEnumNotWhitelisted { get; } = new(
         id: "SDA0206",
@@ -261,7 +319,8 @@ internal static class Diagnostics
         messageFormat: "[Direction({2})] conflicts with '{3}'. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DirectionOnUnsupportedMethod { get; } = new(
         id: "SDA0208",
@@ -269,7 +328,8 @@ internal static class Diagnostics
         messageFormat: "Method kind does not support [Direction]. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ReturnValueDirectionNotAllowed { get; } = new(
         id: "SDA0209",
@@ -277,7 +337,8 @@ internal static class Diagnostics
         messageFormat: "[Direction(ReturnValue)] is not supported. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DirectSqlCommandTextDirection { get; } = new(
         id: "SDA0210",
@@ -285,7 +346,8 @@ internal static class Diagnostics
         messageFormat: "[Direction] is not allowed here. method=[{0}], parameter=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlTextEmpty { get; } = new(
         id: "SDA0211",
@@ -310,7 +372,8 @@ internal static class Diagnostics
         messageFormat: "Return type is not supported. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ExecuteReturnInvalid { get; } = new(
         id: "SDA0302",
@@ -318,7 +381,8 @@ internal static class Diagnostics
         messageFormat: "[Execute] return type is not supported. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ExecuteReaderInvalidReturn { get; } = new(
         id: "SDA0303",
@@ -326,7 +390,8 @@ internal static class Diagnostics
         messageFormat: "[ExecuteReader] return type is not a data reader. method=[{0}], type=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ExecuteReaderRequiresUsing { get; } = new(
         id: "SDA0304",
@@ -368,7 +433,8 @@ internal static class Diagnostics
         messageFormat: "Converter TClr does not match the property. method=[{0}], property=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ConverterNotIValueConverter { get; } = new(
         id: "SDA0309",
@@ -376,7 +442,8 @@ internal static class Diagnostics
         messageFormat: "Type does not implement IValueConverter<,>. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ConverterStaticAbstractMissing { get; } = new(
         id: "SDA0310",
@@ -384,7 +451,8 @@ internal static class Diagnostics
         messageFormat: "Static FromDb/ToDb implementation is missing. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor TypeHandlerDuplicated { get; } = new(
         id: "SDA0311",
@@ -400,7 +468,8 @@ internal static class Diagnostics
         messageFormat: "Query element type has no mappable column. method=[{0}], type=[{1}]",
         category: "Mapping",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // ==================================================================
     // SDA04xx — SQL-file resolution
@@ -412,7 +481,8 @@ internal static class Diagnostics
         messageFormat: "Neither a SQL file nor a Builder is specified. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlFileNameCollision { get; } = new(
         id: "SDA0402",
@@ -420,7 +490,8 @@ internal static class Diagnostics
         messageFormat: "Multiple SQL files resolve to one name. method=[{0}], name=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor DirectSqlHasSqlFile { get; } = new(
         id: "SDA0403",
@@ -428,7 +499,8 @@ internal static class Diagnostics
         messageFormat: "[DirectSql] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor ProcedureHasSqlFile { get; } = new(
         id: "SDA0404",
@@ -436,7 +508,8 @@ internal static class Diagnostics
         messageFormat: "[Procedure] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor BuilderAndSqlBothPresent { get; } = new(
         id: "SDA0405",
@@ -444,7 +517,8 @@ internal static class Diagnostics
         messageFormat: "SQL file and QueryBuilder are both present. method=[{0}], file=[{1}]",
         category: "Builder",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlHasSqlFile { get; } = new(
         id: "SDA0406",
@@ -452,7 +526,8 @@ internal static class Diagnostics
         messageFormat: "[Sql] must not have a SQL file. method=[{0}], file=[{1}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // ==================================================================
     // SDA05xx — 2-way SQL parse
@@ -464,7 +539,8 @@ internal static class Diagnostics
         messageFormat: "SQL could not be tokenized. method=[{0}], detail=[{1}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlEmpty { get; } = new(
         id: "SDA0502",
@@ -480,7 +556,8 @@ internal static class Diagnostics
         messageFormat: "A SQL comment is not closed. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlQuoteNotClosed { get; } = new(
         id: "SDA0504",
@@ -488,7 +565,8 @@ internal static class Diagnostics
         messageFormat: "A SQL string literal quote is not closed. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlUnknownPragma { get; } = new(
         id: "SDA0505",
@@ -496,7 +574,8 @@ internal static class Diagnostics
         messageFormat: "Unknown SQL pragma '/*!{1} */'. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlCodeBlockBraceUnclosed { get; } = new(
         id: "SDA0506",
@@ -504,7 +583,8 @@ internal static class Diagnostics
         messageFormat: "Code block has an unclosed brace. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor SqlCodeBlockBraceExtraClose { get; } = new(
         id: "SDA0507",
@@ -512,15 +592,17 @@ internal static class Diagnostics
         messageFormat: "Code block has an unmatched closing brace. method=[{0}]",
         category: "Sql",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor UndefinedSqlParameter { get; } = new(
         id: "SDA0508",
         title: "Undefined SQL parameter",
-        messageFormat: "SQL parameter '@{1}' is not a method parameter. method=[{0}]",
+        messageFormat: "SQL parameter is neither a method parameter nor a name the accessor can reference, and the method gets no implementation. method=[{0}], parameter=[{1}]",
         category: "Sql",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor UnusedMethodParameter { get; } = new(
         id: "SDA0509",
@@ -532,11 +614,12 @@ internal static class Diagnostics
 
     public static DiagnosticDescriptor SqlPropertyNotFound { get; } = new(
         id: "SDA0510",
-        title: "SQL property is not found",
-        messageFormat: "Referenced property is not declared. method=[{0}], parameter=[{1}], property=[{2}], type=[{3}]",
+        title: "SQL member is not found",
+        messageFormat: "Referenced member is not found, and the method gets no implementation. method=[{0}], parameter=[{1}], member=[{2}], type=[{3}]",
         category: "Sql",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     // ==================================================================
     // SDA06xx — DI registration method
@@ -548,7 +631,8 @@ internal static class Diagnostics
         messageFormat: "[DataAccessorRegistration] method must be a static partial extension of IServiceCollection returning IServiceCollection. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: DiagnosticTags.NotSuppressible);
 
     public static DiagnosticDescriptor RegistrationNoTarget { get; } = new(
         id: "SDA0602",

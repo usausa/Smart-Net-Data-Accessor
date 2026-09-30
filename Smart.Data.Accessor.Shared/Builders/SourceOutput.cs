@@ -4,11 +4,11 @@ using Microsoft.CodeAnalysis;
 
 using SourceGenerateHelper;
 
-// 各 provider の QueryBuilder 出力が共有する出力段：診断を報告し、メソッドがあれば partial クラスを足場として組み、各メソッドを
+// 各 provider の QueryBuilder 出力が共有する出力段：メソッドがあれば partial クラスを足場として組み、各メソッドを
 // provider の emitMethod で出力して AddSource する。メソッド本体(kind 分岐＋SQL 組み立て)は各 provider が供給する。Model 型に依存しない。
-// Output stage shared by the providers' QueryBuilder generators: report diagnostics and, when there is at least one method,
-// scaffold the partial class, emit each method via the provider's emitMethod callback, and AddSource. The per-method body
-// (kind dispatch + SQL assembly) is supplied by each provider. Independent of the model type.
+// Output stage shared by the providers' QueryBuilder generators: when there is at least one method, scaffold the partial
+// class, emit each method via the provider's emitMethod callback, and AddSource. The per-method body (kind dispatch + SQL
+// assembly) is supplied by each provider. Independent of the model type.
 internal static class SourceOutput
 {
     public static void Emit<TMethod>(
@@ -17,15 +17,9 @@ internal static class SourceOutput
         string className,
         Accessibility accessibility,
         EquatableArray<TMethod> methods,
-        EquatableArray<DiagnosticInfo> diagnostics,
         Action<SourceBuilder, TMethod> emitMethod,
         string providerTag)
     {
-        foreach (var diagnostic in diagnostics)
-        {
-            context.ReportDiagnostic(diagnostic.ToDiagnostic());
-        }
-
         if (methods.Count == 0)
         {
             return;

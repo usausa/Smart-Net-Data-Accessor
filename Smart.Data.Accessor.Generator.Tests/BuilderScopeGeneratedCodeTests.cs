@@ -127,7 +127,7 @@ public sealed class BuilderScopeGeneratedCodeTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         // The Name column carries an explicit DbType (F3), passed as the AddInParameter DbType argument.
-        Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name, (global::System.Data.DbType)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Name\", entity.Name, (global::System.Data.DbType)", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class BuilderScopeGeneratedCodeTests
 
         // The profile-scope [TypeMap] supplies the DbType for the DateTime column — Builder now resolves
         // class+profile [TypeMap] exactly like the core generator (shared MappingAttributeHelper).
-        Assert.Contains("AddInParameter(cmd, \"@CreatedAt\", entity.CreatedAt, (global::System.Data.DbType)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@CreatedAt\", entity.CreatedAt, (global::System.Data.DbType)", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -184,6 +184,6 @@ public sealed class BuilderScopeGeneratedCodeTests
         // The value (method) parameter carries an explicit [DbType] — now honoured on Builder methods
         // exactly like the core generator (shared MappingAttributeHelper.ResolveParameterDbType). It binds
         // through the Delete builder's WHERE clause.
-        Assert.Contains("AddInParameter(cmd, \"@code\", code, (global::System.Data.DbType)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@code\", code, (global::System.Data.DbType)", text, StringComparison.Ordinal);
     }
 }

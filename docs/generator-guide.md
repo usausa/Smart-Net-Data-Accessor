@@ -54,14 +54,15 @@ User code
       ┌──────────────┴───────────────────────────────┐
       │ Core generator (Smart.Data.Accessor.Generator)│ ← untouched
       │   generates the List() body and delegates SQL │
-      │   assembly to List__QueryBuilder(ref ctx, ...)│
+      │   assembly to                                 │
+      │   List__QueryBuilder(ref __context, ...)      │
       └──────────────┬───────────────────────────────┘
                      │ joined by naming convention (validated at compile time)
       ┌──────────────┴───────────────────────────────┐
       │ Provider generator (what you build)           │
       │   generates                                   │
       │   private static void List__QueryBuilder(     │
-      │       ref BuilderContext context, <values>)   │
+      │       ref BuilderContext __context, <values>) │
       │   into the same partial class                 │
       └──────────────────────────────────────────────┘
 ```
@@ -72,9 +73,10 @@ User code
    `QueryBuilderAttribute`-derived attribute as `SqlSource.QueryBuilder` and emits a call to
    `{MethodName}__QueryBuilder`.
 2. Your generator emits
-   `private static void {MethodName}__QueryBuilder(ref BuilderContext context, <value params>)`
-   into the same partial class (the signature opening and `var cmd = context.Command;` come from
-   the shared `SqlEmit`).
+   `private static void {MethodName}__QueryBuilder(ref BuilderContext __context, <value params>)`
+   into the same partial class (the signature opening and `var __cmd = __context.Command;` come from
+   the shared `SqlEmit`). The generated names start with `__` so that they do not clash with the value
+   parameters, which keep the names of the method parameters.
 3. Exclusivity and consistency are enforced by core diagnostics: the A-group requirement
    (SDA0108), QueryBuilder × `[Procedure]`/`[DirectSql]` (SDA0105), × `[Sql]` (SDA0107), a
    coexisting `.sql` file (SDA0405), duplicated QueryBuilder attributes (SDA1002).
@@ -298,7 +300,7 @@ internal static class OracleSourceBuilder
     public static void EmitMethod(SourceBuilder builder, OracleMethodModel method)
     {
         SqlEmit.OpenMethod(builder, method.MethodName, method.ValueParams);
-        //   → emits {Method}__QueryBuilder(ref BuilderContext context, <values>) and `var cmd = context.Command;`
+        //   → emits {Method}__QueryBuilder(ref BuilderContext __context, <values>) and `var __cmd = __context.Command;`
 
         // assemble the SQL text — the provider dialect lives here
         SqlEmit.EmitCommandText(builder, sql);          // CommandText assignment for static SQL
@@ -416,7 +418,7 @@ internal static class OracleSourceBuilder
 ## 7. Pre-release checklist
 
 - [ ] Attributes derive from `QueryBuilderAttribute`, flat namespace, provider-prefixed class names
-- [ ] `{Method}__QueryBuilder(ref BuilderContext context, ...)` generated through the shared `SqlEmit`
+- [ ] `{Method}__QueryBuilder(ref BuilderContext __context, ...)` generated through the shared `SqlEmit`
 - [ ] Models are internal, equatable, symbol-free (`WithTrackingName` wired)
 - [ ] Own diagnostic prefix (gap-free sequential numbering within each band)
 - [ ] Descriptors declared as properties (a field is analysed by RS1032 / RS2008)

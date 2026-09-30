@@ -40,7 +40,7 @@ public sealed class RegistrationGeneratedCodeTests
         "public static partial global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddDataAccessors(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)";
 
     private const string ResolveProvider =
-        "global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Smart.Data.IDbProvider>(provider)";
+        "global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Smart.Data.IDbProvider>(__provider)";
 
     [Fact]
     public void PatternBAccessorIsRegisteredAsSingletonFactory()
@@ -51,7 +51,7 @@ public sealed class RegistrationGeneratedCodeTests
         Assert.Contains("partial class Registration", text, StringComparison.Ordinal);
         Assert.Contains(MethodSignature, text, StringComparison.Ordinal);
         Assert.Contains(
-            "global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Demo.Data.Accessor>(services, static provider => new global::Demo.Data.Accessor(" + ResolveProvider + "));",
+            "global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Demo.Data.Accessor>(services, static __provider => new global::Demo.Data.Accessor(" + ResolveProvider + "));",
             text,
             StringComparison.Ordinal);
         Assert.Contains("return services;", text, StringComparison.Ordinal);
@@ -78,7 +78,7 @@ public sealed class RegistrationGeneratedCodeTests
         var result = GeneratorTestHelper.RunWithServiceCollection(source, ("Accessor.Delete", DeleteSql));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("AddSingleton<global::Demo.Data.Accessor>(services, static provider => new global::Demo.Data.Accessor());", text, StringComparison.Ordinal);
+        Assert.Contains("AddSingleton<global::Demo.Data.Accessor>(services, static __provider => new global::Demo.Data.Accessor());", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class RegistrationGeneratedCodeTests
         var text = result.AllGeneratedText;
 
         Assert.Contains(
-            "new global::Demo.Data.Accessor(global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Smart.Data.IDbProviderSelector>(provider), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Data.ILogger>(provider)));",
+            "new global::Demo.Data.Accessor(global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Smart.Data.IDbProviderSelector>(__provider), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Data.ILogger>(__provider)));",
             text,
             StringComparison.Ordinal);
     }
@@ -141,7 +141,7 @@ public sealed class RegistrationGeneratedCodeTests
         var result = GeneratorTestHelper.RunWithServiceCollection(source, ("Accessor.Delete", DeleteSql));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("AddSingleton<global::Demo.Data.IAccessor>(services, static provider => new global::Demo.Data.Accessor(", text, StringComparison.Ordinal);
+        Assert.Contains("AddSingleton<global::Demo.Data.IAccessor>(services, static __provider => new global::Demo.Data.Accessor(", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -314,6 +314,29 @@ public sealed class RegistrationGeneratedCodeTests
         var text = result.AllGeneratedText;
 
         Assert.Contains("private static partial global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddMine(", text, StringComparison.Ordinal);
-        Assert.Contains("AddSingleton<global::Accessor>(services, static provider => new global::Accessor(" + ResolveProvider + "));", text, StringComparison.Ordinal);
+        Assert.Contains("AddSingleton<global::Accessor>(services, static __provider => new global::Accessor(" + ResolveProvider + "));", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NullableServiceCollectionIsAccepted()
+    {
+        const string source = """
+            using Microsoft.Extensions.DependencyInjection;
+            using Smart.Data.Accessor.Attributes;
+
+            namespace Demo
+            {
+                internal static partial class Registration
+                {
+                    [DataAccessorRegistration]
+                    public static partial IServiceCollection? AddDataAccessors(this IServiceCollection? provider);
+                }
+            }
+
+            """ + ProviderAccessor;
+
+        var result = GeneratorTestHelper.GetProblemIdsWithServiceCollection(source, ("Accessor.Delete", DeleteSql));
+
+        Assert.Empty(result);
     }
 }

@@ -35,8 +35,8 @@ public sealed class GeneratedCodeTests
         var text = result.AllGeneratedText;
 
         // Static fast path: literal CommandText, direct parameter add, no pooled StringBuilder.
-        Assert.Contains("cmd.CommandText = \"delete from Data where Id = @p0\";", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@p0\", id", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"delete from Data where Id = @p0\";", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@p0\", id", text, StringComparison.Ordinal);
         Assert.DoesNotContain("StringBuilderPool", text, StringComparison.Ordinal);
     }
 
@@ -83,7 +83,7 @@ public sealed class GeneratedCodeTests
         var result = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update Data set Total = /*@ total */0"));
         var text = result.AllGeneratedText;
 
-        Assert.Contains("AddOutParameter(cmd,", text, StringComparison.Ordinal);
+        Assert.Contains("AddOutParameter(__cmd,", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -114,9 +114,9 @@ public sealed class GeneratedCodeTests
         // is assigned from the builder (never a precomputed literal).
         Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
         Assert.Contains("if (id != null) {", text, StringComparison.Ordinal);
-        Assert.Contains("cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
         Assert.Contains("StringBuilderPool.Return(__sb)", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("cmd.CommandText = \"update", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("__cmd.CommandText = \"update", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -128,8 +128,8 @@ public sealed class GeneratedCodeTests
         // /*@ ids */(...) → runtime IN-list expansion via AddInParameters; the single scalar
         // /*@ id */ still binds via AddInParameter. The presence of a multi-value parameter forces
         // the dynamic StringBuilderPool path.
-        Assert.Contains("AddInParameters(__sb, cmd, \"@p0\", ids", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@p1\", id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameters(__sb, __cmd, \"@p0\", ids", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@p1\", id", text, StringComparison.Ordinal);
         Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
     }
 
@@ -292,7 +292,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set At = /*@ at */0 where Id = /*@ id */0")).AllGeneratedText;
 
-        Assert.Contains("AddInParameter<global::TicksConverter, long, global::System.DateTime>(cmd, \"@p0\", at)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter<global::TicksConverter, long, global::System.DateTime>(__cmd, \"@p0\", at)", text, StringComparison.Ordinal);
         Assert.DoesNotContain("global::TicksConverter.ToDb(at)", text, StringComparison.Ordinal);
     }
 
@@ -316,7 +316,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Touch", "update T set S = /*@ status */0 where Id = /*@ id */0")).AllGeneratedText;
 
-        Assert.Contains("AddInParameter(cmd, \"@p0\", (object?)(int)status)", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@p0\", (object?)(int)status)", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -336,7 +336,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Read", "select * from T")).AllGeneratedText;
 
-        Assert.Contains("cmd.ExecuteReader(", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.ExecuteReader(", text, StringComparison.Ordinal);
         Assert.Contains("global::Smart.Data.Accessor.Helpers.WrappedReader", text, StringComparison.Ordinal);
     }
 
@@ -359,7 +359,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.ReadAsync", "select * from T")).AllGeneratedText;
 
-        Assert.Contains("await cmd.ExecuteReaderAsync(", text, StringComparison.Ordinal);
+        Assert.Contains("await __cmd.ExecuteReaderAsync(", text, StringComparison.Ordinal);
         Assert.Contains("global::Smart.Data.Accessor.Helpers.WrappedReader", text, StringComparison.Ordinal);
     }
 
@@ -383,7 +383,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult)", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.ExecuteReader(global::System.Data.CommandBehavior.SingleResult)", text, StringComparison.Ordinal);
         Assert.Contains("while (__reader.Read())", text, StringComparison.Ordinal);
         Assert.Contains("__list.Add(", text, StringComparison.Ordinal);
     }
@@ -821,6 +821,45 @@ public sealed class GeneratedCodeTests
         Assert.DoesNotContain("entity.Name =", text, StringComparison.Ordinal);
     }
 
+    // 基底クラスのプロパティも写像し、派生クラスで隠したプロパティは派生側だけを写像する。
+    // Base class properties are mapped too; a property hidden in the derived class maps only the derived one.
+    [Fact]
+    public void QueryMapsBaseClassProperties()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            internal abstract class RowBase
+            {
+                public long Id { get; set; }
+
+                public int Code { get; set; }
+            }
+
+            internal sealed class Row : RowBase
+            {
+                public new string Code { get; set; } = string.Empty;
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial IReadOnlyList<Row> List(DbConnection con);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id, Code, Name from T")).AllGeneratedText;
+
+        Assert.Contains("entity.Id =", text, StringComparison.Ordinal);
+        Assert.Contains("entity.Name =", text, StringComparison.Ordinal);
+        Assert.Single(text.Split("entity.Code =").Skip(1));
+    }
+
     [Fact]
     public void QueryOverloadsShareOrdinalStructAndMapper()
     {
@@ -1220,7 +1259,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.ListAsync", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult", text, StringComparison.Ordinal);
+        Assert.Contains("await __cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult", text, StringComparison.Ordinal);
         Assert.Contains("while (await __reader.ReadAsync(", text, StringComparison.Ordinal);
     }
 
@@ -1264,7 +1303,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Count", "select count(*) from T")).AllGeneratedText;
 
-        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<long>(cmd.ExecuteScalar())", text, StringComparison.Ordinal);
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<long>(__cmd.ExecuteScalar())", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1289,7 +1328,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Count", "select count(*) from T")).AllGeneratedText;
 
-        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<int>(cmd.ExecuteScalar())", text, StringComparison.Ordinal);
+        Assert.Contains("global::Smart.Data.Accessor.Helpers.ExecuteHelper.ConvertScalar<int>(__cmd.ExecuteScalar())", text, StringComparison.Ordinal);
         Assert.DoesNotContain("ExecuteNonQuery", text, StringComparison.Ordinal);
     }
 
@@ -1311,8 +1350,8 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = sql;", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@id\", id", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = sql;", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@id\", id", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1343,7 +1382,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"SELECT Id, Name FROM Data ORDER BY Id\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"SELECT Id, Name FROM Data ORDER BY Id\";", text, StringComparison.Ordinal);
         Assert.DoesNotContain("StringBuilderPool", text, StringComparison.Ordinal);
     }
 
@@ -1368,8 +1407,8 @@ public sealed class GeneratedCodeTests
 
         Assert.Contains("StringBuilderPool.Rent()", text, StringComparison.Ordinal);
         Assert.Contains("if (id != null) {", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@p0\", id", text, StringComparison.Ordinal);
-        Assert.Contains("cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@p0\", id", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = __sb.ToString();", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1403,8 +1442,8 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.ExecuteReader((__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default) | global::System.Data.CommandBehavior.SequentialAccess)", text, StringComparison.Ordinal);
-        Assert.Contains("await cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SequentialAccess, ", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.ExecuteReader((__wasClosed ? global::System.Data.CommandBehavior.CloseConnection : global::System.Data.CommandBehavior.Default) | global::System.Data.CommandBehavior.SequentialAccess)", text, StringComparison.Ordinal);
+        Assert.Contains("await __cmd.ExecuteReaderAsync(global::System.Data.CommandBehavior.SingleResult | global::System.Data.CommandBehavior.SequentialAccess, ", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1425,8 +1464,8 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandType = global::System.Data.CommandType.StoredProcedure;", text, StringComparison.Ordinal);
-        Assert.Contains("cmd.CommandText = \"usp_Do\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandType = global::System.Data.CommandType.StoredProcedure;", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"usp_Do\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1448,7 +1487,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("this.dbProvider.CreateConnection()", text, StringComparison.Ordinal);
+        Assert.Contains("this.__dbProvider.CreateConnection()", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1471,7 +1510,7 @@ public sealed class GeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from T")).AllGeneratedText;
 
-        Assert.Contains("this.providerSelector.GetProvider(\"main\").CreateConnection()", text, StringComparison.Ordinal);
+        Assert.Contains("this.__providerSelector.GetProvider(\"main\").CreateConnection()", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1555,7 +1594,7 @@ public sealed class GeneratedCodeTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         // OUT パラメータは CLR 型から DbType を推論(InferDbTypeExpression)。
-        Assert.Contains("AddOutParameter(cmd, \"@total\", global::System.Data.DbType.Int32)", text, StringComparison.Ordinal);
+        Assert.Contains("AddOutParameter(__cmd, \"@total\", global::System.Data.DbType.Int32)", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1600,5 +1639,148 @@ public sealed class GeneratedCodeTests
 
         // provider enum whitelist → SqlParameter.SqlDbType への代入。
         Assert.Contains(".SqlDbType = ", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ImplementationCopiesDeclarationModifiers()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal partial class Accessor
+            {
+                [Execute]
+                partial void Delete(int id);
+
+                [Execute]
+                protected internal virtual partial int Update(in int id, params int[] values);
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.Delete", "delete from Data where Id = /*@ id */0"),
+            ("Accessor.Update", "update Data set Value = 1 where Id = /*@ id */0 and Value in /*@ values */(1)"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("partial void Delete(int id)", text, StringComparison.Ordinal);
+        Assert.Contains("protected internal virtual partial int Update(in int id, params int[] values)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void KeywordNamesAndGeneratedLocalNamesDoNotClash()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            public sealed class Row
+            {
+                public int @event { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int @event(int @class, int cmd, int connection, int context);
+
+                [Query]
+                public partial List<Row> Query(int @event);
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(
+            source,
+            ("Accessor.event", "delete from Data where Id = /*@ @class */0 and A = /*@ cmd */0 and B = /*@ connection */0 and C = /*@ context */0"),
+            ("Accessor.Query", "select event from Data where Id = /*@ @event */0"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("public partial int @event(int @class, int cmd, int connection, int context)", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProviderAndProcedureNamesAreWrittenAsStringLiterals()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            [Provider("main\\db \"1\"")]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                [Procedure("dbo.\\\"Delete\"")]
+                public partial int Delete(int id);
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(source);
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("GetProvider(\"main\\\\db \\\"1\\\"\")", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"dbo.\\\\\\\"Delete\\\"\";", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PropertiesTheGeneratedCodeCannotWriteAreNotMapped()
+    {
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            public sealed class Row
+            {
+                public int Id { get; set; }
+
+                public int Hidden { get; private set; }
+
+                [Obsolete("old", true)]
+                public int Old { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial List<Row> Query();
+            }
+            """;
+
+        var result = GeneratorTestHelper.Run(source, ("Accessor.Query", "select Id, Hidden, Old from Data"));
+        var text = result.AllGeneratedText;
+
+        Assert.Contains("Id", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(".Hidden", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("int Hidden", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(".Old", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SkipLocalsInitNeedsUnsafeCode()
+    {
+        var result = GeneratorTestHelper.Run(
+            """
+            using System.Collections.Generic;
+            using Smart.Data.Accessor.Attributes;
+
+            public sealed class Row
+            {
+                public int Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Query]
+                public partial List<Row> Query();
+            }
+            """,
+            ("Accessor.Query", "select Id from Data"));
+
+        Assert.DoesNotContain("SkipLocalsInit", result.AllGeneratedText, StringComparison.Ordinal);
     }
 }

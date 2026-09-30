@@ -70,7 +70,7 @@ internal static class MySqlModelBuilder
         }
         else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
         {
-            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.KeyRequiredForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
         }
         return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
     }

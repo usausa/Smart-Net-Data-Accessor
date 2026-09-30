@@ -135,7 +135,7 @@ internal static class NodeEmitter
                 case SqlNode sqlNode:
                     if (!String.IsNullOrEmpty(sqlNode.Sql))
                     {
-                        sb.Append("__sb.Append(\"").Append(Escape(sqlNode.Sql)).Append("\");\n");
+                        sb.Append("__sb.Append(").Append(CodeExpressionHelper.StringLiteral(sqlNode.Sql)).Append(");\n");
                         staticSql.Append(sqlNode.Sql);
                     }
                     break;
@@ -178,16 +178,16 @@ internal static class NodeEmitter
                         // arity depends on the IEnumerable count -> SQL text is dynamic.
                         hasDynamicSql = true;
                         requiresIEnumerable = true;
-                        sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(__sb, cmd, \"")
-                            .Append(parameterName)
-                            .Append("\", ")
+                        sb.Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameters(__sb, __cmd, ")
+                            .Append(CodeExpressionHelper.StringLiteral(parameterName))
+                            .Append(", ")
                             .Append(parameterNode.Name)
                             .Append(CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, null))
                             .Append(");\n");
                     }
                     else if (direction == Direction.Input)
                     {
-                        sb.Append("__sb.Append(\"").Append(parameterName).Append("\");\n");
+                        sb.Append("__sb.Append(").Append(CodeExpressionHelper.StringLiteral(parameterName)).Append(");\n");
                         staticSql.Append(parameterName);
                         if (hasProvider)
                         {
@@ -198,12 +198,12 @@ internal static class NodeEmitter
                                 ? ", size: " + providerSize.ToString(CultureInfo.InvariantCulture)
                                 : string.Empty;
                             EmitParamLine(
-                                $"(({attributes!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{parameterName}\", {valueExpression}{providerSizeArg})).{attributes.ProviderPropertyName} = {attributes.ProviderValueExpression};");
+                                $"(({attributes!.ProviderParameterTypeFullName})global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(__cmd, {CodeExpressionHelper.StringLiteral(parameterName)}, {valueExpression}{providerSizeArg})).{attributes.ProviderPropertyName} = {attributes.ProviderValueExpression};");
                         }
                         else
                         {
                             EmitParamLine(
-                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(cmd, \"{parameterName}\", {valueExpression}{CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, attributes?.Size)});");
+                                $"global::Smart.Data.Accessor.Helpers.ExecuteHelper.{inMethod}(__cmd, {CodeExpressionHelper.StringLiteral(parameterName)}, {valueExpression}{CodeExpressionHelper.DbTypeSizeArgs(attributes?.DbTypeExpression, attributes?.Size)});");
                         }
                     }
                     else
@@ -212,21 +212,21 @@ internal static class NodeEmitter
                         var dbTypeExpression = attributes?.DbTypeExpression ?? "global::System.Data.DbType.Object";
                         var handle = attributes?.OutputHandleName ?? $"__op_{parameterNode.Name}";
                         outputBindings.Add(new OutputBinding(parameterNode.Name, handle));
-                        sb.Append("__sb.Append(\"").Append(parameterName).Append("\");\n");
+                        sb.Append("__sb.Append(").Append(CodeExpressionHelper.StringLiteral(parameterName)).Append(");\n");
                         staticSql.Append(parameterName);
                         switch (direction)
                         {
                             case Direction.Output:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"{parameterName}\", {dbTypeExpression}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(__cmd, {CodeExpressionHelper.StringLiteral(parameterName)}, {dbTypeExpression}{sizeArg});");
                                 break;
                             case Direction.InputOutput:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"{parameterName}\", {valueExpression}, {dbTypeExpression}{sizeArg});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(__cmd, {CodeExpressionHelper.StringLiteral(parameterName)}, {valueExpression}, {dbTypeExpression}{sizeArg});");
                                 break;
                             case Direction.ReturnValue:
                                 EmitParamLine(
-                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"{parameterName}\", {dbTypeExpression});");
+                                    $"{handle} = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(__cmd, {CodeExpressionHelper.StringLiteral(parameterName)}, {dbTypeExpression});");
                                 break;
                         }
                         if (hasProvider && (direction is Direction.Output or Direction.InputOutput))
@@ -264,6 +264,4 @@ internal static class NodeEmitter
             requiresIEnumerable,
             outputBindings);
     }
-
-    private static string Escape(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

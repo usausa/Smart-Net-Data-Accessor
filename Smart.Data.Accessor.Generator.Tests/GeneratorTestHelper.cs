@@ -57,6 +57,11 @@ internal static class GeneratorTestHelper
     internal static IReadOnlyList<Diagnostic> GetDiagnostics(string source, params (string Name, string Sql)[] sqlFiles) =>
         CreateRunner(sqlFiles).GetDiagnostics(source);
 
+    // 抑止されていない診断・生成器の例外・コンパイルエラー・生成ファイルの警告の ID。
+    // The IDs of the unsuppressed diagnostics, generator exceptions, compilation errors and warnings in generated files.
+    internal static IReadOnlyList<string> GetProblemIds(string source, params (string Name, string Sql)[] sqlFiles) =>
+        [.. CreateRunner(sqlFiles).GetProblems(source).Select(static x => x.Id)];
+
     // For incremental-cache regression tests: a driver with step tracking enabled plus the
     // compilation. Only the core DataAccessorGenerator is wired (the unit under test).
     internal static (GeneratorDriver Driver, Compilation Compilation) CreateTrackingDriver(
@@ -85,6 +90,14 @@ internal static class GeneratorTestHelper
 
     internal static IReadOnlyList<Diagnostic> GetDiagnosticsWithServiceCollection(string source, params (string Name, string Sql)[] sqlFiles) =>
         WithServiceCollection(CreateRunner(sqlFiles)).GetDiagnostics(source);
+
+    internal static IReadOnlyList<string> GetProblemIdsWithServiceCollection(string source, params (string Name, string Sql)[] sqlFiles) =>
+        [.. WithServiceCollection(CreateRunner(sqlFiles)).GetProblems(source).Select(static x => x.Id)];
+
+    // MSBuild プロパティを 1 つ与えて生成器の診断を得る。
+    // The generator diagnostics with one MSBuild property given.
+    internal static IReadOnlyList<Diagnostic> GetDiagnosticsWithProperty(string property, string value, string source, params (string Name, string Sql)[] sqlFiles) =>
+        CreateRunner(sqlFiles).WithGlobalOption($"build_property.{property}", value).GetDiagnostics(source);
 
     internal static IncrementalRunResult RunIncrementalWithServiceCollection(
         string source, string addedSource, params (string Name, string Sql)[] sqlFiles) =>

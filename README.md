@@ -214,7 +214,8 @@ Supported return shapes include `int` / `void`, scalars, `List<T>` / `IList<T>` 
 Rows map to plain classes or records by **case-insensitive column-name matching**, resolved once per
 query (not per row):
 
-* Columns are matched to public settable/init properties (or record primary-constructor parameters).
+* Columns are matched to public settable/init properties (or record primary-constructor parameters),
+  including those declared in base classes (a derived member hides a base property of the same name).
   `[Name("COL")]` overrides the name; `[Ignore]` excludes a member. (`[Name]` on the entity class
   is the builder table name, see [Query builders](#query-builders).)
 * `[Naming(NamingConvention.SnakeCaseLower)]` (method/class/assembly scope, like `[BindPrefix]`)
@@ -246,7 +247,9 @@ public sealed class EventEntity
 ## Query builders
 
 CRUD without writing SQL — the builder attributes generate the statement from the entity shape
-(`[Key]`, `[Name]`, `[DatabaseManaged]`, `[Ignore]`):
+(`[Key]`, `[Name]`, `[DatabaseManaged]`, `[Ignore]`), including the properties declared in base classes.
+A `Delete` / `SelectSingle` maps its parameters to the key columns in order; for a composite key,
+`[Key(order)]` sets that order:
 
 ```csharp
 [Insert(typeof(DataEntity), Table = "Data")]
@@ -360,6 +363,7 @@ app.MapGet("/data", (ExampleAccessor accessor) => accessor.QueryDataList());
 * An accessor is registered under its first implemented interface, or under the concrete type when it has none
 * The declaring project needs `Microsoft.Extensions.DependencyInjection.Abstractions`. A library declares the method itself (`public`) and the application calls it
 * The generated code is static (`new` plus `GetRequiredService<T>()`), so it stays on the Native AOT path
+* The declaration may use `IServiceCollection?` for the parameter and the return type
 
 The runtime alternative
 [Usa.Smart.Data.Accessor.Extensions.DependencyInjection](https://www.nuget.org/packages/Usa.Smart.Data.Accessor.Extensions.DependencyInjection)
@@ -417,6 +421,14 @@ With a real database, network/query time dominates and the differences shrink fu
 | `Usa.Smart.Data.Accessor.Extensions.DependencyInjection` | `AddDataAccessors()` for Microsoft.Extensions.DependencyInjection |
 | `Usa.Smart.Data.Accessor.Resolver` | `UseDataAccessors()` for Smart.Resolver |
 | `Usa.Smart.Data.Accessor.Builders.SqlServer` / `.Postgres` / `.MySql` | Provider-specific query builders |
+
+The `Usa.Smart.Data.Accessor` package sets these MSBuild properties for the projects that reference it directly
+(override them in the project file or `Directory.Build.props`):
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `SmartDataAccessor_SqlFolder` | `Sql` | Folder name of the SQL files (`**/{folder}/*.sql`, excluding `bin` / `obj`) |
+| `SmartDataAccessor_SkipLocalsInit` | `true` | Put `[SkipLocalsInit]` on the generated column-ordinal cache. While it is `true`, the package also sets `AllowUnsafeBlocks` to `true`, which the attribute requires |
 
 ## Documentation
 

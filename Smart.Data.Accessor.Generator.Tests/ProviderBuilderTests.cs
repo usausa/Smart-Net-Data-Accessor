@@ -48,42 +48,42 @@ public sealed class ProviderBuilderTests
     public void SqlServerInsertUsesBracketQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("SqlInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlInsertUsesBacktickQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("MySqlInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresInsertUsesDoubleQuoteQuoting()
     {
         var text = GeneratorTestHelper.Run(InsertAccessor("PgInsert")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void SqlServerSelectPagingUsesOffsetFetch()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("SqlSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"SELECT [Id], [Name] FROM [Data] ORDER BY (SELECT NULL) OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void MySqlSelectPagingUsesLimitOffset()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("MySqlSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"SELECT `Id`, `Name` FROM `Data` LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void PostgresSelectPagingUsesLimitOffset()
     {
         var text = GeneratorTestHelper.Run(PageAccessor("PgSelect")).AllGeneratedText;
-        Assert.Contains("cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Data\\\" LIMIT @limit OFFSET @offset\";", text, StringComparison.Ordinal);
     }
 
     // A1: SQL Server provider-specific MERGE upsert (matches on [Key], updates non-key columns, inserts otherwise).
@@ -113,11 +113,11 @@ public sealed class ProviderBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains(
-            "cmd.CommandText = \"MERGE INTO [Data] AS T USING (SELECT @Id AS [Id], @Name AS [Name]) AS S ON (T.[Id] = S.[Id]) WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] WHEN NOT MATCHED THEN INSERT ([Id], [Name]) VALUES (S.[Id], S.[Name]);\";",
+            "__cmd.CommandText = \"MERGE INTO [Data] AS T USING (SELECT @Id AS [Id], @Name AS [Name]) AS S ON (T.[Id] = S.[Id]) WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] WHEN NOT MATCHED THEN INSERT ([Id], [Name]) VALUES (S.[Id], S.[Name]);\";",
             text,
             StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
     // identity 主キー([Key]+[DatabaseManaged])の MERGE：USING(＝ON の突合値)には Id を含め、
@@ -152,10 +152,10 @@ public sealed class ProviderBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains(
-            "cmd.CommandText = \"MERGE INTO [Data] AS T USING (SELECT @Id AS [Id], @Name AS [Name]) AS S ON (T.[Id] = S.[Id]) WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] WHEN NOT MATCHED THEN INSERT ([Name]) VALUES (S.[Name]);\";",
+            "__cmd.CommandText = \"MERGE INTO [Data] AS T USING (SELECT @Id AS [Id], @Name AS [Name]) AS S ON (T.[Id] = S.[Id]) WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] WHEN NOT MATCHED THEN INSERT ([Name]) VALUES (S.[Name]);\";",
             text,
             StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     // Output に "INSERTED."/"DELETED." 接頭辞を含めた指定も受理する(素通し quote だと
@@ -217,7 +217,7 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) OUTPUT INSERTED.[Id] VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO [Data] ([Id], [Name]) OUTPUT INSERTED.[Id] VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     // A3: MySQL INSERT ... ON DUPLICATE KEY UPDATE (non-key columns updated on conflict).
@@ -246,7 +246,7 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
     }
 
     // auto_increment 主キー([Key]+[DatabaseManaged])の UPSERT：INSERT 列に Id を含める(除外すると新値が
@@ -280,8 +280,8 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name) ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`)\";", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     // A3: MySQL REPLACE INTO (same shape as INSERT).
@@ -309,7 +309,7 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"REPLACE INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"REPLACE INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     // A3: MySQL INSERT IGNORE (same shape as INSERT).
@@ -337,7 +337,7 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT IGNORE INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT IGNORE INTO `Data` (`Id`, `Name`) VALUES (@Id, @Name)\";", text, StringComparison.Ordinal);
     }
 
     // A5: PostgreSQL INSERT ... ON CONFLICT DO UPDATE (upsert; conflict target = [Key], updates the non-key columns).
@@ -366,7 +366,7 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
     }
 
     // serial 主キー([Key]+[DatabaseManaged])の UPSERT：INSERT 列に Id を含める(除外すると serial が新値を
@@ -400,8 +400,8 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) ON CONFLICT (\\\"Id\\\") DO UPDATE SET \\\"Name\\\" = EXCLUDED.\\\"Name\\\"\";", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     // A6: PostgreSQL RETURNING clause (returns the named columns; the Returning property is provider-specific).
@@ -429,6 +429,6 @@ public sealed class ProviderBuilderTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) RETURNING \\\"Id\\\"\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"INSERT INTO \\\"Data\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name) RETURNING \\\"Id\\\"\";", text, StringComparison.Ordinal);
     }
 }

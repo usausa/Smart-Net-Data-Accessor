@@ -62,7 +62,7 @@ internal static class AccessorModelBuilder
     internal static Result<AccessorModel> BuildClassResult(GeneratorAttributeSyntaxContext context)
     {
         var diagnostics = new List<DiagnosticInfo>();
-        var syntax = (ClassDeclarationSyntax)context.TargetNode;
+        var syntax = (TypeDeclarationSyntax)context.TargetNode;
         if (context.TargetSymbol is not INamedTypeSymbol classSymbol)
         {
             return new Result<AccessorModel>(null!, new EquatableArray<DiagnosticInfo>(diagnostics));
@@ -72,6 +72,10 @@ internal static class AccessorModelBuilder
         if (syntax.Modifiers.All(x => x.Text != "partial"))
         {
             diagnostics.Add(new DiagnosticInfo(Diagnostics.InvalidClass, syntax.Identifier.GetLocation(), classSymbol.Name));
+        }
+        else if (classSymbol.IsStatic || classSymbol.IsAbstract || classSymbol.IsRecord || classSymbol.IsFileLocal)
+        {
+            diagnostics.Add(new DiagnosticInfo(Diagnostics.DataAccessorClassKind, syntax.Identifier.GetLocation(), classSymbol.ToDisplayString()));
         }
         else if (classSymbol.ContainingType is not null)
         {
@@ -83,7 +87,7 @@ internal static class AccessorModelBuilder
         }
         else
         {
-            model = BuildAccessorModel(diagnostics, classSymbol);
+            model = BuildAccessorModel(diagnostics, classSymbol, context.SemanticModel.Compilation);
         }
 
         return new Result<AccessorModel>(model!, new EquatableArray<DiagnosticInfo>(diagnostics));
@@ -177,6 +181,7 @@ internal static class AccessorModelBuilder
         }
 
         var keptMethods = new List<MethodModel>();
+        var fallbacks = new List<string>(model.FallbackSignatures);
         foreach (var method in model.Methods)
         {
             cancellation.ThrowIfCancellationRequested();
@@ -194,6 +199,7 @@ internal static class AccessorModelBuilder
             if (!ownedByOther && collidedKeys.Contains(sqlKey))
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlFileNameCollision, method.Location, method.Name, sqlKey + ".sql"));
+                fallbacks.Add(method.Signature);
                 continue;
             }
 
@@ -206,6 +212,7 @@ internal static class AccessorModelBuilder
                 if (hasOwnSqlFile)
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
+                    fallbacks.Add(method.Signature);
                     continue;
                 }
                 keptMethods.Add(method);
@@ -219,6 +226,7 @@ internal static class AccessorModelBuilder
                 if (hasOwnSqlFile)
                 {
                     diagnostics.Add(new DiagnosticInfo(Diagnostics.DirectSqlHasSqlFile, method.Location, method.Name, sqlKey + ".sql"));
+                    fallbacks.Add(method.Signature);
                     continue;
                 }
                 keptMethods.Add(method);
@@ -236,6 +244,7 @@ internal static class AccessorModelBuilder
                         method.Location,
                         method.Name,
                         sqlKey + ".sql"));
+                    fallbacks.Add(method.Signature);
                     continue;
                 }
 
@@ -248,18 +257,21 @@ internal static class AccessorModelBuilder
             if (!sqlMap.TryGetValue(sqlKey, out var sql))
             {
                 diagnostics.Add(new DiagnosticInfo(Diagnostics.SqlNotFound, method.Location, method.Name, sqlKey + ".sql"));
+                fallbacks.Add(method.Signature);
                 continue;
             }
 
+            var pendingReferences = new List<PendingReference>();
             var (code, staticSql, staticParam, outputBindings, methodUsings) =
-                BuildSqlEmitCode(diagnostics, method.Name, method.Location, method.Parameters, sql, method.BindMarker);
+                BuildSqlEmitCode(diagnostics, pendingReferences, method.Name, method.Location, method.Parameters, sql, method.BindMarker);
             keptMethods.Add(method with
             {
                 SqlEmitCode = code,
                 StaticSqlText = staticSql,
                 StaticParameterCode = staticParam,
                 OutputBindings = new(outputBindings),
-                Usings = new(methodUsings)
+                Usings = new(methodUsings),
+                PendingReferences = new(pendingReferences)
             });
         }
 
@@ -284,7 +296,7 @@ internal static class AccessorModelBuilder
             }
         }
 
-        var completedModel = model with { Methods = new(keptMethods) };
+        var completedModel = model with { Methods = new(keptMethods), FallbackSignatures = new(fallbacks) };
         return new Result<AccessorModel>(
             completedModel,
             new EquatableArray<DiagnosticInfo>(diagnostics));
@@ -320,9 +332,19 @@ internal static class AccessorModelBuilder
         }
     }
 
+    private static void ReportUndefinedEnumValue(List<DiagnosticInfo> diagnostics, AttributeData attribute, string attributeName, TypedConstant value, Location? fallback)
+    {
+        diagnostics.Add(new DiagnosticInfo(
+            Diagnostics.UndefinedEnumValue,
+            attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? fallback,
+            attributeName,
+            EnumValueHelper.ToText(value)));
+    }
+
     private static AccessorModel? BuildAccessorModel(
         List<DiagnosticInfo> diagnostics,
-        INamedTypeSymbol classSymbol)
+        INamedTypeSymbol classSymbol,
+        Compilation compilation)
     {
         var assemblyAttributes = classSymbol.ContainingAssembly is { } asm
             ? asm.GetAttributes()
@@ -347,8 +369,13 @@ internal static class AccessorModelBuilder
         // Class- and profile-scoped [TypeMap] supply a default DbType (+ Size) for parameters of the mapped CLR type;
         // class scope takes precedence over the profile.
         var typeMaps = MappingAttributeHelper.BuildTypeMapLookup(classSymbol, profileSymbol);
+        foreach (var (attribute, value) in MappingAttributeHelper.FindUndefinedTypeMaps(classSymbol, profileSymbol))
+        {
+            ReportUndefinedEnumValue(diagnostics, attribute, "TypeMap", value, classSymbol.Locations.FirstOrDefault());
+        }
 
         var methods = new List<MethodModel>();
+        var handled = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
         var seenMethodNames = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
@@ -497,7 +524,14 @@ internal static class AccessorModelBuilder
                     (attribute.ConstructorArguments.Length > 0) &&
                     (attribute.ConstructorArguments[0].Value is int behaviorValue))
                 {
-                    readerBehavior = behaviorValue;
+                    if (EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+                    {
+                        readerBehavior = behaviorValue;
+                    }
+                    else
+                    {
+                        ReportUndefinedEnumValue(diagnostics, attribute, "ReaderBehavior", attribute.ConstructorArguments[0], member.Locations.FirstOrDefault());
+                    }
                 }
             }
 
@@ -660,7 +694,14 @@ internal static class AccessorModelBuilder
                     var attributeName = attributeClass?.ToDisplayString();
                     if ((attributeName == DbTypeAttributeName) && (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is int dbTypeValue))
                     {
-                        dbTypeExpression = $"(global::System.Data.DbType){dbTypeValue}";
+                        if (EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+                        {
+                            dbTypeExpression = $"(global::System.Data.DbType){dbTypeValue}";
+                        }
+                        else
+                        {
+                            ReportUndefinedEnumValue(diagnostics, attribute, "DbType", attribute.ConstructorArguments[0], x.Locations.FirstOrDefault());
+                        }
                         sawNonGenericDbType = true;
                     }
                     else if ((attributeClass is not null) && attributeClass.IsGenericType &&
@@ -679,7 +720,7 @@ internal static class AccessorModelBuilder
                             // Build the enum-value expression: `(global::Ns.Enum)42`.
                             var rawVal = Convert.ToInt64(ctorVal, CultureInfo.InvariantCulture)
                                 .ToString(CultureInfo.InvariantCulture);
-                            var enumValueExpression = $"({enumName}){rawVal}";
+                            var enumValueExpression = rawVal.StartsWith("-", StringComparison.Ordinal) ? $"({enumName})({rawVal})" : $"({enumName}){rawVal}";
                             if (routeAsBclDbType)
                             {
                                 // System.Data.DbType の場合は既存の DbTypeExpression パスへ流す(非ジェネリックな [DbType(DbType)] 属性と等価)。
@@ -713,6 +754,12 @@ internal static class AccessorModelBuilder
                     }
                     else if ((attributeName == DirectionAttributeName) && (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is int directionValue))
                     {
+                        if (!EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+                        {
+                            ReportUndefinedEnumValue(diagnostics, attribute, "Direction", attribute.ConstructorArguments[0], x.Locations.FirstOrDefault());
+                            continue;
+                        }
+
                         direction = (ParameterDirection)directionValue switch
                         {
                             ParameterDirection.Output => ParameterDirectionType.Output,
@@ -796,29 +843,9 @@ internal static class AccessorModelBuilder
                     pocoProperties = BuildPocoProperties(diagnostics, member, classSymbol, profileSymbol, (INamedTypeSymbol)x.Type, x.Name, methodNaming);
                 }
 
-                // SDA0510: 旧 HasPublicMember の意味論に合わせる — 型とその基底の public プロパティ/フィールド、加えて実装インタフェースのプロパティ。
-                // SDA0510: mirror the old HasPublicMember semantics — public property/field on the type and its bases, plus properties from implemented interfaces.
-                var memberNames = new HashSet<string>(StringComparer.Ordinal);
-                for (var currentType = x.Type; currentType is not null; currentType = currentType.BaseType)
-                {
-                    foreach (var memberSymbol in currentType.GetMembers())
-                    {
-                        if ((memberSymbol.DeclaredAccessibility == Accessibility.Public) && (memberSymbol is IPropertySymbol or IFieldSymbol))
-                        {
-                            memberNames.Add(memberSymbol.Name);
-                        }
-                    }
-                }
-                foreach (var interfaceSymbol in x.Type.AllInterfaces)
-                {
-                    foreach (var memberSymbol in interfaceSymbol.GetMembers())
-                    {
-                        if (memberSymbol is IPropertySymbol)
-                        {
-                            memberNames.Add(memberSymbol.Name);
-                        }
-                    }
-                }
+                // SDA0510: /*@ arg.Member */ の最初のメンバーの候補(アクセサから参照できるフィールド・プロパティ・イベント)。
+                // SDA0510: candidates for the first member of /*@ arg.Member */ (fields / properties / events the accessor can reference).
+                var memberNames = CollectMemberNames(compilation, classSymbol, x.Type);
 
                 return new ParameterModel(
                     x.Name,
@@ -1158,10 +1185,12 @@ internal static class AccessorModelBuilder
             // syntax is at hand, lets SQL-parse diagnostics (SDA05xx) map to the exact position inside the literal
             // (unmappable forms fall back to the whole attribute argument). File-based parsing stays in the output
             // stage (CompleteModel).
+            var pendingReferences = new List<PendingReference>();
             if (inlineSql is not null)
             {
                 var (inlineCode, inlineStaticSql, inlineStaticParam, inlineOutputs, inlineUsings) = BuildSqlEmitCode(
                     diagnostics,
+                    pendingReferences,
                     member.Name,
                     inlineSqlLocation,
                     parameters,
@@ -1182,6 +1211,7 @@ internal static class AccessorModelBuilder
                 : isDirectSql ? SqlSource.DirectSql
                 : SqlSource.TwoWaySql;
 
+            handled.Add(member);
             methods.Add(new MethodModel(
                 member.Name,
                 methodType.Value,
@@ -1214,10 +1244,22 @@ internal static class AccessorModelBuilder
                 member.Locations.FirstOrDefault() is { } methodLocation ? LocationInfo.CreateFrom(methodLocation) : null,
                 inlineSql,
                 inlineSqlLocation,
-                readerBehavior));
+                readerBehavior,
+                GetImplementationSignature(member),
+                pendingReferences.ToArray()));
         }
 
-        if (methods.Count == 0)
+        var fallbacks = new List<string>();
+        foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (member.IsPartialDefinition && (member.PartialImplementationPart is null) &&
+                !handled.Contains(member) && HasDataMethodAttribute(member))
+            {
+                fallbacks.Add(GetImplementationSignature(member));
+            }
+        }
+
+        if ((methods.Count == 0) && (fallbacks.Count == 0))
         {
             return null;
         }
@@ -1253,10 +1295,10 @@ internal static class AccessorModelBuilder
                 }
 
                 // SDA0005: [Inject] の Name が(partial)クラス内の既存フィールド/プロパティ、または予約済みプロバイダ ctor 引数
-                // (dbProvider / providerSelector)と衝突している。
+                // (__dbProvider / __providerSelector)と衝突している。
                 // SDA0005: an [Inject] Name collides with an existing field/property in the (partial) class
-                // or with the reserved provider ctor parameter (`dbProvider` / `providerSelector`).
-                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || (injectName is "dbProvider" or "providerSelector"))
+                // or with the reserved provider ctor parameter (`__dbProvider` / `__providerSelector`).
+                if (HasUserDeclaredFieldOrProperty(classSymbol, injectName) || (injectName is "__dbProvider" or "__providerSelector"))
                 {
                     diagnostics.Add(new DiagnosticInfo(
                         Diagnostics.InjectNameConflictsWithMember,
@@ -1359,7 +1401,126 @@ internal static class AccessorModelBuilder
             injects.ToArray(),
             methods.ToArray(),
             classSymbol.Locations.FirstOrDefault() is { } classLocation ? LocationInfo.CreateFrom(classLocation) : null,
-            classSymbol.Interfaces.FirstOrDefault()?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+            classSymbol.Interfaces.FirstOrDefault()?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            fallbacks.ToArray());
+    }
+
+    private static bool IsWritable(IMethodSymbol setter, IAssemblySymbol assembly) =>
+        setter.DeclaredAccessibility switch
+        {
+            Accessibility.Public => true,
+            Accessibility.Internal or Accessibility.ProtectedOrInternal => setter.ContainingAssembly.GivesAccessTo(assembly),
+            _ => false
+        };
+
+    private static bool IsObsoleteError(ISymbol symbol) =>
+        symbol.IsObsolete(out var isError) && isError;
+
+    private static string GetImplementationSignature(IMethodSymbol method) =>
+        method.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is MethodDeclarationSyntax definition
+            ? method.GetImplementationSignature(definition)
+            : string.Empty;
+
+    private static EquatableArray<string> CollectMemberNames(Compilation compilation, INamedTypeSymbol classSymbol, ITypeSymbol type)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var roots = type is ITypeParameterSymbol typeParameter ? typeParameter.ConstraintTypes : [type];
+        foreach (var root in roots)
+        {
+            for (var current = root; current is not null; current = current.BaseType)
+            {
+                AddMemberNames(names, compilation, classSymbol, current);
+            }
+            foreach (var interfaceType in root.AllInterfaces)
+            {
+                AddMemberNames(names, compilation, classSymbol, interfaceType);
+            }
+        }
+        return new EquatableArray<string>(names.ToArray());
+    }
+
+    private static void AddMemberNames(HashSet<string> names, Compilation compilation, INamedTypeSymbol classSymbol, ITypeSymbol owner)
+    {
+        foreach (var member in owner.GetMembers())
+        {
+            if ((member is IPropertySymbol { IsIndexer: false } or IFieldSymbol or IEventSymbol) &&
+                ((member.DeclaredAccessibility == Accessibility.Public) || compilation.IsSymbolAccessibleWithin(member, classSymbol)))
+            {
+                names.Add(member.Name);
+            }
+        }
+    }
+
+    internal static Result<AccessorModel> ResolveReferences(
+        Result<AccessorModel> result,
+        Compilation compilation,
+        CancellationToken cancellation)
+    {
+        if ((result.Value is not { } model) || !model.Methods.Any(static x => x.PendingReferences.Count > 0))
+        {
+            return result;
+        }
+
+        var skipCheck = model.Methods.Any(static x => x.Usings.Count > 0);
+        var injectNames = new HashSet<string>(model.Injects.Select(static x => x.Name), StringComparer.Ordinal);
+        var diagnostics = new List<DiagnosticInfo>(result.Diagnostics);
+        var methods = new List<MethodModel>();
+        var fallbacks = new List<string>(model.FallbackSignatures);
+        foreach (var method in model.Methods)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var resolved = true;
+            foreach (var reference in method.PendingReferences)
+            {
+                if (skipCheck || IsResolvable(compilation, method.Location, reference, injectNames))
+                {
+                    continue;
+                }
+
+                resolved = false;
+                diagnostics.Add(reference.ParameterName is null
+                    ? new DiagnosticInfo(Diagnostics.UndefinedSqlParameter, reference.Location, method.Name, reference.Text)
+                    : new DiagnosticInfo(Diagnostics.SqlPropertyNotFound, reference.Location, method.Name, reference.ParameterName, reference.Text, reference.TypeFullName!));
+            }
+
+            if (resolved)
+            {
+                methods.Add(method with { PendingReferences = default });
+            }
+            else
+            {
+                fallbacks.Add(method.Signature);
+            }
+        }
+
+        return new Result<AccessorModel>(
+            model with { Methods = new(methods), FallbackSignatures = new(fallbacks) },
+            new EquatableArray<DiagnosticInfo>(diagnostics));
+    }
+
+    private static bool IsResolvable(Compilation compilation, LocationInfo? location, PendingReference reference, HashSet<string> injectNames)
+    {
+        if ((reference.ParameterName is null) && (injectNames.Contains(reference.LookupName) || (reference.LookupName is "this" or "base")))
+        {
+            return true;
+        }
+
+        var tree = location is null ? null : compilation.SyntaxTrees.FirstOrDefault(x => x.FilePath == location.FilePath);
+        if (tree is null)
+        {
+            return true;
+        }
+
+        var semanticModel = compilation.GetSemanticModel(tree);
+        var position = location!.TextSpan.Start;
+        if (reference.ParameterName is null)
+        {
+            return semanticModel.LookupSymbols(position, name: reference.LookupName).Length > 0;
+        }
+
+        var type = semanticModel.GetSpeculativeTypeInfo(position, SyntaxFactory.ParseTypeName(reference.TypeFullName!), SpeculativeBindingOption.BindAsTypeOrNamespace).Type;
+        return (type is null) || (type.TypeKind == TypeKind.Error) ||
+               (semanticModel.LookupSymbols(position, type, reference.LookupName, includeReducedExtensionMethods: true).Length > 0);
     }
 
     private static bool IsValidExecuteReturn(ReturnShape shape, ITypeSymbol returnType) => shape switch
@@ -1716,13 +1877,14 @@ internal static class AccessorModelBuilder
         // A record with a primary constructor binds via a positional ctor invocation (`new T(name: ..., ...)`). The ordinal
         // cache and column reads are built from the primary ctor parameter list (in declaration order); `[property: Name(...)]`
         // and `[property: Ignore]` flow through the synthesized property's attribute list.
+        var properties = EntityPropertyHelper.GetInstanceProperties(entity);
         if (entity.IsRecord && entity.TryGetRecordPrimaryConstructor(out var primaryCtor))
         {
             var constructorInfos = new List<ColumnInfo>();
             foreach (var param in primaryCtor.Parameters)
             {
                 var parameterTypeName = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var property = entity.GetMembers(param.Name).OfType<IPropertySymbol>().FirstOrDefault();
+                var property = properties.FirstOrDefault(x => x.Name == param.Name);
                 if (property is null)
                 {
                     // 対応プロパティの無い主 ctor 引数はマップ不能だが、ctor 呼び出しには引数が必須のため
@@ -1732,18 +1894,18 @@ internal static class AccessorModelBuilder
                     // requires the argument: keep an Ignored entry so the row mapper passes default! (omitting it
                     // would break the generated code with CS7036). A parameter with a declared default value sets
                     // HasDefaultValue so the argument is omitted entirely and the declared default applies.
-                    constructorInfos.Add(new ColumnInfo(param.Name, param.Name, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
+                    constructorInfos.Add(new ColumnInfo(CSharpIdentifier.Escape(param.Name), param.Name, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
                     continue;
                 }
                 var propertyAttributes = property.GetAttributes();
-                var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
+                var (column, _, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
                 if (isIgnored)
                 {
                     // [property: Ignore] の位置引数も同様に Ignored エントリとして保持する（default! を渡す。
                     // 宣言既定値があれば引数省略）。
                     // A positional parameter with [property: Ignore] is likewise kept as an Ignored entry (default!
                     // is passed; with a declared default value the argument is omitted).
-                    constructorInfos.Add(new ColumnInfo(param.Name, column, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
+                    constructorInfos.Add(new ColumnInfo(CSharpIdentifier.Escape(param.Name), column, parameterTypeName, null, null, Ignored: true, HasDefaultValue: param.HasExplicitDefaultValue));
                     continue;
                 }
                 var typeName = parameterTypeName;
@@ -1752,14 +1914,14 @@ internal static class AccessorModelBuilder
                     || param.GetAttributes().Any(x => x.AttributeClass?.ToDisplayString() == NotNullColumnAttributeName);
                 var converter = ResolveConverterBinding(property, param.Type);
                 CheckNonNullableDbNull(param.Type, param.Name, skipNullCheck, converter);
-                constructorInfos.Add(new ColumnInfo(param.Name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
+                constructorInfos.Add(new ColumnInfo(CSharpIdentifier.Escape(param.Name), column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast));
             }
             // 主 ctor 外（非位置）の required メンバはマップ対象外だが、初期化子で設定しないと生成コードが
             // CS9035 で壊れるため、Ignored + RequiresInitOnlySet エントリとして保持し行マッパーが default! を設定する。
             // A required member outside the primary ctor (non-positional) is not mapped, but the generated code
             // breaks with CS9035 unless the initializer sets it: keep an Ignored + RequiresInitOnlySet entry so
             // the row mapper assigns default!.
-            foreach (var property in entity.GetMembers().OfType<IPropertySymbol>())
+            foreach (var property in properties)
             {
                 if (!property.IsRequired || primaryCtor.Parameters.Any(x => x.Name == property.Name))
                 {
@@ -1771,9 +1933,10 @@ internal static class AccessorModelBuilder
         }
 
         var infos = new List<ColumnInfo>();
-        foreach (var property in entity.GetMembers().OfType<IPropertySymbol>())
+        foreach (var property in properties)
         {
-            if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.SetMethod is null))
+            if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.SetMethod is null) ||
+                !IsWritable(property.SetMethod, method.ContainingAssembly) || IsObsoleteError(property))
             {
                 // 非 public の required メンバはマップしないが、初期化子で default! を設定しないと生成コードが
                 // CS9035 で壊れる（required は包含型と同等以上の可視性が言語規則で保証されるため、同一アセンブリの
@@ -1788,7 +1951,7 @@ internal static class AccessorModelBuilder
                 continue;
             }
             var propertyAttributes = property.GetAttributes();
-            var (column, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
+            var (column, _, _, _, isIgnored) = ColumnAttributeHelper.Read(property, naming);
             // [Ignore] は現在どこでも「除外」を意味する。ただし required メンバは設定しないと CS9035 になるため
             // default! の設定だけは行う。
             // [Ignore] now means exclude everywhere; a required member still receives default! (CS9035 otherwise).
@@ -1811,7 +1974,7 @@ internal static class AccessorModelBuilder
             // An init-only / required property can only be set inside an object initializer, so the row mapper
             // assigns it in `new T { ... }` (an absent column receives a property-typed default, unlike plain settable properties).
             var requiresInitOnlySet = property.SetMethod.IsInitOnly || property.IsRequired;
-            infos.Add(new ColumnInfo(name, column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast, requiresInitOnlySet));
+            infos.Add(new ColumnInfo(CSharpIdentifier.Escape(name), column, typeName, typedReader, enumCast, skipNullCheck, converter, enumUnderlyingCast, requiresInitOnlySet));
         }
         return (infos, false);
     }
@@ -2132,8 +2295,8 @@ internal static class AccessorModelBuilder
         {
             return false;   // Guid / DateTimeOffset / TimeSpan / Nullable<T> など BCL の値型
         }
-        return namedTypeSymbol.GetMembers().OfType<IPropertySymbol>()
-            .Any(static x => (x.DeclaredAccessibility == Accessibility.Public) && !x.IsStatic && (x.GetMethod is not null));
+        return EntityPropertyHelper.GetInstanceProperties(namedTypeSymbol)
+            .Any(static x => (x.DeclaredAccessibility == Accessibility.Public) && (x.GetMethod is not null));
     }
 
     // POCO 引数の public プロパティを束縛メタデータへ展開する。既定は Input。[Direction(Output/InputOutput)] で出力になる。
@@ -2191,9 +2354,9 @@ internal static class AccessorModelBuilder
     {
         var scope = new ConverterResolver.Scope(method, classSymbol, profileSymbol);
         var list = new List<PocoBindProperty>();
-        foreach (var property in pocoType.GetMembers().OfType<IPropertySymbol>())
+        foreach (var property in EntityPropertyHelper.GetInstanceProperties(pocoType))
         {
-            if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.GetMethod is null))
+            if ((property.DeclaredAccessibility != Accessibility.Public) || (property.GetMethod is null) || IsObsoleteError(property))
             {
                 continue;
             }
@@ -2215,7 +2378,14 @@ internal static class AccessorModelBuilder
                 }
                 else if ((attributeName == DbTypeAttributeName) && (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is int dbTypeValue))
                 {
-                    dbTypeExpression = $"(global::System.Data.DbType){dbTypeValue}";
+                    if (EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+                    {
+                        dbTypeExpression = $"(global::System.Data.DbType){dbTypeValue}";
+                    }
+                    else
+                    {
+                        ReportUndefinedEnumValue(diagnostics, attribute, "DbType", attribute.ConstructorArguments[0], property.Locations.FirstOrDefault());
+                    }
                 }
                 else if (attributeName == AnsiStringAttributeName)
                 {
@@ -2227,6 +2397,12 @@ internal static class AccessorModelBuilder
                 }
                 else if ((attributeName == DirectionAttributeName) && (attribute.ConstructorArguments.Length > 0) && (attribute.ConstructorArguments[0].Value is int directionValue))
                 {
+                    if (!EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+                    {
+                        ReportUndefinedEnumValue(diagnostics, attribute, "Direction", attribute.ConstructorArguments[0], property.Locations.FirstOrDefault());
+                        continue;
+                    }
+
                     direction = (ParameterDirection)directionValue switch
                     {
                         ParameterDirection.Output => ParameterDirectionType.Output,
@@ -2294,7 +2470,7 @@ internal static class AccessorModelBuilder
                 .Select(pp => new OutputBinding(
                     pp.ParamName,
                     pp.HandleName,
-                    $"{x.Name}.{pp.PropertyName}",
+                    $"{CSharpIdentifier.Escape(x.Name)}.{CSharpIdentifier.Escape(pp.PropertyName)}",
                     // converter があれば OUT 値は TDb として読む(その後 FromDb)。無ければ TClr として読む。
                     // With a converter the OUT value is read as TDb (then FromDb); otherwise as TClr.
                     pp.ConverterTypeFullName is null ? pp.TypeFullName : pp.ConverterDbTypeFullName!,
@@ -2320,6 +2496,23 @@ internal static class AccessorModelBuilder
         }
         return false;
     }
+
+    private static string ReadIdentifier(string text)
+    {
+        var start = CountVerbatim(text, 0);
+        var end = start;
+        while ((end < text.Length) && (Char.IsLetterOrDigit(text[end]) || (text[end] == '_')))
+        {
+            end++;
+        }
+        return (end > start) && !Char.IsDigit(text[start]) ? text[start..end] : string.Empty;
+    }
+
+    private static int CountVerbatim(string text, int index) =>
+        (index < text.Length) && (text[index] == '@') ? 1 : 0;
+
+    private static string TrimVerbatim(string name) =>
+        name.StartsWith("@", StringComparison.Ordinal) ? name[1..] : name;
 
     // メソッドが QueryBuilder 派生属性([Insert]/[Update]/…)を持つのは、その属性クラスのいずれかが
     // Smart.Data.Accessor.Builders.QueryBuilderAttribute を継承するとき。
@@ -2350,6 +2543,7 @@ internal static class AccessorModelBuilder
 
     private static (string Code, string? StaticSqlText, string? StaticParameterCode, IReadOnlyList<OutputBinding> OutputBindings, IReadOnlyList<UsingDirective> Usings) BuildSqlEmitCode(
         List<DiagnosticInfo> diagnostics,
+        List<PendingReference> pendingReferences,
         string methodName,
         LocationInfo? location,
         IReadOnlyList<ParameterModel> parameters,
@@ -2436,13 +2630,17 @@ internal static class AccessorModelBuilder
         }
 
         var known = new HashSet<string>(parameters.Where(x => !x.IsCancellationToken).Select(x => x.Name), StringComparer.Ordinal);
+        foreach (var parameter in parameters.Where(static x => !x.IsCancellationToken))
+        {
+            known.Add("@" + parameter.Name);
+        }
         var paramMap = parameters.ToDictionary(x => x.Name, x => x, StringComparer.Ordinal);
         var result = NodeEmitter.Emit(
             nodes,
             known,
             name =>
             {
-                if (!paramMap.TryGetValue(name, out var parameterModel))
+                if (!paramMap.TryGetValue(TrimVerbatim(name), out var parameterModel))
                 {
                     return null;
                 }
@@ -2480,12 +2678,16 @@ internal static class AccessorModelBuilder
 
         foreach (var undefinedParameter in result.UndefinedParameters.Distinct(StringComparer.Ordinal))
         {
-            diagnostics.Add(new DiagnosticInfo(Diagnostics.UndefinedSqlParameter, location, methodName, undefinedParameter));
+            var root = ReadIdentifier(StringHelper.ExtractRoot(undefinedParameter));
+            if ((root.Length > 0) && !known.Contains(root))
+            {
+                pendingReferences.Add(new PendingReference(undefinedParameter, root, null, null, location));
+            }
         }
 
-        // SDA0510: ドット付き /*@ root.Prop */ 参照 — Prop が root のパラメータ型に存在するか検証する。
-        // SDA0510: dotted /*@ root.Prop */ references — verify Prop exists on root's parameter type.
-        var reportedProperty = new HashSet<string>(StringComparer.Ordinal);
+        // SDA0510: 引数を根とする /*@ arg.Member */ の最初のメンバーが引数の型で確かめられなければ、出力段で問い合わせる。
+        // SDA0510: the first member of /*@ arg.Member */ not settled by the parameter type is looked up at the output stage.
+        var pendingMembers = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes)
         {
             if (node is not ParameterNode pn)
@@ -2497,34 +2699,21 @@ internal static class AccessorModelBuilder
             {
                 continue;
             }
-            var root = pn.Name[..dot];
-            var rest = pn.Name[(dot + 1)..];
-            var paramModel = parameters.FirstOrDefault(x => String.Equals(x.Name, root, StringComparison.Ordinal));
-            if (paramModel is null)
+            var root = TrimVerbatim(pn.Name[..dot]);
+            if (!paramMap.TryGetValue(root, out var paramModel) || (paramModel.TypeFullName == "dynamic"))
             {
-                continue; // SDA0508 already reported this root mismatch.
+                continue;
             }
-            // ネストしたドット以降は落とし、最初のホップだけを検証する。
-            // Strip any nested dotted suffix; only validate the first hop.
-            var firstHop = rest;
-            var nextDot = rest.IndexOf('.');
-            if (nextDot >= 0)
+            var member = ReadIdentifier(pn.Name[(dot + 1)..]);
+            if (member.Length == 0)
             {
-                firstHop = rest[..nextDot];
+                continue;
             }
-            if (!paramModel.MemberNames.Contains(firstHop))
+            var isCall = pn.Name.Length > dot + 1 + member.Length + CountVerbatim(pn.Name, dot + 1) &&
+                         (pn.Name[dot + 1 + member.Length + CountVerbatim(pn.Name, dot + 1)] == '(');
+            if ((isCall || !paramModel.MemberNames.Contains(member)) && pendingMembers.Add(root + "." + member))
             {
-                var key = root + "." + firstHop;
-                if (reportedProperty.Add(key))
-                {
-                    diagnostics.Add(new DiagnosticInfo(
-                        Diagnostics.SqlPropertyNotFound,
-                        location,
-                        methodName,
-                        root,
-                        firstHop,
-                        paramModel.TypeFullName));
-                }
+                pendingReferences.Add(new PendingReference(member, member, root, paramModel.TypeFullName, location));
             }
         }
 

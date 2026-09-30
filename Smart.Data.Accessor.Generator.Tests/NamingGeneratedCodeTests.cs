@@ -38,7 +38,7 @@ public sealed class NamingGeneratedCodeTests
         // テーブル名(エンティティ型名)と列名は変換され、バインドパラメータ名はプロパティ名のまま。
         // The table name (entity type name) and column names are converted; bind parameter names stay property-based.
         Assert.Contains("INSERT INTO \\\"user_account\\\" (\\\"user_id\\\", \\\"first_name\\\") VALUES (@UserId, @FirstName)", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@UserId\", entity.UserId", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@UserId\", entity.UserId", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -313,6 +313,6 @@ public sealed class NamingGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("AddInParameter(cmd, \"@category_id\", args.CategoryId", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@category_id\", args.CategoryId", text, StringComparison.Ordinal);
     }
 }

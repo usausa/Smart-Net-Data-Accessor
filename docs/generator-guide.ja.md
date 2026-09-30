@@ -47,13 +47,13 @@ Smart.Data.Accessor のメソッドは 2 軸で決まる。
       ┌──────────────┴───────────────────────────────┐
       │ コア Generator（Smart.Data.Accessor.Generator）│ ← 触らない
       │   List() 本体を生成し、SQL 構築を              │
-      │   List__QueryBuilder(ref context, ...) に委譲  │
+      │   List__QueryBuilder(ref __context, ...) に委譲│
       └──────────────┬───────────────────────────────┘
                      │ 命名規約で結合（コンパイル時に整合が検証される）
       ┌──────────────┴───────────────────────────────┐
       │ プロバイダ Generator（あなたが作る）           │
       │   private static void List__QueryBuilder(     │
-      │       ref BuilderContext context, <値引数>)    │
+      │       ref BuilderContext __context, <値引数>)  │
       │   を同じ partial class に生成                  │
       └──────────────────────────────────────────────┘
 ```
@@ -63,8 +63,9 @@ Smart.Data.Accessor のメソッドは 2 軸で決まる。
 1. 属性は **`QueryBuilderAttribute` 派生**にする。コアは「`QueryBuilderAttribute` を継承した属性が付いた
    メソッド」を `SqlSource.QueryBuilder` と判定し、`{メソッド名}__QueryBuilder` の呼び出しを emit する。
 2. プロバイダジェネレータは同じ partial class に
-   `private static void {メソッド名}__QueryBuilder(ref BuilderContext context, <値引数>)` を生成する
-   （シグネチャの開始と `var cmd = context.Command;` は共有 `SqlEmit` が出す）。
+   `private static void {メソッド名}__QueryBuilder(ref BuilderContext __context, <値引数>)` を生成する
+   （シグネチャの開始と `var __cmd = __context.Command;` は共有 `SqlEmit` が出す）。生成する名前は、メソッドの
+   引数名をそのまま使う値引数と衝突しないよう `__` で始める。
 3. 排他・整合はコア側の診断が守る：A 群必須（SDA0108）、QueryBuilder×`[Procedure]`/`[DirectSql]`
    （SDA0105）、×`[Sql]`（SDA0107）、`.sql` ファイル併存（SDA0405）、QueryBuilder 属性の重複（SDA1002）。
    **プロバイダ側で再実装しない**こと。
@@ -277,7 +278,7 @@ internal static class OracleSourceBuilder
     public static void EmitMethod(SourceBuilder builder, OracleMethodModel method)
     {
         SqlEmit.OpenMethod(builder, method.MethodName, method.ValueParams);
-        //   → {Method}__QueryBuilder(ref BuilderContext context, <値引数>) と `var cmd = context.Command;` を出す
+        //   → {Method}__QueryBuilder(ref BuilderContext __context, <値引数>) と `var __cmd = __context.Command;` を出す
 
         // SQL 文字列の組み立て（プロバイダ方言はここが本体）
         SqlEmit.EmitCommandText(builder, sql);          // 静的 SQL の CommandText 代入
@@ -391,7 +392,7 @@ internal static class OracleSourceBuilder
 ## 7. 出荷前チェックリスト
 
 - [ ] 属性は `QueryBuilderAttribute` 派生・flat namespace・クラス名にプロバイダ接頭辞
-- [ ] `{Method}__QueryBuilder(ref BuilderContext context, ...)` 契約は共有 `SqlEmit` 経由で生成
+- [ ] `{Method}__QueryBuilder(ref BuilderContext __context, ...)` 契約は共有 `SqlEmit` 経由で生成
 - [ ] Model は internal・equatable・シンボル非混入（`WithTrackingName` 済み）
 - [ ] 診断は独自プレフィックス（帯域内は欠番なしの連番）
 - [ ] 診断はプロパティ形式で宣言（フィールドだと RS1032 / RS2008 の検査対象になる）

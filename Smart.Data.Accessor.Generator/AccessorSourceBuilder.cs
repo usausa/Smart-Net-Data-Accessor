@@ -18,7 +18,7 @@ internal static class AccessorSourceBuilder
     // (the helper calls ToDb + handles null); a non-converter parameter uses the plain AddInParameter with a gen-time value expression.
     private static (string Method, string Value) BuildInParameterCall(ParameterModel parameter)
         => parameter.ConverterTypeFullName is { } converter
-            ? (CodeExpressionHelper.AddInParameterConverter(converter, parameter.ConverterDbTypeFullName!, parameter.ConverterClrTypeFullName!), parameter.Name)
+            ? (CodeExpressionHelper.AddInParameterConverter(converter, parameter.ConverterDbTypeFullName!, parameter.ConverterClrTypeFullName!), CSharpIdentifier.Escape(parameter.Name))
             : ("AddInParameter", BuildParameterValueExpression(parameter));
 
     // 入力値式を組み立てる。束縛された [TypeHandler<>] があれば TConverter.ToDb(...) で値を書き、enum 既定キャストより優先する。
@@ -28,24 +28,25 @@ internal static class AccessorSourceBuilder
     // otherwise null (→ DBNull).
     private static string BuildParameterValueExpression(ParameterModel parameter)
     {
+        var name = CSharpIdentifier.Escape(parameter.Name);
         if (parameter.ConverterTypeFullName is { } converter)
         {
             return parameter.ConverterValueIsNullable
-                ? $"({parameter.Name}.HasValue ? (object?){converter}.ToDb({parameter.Name}.Value) : null)"
-                : $"{converter}.ToDb({parameter.Name})";
+                ? $"({name}.HasValue ? (object?){converter}.ToDb({name}.Value) : null)"
+                : $"{converter}.ToDb({name})";
         }
         if (parameter.EnumUnderlyingFullName is null)
         {
-            return parameter.Name;
+            return name;
         }
-        return CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, parameter.Name);
+        return CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, name);
     }
 
     // POCO プロパティの入力値式({argName}.{property})を組み立てる。プロパティが enum なら underlying へのキャストを付ける。
     // Build the input value expression for a POCO property ({argName}.{property}), adding the enum-underlying cast when the property is an enum.
     private static string BuildPocoValueExpression(string argName, PocoBindProperty property)
     {
-        var access = argName + "." + property.PropertyName;
+        var access = argName + "." + CSharpIdentifier.Escape(property.PropertyName);
         // converter があれば TConverter.ToDb で入力を書く(enum キャストより優先)。
         // A converter writes the input via TConverter.ToDb (priority over the enum cast).
         if (property.ConverterTypeFullName is { } converter)
@@ -67,7 +68,7 @@ internal static class AccessorSourceBuilder
     // handles null); a non-converter property uses the gen-time value expression.
     private static (string Method, string Value) BuildPocoInParameterCall(string argName, PocoBindProperty property)
         => property.ConverterTypeFullName is { } converter
-            ? (CodeExpressionHelper.AddInParameterConverter(converter, property.ConverterDbTypeFullName!, property.ConverterClrTypeFullName!), argName + "." + property.PropertyName)
+            ? (CodeExpressionHelper.AddInParameterConverter(converter, property.ConverterDbTypeFullName!, property.ConverterClrTypeFullName!), argName + "." + CSharpIdentifier.Escape(property.PropertyName))
             : ("AddInParameter", BuildPocoValueExpression(argName, property));
 
     // 展開した POCO プロパティ 1 つ分の Add*Parameter を出力する(ストアド / DirectSql セットアップ用)。Direction に応じて
@@ -84,19 +85,19 @@ internal static class AccessorSourceBuilder
         {
             case ParameterDirectionType.Output:
                 builder.Indent().Append(property.HandleName)
-                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(__cmd, ")
+                    .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
             case ParameterDirectionType.InputOutput:
                 builder.Indent().Append(property.HandleName)
-                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(valueExpression).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                    .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(__cmd, ")
+                    .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(valueExpression).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                 break;
             default:
                 var (pocoMethod, pocoValue) = BuildPocoInParameterCall(argName, property);
                 builder.Indent()
-                    .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(pocoMethod).Append("(cmd, \"")
-                    .Append(paramName).Append("\", ").Append(pocoValue).Append(CodeExpressionHelper.DbTypeSizeArgs(property.DbTypeExpression, property.Size)).Append(");").NewLine();
+                    .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(pocoMethod).Append("(__cmd, ")
+                    .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(pocoValue).Append(CodeExpressionHelper.DbTypeSizeArgs(property.DbTypeExpression, property.Size)).Append(");").NewLine();
                 break;
         }
     }
@@ -161,7 +162,7 @@ internal static class AccessorSourceBuilder
             builder.Namespace(model.Namespace);
             builder.NewLine();
         }
-        builder.Indent().Append(model.Accessibility.ToText()).Append(" partial class ").Append(model.ClassName).NewLine();
+        builder.Indent().Append(model.Accessibility.ToText()).Append(" partial class ").Append(CSharpIdentifier.Escape(model.ClassName)).NewLine();
         builder.BeginScope();
         EmitConstructor(builder, model);
 
@@ -178,6 +179,15 @@ internal static class AccessorSourceBuilder
         {
             builder.NewLine();
             EmitMethod(builder, model.Methods[i], model.ProviderName, methodMappings[i]);
+        }
+
+        foreach (var signature in model.FallbackSignatures)
+        {
+            builder.NewLine();
+            builder.Indent().Append(signature).NewLine();
+            builder.BeginScope();
+            builder.Indent().Append("throw new global::System.InvalidOperationException();").NewLine();
+            builder.EndScope();
         }
 
         builder.EndScope();
@@ -339,7 +349,7 @@ internal static class AccessorSourceBuilder
         if (!hasProvider && !hasInjects)
         {
             builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
-            builder.Indent().Append("internal ").Append(model.ClassName).Append("()").NewLine();
+            builder.Indent().Append("internal ").Append(CSharpIdentifier.Escape(model.ClassName)).Append("()").NewLine();
             builder.BeginScope();
             builder.EndScope();
             return;
@@ -355,16 +365,16 @@ internal static class AccessorSourceBuilder
         {
             if (multiProvider)
             {
-                builder.Indent().Append("private readonly global::Smart.Data.IDbProviderSelector providerSelector;").NewLine();
+                builder.Indent().Append("private readonly global::Smart.Data.IDbProviderSelector __providerSelector;").NewLine();
             }
             else
             {
-                builder.Indent().Append("private readonly global::Smart.Data.IDbProvider dbProvider;").NewLine();
+                builder.Indent().Append("private readonly global::Smart.Data.IDbProvider __dbProvider;").NewLine();
             }
         }
         foreach (var inject in model.Injects)
         {
-            builder.Indent().Append("private readonly ").Append(inject.TypeFullName).Append(" ").Append(inject.Name).Append(";").NewLine();
+            builder.Indent().Append("private readonly ").Append(inject.TypeFullName).Append(" ").Append(CSharpIdentifier.Escape(inject.Name)).Append(";").NewLine();
         }
         builder.NewLine();
 
@@ -372,16 +382,16 @@ internal static class AccessorSourceBuilder
         if (hasProvider)
         {
             ctorParams.Add(multiProvider
-                ? "global::Smart.Data.IDbProviderSelector providerSelector"
-                : "global::Smart.Data.IDbProvider dbProvider");
+                ? "global::Smart.Data.IDbProviderSelector __providerSelector"
+                : "global::Smart.Data.IDbProvider __dbProvider");
         }
         foreach (var inject in model.Injects)
         {
-            ctorParams.Add($"{inject.TypeFullName} {inject.Name}");
+            ctorParams.Add($"{inject.TypeFullName} {CSharpIdentifier.Escape(inject.Name)}");
         }
 
         builder.Indent().Append("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]").NewLine();
-        builder.Indent().Append("internal ").Append(model.ClassName).Append("(").Append(String.Join(", ", ctorParams)).Append(")").NewLine();
+        builder.Indent().Append("internal ").Append(CSharpIdentifier.Escape(model.ClassName)).Append("(").Append(String.Join(", ", ctorParams)).Append(")").NewLine();
         builder.BeginScope();
 
         // 注入された必須依存(プロバイダ / [Inject])が null のとき、最初の DB 呼び出しまで遅延させずコンストラクタで即座に失敗させる。
@@ -393,7 +403,7 @@ internal static class AccessorSourceBuilder
             : model.Namespace + "." + model.ClassName;
         if (hasProvider)
         {
-            var providerField = multiProvider ? "providerSelector" : "dbProvider";
+            var providerField = multiProvider ? "__providerSelector" : "__dbProvider";
             var providerType = multiProvider ? "Smart.Data.IDbProviderSelector" : "Smart.Data.IDbProvider";
             builder.Indent()
                 .Append("this.").Append(providerField).Append(" = ").Append(providerField)
@@ -403,8 +413,9 @@ internal static class AccessorSourceBuilder
         }
         foreach (var inject in model.Injects)
         {
-            builder.Indent().Append("global::System.ArgumentNullException.ThrowIfNull(").Append(inject.Name).Append(");").NewLine();
-            builder.Indent().Append("this.").Append(inject.Name).Append(" = ").Append(inject.Name).Append(";").NewLine();
+            var injectName = CSharpIdentifier.Escape(inject.Name);
+            builder.Indent().Append("global::System.ArgumentNullException.ThrowIfNull(").Append(injectName).Append(");").NewLine();
+            builder.Indent().Append("this.").Append(injectName).Append(" = ").Append(injectName).Append(";").NewLine();
         }
         builder.EndScope();
     }
@@ -470,15 +481,23 @@ internal static class AccessorSourceBuilder
         var isAsync = IsAsyncShape(method.ReturnShape);
         var isReader = IsReaderShape(method.ReturnShape);
         var asyncKw = isAsync ? "async " : string.Empty;
-        builder.Indent()
-            .Append(method.Accessibility.ToText()).Append(" ").Append(asyncKw).Append("partial ").Append(method.ReturnTypeFullName).Append(" ")
-            .Append(method.Name).Append("(").Append(paramList).Append(")").NewLine();
+        if (method.Signature.Length > 0)
+        {
+            var partialIndex = method.Signature.IndexOf("partial ", StringComparison.Ordinal);
+            builder.Indent().Append(isAsync ? method.Signature.Insert(partialIndex, asyncKw) : method.Signature).NewLine();
+        }
+        else
+        {
+            builder.Indent()
+                .Append(method.Accessibility.ToText()).Append(" ").Append(asyncKw).Append("partial ").Append(method.ReturnTypeFullName).Append(" ")
+                .Append(method.Name).Append("(").Append(paramList).Append(")").NewLine();
+        }
         builder.BeginScope();
 
         // CancellationToken 引数を探す(無ければ default)。
         // Discover the CancellationToken parameter (default when absent).
         var cancellation = method.Parameters.FirstOrDefault(x => x.IsCancellationToken);
-        var cancellationExpression = cancellation?.Name ?? "default";
+        var cancellationExpression = cancellation is null ? "default" : CSharpIdentifier.Escape(cancellation.Name);
 
         // reader 形(ExecuteReader)では cmd と(Pattern B の)接続の所有権を WrappedReader へ渡すため `using` を使わず、例外時のみ手動破棄する。
         // For reader shapes (ExecuteReader), ownership of cmd and (Pattern B) the connection transfers to WrappedReader,
@@ -493,7 +512,7 @@ internal static class AccessorSourceBuilder
         {
             case ConnectionPattern.ConnectionArg:
             {
-                var connName = method.ConnectionParameterName!;
+                var connName = CSharpIdentifier.Escape(method.ConnectionParameterName!);
                 if (isReader)
                 {
                     builder.Indent().Append("var __wasClosed = (").Append(connName).Append(".State == global::System.Data.ConnectionState.Closed);").NewLine();
@@ -514,13 +533,13 @@ internal static class AccessorSourceBuilder
                 {
                     builder.Indent().Append("if (").Append(connName).Append(".State == global::System.Data.ConnectionState.Closed) ").Append(connName).Append(".Open();").NewLine();
                 }
-                builder.Indent().Append(cmdKeyword).Append(" cmd = ").Append(connName).Append(".CreateCommand();").NewLine();
+                builder.Indent().Append(cmdKeyword).Append(" __cmd = ").Append(connName).Append(".CreateCommand();").NewLine();
                 commandSource = connName;
                 break;
             }
             case ConnectionPattern.TransactionArg:
             {
-                var txName = method.TransactionParameterName!;
+                var txName = CSharpIdentifier.Escape(method.TransactionParameterName!);
                 var connectionExpression = $"{txName}.Connection!";
                 if (isReader)
                 {
@@ -542,8 +561,8 @@ internal static class AccessorSourceBuilder
                 {
                     builder.Indent().Append("if (").Append(connectionExpression).Append(".State == global::System.Data.ConnectionState.Closed) ").Append(connectionExpression).Append(".Open();").NewLine();
                 }
-                builder.Indent().Append(cmdKeyword).Append(" cmd = ").Append(connectionExpression).Append(".CreateCommand();").NewLine();
-                builder.Indent().Append("cmd.Transaction = ").Append(txName).Append(";").NewLine();
+                builder.Indent().Append(cmdKeyword).Append(" __cmd = ").Append(connectionExpression).Append(".CreateCommand();").NewLine();
+                builder.Indent().Append("__cmd.Transaction = ").Append(txName).Append(";").NewLine();
                 commandSource = connectionExpression;
                 break;
             }
@@ -556,20 +575,20 @@ internal static class AccessorSourceBuilder
                 //   no  [Provider] → this.dbProvider.CreateConnection()
                 //   has [Provider] → this.providerSelector.GetProvider("name").CreateConnection()
                 var providerCallExpression = providerName is null
-                    ? "this.dbProvider.CreateConnection()"
-                    : $"this.providerSelector.GetProvider(\"{providerName.Replace("\"", "\\\"")}\").CreateConnection()";
+                    ? "this.__dbProvider.CreateConnection()"
+                    : $"this.__providerSelector.GetProvider({CodeExpressionHelper.StringLiteral(providerName)}).CreateConnection()";
                 var connKeyword = isReader ? "var" : "using var";
-                builder.Indent().Append(connKeyword).Append(" connection = ").Append(providerCallExpression).Append(";").NewLine();
+                builder.Indent().Append(connKeyword).Append(" __connection = ").Append(providerCallExpression).Append(";").NewLine();
                 if (isAsync)
                 {
-                    builder.Indent().Append("await connection.OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await __connection.OpenAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 }
                 else
                 {
-                    builder.Indent().Append("connection.Open();").NewLine();
+                    builder.Indent().Append("__connection.Open();").NewLine();
                 }
-                builder.Indent().Append(cmdKeyword).Append(" cmd = connection.CreateCommand();").NewLine();
-                commandSource = "connection";
+                builder.Indent().Append(cmdKeyword).Append(" __cmd = __connection.CreateCommand();").NewLine();
+                commandSource = "__connection";
                 break;
             }
         }
@@ -586,7 +605,7 @@ internal static class AccessorSourceBuilder
 
         if (method.CommandTimeoutSeconds is { } cts)
         {
-            builder.Indent().Append("cmd.CommandTimeout = ").Append(cts.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
+            builder.Indent().Append("__cmd.CommandTimeout = ").Append(cts.ToString(CultureInfo.InvariantCulture)).Append(";").NewLine();
         }
 
         // SQL とパラメータの準備。コマンドソース(DirectSql / ストアド / QueryBuilder / 2-way SQL)で分岐する。
@@ -601,15 +620,15 @@ internal static class AccessorSourceBuilder
         }
         else if (method.BuilderMethodName is not null)
         {
-            builder.Indent().Append("var context = new global::Smart.Data.Accessor.BuilderContext(cmd);").NewLine();
+            builder.Indent().Append("var __context = new global::Smart.Data.Accessor.BuilderContext(__cmd);").NewLine();
             // 値パラメータ＝メソッド引数から DbConnection / DbTransaction / CancellationToken を除いたもの。コア・Builder の両ジェネレータが
             // 同一の除外規則を適用しないと、呼び出しと生成される {Method}__QueryBuilder のシグネチャがずれる。
             // Value parameters = method params excluding DbConnection / DbTransaction / CancellationToken. Both generators
             // must apply the identical exclusion so the call and the generated {Method}__QueryBuilder signature line up.
             var valueArgs = method.Parameters
                 .Where(x => !x.IsCancellationToken && !x.IsDbConnection && !x.IsDbTransaction)
-                .Select(x => x.Name);
-            var args = String.Join(", ", new[] { "ref context" }.Concat(valueArgs));
+                .Select(static x => CSharpIdentifier.Escape(x.Name));
+            var args = String.Join(", ", new[] { "ref __context" }.Concat(valueArgs));
             builder.Indent().Append(method.BuilderMethodName).Append("(").Append(args).Append(");").NewLine();
         }
         else
@@ -626,7 +645,7 @@ internal static class AccessorSourceBuilder
                 // 静的 SQL の高速経路：動的分岐が無いので StringBuilderPool / try-finally を使わず CommandText リテラルとパラメータ設定を直接出す。
                 // Static SQL fast path: with no dynamic branches, emit the literal CommandText and parameter setup directly,
                 // without StringBuilderPool / try-finally.
-                builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(method.StaticSqlText)).Append(";").NewLine();
+                builder.Indent().Append("__cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(method.StaticSqlText)).Append(";").NewLine();
                 if (!String.IsNullOrEmpty(method.StaticParameterCode))
                 {
                     AppendCodeLines(builder, method.StaticParameterCode);
@@ -643,7 +662,7 @@ internal static class AccessorSourceBuilder
                 {
                     AppendCodeLines(builder, method.SqlEmitCode);
                 }
-                builder.Indent().Append("cmd.CommandText = __sb.ToString();").NewLine();
+                builder.Indent().Append("__cmd.CommandText = __sb.ToString();").NewLine();
                 builder.EndScope();
                 builder.Indent().Append("finally").NewLine();
                 builder.BeginScope();
@@ -661,18 +680,18 @@ internal static class AccessorSourceBuilder
             builder.BeginScope();
             if (isAsync)
             {
-                builder.Indent().Append("await cmd.DisposeAsync().ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("await __cmd.DisposeAsync().ConfigureAwait(false);").NewLine();
                 if (ownsConnectionForReader)
                 {
-                    builder.Indent().Append("await connection.DisposeAsync().ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await __connection.DisposeAsync().ConfigureAwait(false);").NewLine();
                 }
             }
             else
             {
-                builder.Indent().Append("cmd.Dispose();").NewLine();
+                builder.Indent().Append("__cmd.Dispose();").NewLine();
                 if (ownsConnectionForReader)
                 {
-                    builder.Indent().Append("connection.Dispose();").NewLine();
+                    builder.Indent().Append("__connection.Dispose();").NewLine();
                 }
             }
             builder.Indent().Append("throw;").NewLine();
@@ -695,7 +714,7 @@ internal static class AccessorSourceBuilder
             return;
         }
 
-        builder.Indent().Append("cmd.CommandText = ").Append(method.DirectSqlParameterName).Append(";").NewLine();
+        builder.Indent().Append("__cmd.CommandText = ").Append(CSharpIdentifier.Escape(method.DirectSqlParameterName)).Append(";").NewLine();
 
         // OUT / InOut のハンドルを先に宣言し、実行後に EmitOutputWriteback が読めるようにする。
         // Pre-declare OUT / InOut handles so EmitOutputWriteback can read them after the execute call.
@@ -720,7 +739,7 @@ internal static class AccessorSourceBuilder
                 // Expand the POCO argument into one parameter per property.
                 foreach (var property in pocoProps)
                 {
-                    EmitPocoPropertyParameter(builder, method.BindMarker, parameter.Name, property);
+                    EmitPocoPropertyParameter(builder, method.BindMarker, CSharpIdentifier.Escape(parameter.Name), property);
                 }
                 continue;
             }
@@ -735,15 +754,15 @@ internal static class AccessorSourceBuilder
                 case ParameterDirectionType.Output:
                     builder.Indent()
                         .Append("__op_").Append(parameter.Name)
-                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(__cmd, ")
+                        .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(parameter.Name)
-                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpression(parameter))
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(__cmd, ")
+                        .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(BuildParameterValueExpression(parameter))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
@@ -760,16 +779,16 @@ internal static class AccessorSourceBuilder
                         var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
                             .Append("((").Append(parameter.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(__cmd, ")
+                            .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(inValue).Append(providerSizeArg)
                             .Append(")).").Append(parameter.ProviderPropertyName!).Append(" = ").Append(parameter.ProviderValueExpression!).Append(";").NewLine();
                     }
                     else
                     {
                         var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(inValue)
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(__cmd, ")
+                            .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(inValue)
                             .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size)).Append(");").NewLine();
                     }
                     break;
@@ -797,9 +816,9 @@ internal static class AccessorSourceBuilder
     // parameter (POCO expansion, OUT/InOut/ReturnValue). When the RETURN value maps to the method return, add a ReturnValue parameter.
     private static void EmitProcedureSetup(SourceBuilder builder, MethodModel method)
     {
-        var procName = method.ProcedureName!.Replace("\"", "\\\"");
-        builder.Indent().Append("cmd.CommandType = global::System.Data.CommandType.StoredProcedure;").NewLine();
-        builder.Indent().Append("cmd.CommandText = \"").Append(procName).Append("\";").NewLine();
+        var procName = method.ProcedureName!;
+        builder.Indent().Append("__cmd.CommandType = global::System.Data.CommandType.StoredProcedure;").NewLine();
+        builder.Indent().Append("__cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(procName)).Append(";").NewLine();
 
         // Pre-declare OUT / InOut / ReturnValue parameter handles so they are accessible after Execute.
         foreach (var binding in method.OutputBindings)
@@ -821,7 +840,7 @@ internal static class AccessorSourceBuilder
                 // Expand the POCO argument into one parameter per property.
                 foreach (var property in pocoProps)
                 {
-                    EmitPocoPropertyParameter(builder, method.BindMarker, parameter.Name, property);
+                    EmitPocoPropertyParameter(builder, method.BindMarker, CSharpIdentifier.Escape(parameter.Name), property);
                 }
                 continue;
             }
@@ -836,23 +855,23 @@ internal static class AccessorSourceBuilder
                 case ParameterDirectionType.Output:
                     builder.Indent()
                         .Append("__op_").Append(parameter.Name)
-                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddOutParameter(__cmd, ")
+                        .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.InputOutput:
                     builder.Indent()
                         .Append("__op_").Append(parameter.Name)
-                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(BuildParameterValueExpression(parameter))
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInOutParameter(__cmd, ")
+                        .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(BuildParameterValueExpression(parameter))
                         .Append(", ").Append(dbTypeExprOrDefault).Append(sizeArg).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.ReturnValue:
                     builder.Indent()
                         .Append("__op_").Append(parameter.Name)
-                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
-                        .Append(paramName).Append("\", ").Append(dbTypeExprOrDefault).Append(");").NewLine();
+                        .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(__cmd, ")
+                        .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(dbTypeExprOrDefault).Append(");").NewLine();
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 default:
@@ -864,16 +883,16 @@ internal static class AccessorSourceBuilder
                         var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
                             .Append("((").Append(parameter.ProviderParameterTypeFullName!)
-                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(inValue).Append(providerSizeArg)
+                            .Append(")global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(__cmd, ")
+                            .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(inValue).Append(providerSizeArg)
                             .Append(")).").Append(parameter.ProviderPropertyName!).Append(" = ").Append(parameter.ProviderValueExpression!).Append(";").NewLine();
                     }
                     else
                     {
                         var (inMethod, inValue) = BuildInParameterCall(parameter);
                         builder.Indent()
-                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(cmd, \"")
-                            .Append(paramName).Append("\", ").Append(inValue)
+                            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.").Append(inMethod).Append("(__cmd, ")
+                            .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ").Append(inValue)
                             .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size)).Append(");").NewLine();
                     }
                     break;
@@ -884,8 +903,8 @@ internal static class AccessorSourceBuilder
         {
             // ストアドの RETURN 値を捕捉する(メソッドのスカラー戻り値へマップする)。
             // Capture the stored-procedure RETURN value (mapped to the method's scalar return value).
-            builder.Indent().Append("var __returnValue = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(cmd, \"")
-                .Append(method.BindMarker).Append("__ReturnValue\", global::System.Data.DbType.Int32);").NewLine();
+            builder.Indent().Append("var __returnValue = global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddReturnValueParameter(__cmd, ")
+                .Append(CodeExpressionHelper.StringLiteral(method.BindMarker + "__ReturnValue")).Append(", global::System.Data.DbType.Int32);").NewLine();
         }
     }
 
@@ -920,7 +939,7 @@ internal static class AccessorSourceBuilder
                 continue;
             }
             builder.Indent()
-                .Append(binding.ParameterName)
+                .Append(CSharpIdentifier.Escape(binding.ParameterName))
                 .Append(" = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<")
                 .Append(param.TypeFullName).Append(">(").Append(binding.HandleName).Append(")!;").NewLine();
         }
@@ -952,18 +971,18 @@ internal static class AccessorSourceBuilder
             var asyncArgs = behaviorArg.Length == 0
                 ? cancellationExpression
                 : behaviorArg + ", " + cancellationExpression;
-            builder.Indent().Append("var __reader = await cmd.ExecuteReaderAsync(").Append(asyncArgs).Append(").ConfigureAwait(false);").NewLine();
+            builder.Indent().Append("var __reader = await __cmd.ExecuteReaderAsync(").Append(asyncArgs).Append(").ConfigureAwait(false);").NewLine();
             builder.Indent().Append(ownsConnection
-                ? "return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, __reader, connection);"
-                : "return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, __reader);").NewLine();
+                ? "return new global::Smart.Data.Accessor.Helpers.WrappedReader(__cmd, __reader, __connection);"
+                : "return new global::Smart.Data.Accessor.Helpers.WrappedReader(__cmd, __reader);").NewLine();
         }
         else if (ownsConnection)
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("), connection);").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(__cmd, __cmd.ExecuteReader(").Append(behaviorArg).Append("), __connection);").NewLine();
         }
         else
         {
-            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(cmd, cmd.ExecuteReader(").Append(behaviorArg).Append("));").NewLine();
+            builder.Indent().Append("return new global::Smart.Data.Accessor.Helpers.WrappedReader(__cmd, __cmd.ExecuteReader(").Append(behaviorArg).Append("));").NewLine();
         }
     }
 
@@ -1036,7 +1055,7 @@ internal static class AccessorSourceBuilder
             switch (method.ReturnShape)
             {
                 case ReturnShape.Void:
-                    builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
+                    builder.Indent().Append("__cmd.ExecuteNonQuery();").NewLine();
                     EmitOutputWriteback(builder, method);
                     break;
                 case ReturnShape.Scalar:
@@ -1044,7 +1063,7 @@ internal static class AccessorSourceBuilder
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
                         // Stored-procedure RETURN value -> method return value.
-                        builder.Indent().Append("cmd.ExecuteNonQuery();").NewLine();
+                        builder.Indent().Append("__cmd.ExecuteNonQuery();").NewLine();
                         EmitOutputWriteback(builder, method);
                         builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
@@ -1057,31 +1076,31 @@ internal static class AccessorSourceBuilder
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = cmd.ExecuteNonQuery();").NewLine();
+                            builder.Indent().Append("var __result = __cmd.ExecuteNonQuery();").NewLine();
                             EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return cmd.ExecuteNonQuery();").NewLine();
+                            builder.Indent().Append("return __cmd.ExecuteNonQuery();").NewLine();
                         }
                     }
                     else
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpression(method, "cmd.ExecuteScalar()")).Append(";").NewLine();
+                            builder.Indent().Append("var __result = ").Append(BuildScalarReadExpression(method, "__cmd.ExecuteScalar()")).Append(";").NewLine();
                             EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result!;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return ").Append(BuildScalarReadExpression(method, "cmd.ExecuteScalar()")).Append("!;").NewLine();
+                            builder.Indent().Append("return ").Append(BuildScalarReadExpression(method, "__cmd.ExecuteScalar()")).Append("!;").NewLine();
                         }
                     }
                     break;
                 case ReturnShape.Task:
-                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await __cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, method);
                     break;
                 case ReturnShape.TaskScalar:
@@ -1090,7 +1109,7 @@ internal static class AccessorSourceBuilder
                     {
                         // ストアドの RETURN 値 → メソッド戻り値。
                         // Stored-procedure RETURN value -> method return value.
-                        builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                        builder.Indent().Append("await __cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                         EmitOutputWriteback(builder, method);
                         builder.Indent().Append("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<").Append(method.ScalarTypeFullName!).Append(">(__returnValue)!;").NewLine();
                         break;
@@ -1099,18 +1118,18 @@ internal static class AccessorSourceBuilder
                     {
                         if (hasOutputs)
                         {
-                            builder.Indent().Append("var __result = await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("var __result = await __cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                             EmitOutputWriteback(builder, method);
                             builder.Indent().Append("return __result;").NewLine();
                         }
                         else
                         {
-                            builder.Indent().Append("return await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                            builder.Indent().Append("return await __cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                         }
                     }
                     else
                     {
-                        var scalarExecuteAsync = "await cmd.ExecuteScalarAsync(" + cancellationExpression + ").ConfigureAwait(false)";
+                        var scalarExecuteAsync = "await __cmd.ExecuteScalarAsync(" + cancellationExpression + ").ConfigureAwait(false)";
                         if (hasOutputs)
                         {
                             builder.Indent().Append("var __result = ").Append(BuildScalarReadExpression(method, scalarExecuteAsync)).Append(";").NewLine();
@@ -1124,7 +1143,7 @@ internal static class AccessorSourceBuilder
                     }
                     break;
                 case ReturnShape.ValueTask:
-                    builder.Indent().Append("await cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                    builder.Indent().Append("await __cmd.ExecuteNonQueryAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                     EmitOutputWriteback(builder, method);
                     break;
                 default:
@@ -1151,7 +1170,7 @@ internal static class AccessorSourceBuilder
         switch (method.ReturnShape)
         {
             case ReturnShape.List:
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: false)).Append(");").NewLine();
+                builder.Indent().Append("using var __reader = __cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: false)).Append(");").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
@@ -1165,7 +1184,7 @@ internal static class AccessorSourceBuilder
                 builder.Indent().Append("return __list;").NewLine();
                 break;
             case ReturnShape.TaskList:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await __cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("var __list = new global::System.Collections.Generic.List<").Append(method.ElementTypeFullName!).Append(">();").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
@@ -1181,7 +1200,7 @@ internal static class AccessorSourceBuilder
             case ReturnShape.IteratorEnumerable:
                 // 行毎に yield return を出す(バッファリングしない)。OrdinalCache は最初の行が来た後に 1 回だけ取得する。
                 // Emit a per-row `yield return` (no buffered list); OrdinalCache is captured once after the first row arrives.
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: false)).Append(");").NewLine();
+                builder.Indent().Append("using var __reader = __cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: false)).Append(");").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
@@ -1196,7 +1215,7 @@ internal static class AccessorSourceBuilder
                 // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要(無い場合 SDA0305 で警告)。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
                 // [EnumeratorCancellation] (SDA0305 warns when missing).
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await __cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
@@ -1210,7 +1229,7 @@ internal static class AccessorSourceBuilder
             case ReturnShape.Scalar:
                 // QueryFirst スタイル：マップした単一要素を返す。リーダーが空なら default!。
                 // QueryFirst-style: return the single mapped item, or default! when the reader is empty.
-                builder.Indent().Append("using var __reader = cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: true)).Append(");").NewLine();
+                builder.Indent().Append("using var __reader = __cmd.ExecuteReader(").Append(QueryReaderBehavior(singleRow: true)).Append(");").NewLine();
                 builder.Indent().Append("if (__reader.Read())").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();
@@ -1220,7 +1239,7 @@ internal static class AccessorSourceBuilder
                 break;
             case ReturnShape.TaskScalar:
             case ReturnShape.ValueTaskScalar:
-                builder.Indent().Append("using var __reader = await cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: true)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
+                builder.Indent().Append("using var __reader = await __cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: true)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
                 builder.Indent().Append("var __o = ").Append(ordinalFactory).Append(";").NewLine();

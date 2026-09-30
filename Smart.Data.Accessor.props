@@ -1,2 +1,8 @@
 <Project>
+
+  <PropertyGroup>
+    <SmartDataAccessor_SqlFolder Condition="'$(SmartDataAccessor_SqlFolder)' == ''">Sql</SmartDataAccessor_SqlFolder>
+    <SmartDataAccessor_SkipLocalsInit Condition="'$(SmartDataAccessor_SkipLocalsInit)' == ''">true</SmartDataAccessor_SkipLocalsInit>
+  </PropertyGroup>
+
 </Project>

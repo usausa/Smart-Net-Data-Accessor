@@ -9,9 +9,8 @@ internal sealed record OptionModel(
     string SqlFolder,
     bool SkipLocalsInit)
 {
-    // .targets を取り込んでいない場合の値。SQL フォルダは .targets と同じ既定、SkipLocalsInit は
-    // 属性が要求する AllowUnsafeBlocks が立っていない可能性があるため無効にしておく。
-    // The values used when the .targets was not imported. The SQL folder matches the .targets default;
-    // SkipLocalsInit stays off because the AllowUnsafeBlocks the attribute needs may not be set.
-    public static OptionModel Default { get; } = new("Sql", false);
+    // プロパティが未指定のときの値(.props の既定と同じ)。SkipLocalsInit は AllowUnsafeBlocks が無ければ出力段で無効になる。
+    // The values used when a property is not given (the same as the .props defaults). SkipLocalsInit is turned off at the
+    // output stage when AllowUnsafeBlocks is not set.
+    public static OptionModel Default { get; } = new("Sql", true);
 }

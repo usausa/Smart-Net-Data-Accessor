@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using Smart.Data.Accessor.Shared.Builders;
 
+using SourceGenerateHelper;
+
 // 標準(既定)QueryBuilder ジェネレータ(配線)。コアの [Insert]/[Update]/[Delete]/[Count]/[Select]/[SelectSingle]/[Truncate] が
 // 付いたメソッドに {Method}__QueryBuilder ヘルパーを生成する。走査は共有 ClassScanner、transform は StandardModelBuilder、出力は
 // 共有 SourceOutput＋StandardSourceBuilder に委譲する(3 層)。他プロバイダーも同形。
@@ -22,8 +24,13 @@ public sealed class QueryBuilderGenerator : IIncrementalGenerator
                 static (node, _) => node is ClassDeclarationSyntax,
                 static (context, cancellation) => StandardModelBuilder.Build(context, cancellation))
             .WithTrackingName(ClassScanner.TrackingName);
+        var treeProvider = context.ForAttributeWithMetadataNameSyntaxTrees(
+            ClassScanner.DataAccessorAttributeName,
+            static (node, _) => node is ClassDeclarationSyntax);
 
+        context.RegisterSourceOutput(provider.Combine(treeProvider), static (productionContext, pair) =>
+            productionContext.ReportDiagnostics(pair.Left.Diagnostics, pair.Right));
         context.RegisterSourceOutput(provider, static (productionContext, model) =>
-            SourceOutput.Emit(productionContext, model.Namespace, model.ClassName, model.Accessibility, model.Methods, model.Diagnostics, StandardSourceBuilder.EmitMethod, string.Empty));
+            SourceOutput.Emit(productionContext, model.Namespace, model.ClassName, model.Accessibility, model.Methods, StandardSourceBuilder.EmitMethod, string.Empty));
     }
 }

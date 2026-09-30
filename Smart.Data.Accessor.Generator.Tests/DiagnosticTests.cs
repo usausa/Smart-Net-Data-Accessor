@@ -1,5 +1,11 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
+using System.Reflection;
+
+using Microsoft.CodeAnalysis;
+
+using Smart.Data.Accessor.Generator.Builders;
+
 // Verifies that the source generators report each wired diagnostic for the offending input,
 // and that the newly wired SDA0101 does not false-positive on ordinary helper methods.
 public partial class DiagnosticTests
@@ -1004,7 +1010,7 @@ public partial class DiagnosticTests
             using Smart.Data.Accessor.Attributes;
 
             [DataAccessor]
-            [Inject(typeof(object), "dbProvider")]
+            [Inject(typeof(object), "__dbProvider")]
             internal sealed partial class Accessor
             {
                 [Execute]
@@ -1357,6 +1363,92 @@ public partial class DiagnosticTests
     }
 
     [Fact]
+    public void Sda1005CanBeSuppressedAtMethod()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                public int Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+            #pragma warning disable SDA1005
+                [Delete(typeof(Entity), Table = "T")]
+                [Execute]
+                public partial int Delete(int id);
+            #pragma warning restore SDA1005
+            }
+            """;
+
+        var problems = GeneratorTestHelper.GetProblemIds(source);
+
+        Assert.Empty(problems);
+    }
+
+    // キーの無いエンティティの UPDATE は全行を更新し、Postgres の UPSERT と SQL Server の MERGE は SQL にならないためエラー。
+    // MySQL の UPSERT はキーが無くても成り立つので SDA1005 の警告のまま。
+    // An UPDATE of an entity without a key updates every row, and the Postgres UPSERT / SQL Server MERGE are not valid SQL, so
+    // they are errors. The MySQL UPSERT works without a key, so it stays the SDA1005 warning.
+    [Theory]
+    [InlineData("Update", "SDA1007")]
+    [InlineData("SqlUpdate", "SDA1007")]
+    [InlineData("PgUpdate", "SDA1007")]
+    [InlineData("MySqlUpdate", "SDA1007")]
+    [InlineData("PgUpsert", "SDA1007")]
+    [InlineData("SqlMerge", "SDA1007")]
+    [InlineData("MySqlUpsert", "SDA1005")]
+    public void KeyedStatementWithoutKeyEmitsDiagnostic(string attribute, string id)
+    {
+        var source = $$"""
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class Entity
+            {
+                public int Id { get; set; }
+
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [{{attribute}}(typeof(Entity), Table = "T")]
+                [Execute]
+                public partial int Save(Entity entity);
+            }
+            """;
+
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        Assert.Equal([id], diagnostics.Select(static x => x.Id));
+    }
+
+    [Fact]
+    public void ErrorsCannotBeSuppressed()
+    {
+        var descriptors = new[]
+            {
+                typeof(DataAccessorGenerator).Assembly.GetType("Smart.Data.Accessor.Generator.Diagnostics", throwOnError: true)!,
+                typeof(QueryBuilderGenerator).Assembly.GetType("Smart.Data.Accessor.Shared.Builders.BuilderDiagnostics", throwOnError: true)!
+            }
+            .SelectMany(static x => x.GetProperties(BindingFlags.Public | BindingFlags.Static))
+            .Where(static x => x.PropertyType == typeof(DiagnosticDescriptor))
+            .Select(static x => (DiagnosticDescriptor)x.GetValue(null)!)
+            .ToList();
+
+        Assert.All(
+            descriptors.Where(static x => x.DefaultSeverity == DiagnosticSeverity.Error),
+            static x => Assert.Equal([WellKnownDiagnosticTags.NotConfigurable, WellKnownDiagnosticTags.Compiler], x.CustomTags));
+        Assert.All(
+            descriptors.Where(static x => x.DefaultSeverity != DiagnosticSeverity.Error),
+            static x => Assert.Empty(x.CustomTags));
+    }
+
+    [Fact]
     public void Sda1006TypeMapTypeHandlerConflictEmitsDiagnostic()
     {
         // Arrange
@@ -1530,5 +1622,357 @@ public partial class DiagnosticTests
 
         // [Direction(ReturnValue)] is retired everywhere.
         Assert.Contains(diagnostics, x => x.Id == "SDA0209");
+    }
+
+    [Theory]
+    [InlineData("internal static partial class Accessor")]
+    [InlineData("internal abstract partial class Accessor")]
+    [InlineData("internal sealed partial record Accessor")]
+    [InlineData("file sealed partial class Accessor")]
+    public void Sda0013UnsupportedClassKindEmitsDiagnostic(string declaration)
+    {
+        // Arrange
+        var source = $$"""
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            {{declaration}}
+            {
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0013");
+    }
+
+    [Fact]
+    public void Sda0014ClassNamesDifferingOnlyInCaseGenerateTheFirstOnly()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            namespace Demo;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+
+            [DataAccessor]
+            internal sealed partial class accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"), ("accessor.Delete", "delete from Data where Id = /*@ id */0"));
+
+        // Assert
+        Assert.Contains("SDA0014", result);
+        Assert.DoesNotContain("CS8785", result);
+    }
+
+    [Fact]
+    public void AttributeOnTwoPartialDeclarationsGeneratesOnce()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
+
+        // Assert
+        Assert.Equal(["CS0579"], result);
+    }
+
+    [Fact]
+    public void Sda0015InvalidSkipLocalsInitValueEmitsWarning()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithProperty("SmartDataAccessor_SkipLocalsInit", "yes", source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0015");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+    }
+
+    [Theory]
+    [InlineData("", "[DbType((DbType)999)] int id", "")]
+    [InlineData("", "[Direction((ParameterDirection)99)] int id", "")]
+    [InlineData("[ReaderBehavior((CommandBehavior)1024)]", "int id", "")]
+    [InlineData("", "int id", "[TypeMap(typeof(int), (DbType)999)]")]
+    public void Sda0016UndefinedEnumValueEmitsError(string methodAttribute, string parameter, string classAttribute)
+    {
+        // Arrange
+        var method = methodAttribute.Length > 0
+            ? $"[ExecuteReader]\n    {methodAttribute}\n    public partial DbDataReader Select({parameter});"
+            : $"[Execute]\n    public partial int Select({parameter});";
+        var source = $$"""
+            using System.Data;
+            using System.Data.Common;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            {{classAttribute}}
+            internal sealed partial class Accessor
+            {
+                {{method}}
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Select", "select * from Data where Id = /*@ id */0"));
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0016");
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+    }
+
+    [Fact]
+    public void Sda0508UnknownNameEmitsErrorAndThrowingImplementation()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0 and Type = /*@ missing */0"));
+
+        // Assert
+        Assert.Contains("SDA0508", result);
+        Assert.DoesNotContain("CS0103", result);
+        Assert.DoesNotContain("CS8795", result);
+    }
+
+    [Fact]
+    public void Sda0508ClassMembersAndInjectNamesResolve()
+    {
+        // Arrange
+        const string source = """
+            using System;
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            [Inject(typeof(TimeProvider), "clock")]
+            internal sealed partial class Accessor
+            {
+                private const int Limit = 10;
+
+                private static int Type => 1;
+
+                [Execute]
+                public partial int Delete(int id);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0 and Type = /*@ Type */0 and Rows < /*@ Limit */0 and Time < /*@ clock.GetUtcNow() */0"));
+
+        // Assert
+        Assert.DoesNotContain("SDA0508", result);
+        Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Sda0510InternalInterfaceAndExtensionMembersResolve()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            public interface INamed
+            {
+                string Name { get; }
+            }
+
+            public interface IEntity : INamed
+            {
+            }
+
+            public sealed class Filter
+            {
+                internal int Type { get; set; }
+            }
+
+            public static class FilterExtensions
+            {
+                public static int Limit(this Filter filter) => filter.Type * 10;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(Filter filter, IEntity entity);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Type = /*@ filter.Type */0 and Rows < /*@ filter.Limit() */0 and Name = /*@ entity.Name */'a'"));
+
+        // Assert
+        Assert.DoesNotContain("SDA0510", result);
+        Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Sda0510ExtensionPropertyResolves()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            public sealed class Filter
+            {
+                public int Type { get; set; }
+            }
+
+            public static class FilterExtensions
+            {
+                extension(Filter filter)
+                {
+                    public int Limit => filter.Type * 10;
+                }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(Filter filter);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Rows < /*@ filter.Limit */0"));
+
+        // Assert
+        Assert.DoesNotContain("SDA0510", result);
+        Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Sda0510UnknownMemberEmitsErrorAndThrowingImplementation()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            public sealed class Filter
+            {
+                public int Type { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(Filter filter);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Type = /*@ filter.Kind */0"));
+
+        // Assert
+        Assert.Contains("SDA0510", result);
+        Assert.DoesNotContain("CS1061", result);
+        Assert.DoesNotContain("CS8795", result);
+    }
+
+    [Fact]
+    public void MissingSqlFileLeavesThrowingImplementation()
+    {
+        // Arrange
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+
+                [Execute]
+                public partial int Insert(int id);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
+
+        // Assert
+        Assert.Equal(["SDA0401"], result);
+    }
+
+    [Fact]
+    public void InvalidRegistrationMethodLeavesThrowingImplementation()
+    {
+        // Arrange
+        const string source = """
+            using Microsoft.Extensions.DependencyInjection;
+            using Smart.Data.Accessor.Attributes;
+
+            internal static partial class Registration
+            {
+                [DataAccessorRegistration]
+                public static partial IServiceCollection AddDataAccessors(this IServiceCollection services, int count);
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Execute]
+                public partial int Delete(int id);
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHelper.GetProblemIdsWithServiceCollection(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
+
+        // Assert
+        Assert.Equal(["SDA0601"], result);
     }
 }

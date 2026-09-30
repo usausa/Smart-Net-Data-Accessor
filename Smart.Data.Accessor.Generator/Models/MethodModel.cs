@@ -100,4 +100,6 @@ internal sealed record MethodModel(
     LocationInfo? InlineSqlLocation = null,
     // [ReaderBehavior]: CommandBehavior underlying value for [ExecuteReader] methods; OR-ed into
     // the ExecuteReader(Async) call (Pattern A combines with the connection-state behavior).
-    int? ReaderBehavior = null);
+    int? ReaderBehavior = null,
+    string Signature = "",
+    EquatableArray<PendingReference> PendingReferences = default);

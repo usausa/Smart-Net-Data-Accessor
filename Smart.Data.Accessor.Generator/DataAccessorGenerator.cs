@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
@@ -16,7 +17,7 @@ using SourceGenerateHelper;
 public sealed class DataAccessorGenerator : IIncrementalGenerator
 {
     private const string SqlFolderProperty = "build_property.SmartDataAccessor_SqlFolder";
-    private const string SkipLocalsInitProperty = "build_property.SmartDataAccessor_SkipLocalsInit";
+    private const string SkipLocalsInitProperty = "SmartDataAccessor_SkipLocalsInit";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -32,8 +33,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // Generation options coming from MSBuild properties. Everything the .targets exposes as a
         // CompilerVisibleProperty is bundled into a single OptionModel; the record's value equality keeps the
         // pipeline cached.
-        var optionProvider = context.AnalyzerConfigOptionsProvider
+        var optionResultProvider = context.AnalyzerConfigOptionsProvider
             .Select(static (provider, _) => SelectOption(provider));
+        context.RegisterSourceOutput(
+            optionResultProvider,
+            static (productionContext, result) => productionContext.ReportDiagnostics(result.Diagnostics));
+        var optionProvider = optionResultProvider
+            .Select(static (result, _) => result.Value);
+
+        var allowUnsafeProvider = context.CompilationProvider
+            .Select(static (compilation, _) => compilation.Options is CSharpCompilationOptions { AllowUnsafe: true });
+        var emitOptionProvider = optionProvider
+            .Combine(allowUnsafeProvider)
+            .Select(static (pair, _) => pair.Left with { SkipLocalsInit = pair.Left.SkipLocalsInit && pair.Right });
 
         // 追加ファイル(AdditionalText)から .sql を集め、(ファイル名, 本文) に射影し、SQL フォルダ名と結合する。
         // Collect .sql additional files, project each to (file name, text), and combine them with the SQL folder name.
@@ -63,7 +75,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var classResults = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 AccessorModelBuilder.DataAccessorAttributeName,
-                static (x, _) => x is ClassDeclarationSyntax,
+                static (x, _) => x is ClassDeclarationSyntax or RecordDeclarationSyntax,
                 static (context, _) => AccessorModelBuilder.BuildClassResult(context))
             .WithTrackingName("AccessorClassResult");
 
@@ -72,7 +84,21 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var completed = classResults
             .Combine(sqlFiles)
             .Select(static (pair, cancellation) => AccessorModelBuilder.CompleteModel(pair.Left, pair.Right, cancellation))
+            .Combine(context.CompilationProvider)
+            .Select(static (pair, cancellation) => AccessorModelBuilder.ResolveReferences(pair.Left, pair.Right, cancellation))
             .WithTrackingName("AccessorCompleted");
+
+        var collected = completed.Collect();
+        var accessors = collected
+            .SelectMany(static (results, _) => SelectAccessors(results))
+            .WithTrackingName("Accessors");
+
+        var treeProvider = context.ForAttributeWithMetadataNameSyntaxTrees(
+            AccessorModelBuilder.DataAccessorAttributeName,
+            static (x, _) => x is ClassDeclarationSyntax or RecordDeclarationSyntax);
+        context.RegisterSourceOutput(
+            collected.Combine(treeProvider),
+            static (productionContext, pair) => productionContext.ReportDiagnostics(SelectDiagnostics(pair.Left), pair.Right));
 
         // アクセサ毎のソース＋診断を出力する。completed は [DataAccessor] クラス 1 個につき 1 要素のストリームなので、
         // RegisterSourceOutput は要素(＝クラス)毎に 1 回走り、そのクラスの {ns}_{Class}.g.cs を出力する。
@@ -82,8 +108,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // {ns}_{Class}.g.cs. Only accessors whose own Result<AccessorModel> changed are re-emitted; unchanged
         // ones stay cached and are skipped (per-class granularity).
         context.RegisterSourceOutput(
-            completed.Combine(optionProvider),
-            static (productionContext, pair) => EmitCompleted(productionContext, pair.Left, pair.Right));
+            accessors.Combine(emitOptionProvider),
+            static (productionContext, pair) => EmitAccessor(productionContext, pair.Left, pair.Right));
 
         // レジストリ初期化子(全アクセサを横断して集約。symbol 由来で SQL 不要)。
         // .Collect() がストリームを 1 つの ImmutableArray に畳み込み、全アクセサを一度に渡す。レジストリ
@@ -95,8 +121,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         // (DataAccessorRegistryInitializer.g.cs) is one file aggregating every accessor's DI registration and
         // cannot be split per class, so RegisterSourceOutput runs once over the whole set; it re-emits that one
         // small file whenever the set changes (an accessor added/removed, or any registration-relevant data).
-        var registryEntries = completed
-            .SelectMany(static (result, _) => CreateRegistryEntries(result))
+        var registryEntries = accessors
+            .Select(static (model, _) => CreateRegistryEntry(model))
             .Collect();
         context.RegisterSourceOutput(registryEntries, static (productionContext, all) => EmitRegistry(productionContext, all));
 
@@ -114,9 +140,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
                 static (context, _) => RegistrationModelBuilder.BuildMethodResult(context))
             .WithTrackingName("RegistrationMethodResult")
             .Collect();
+        var registrationTreeProvider = context.ForAttributeWithMetadataNameSyntaxTrees(
+            RegistrationModelBuilder.DataAccessorRegistrationAttributeName,
+            static (x, _) => x is MethodDeclarationSyntax);
         context.RegisterSourceOutput(
-            registrationMethods.Combine(registryEntries),
-            static (productionContext, pair) => EmitRegistrations(productionContext, pair.Left, pair.Right));
+            registrationMethods.Combine(registryEntries).Combine(registrationTreeProvider),
+            static (productionContext, pair) => EmitRegistrations(productionContext, pair.Left.Left, pair.Left.Right, pair.Right));
 
         // /*!using*/ と /*!helper*/ は Compilation に対して検証しない。無効な名前空間・ヘルパー型は生成された
         // using 行の C# エラーとして現れるため、専用診断は出さない(パイプラインを Compilation 非依存・完全キャッシュに保つ)。
@@ -127,44 +156,85 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     // MSBuild プロパティを OptionModel へ束ねる。
     // SqlFolder はプロジェクト毎に <SmartDataAccessor_SqlFolder> で変更できる(既定 "Sql")。
-    // SkipLocalsInit は <SmartDataAccessor_SkipLocalsInit> で切り替える。.targets が既定値と、属性が要求する
-    // AllowUnsafeBlocks の両方を面倒みるので、ここは値を読むだけでよい。値が取れないときに true を既定にすると
-    // .targets を取り込んでいないプロジェクトで CS0227 になりうるため、取得できたときだけ有効とする。
+    // SkipLocalsInit は <SmartDataAccessor_SkipLocalsInit> で切り替える(既定 true)。解釈できない値は SDA0015 を報告して既定を使う。
+    // 属性が要求する AllowUnsafeBlocks は出力段で確かめる。
     // Bundle the MSBuild properties into an OptionModel.
     // SqlFolder is configurable per project via <SmartDataAccessor_SqlFolder> (default "Sql").
-    // SkipLocalsInit is controlled by <SmartDataAccessor_SkipLocalsInit>; the .targets supplies both its default
-    // and the AllowUnsafeBlocks the attribute needs, so this only reads the value. Defaulting a missing value to
-    // true would risk CS0227 in a project that never imported the .targets, so it counts as enabled only when
-    // the value is actually present.
-    private static OptionModel SelectOption(AnalyzerConfigOptionsProvider provider)
+    // SkipLocalsInit is controlled by <SmartDataAccessor_SkipLocalsInit> (default true); a value that cannot be parsed
+    // reports SDA0015 and uses the default. The AllowUnsafeBlocks the attribute needs is checked at the output stage.
+    private static Result<OptionModel> SelectOption(AnalyzerConfigOptionsProvider provider)
     {
+        var diagnostics = new List<DiagnosticInfo>();
         var sqlFolder = provider.GlobalOptions.TryGetValue(SqlFolderProperty, out var folder) && !String.IsNullOrWhiteSpace(folder)
             ? folder
             : OptionModel.Default.SqlFolder;
-        var skipLocalsInit = provider.GlobalOptions.TryGetValue(SkipLocalsInitProperty, out var value) &&
-            Boolean.TryParse(value, out var result) &&
-            result;
-        return new OptionModel(sqlFolder, skipLocalsInit);
+        if (!provider.GlobalOptions.TryGetValue<bool>(SkipLocalsInitProperty, out var skipLocalsInit, out var invalidValue))
+        {
+            skipLocalsInit = OptionModel.Default.SkipLocalsInit;
+            if (invalidValue is not null)
+            {
+                diagnostics.Add(new DiagnosticInfo(Diagnostics.InvalidPropertyValue, (Location?)null, SkipLocalsInitProperty, invalidValue));
+            }
+        }
+        return new Result<OptionModel>(new OptionModel(sqlFolder, skipLocalsInit), new EquatableArray<DiagnosticInfo>(diagnostics));
     }
 
-    // 1 アクセサ分の出力：診断を報告し、Model があれば AccessorSourceBuilder でソースを生成して {ns}_{Class}.g.cs を追加する。
-    // Emit one accessor: report its diagnostics, then (if a model exists) generate its source via
-    // AccessorSourceBuilder and add it as {ns}_{Class}.g.cs.
-    private static void EmitCompleted(SourceProductionContext context, Result<AccessorModel> result, OptionModel option)
+    // 1 アクセサ分の出力：AccessorSourceBuilder でソースを生成して {ns}_{Class}.g.cs を追加する。
+    // Emit one accessor: generate its source via AccessorSourceBuilder and add it as {ns}_{Class}.g.cs.
+    private static void EmitAccessor(SourceProductionContext context, AccessorModel model, OptionModel option)
     {
-        foreach (var diagnostic in result.Diagnostics)
-        {
-            context.ReportDiagnostic(diagnostic.ToDiagnostic());
-        }
-        if (result.Value is not { } model)
-        {
-            return;
-        }
         var source = AccessorSourceBuilder.Emit(model, option);
-        // This repository names the global namespace "global" rather than omitting the segment,
-        // which is what HintNameBuilder would do on its own. Keep the existing hint names.
-        var ns = String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace;
-        context.AddSource(HintNameBuilder.Build(ns, model.ClassName), SourceText.From(source, Encoding.UTF8));
+        context.AddSource(GetHintName(model), SourceText.From(source, Encoding.UTF8));
+    }
+
+    // This repository names the global namespace "global" rather than omitting the segment,
+    // which is what HintNameBuilder would do on its own. Keep the existing hint names.
+    private static string GetHintName(AccessorModel model) =>
+        HintNameBuilder.Build(String.IsNullOrEmpty(model.Namespace) ? "global" : model.Namespace, model.ClassName);
+
+    private static string GetClassName(string ns, string className) =>
+        String.IsNullOrEmpty(ns) ? className : $"{ns}.{className}";
+
+    private static IEnumerable<AccessorModel> SelectAccessors(ImmutableArray<Result<AccessorModel>> results)
+    {
+        var collisions = FindHintNameCollisions(results);
+        var emitted = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var model in results.SelectValue())
+        {
+            var hintName = GetHintName(model);
+            if (!collisions.ContainsKey(hintName) && emitted.Add(hintName))
+            {
+                yield return model;
+            }
+        }
+    }
+
+    private static IEnumerable<DiagnosticInfo> SelectDiagnostics(ImmutableArray<Result<AccessorModel>> results) =>
+        results.SelectError()
+            .Concat(FindHintNameCollisions(results).Values)
+            .Distinct();
+
+    private static Dictionary<string, DiagnosticInfo> FindHintNameCollisions(ImmutableArray<Result<AccessorModel>> results)
+    {
+        var collisions = new Dictionary<string, DiagnosticInfo>(StringComparer.Ordinal);
+        var firsts = new Dictionary<string, AccessorModel>(StringComparer.OrdinalIgnoreCase);
+        foreach (var model in results.SelectValue().OrderBy(GetHintName, StringComparer.Ordinal))
+        {
+            var hintName = GetHintName(model);
+            if (!firsts.TryGetValue(hintName, out var first))
+            {
+                firsts.Add(hintName, model);
+            }
+            else if ((GetHintName(first) != hintName) && !collisions.ContainsKey(hintName))
+            {
+                collisions.Add(hintName, new DiagnosticInfo(
+                    Diagnostics.HintNameCollision,
+                    model.Location,
+                    GetClassName(model.Namespace, model.ClassName),
+                    GetClassName(first.Namespace, first.ClassName)));
+            }
+        }
+        return collisions;
     }
 
     // 全アクセサを集約し、DI 登録に要る情報(サービス型 / 具象型 / プロバイダ要否 / [Inject] 型)を RegistryEntry に集める。
@@ -172,26 +242,18 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     // Aggregate all accessors, gathering the data needed for DI registration (service/concrete type, whether a
     // provider is required, [Inject] types) into RegistryEntry; if there is at least one, emit an initializer
     // file that registers every accessor from a ModuleInitializer.
-    private static ImmutableArray<RegistryEntry> CreateRegistryEntries(Result<AccessorModel> result)
+    private static RegistryEntry CreateRegistryEntry(AccessorModel model)
     {
-        if (result.Value is not { } model)
-        {
-            return [];
-        }
-
         var concreteName = String.IsNullOrEmpty(model.Namespace)
-            ? $"global::{model.ClassName}"
-            : $"global::{model.Namespace}.{model.ClassName}";
-        return
-        [
-            new RegistryEntry(
-                model.Namespace,
-                model.ServiceTypeFullName ?? concreteName,
-                concreteName,
-                model.RequiresConnectionFactory,
-                model.ProviderName is not null,
-                new EquatableArray<string>(model.Injects.Select(static x => x.TypeFullName)))
-        ];
+            ? $"global::{CSharpIdentifier.Escape(model.ClassName)}"
+            : $"global::{model.Namespace}.{CSharpIdentifier.Escape(model.ClassName)}";
+        return new RegistryEntry(
+            model.Namespace,
+            model.ServiceTypeFullName ?? concreteName,
+            concreteName,
+            model.RequiresConnectionFactory,
+            model.ProviderName is not null,
+            new EquatableArray<string>(model.Injects.Select(static x => x.TypeFullName)));
     }
 
     private static void EmitRegistry(SourceProductionContext context, ImmutableArray<RegistryEntry> registrations)
@@ -271,19 +333,19 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
     private static void EmitRegistrations(
         SourceProductionContext context,
         ImmutableArray<Result<RegistrationMethodModel>> methods,
-        ImmutableArray<RegistryEntry> entries)
+        ImmutableArray<RegistryEntry> entries,
+        ImmutableArray<SyntaxTree> trees)
     {
         var groups = new List<(string Namespace, string ClassName, List<RegistrationMethodModel> Methods)>();
         foreach (var result in methods)
         {
-            foreach (var diagnostic in result.Diagnostics)
-            {
-                context.ReportDiagnostic(diagnostic.ToDiagnostic());
-            }
-            if (result.Value is not { } model)
+            context.ReportDiagnostics(result.Diagnostics, trees);
+            if (!result.HasValue)
             {
                 continue;
             }
+
+            var model = result.Value;
 
             var index = groups.FindIndex(x => (x.Namespace == model.Namespace) && (x.ClassName == model.ClassName));
             if (index < 0)
@@ -306,11 +368,20 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         var sorted = entries
             .OrderBy(static x => x.ConcreteTypeName, StringComparer.Ordinal)
             .ToList();
-        foreach (var (ns, className, classMethods) in groups)
+
+        var hintNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (ns, className, classMethods) in groups.OrderBy(static x => GetClassName(x.Namespace, x.ClassName), StringComparer.Ordinal))
         {
-            var source = EmitRegistrationClass(context, ns, className, classMethods, sorted);
-            var hintNamespace = String.IsNullOrEmpty(ns) ? "global" : ns;
-            context.AddSource(HintNameBuilder.BuildWithExtension(hintNamespace, ".Registration.g.cs", className), SourceText.From(source, Encoding.UTF8));
+            var hintName = HintNameBuilder.BuildWithExtension(String.IsNullOrEmpty(ns) ? "global" : ns, ".Registration.g.cs", className);
+            if (hintNames.TryGetValue(hintName, out var other))
+            {
+                context.ReportDiagnostic(new DiagnosticInfo(Diagnostics.HintNameCollision, classMethods[0].Location, GetClassName(ns, className), other), trees);
+                continue;
+            }
+
+            hintNames.Add(hintName, GetClassName(ns, className));
+            var source = EmitRegistrationClass(context, ns, className, classMethods, sorted, trees);
+            context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
         }
     }
 
@@ -319,7 +390,8 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         string ns,
         string className,
         List<RegistrationMethodModel> methods,
-        List<RegistryEntry> entries)
+        List<RegistryEntry> entries,
+        ImmutableArray<SyntaxTree> trees)
     {
         var builder = new SourceBuilder();
         builder.AutoGenerated();
@@ -333,7 +405,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             builder.NewLine();
         }
 
-        builder.Indent().Append("partial class ").Append(className).NewLine();
+        builder.Indent().Append("partial class ").Append(CSharpIdentifier.Escape(className)).NewLine();
         builder.BeginScope();
         for (var i = 0; i < methods.Count; i++)
         {
@@ -341,7 +413,7 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
             {
                 builder.NewLine();
             }
-            EmitRegistrationMethod(context, builder, methods[i], entries);
+            EmitRegistrationMethod(context, builder, methods[i], entries, trees);
         }
         builder.EndScope();
         return builder.ToString();
@@ -356,37 +428,42 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
         SourceProductionContext context,
         SourceBuilder builder,
         RegistrationMethodModel method,
-        IEnumerable<RegistryEntry> entries)
+        IEnumerable<RegistryEntry> entries,
+        ImmutableArray<SyntaxTree> trees)
     {
+        builder.Indent().Append(method.Signature).NewLine();
+        builder.BeginScope();
+        if (method.IsFallback)
+        {
+            builder.Indent().Append("throw new global::System.InvalidOperationException();").NewLine();
+            builder.EndScope();
+            return;
+        }
+
         var targets = entries.Where(x => IsRegistrationTarget(method, x)).ToList();
         if (targets.Count == 0)
         {
-            context.ReportDiagnostic(new DiagnosticInfo(Diagnostics.RegistrationNoTarget, method.Location, method.MethodName).ToDiagnostic());
+            context.ReportDiagnostic(new DiagnosticInfo(Diagnostics.RegistrationNoTarget, method.Location, method.MethodName), trees);
         }
 
-        builder.Indent()
-            .Append(method.Accessibility.ToText())
-            .Append(" static partial global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
-            .Append(method.MethodName)
-            .Append("(this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)")
-            .NewLine();
-        builder.BeginScope();
         foreach (var entry in targets)
         {
             var args = EnumerateDependencyTypes(entry)
-                .Select(static x => $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{x}>(provider)")
+                .Select(static x => $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{x}>(__provider)")
                 .ToList();
             builder.Indent()
                 .Append("global::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<")
                 .Append(entry.ServiceTypeName)
-                .Append(">(services, static provider => new ")
+                .Append(">(")
+                .Append(method.ServicesExpression)
+                .Append(", static __provider => new ")
                 .Append(entry.ConcreteTypeName)
                 .Append("(")
                 .Append(String.Join(", ", args))
                 .Append("));")
                 .NewLine();
         }
-        builder.Indent().Append("return services;").NewLine();
+        builder.Indent().Append("return ").Append(method.ServicesExpression).Append(";").NewLine();
         builder.EndScope();
     }
 

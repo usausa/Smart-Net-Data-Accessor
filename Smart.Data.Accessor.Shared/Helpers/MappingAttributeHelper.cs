@@ -51,7 +51,8 @@ internal static class MappingAttributeHelper
             if ((attribute.AttributeClass?.ToDisplayString() != TypeMapAttributeName) ||
                 (attribute.ConstructorArguments.Length < 2) ||
                 (attribute.ConstructorArguments[0].Value is not ITypeSymbol clrType) ||
-                (attribute.ConstructorArguments[1].Value is not int dbTypeValue))
+                (attribute.ConstructorArguments[1].Value is not int dbTypeValue) ||
+                !EnumValueHelper.IsDefined(attribute.ConstructorArguments[1]))
             {
                 continue;
             }
@@ -74,6 +75,44 @@ internal static class MappingAttributeHelper
         }
     }
 
+    public static List<(AttributeData Attribute, TypedConstant Value)> FindUndefinedTypeMaps(INamedTypeSymbol container, INamedTypeSymbol? profile)
+    {
+        var list = new List<(AttributeData Attribute, TypedConstant Value)>();
+        CollectUndefinedTypeMaps(container, list);
+        if (profile is not null)
+        {
+            CollectUndefinedTypeMaps(profile, list);
+        }
+        return list;
+    }
+
+    private static void CollectUndefinedTypeMaps(INamedTypeSymbol owner, List<(AttributeData Attribute, TypedConstant Value)> list)
+    {
+        foreach (var attribute in owner.GetAttributes())
+        {
+            if ((attribute.AttributeClass?.ToDisplayString() == TypeMapAttributeName) &&
+                (attribute.ConstructorArguments.Length >= 2) &&
+                !EnumValueHelper.IsDefined(attribute.ConstructorArguments[1]))
+            {
+                list.Add((attribute, attribute.ConstructorArguments[1]));
+            }
+        }
+    }
+
+    public static AttributeData? FindUndefinedDbType(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attribute in attributes)
+        {
+            if ((attribute.AttributeClass?.ToDisplayString() == DbTypeAttributeName) &&
+                (attribute.ConstructorArguments.Length > 0) &&
+                !EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
+            {
+                return attribute;
+            }
+        }
+        return null;
+    }
+
     // Looks up the [TypeMap] default for a value type (Nullable<T> falls back to T).
     public static bool TryGetTypeMap(ITypeSymbol type, Dictionary<string, TypeMapInfo> lookup, out TypeMapInfo info)
     {
@@ -93,7 +132,8 @@ internal static class MappingAttributeHelper
         {
             if ((attribute.AttributeClass?.ToDisplayString() == DbTypeAttributeName) &&
                 (attribute.ConstructorArguments.Length > 0) &&
-                (attribute.ConstructorArguments[0].Value is int dbTypeValue))
+                (attribute.ConstructorArguments[0].Value is int dbTypeValue) &&
+                EnumValueHelper.IsDefined(attribute.ConstructorArguments[0]))
             {
                 return $"(global::System.Data.DbType){dbTypeValue}";
             }

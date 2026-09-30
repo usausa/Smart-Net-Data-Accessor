@@ -15,7 +15,11 @@
 | SDA0009 | ℹ️ Info | `[Provider]` is set but the accessor has no Pattern B method, so the name is never used | Remove `[Provider]`, or add a Pattern B method |
 | SDA0010 | ❌ Error | `[ExecuteConfig]` target type does not have `[AccessorProfile]` | Add `[AccessorProfile]` to the target type |
 | SDA0011 | ❌ Error | `[AccessorProfile]` class also has `[ExecuteConfig]`, creating a circular reference | Remove `[ExecuteConfig]` from the profile class |
-| SDA0012 | ⚠️ Warning | `[Naming]` specifies an undefined `NamingConvention` value and is treated as `None` | Specify a defined `NamingConvention` value |
+| SDA0012 | ❌ Error | `[Naming]` specifies an undefined `NamingConvention` value and is treated as `None` | Specify a defined `NamingConvention` value |
+| SDA0013 | ❌ Error | `[DataAccessor]` class is `static`, `abstract`, a record or file-local, and gets no implementation | Declare the class as a non-abstract, non-file-local `partial class` |
+| SDA0014 | ❌ Error | Class name differs only in case from another class, so the generated file names collide; only the first class (in ordinal order) is generated | Rename one of the classes |
+| SDA0015 | ⚠️ Warning | An MSBuild property value (`SmartDataAccessor_SkipLocalsInit`) cannot be parsed, and the default is used | Set `true` or `false` |
+| SDA0016 | ❌ Error | `[DbType]`, `[Direction]`, `[ReaderBehavior]` or `[TypeMap]` specifies a value the enum does not define (for flags, not a combination of defined values), and the setting is not used | Specify a defined enum value |
 
 ## Method structure
 
@@ -86,15 +90,15 @@
 | SDA0505 | ❌ Error | SQL pragma is not `!helper` or `!using` | Use a supported pragma |
 | SDA0506 | ❌ Error | A `/*% %/` code block opens a brace that is never closed | Balance the braces across the code blocks |
 | SDA0507 | ❌ Error | A `/*% %/` code block has a closing brace with no matching opening brace | Balance the braces across the code blocks |
-| SDA0508 | ⚠️ Warning | SQL parameter is not declared as a method parameter | Add the method parameter, or correct the SQL |
+| SDA0508 | ❌ Error | SQL parameter is neither a method parameter nor a name the accessor can reference (a member of the class, an `[Inject]` name, a type or namespace in scope), and the method only gets a throwing implementation | Add the method parameter, or correct the SQL |
 | SDA0509 | ℹ️ Info | Method parameter is declared but never referenced in SQL | Remove the parameter, or reference it in SQL |
-| SDA0510 | ⚠️ Warning | `/*@ x.y */` references a property that is not declared on the parameter | Correct the property name, or add the property |
+| SDA0510 | ❌ Error | `/*@ x.y */` references a member that the parameter type does not have (members the accessor can access, interface members and extension members count), and the method only gets a throwing implementation | Correct the member name, or add the member |
 
 ## DI registration
 
 | ID | Severity | Description | How to fix |
 |---|---|---|---|
-| SDA0601 | ❌ Error | `[DataAccessorRegistration]` method is not a `static partial` extension method taking and returning `IServiceCollection` | Declare `static partial IServiceCollection M(this IServiceCollection services);` in a `static partial class` |
+| SDA0601 | ❌ Error | `[DataAccessorRegistration]` method is not a `static partial` extension method taking and returning `IServiceCollection` (with or without `?`) in a top-level, non-file-local class, and only gets a throwing implementation | Declare `static partial IServiceCollection M(this IServiceCollection services);` in a `static partial class` |
 | SDA0602 | ⚠️ Warning | No `[DataAccessor]` class matches the registration method, so it registers nothing | Add an accessor, or correct the `Namespace` filter |
 
 ## Query builder
@@ -105,5 +109,7 @@
 | SDA1002 | ❌ Error | More than one QueryBuilder attribute is present | Leave a single QueryBuilder attribute |
 | SDA1003 | ❌ Error | QueryBuilder attribute specifies neither an entity type nor a table name | Specify the entity type with `typeof(T)`, or set `Table` |
 | SDA1004 | ❌ Error | QueryBuilder needs an entity type to determine the column list | Specify the entity type with `typeof(T)` |
-| SDA1005 | ⚠️ Warning | Entity has no property marked `[Key]`, so the builder cannot build its WHERE/ON clause | Mark the key property with `[Key]` |
+| SDA1005 | ⚠️ Warning | Entity has no property marked `[Key]`, so a `Delete` / `SelectSingle` / MySQL `Upsert` builder uses the parameters or unique indexes instead of the key | Mark the key property with `[Key]` |
 | SDA1006 | ⚠️ Warning | `[TypeMap]` declares a `DbType` that conflicts with `[TypeHandler<>]`; `[TypeHandler]` takes precedence | Remove the conflicting `[TypeMap]` `DbType` |
+| SDA1007 | ❌ Error | Entity has no property marked `[Key]`, which an `Update` (it would update every row), a Postgres `Upsert` or a SQL Server `Merge` requires | Mark the key property with `[Key]` |
+| SDA1008 | ❌ Error | An entity property `[DbType]` specifies a value the enum does not define, and it is not used | Specify a defined `DbType` value |

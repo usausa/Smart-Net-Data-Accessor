@@ -62,15 +62,15 @@ internal static class StandardModelBuilder
 
     private static UpdateModel BuildUpdate(MethodResolution resolution, MatchedMethod matched, List<DiagnosticInfo> diagnostics)
     {
-        // Update はエンティティ実体とキー([Key])が無いと SET/WHERE を組めないため診断を出す。
-        // Update needs an entity instance and a key ([Key]) to build SET/WHERE, so it raises a diagnostic when absent.
+        // Update はエンティティ実体とキー([Key])が無いと SET/WHERE を組めないためエラーにする。
+        // Update needs an entity instance and a key ([Key]) to build SET/WHERE, so it is an error when absent.
         if (!resolution.HasEntityType || (resolution.EntityParamName is null))
         {
             diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.SelectColumnsUnresolvable, matched.Location, matched.Method.Name));
         }
         else if (!resolution.Columns.Any(static x => x.Flags.IsKey()))
         {
-            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.NoKeyForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
+            diagnostics.Add(new DiagnosticInfo(BuilderDiagnostics.KeyRequiredForBuilder, matched.Location, resolution.EntityTypeName!, matched.Method.Name));
         }
         return new(resolution.MethodName, resolution.TableName, resolution.ValueParams, resolution.Columns, resolution.EntityParamName, resolution.HasEntityType) { BindMarker = matched.BindMarker };
     }

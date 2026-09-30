@@ -58,7 +58,7 @@ internal static class SqlServerSourceBuilder
             SqlEmit.EmitCommandText(builder, $"INSERT INTO {Quote(model.TableName)} ({columnSql}){OutputClause(model.OutputColumns, "INSERTED")} VALUES ({valueSql})");
             foreach (var column in columns)
             {
-                SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+                SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, SqlEmit.MemberAccess(model.EntityParamName, column.PropertyName), column);
             }
         }
         else
@@ -116,11 +116,11 @@ internal static class SqlServerSourceBuilder
 
         foreach (var column in settable)
         {
-            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, SqlEmit.MemberAccess(model.EntityParamName, column.PropertyName), column);
         }
         foreach (var column in keys)
         {
-            SqlEmit.EmitColumnParameter(builder, model.BindMarker + "k_" + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + "k_" + column.PropertyName, SqlEmit.MemberAccess(model.EntityParamName, column.PropertyName), column);
         }
     }
 
@@ -304,7 +304,7 @@ internal static class SqlServerSourceBuilder
 
         foreach (var column in sourceColumns)
         {
-            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, $"{model.EntityParamName}.{column.PropertyName}", column);
+            SqlEmit.EmitColumnParameter(builder, model.BindMarker + column.PropertyName, SqlEmit.MemberAccess(model.EntityParamName, column.PropertyName), column);
         }
     }
 

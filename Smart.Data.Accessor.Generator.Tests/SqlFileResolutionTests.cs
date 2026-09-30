@@ -36,7 +36,7 @@ public sealed class SqlFileResolutionTests
         // ListAsync() falls back to Accessor.List.sql when Accessor.ListAsync.sql does not exist.
         var text = GeneratorTestHelper.Run(AsyncQueryAccessor, ("Accessor.List", "select Id from Trimmed")).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"select Id from Trimmed\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"select Id from Trimmed\";", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class SqlFileResolutionTests
             ("Accessor.List", "select Id from Trimmed"),
             ("Accessor.ListAsync", "select Id from Exact")).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"select Id from Exact\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"select Id from Exact\";", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Trimmed", text, StringComparison.Ordinal);
     }
 
@@ -80,7 +80,7 @@ public sealed class SqlFileResolutionTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.List", "select Id from Shared")).AllGeneratedText;
 
-        Assert.Equal(2, CountOccurrences(text, "cmd.CommandText = \"select Id from Shared\";"));
+        Assert.Equal(2, CountOccurrences(text, "__cmd.CommandText = \"select Id from Shared\";"));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class SqlFileResolutionTests
 
         var text = GeneratorTestHelper.Run(source, ("Accessor.Select", "select Id from Aliased")).AllGeneratedText;
 
-        Assert.Contains("cmd.CommandText = \"select Id from Aliased\";", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"select Id from Aliased\";", text, StringComparison.Ordinal);
     }
 
     [Fact]

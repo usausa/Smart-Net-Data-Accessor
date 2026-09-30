@@ -35,8 +35,8 @@ public sealed class AnsiQueryBuilderTests
         Assert.Contains("private static void Insert__QueryBuilder(", text, StringComparison.Ordinal);
         // The standard builder double-quotes identifiers; StringLiteral escapes the quotes in the C# literal.
         Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
     // [BindPrefix] のバインドマーカー(既定 '@')は Builder にも適用される。class スコープ ':' は SQL とパラメータ名の両方に効く。
@@ -68,8 +68,8 @@ public sealed class AnsiQueryBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (:Id, :Name)", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \":Id\", entity.Id", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \":Name\", entity.Name", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \":Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \":Name\", entity.Name", text, StringComparison.Ordinal);
     }
 
     // method スコープの [BindPrefix] が class スコープより優先される(コアと同じ解決順 method → class → assembly → '@')。
@@ -101,7 +101,7 @@ public sealed class AnsiQueryBuilderTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         Assert.Contains("VALUES ($Id, $Name)", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"$Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"$Id\", entity.Id", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -159,8 +159,79 @@ public sealed class AnsiQueryBuilderTests
 
         Assert.Contains("private static void Update__QueryBuilder(", text, StringComparison.Ordinal);
         Assert.Contains("UPDATE \\\"Users\\\" SET \\\"Name\\\" = @Name, \\\"Age\\\" = @Age WHERE \\\"Id\\\" = @k_Id", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@k_Id\", entity.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Name\", entity.Name", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@k_Id\", entity.Id", text, StringComparison.Ordinal);
+    }
+
+    // 基底クラスのプロパティも列になるため、基底クラスのキーで WHERE を組む。
+    // Base class properties are columns too, so the key declared in the base class builds the WHERE clause.
+    [Fact]
+    public void UpdateUsesKeyDeclaredInBaseClass()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal abstract class EntityBase
+            {
+                [Key]
+                public int Id { get; set; }
+            }
+
+            internal sealed class Entity : EntityBase
+            {
+                public string Name { get; set; } = string.Empty;
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Insert(typeof(Entity), Table = "Users")]
+                [Execute]
+                public partial int Insert(Entity entity);
+
+                [Update(typeof(Entity), Table = "Users")]
+                [Execute]
+                public partial int Update(Entity entity);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("INSERT INTO \\\"Users\\\" (\\\"Id\\\", \\\"Name\\\") VALUES (@Id, @Name)", text, StringComparison.Ordinal);
+        Assert.Contains("UPDATE \\\"Users\\\" SET \\\"Name\\\" = @Name WHERE \\\"Id\\\" = @k_Id", text, StringComparison.Ordinal);
+    }
+
+    // 複合キーは宣言順ではなく [Key(order)] の順に値パラメータへ対応付ける。
+    // A composite key maps the value parameters in [Key(order)] order, not in declaration order.
+    [Fact]
+    public void DeleteMapsCompositeKeyInKeyOrder()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal sealed class OrderLine
+            {
+                [Key(2)]
+                public int LineNo { get; set; }
+
+                [Key(1)]
+                public int OrderId { get; set; }
+
+                public int Quantity { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [Delete(typeof(OrderLine), Table = "OrderLines")]
+                [Execute]
+                public partial int Delete(int orderId, int lineNo);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("DELETE FROM \\\"OrderLines\\\" WHERE \\\"OrderId\\\" = @orderId AND \\\"LineNo\\\" = @lineNo", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -210,7 +281,7 @@ public sealed class AnsiQueryBuilderTests
 
         Assert.Contains("private static void Get__QueryBuilder(", text, StringComparison.Ordinal);
         Assert.Contains("SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Users\\\" WHERE \\\"Id\\\" = @id", text, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@id\", id", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@id\", id", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -268,8 +339,8 @@ public sealed class AnsiQueryBuilderTests
         Assert.Contains("SELECT \\\"Id\\\", \\\"Name\\\" FROM \\\"Users\\\" LIMIT @limit OFFSET @offset", text, StringComparison.Ordinal);
         // offset → limit の順で束縛される(EmitSelect)。
         // Bound offset-then-limit (EmitSelect).
-        var idxOffset = text.IndexOf("AddInParameter(cmd, \"@offset\"", StringComparison.Ordinal);
-        var idxLimit = text.IndexOf("AddInParameter(cmd, \"@limit\"", StringComparison.Ordinal);
+        var idxOffset = text.IndexOf("AddInParameter(__cmd, \"@offset\"", StringComparison.Ordinal);
+        var idxLimit = text.IndexOf("AddInParameter(__cmd, \"@limit\"", StringComparison.Ordinal);
         Assert.True((idxOffset >= 0) && (idxLimit > idxOffset));
     }
 

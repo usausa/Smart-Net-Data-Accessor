@@ -19,16 +19,16 @@ internal static class SqlEmit
     public static void OpenMethod(SourceBuilder builder, string methodName, EquatableArray<ParameterBinding> valueParams)
     {
         var sig = new StringBuilder();
-        sig.Append("ref global::Smart.Data.Accessor.BuilderContext context");
+        sig.Append("ref global::Smart.Data.Accessor.BuilderContext __context");
         foreach (var parameter in valueParams)
         {
-            sig.Append(", ").Append(parameter.TypeFullName).Append(' ').Append(parameter.Name);
+            sig.Append(", ").Append(parameter.TypeFullName).Append(' ').Append(CSharpIdentifier.Escape(parameter.Name));
         }
 
         builder.Indent().Append("private static void ").Append(methodName).Append(QueryBuilderMethodSuffix)
             .Append("(").Append(sig.ToString()).Append(")").NewLine();
         builder.BeginScope();
-        builder.Indent().Append("var cmd = context.Command;").NewLine();
+        builder.Indent().Append("var __cmd = __context.Command;").NewLine();
     }
 
     public static void CloseMethod(SourceBuilder builder) => builder.EndScope();
@@ -43,7 +43,7 @@ internal static class SqlEmit
     // cmd.CommandText に SQL 文字列リテラルを代入する 1 行を出力する。
     // Emit the single line that assigns the SQL string literal to cmd.CommandText.
     public static void EmitCommandText(SourceBuilder builder, string sql)
-        => builder.Indent().Append("cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(sql)).Append(";").NewLine();
+        => builder.Indent().Append("__cmd.CommandText = ").Append(CodeExpressionHelper.StringLiteral(sql)).Append(";").NewLine();
 
     // エンティティ列パラメータを ExecuteHelper.AddInParameter(converter があれば converter 共有オーバーロード)で束縛する。
     // Bind an entity column parameter via ExecuteHelper.AddInParameter (the converter-sharing overload when a converter applies).
@@ -54,8 +54,8 @@ internal static class SqlEmit
             builder.Indent()
                 .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.")
                 .Append(CodeExpressionHelper.AddInParameterConverter(converter.ConverterTypeFullName, converter.DbTypeFullName, converter.ClrTypeFullName))
-                .Append("(cmd, \"")
-                .Append(paramName).Append("\", ")
+                .Append("(__cmd, ")
+                .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ")
                 .Append(valueExpression)
                 .Append(CodeExpressionHelper.DbTypeSizeArgs(column.DbTypeExpression, column.Size))
                 .Append(");").NewLine();
@@ -63,8 +63,8 @@ internal static class SqlEmit
         }
 
         builder.Indent()
-            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-            .Append(paramName).Append("\", ")
+            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(__cmd, ")
+            .Append(CodeExpressionHelper.StringLiteral(paramName)).Append(", ")
             .Append(ColumnValueArg(valueExpression, column))
             .Append(CodeExpressionHelper.DbTypeSizeArgs(column.DbTypeExpression, column.Size))
             .Append(");").NewLine();
@@ -81,8 +81,8 @@ internal static class SqlEmit
     // Bind a method value parameter via ExecuteHelper.AddInParameter (no converter).
     public static void EmitValueParamBinding(SourceBuilder builder, ParameterBinding parameter, char marker)
         => builder.Indent()
-            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"")
-            .Append(marker).Append(parameter.Name).Append("\", ")
+            .Append("global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(__cmd, ")
+            .Append(CodeExpressionHelper.StringLiteral(marker + parameter.Name)).Append(", ")
             .Append(ValueParamArg(parameter))
             .Append(CodeExpressionHelper.DbTypeSizeArgs(parameter.DbTypeExpression, parameter.Size))
             .Append(");").NewLine();
@@ -91,6 +91,9 @@ internal static class SqlEmit
     // The value-parameter argument: an underlying-cast expression for enums, otherwise the parameter name as-is.
     private static string ValueParamArg(ParameterBinding parameter)
         => parameter.EnumUnderlyingFullName is not null
-            ? CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, parameter.Name)
-            : parameter.Name;
+            ? CodeExpressionHelper.EnumCastValue(parameter.EnumUnderlyingFullName, parameter.IsNullableEnum, CSharpIdentifier.Escape(parameter.Name))
+            : CSharpIdentifier.Escape(parameter.Name);
+
+    public static string MemberAccess(string parameterName, string propertyName) =>
+        CSharpIdentifier.Escape(parameterName) + "." + CSharpIdentifier.Escape(propertyName);
 }

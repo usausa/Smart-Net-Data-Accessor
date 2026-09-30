@@ -12,7 +12,7 @@ public sealed class ProviderOperationBuilderTests
     // double quotes become \".
     private static void AssertCommandText(string generatedText, string rawSql)
     {
-        var literal = "cmd.CommandText = \"" + rawSql.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\";";
+        var literal = "__cmd.CommandText = \"" + rawSql.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\";";
         Assert.Contains(literal, generatedText, StringComparison.Ordinal);
     }
 

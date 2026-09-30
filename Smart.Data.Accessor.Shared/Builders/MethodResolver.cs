@@ -142,6 +142,17 @@ internal static class MethodResolver
         var handler = MappingResolver.ResolveTypeHandler(property, method, container, profile);
         var explicitDbType = MappingAttributeHelper.ResolvePropertyDbType(property);
 
+        if (MappingAttributeHelper.FindUndefinedDbType(property.GetAttributes()) is { } undefined)
+        {
+            diagnostics.Add(new DiagnosticInfo(
+                BuilderDiagnostics.UndefinedEnumValue,
+                location,
+                "DbType",
+                EnumValueHelper.ToText(undefined.ConstructorArguments[0]),
+                method.Name,
+                property.Name));
+        }
+
         // SDA1006: 同じ型に [TypeHandler] と [TypeMap] が両方あると [TypeHandler] が優先される＝[TypeMap] 既定が死ぬので警告する。
         // SDA1006: a [TypeHandler] wins over a [TypeMap] for the same type; warn that the [TypeMap] default is dead.
         if ((handler is not null) && MappingAttributeHelper.TryGetTypeMap(property.Type, typeMaps, out _))
@@ -202,14 +213,14 @@ internal static class MethodResolver
             flags);
     }
 
-    // エンティティ型の public インスタンスプロパティ(getter あり)を列挙し、[Ignore] を除いて列リストを作る。
-    // Enumerate the entity type's public instance properties (with a getter), excluding [Ignore], to build the column list.
+    // エンティティ型(基底クラスを含む)の public インスタンスプロパティ(getter あり)を列挙し、[Ignore] を除いて列リストを作る。
+    // Enumerate the entity type's public instance properties (with a getter, including the base classes), excluding [Ignore], to build the column list.
     private static List<EntityColumn> ReadEntityColumns(INamedTypeSymbol entityType, NamingConvention naming)
     {
         var list = new List<EntityColumn>();
-        foreach (var property in entityType.GetMembers().OfType<IPropertySymbol>())
+        foreach (var property in EntityPropertyHelper.GetInstanceProperties(entityType))
         {
-            if ((property.DeclaredAccessibility != Accessibility.Public) || property.IsStatic || (property.GetMethod is null))
+            if ((property.DeclaredAccessibility != Accessibility.Public) || (property.GetMethod is null))
             {
                 continue;
             }
@@ -218,7 +229,17 @@ internal static class MethodResolver
             {
                 continue;
             }
-            list.Add(new EntityColumn(columnAttribute.ColumnName, property.Name, columnAttribute.IsKey, columnAttribute.IsDatabaseManaged, property));
+            list.Add(new EntityColumn(columnAttribute.ColumnName, property.Name, columnAttribute.IsKey, columnAttribute.KeyOrder, columnAttribute.IsDatabaseManaged, property));
+        }
+
+        var keys = list.Where(static x => x.IsKey).OrderBy(static x => x.KeyOrder).ToList();
+        var keyIndex = 0;
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (list[i].IsKey)
+            {
+                list[i] = keys[keyIndex++];
+            }
         }
         return list;
     }
@@ -242,5 +263,5 @@ internal static class MethodResolver
     private static bool HasAttribute(IParameterSymbol parameter, string attributeName)
         => parameter.GetAttributes().Any(x => x.AttributeClass?.ToDisplayString() == attributeName);
 
-    private readonly record struct EntityColumn(string Column, string PropertyName, bool IsKey, bool IsDatabaseManaged, IPropertySymbol Symbol);
+    private readonly record struct EntityColumn(string Column, string PropertyName, bool IsKey, int KeyOrder, bool IsDatabaseManaged, IPropertySymbol Symbol);
 }

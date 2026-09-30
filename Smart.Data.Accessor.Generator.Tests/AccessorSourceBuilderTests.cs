@@ -56,7 +56,7 @@ public sealed class AccessorSourceBuilderTests
             null,
             null,
             "delete from Data where Id = @id",
-            "global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(cmd, \"@id\", id);",
+            "global::Smart.Data.Accessor.Helpers.ExecuteHelper.AddInParameter(__cmd, \"@id\", id);",
             null,
             new EquatableArray<OutputBinding>([]),
             false,
@@ -88,8 +88,8 @@ public sealed class AccessorSourceBuilderTests
     {
         var source = AccessorSourceBuilder.Emit(Model(ExecuteMethod()));
 
-        Assert.Contains("cmd.CommandText = \"delete from Data where Id = @id\";", source, StringComparison.Ordinal);
-        Assert.Contains("AddInParameter(cmd, \"@id\", id)", source, StringComparison.Ordinal);
+        Assert.Contains("__cmd.CommandText = \"delete from Data where Id = @id\";", source, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@id\", id)", source, StringComparison.Ordinal);
         Assert.DoesNotContain("StringBuilderPool", source, StringComparison.Ordinal);
     }
 }

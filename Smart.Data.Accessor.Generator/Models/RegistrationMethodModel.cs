@@ -1,16 +1,16 @@
 namespace Smart.Data.Accessor.Generator.Models;
 
-using Microsoft.CodeAnalysis;
-
 using SourceGenerateHelper;
 
 // One [DataAccessorRegistration] partial method: where the implementation part goes (namespace / class /
-// accessibility / name) and which accessors it registers (all, or the union of the Namespace filters).
+// name / signature) and which accessors it registers (all, or the union of the Namespace filters).
 internal sealed record RegistrationMethodModel(
     string Namespace,
     string ClassName,
-    Accessibility Accessibility,
     string MethodName,
+    string Signature,
+    string ServicesExpression,
     bool RegisterAll,
     EquatableArray<string> NamespaceFilters,
-    LocationInfo? Location);
+    LocationInfo? Location,
+    bool IsFallback = false);

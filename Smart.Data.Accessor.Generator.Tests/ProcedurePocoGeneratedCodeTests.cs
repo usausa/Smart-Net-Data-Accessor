@@ -34,11 +34,11 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
         Assert.Contains("CommandType.StoredProcedure", text, StringComparison.Ordinal);
         // Input property → AddInParameter from args.CategoryId.
-        Assert.Contains("AddInParameter(cmd, \"@CategoryId\", args.CategoryId", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@CategoryId\", args.CategoryId", text, StringComparison.Ordinal);
         // Output / InputOutput properties → AddOut/AddInOut, with the DbType inferred from the CLR
         // type (int → Int32) so SQL Server doesn't create a sql_variant OUT parameter.
-        Assert.Contains("AddOutParameter(cmd, \"@Count\", global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
-        Assert.Contains("AddInOutParameter(cmd, \"@Total\", args.Total, global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
+        Assert.Contains("AddOutParameter(__cmd, \"@Count\", global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
+        Assert.Contains("AddInOutParameter(__cmd, \"@Total\", args.Total, global::System.Data.DbType.Int32", text, StringComparison.Ordinal);
         // Write-back into the same POCO object (after the async execute).
         Assert.Contains("args.Count = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(", text, StringComparison.Ordinal);
         Assert.Contains("args.Total = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(", text, StringComparison.Ordinal);
@@ -68,8 +68,8 @@ public sealed class ProcedurePocoGeneratedCodeTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         // Scalar input arg + POCO output property mixed.
-        Assert.Contains("AddInParameter(cmd, \"@name\", name", text, StringComparison.Ordinal);
-        Assert.Contains("AddOutParameter(cmd, \"@NewId\"", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@name\", name", text, StringComparison.Ordinal);
+        Assert.Contains("AddOutParameter(__cmd, \"@NewId\"", text, StringComparison.Ordinal);
         Assert.Contains("bag.NewId = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<long>(", text, StringComparison.Ordinal);
     }
 
@@ -97,9 +97,40 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("AddInParameter(cmd, \"@Id\", bag.Id", text, StringComparison.Ordinal);
-        Assert.Contains("AddOutParameter(cmd, \"@Affected\"", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", bag.Id", text, StringComparison.Ordinal);
+        Assert.Contains("AddOutParameter(__cmd, \"@Affected\"", text, StringComparison.Ordinal);
         Assert.Contains("bag.Affected = global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DirectSqlPocoArgExpandsBaseClassProperties()
+    {
+        const string source = """
+            using Smart.Data.Accessor.Attributes;
+
+            internal abstract class BagBase
+            {
+                public int TenantId { get; set; }
+            }
+
+            internal sealed class Bag : BagBase
+            {
+                public int Id { get; set; }
+            }
+
+            [DataAccessor]
+            internal sealed partial class Accessor
+            {
+                [DirectSql]
+                [Execute]
+                public partial void Run(string sql, Bag bag);
+            }
+            """;
+
+        var text = GeneratorTestHelper.Run(source).AllGeneratedText;
+
+        Assert.Contains("AddInParameter(__cmd, \"@TenantId\", bag.TenantId", text, StringComparison.Ordinal);
+        Assert.Contains("AddInParameter(__cmd, \"@Id\", bag.Id", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -120,8 +151,8 @@ public sealed class ProcedurePocoGeneratedCodeTests
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
         // A scalar return maps the proc RETURN value (auto-added ReturnValue parameter).
-        Assert.Contains("AddReturnValueParameter(cmd, \"@__ReturnValue\"", text, StringComparison.Ordinal);
-        Assert.Contains("cmd.ExecuteNonQuery();", text, StringComparison.Ordinal);
+        Assert.Contains("AddReturnValueParameter(__cmd, \"@__ReturnValue\"", text, StringComparison.Ordinal);
+        Assert.Contains("__cmd.ExecuteNonQuery();", text, StringComparison.Ordinal);
         Assert.Contains("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(__returnValue)!;", text, StringComparison.Ordinal);
     }
 
@@ -213,8 +244,8 @@ public sealed class ProcedurePocoGeneratedCodeTests
 
         var text = GeneratorTestHelper.Run(source).AllGeneratedText;
 
-        Assert.Contains("AddReturnValueParameter(cmd, \"@__ReturnValue\"", text, StringComparison.Ordinal);
-        Assert.Contains("await cmd.ExecuteNonQueryAsync(", text, StringComparison.Ordinal);
+        Assert.Contains("AddReturnValueParameter(__cmd, \"@__ReturnValue\"", text, StringComparison.Ordinal);
+        Assert.Contains("await __cmd.ExecuteNonQueryAsync(", text, StringComparison.Ordinal);
         Assert.Contains("return global::Smart.Data.Accessor.Helpers.ExecuteHelper.GetOutputValue<int>(__returnValue)!;", text, StringComparison.Ordinal);
     }
 }
