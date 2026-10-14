@@ -12,9 +12,9 @@ using SourceGenerateHelper;
 // scope chain: member (property / parameter / [return:]) → method → accessor class → [ExecuteConfig]
 // profile. A converter implements IValueConverter<TDb, TClr>; the reader reads TDb and calls
 // TConverter.FromDb(...) while the writer calls TConverter.ToDb(...).
-// The member scope is an explicit binding (a TClr mismatch is the error SDA0308); the outer scopes
+// The member scope is an explicit binding (a TClr mismatch is the error SDA0305); the outer scopes
 // are type-keyed (a handler applies only when its TClr matches the value type, and a non-matching
-// handler is simply skipped). Reports SDA0308–SDA0311.
+// handler is simply skipped). Reports SDA0304–SDA0306 and SDA0309.
 // The scope-chain primitives (attribute reading / type-keyed find / TDb·TClr extraction / Nullable
 // unwrap) are shared with the Builder generator via ConverterScopeHelper; only the ordering and the
 // validation are core-specific.
@@ -44,7 +44,7 @@ internal static class ConverterResolver
         var memberConverters = ConverterScopeHelper.CollectHandlerConverters(memberAttributes);
         if (memberConverters.Count > 0)
         {
-            // SDA0311: more than one [TypeHandler] on the same member; the first wins.
+            // SDA0309: more than one [TypeHandler] on the same member; the first wins.
             if (memberConverters.Count > 1)
             {
                 diagnostics.Add(new DiagnosticInfo(
@@ -83,7 +83,7 @@ internal static class ConverterResolver
     }
 
     // Validates a selected converter and, on success, returns its binding. requireClrMatch is true
-    // only for the explicit member scope (a mismatch there is SDA0308); the type-keyed scopes have
+    // only for the explicit member scope (a mismatch there is SDA0305); the type-keyed scopes have
     // already filtered on TClr so a mismatch cannot occur.
     private static ConverterResolution? Validate(
         List<DiagnosticInfo> diagnostics,
@@ -93,7 +93,7 @@ internal static class ConverterResolver
         ITypeSymbol valueType,
         bool requireClrMatch)
     {
-        // SDA0309: the referenced converter type does not implement IValueConverter<,>.
+        // SDA0304: the referenced converter type does not implement IValueConverter<,>.
         if (!ConverterScopeHelper.TryGetConverterTypes(converter, out var dbType, out var clrType))
         {
             diagnostics.Add(new DiagnosticInfo(
@@ -104,7 +104,7 @@ internal static class ConverterResolver
             return null;
         }
 
-        // SDA0308: the converter's TClr must match the member type (Nullable<T> compares against T).
+        // SDA0305: the converter's TClr must match the member type (Nullable<T> compares against T).
         if (!ConverterScopeHelper.ClrMatchesValueType(clrType, valueType))
         {
             if (requireClrMatch)
@@ -118,7 +118,7 @@ internal static class ConverterResolver
             return null;
         }
 
-        // SDA0310: the generated code calls TConverter.FromDb / .ToDb directly, so both must be
+        // SDA0306: the generated code calls TConverter.FromDb / .ToDb directly, so both must be
         // present as accessible static methods (implicit interface implementation, not explicit).
         if (!ConverterScopeHelper.HasCallableConversionMethods(converter))
         {

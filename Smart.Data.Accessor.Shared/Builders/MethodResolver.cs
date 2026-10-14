@@ -153,8 +153,8 @@ internal static class MethodResolver
                 property.Name));
         }
 
-        // SDA1006: 同じ型に [TypeHandler] と [TypeMap] が両方あると [TypeHandler] が優先される＝[TypeMap] 既定が死ぬので警告する。
-        // SDA1006: a [TypeHandler] wins over a [TypeMap] for the same type; warn that the [TypeMap] default is dead.
+        // SDA1007: 同じ型に [TypeHandler] と [TypeMap] が両方あると [TypeHandler] が優先される＝[TypeMap] 既定が死ぬので警告する。
+        // SDA1007: a [TypeHandler] wins over a [TypeMap] for the same type; warn that the [TypeMap] default is dead.
         if ((handler is not null) && MappingAttributeHelper.TryGetTypeMap(property.Type, typeMaps, out _))
         {
             diagnostics.Add(new DiagnosticInfo(

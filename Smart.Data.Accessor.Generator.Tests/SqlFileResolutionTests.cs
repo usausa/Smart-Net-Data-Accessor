@@ -130,7 +130,7 @@ public sealed class SqlFileResolutionTests
         // "Accessor..sql" is what an empty trimmed name would resolve to.
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.", "update T set A = /*@ id */1"));
 
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0401");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0406");
     }
 
     // ------------------------------------------------------------
@@ -138,11 +138,11 @@ public sealed class SqlFileResolutionTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0401NamesTheDeclaredMethodWhenNeitherSqlFileExists()
+    public void Sda0406NamesTheDeclaredMethodWhenNeitherSqlFileExists()
     {
         var diagnostics = GeneratorTestHelper.GetDiagnostics(AsyncQueryAccessor);
 
-        var diagnostic = diagnostics.First(static x => x.Id == "SDA0401");
+        var diagnostic = diagnostics.First(static x => x.Id == "SDA0406");
         Assert.Contains("Accessor.ListAsync.sql", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 
@@ -170,10 +170,10 @@ public sealed class SqlFileResolutionTests
     }
 
     [Fact]
-    public void Sda0406NotReportedWhenTheAsyncOmittedFileBelongsToAnotherMethod()
+    public void Sda0402NotReportedWhenTheAsyncOmittedFileBelongsToAnotherMethod()
     {
-        // Accessor.List.sql は List() のもの。ListAsync() の [Sql] とは無関係なので SDA0406 は出さない。
-        // Accessor.List.sql belongs to List(); it is unrelated to the [Sql] on ListAsync(), so no SDA0406.
+        // Accessor.List.sql は List() のもの。ListAsync() の [Sql] とは無関係なので SDA0402 は出さない。
+        // Accessor.List.sql belongs to List(); it is unrelated to the [Sql] on ListAsync(), so no SDA0402.
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -197,11 +197,11 @@ public sealed class SqlFileResolutionTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.List", "select Id from Owned"));
 
-        Assert.DoesNotContain(diagnostics, static x => x.Id == "SDA0406");
+        Assert.DoesNotContain(diagnostics, static x => x.Id == "SDA0402");
     }
 
     [Fact]
-    public void Sda0405NotReportedWhenTheAsyncOmittedFileBelongsToAnotherMethod()
+    public void Sda0404NotReportedWhenTheAsyncOmittedFileBelongsToAnotherMethod()
     {
         // Builder 側も同じ。Accessor.Insert.sql は Insert() のものなので InsertAsync() には併存判定しない。
         // Same for a Builder: Accessor.Insert.sql belongs to Insert(), so InsertAsync() reports no coexistence.
@@ -229,7 +229,7 @@ public sealed class SqlFileResolutionTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Insert", "insert into Data default values"));
 
-        Assert.DoesNotContain(diagnostics, static x => x.Id == "SDA0405");
+        Assert.DoesNotContain(diagnostics, static x => x.Id == "SDA0404");
     }
 
     private static int CountOccurrences(string text, string value)

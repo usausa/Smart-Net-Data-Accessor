@@ -149,7 +149,7 @@ public sealed class ProviderOperationBuilderTests
         AssertCommandText(GeneratorTestHelper.Run(source).AllGeneratedText, expected);
     }
 
-    // === C3: without-entity fallback shapes × 3 providers (these also raise SDA1004; the source is still generated) ===
+    // === C3: without-entity fallback shapes × 3 providers (these also raise SDA1005; the source is still generated) ===
 
     [Theory]
     [InlineData("Sql", "SELECT * FROM [Data]")]

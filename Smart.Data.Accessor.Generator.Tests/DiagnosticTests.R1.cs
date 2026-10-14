@@ -1,10 +1,10 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-// Phase R1 diagnostics: SDA0007 ([Inject] unreferenced), SDA0105 (QueryBuilder + [Procedure]/[DirectSql] conflict).
+// Phase R1 diagnostics: SDA0016 ([Inject] unreferenced), SDA0107 (QueryBuilder + [Procedure]/[DirectSql] conflict).
 public partial class DiagnosticTests
 {
     [Fact]
-    public void Sda0007UnreferencedInjectReportsInfoEmitsDiagnostic()
+    public void Sda0016UnreferencedInjectReportsInfoEmitsDiagnostic()
     {
         // 'svc' is injected but used in neither SQL nor code.
         const string source = """
@@ -25,13 +25,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0007");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0016");
     }
 
     [Fact]
-    public void Sda0007ReferencedInjectEmitsNoDiagnostic()
+    public void Sda0016ReferencedInjectEmitsNoDiagnostic()
     {
-        // 'svc' is referenced in user code → no SDA0007. (CS0103 on the not-yet-generated field is
+        // 'svc' is referenced in user code → no SDA0016. (CS0103 on the not-yet-generated field is
         // irrelevant; the harness only inspects generator diagnostics.)
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -53,11 +53,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0007");
+        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0016");
     }
 
     [Fact]
-    public void Sda0105QueryBuilderWithProcedureConflictsEmitsDiagnostic()
+    public void Sda0107QueryBuilderWithProcedureConflictsEmitsDiagnostic()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -79,6 +79,6 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0105");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0107");
     }
 }

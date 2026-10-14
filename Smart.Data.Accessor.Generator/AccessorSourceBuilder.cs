@@ -767,8 +767,8 @@ internal static class AccessorSourceBuilder
                     EmitProviderDbTypeAssignment(builder, parameter, $"__op_{parameter.Name}");
                     break;
                 case ParameterDirectionType.ReturnValue:
-                    // SDA0209 は BuildAccessorModel で報告済みなので、ここでは出力しない。
-                    // SDA0209 is already reported in BuildAccessorModel; skip emission here.
+                    // SDA0206 は BuildAccessorModel で報告済みなので、ここでは出力しない。
+                    // SDA0206 is already reported in BuildAccessorModel; skip emission here.
                     break;
                 default:
                     if (hasProvider)
@@ -1212,9 +1212,9 @@ internal static class AccessorSourceBuilder
                 builder.EndScope();
                 break;
             case ReturnShape.AsyncEnumerable:
-                // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要(無い場合 SDA0305 で警告)。
+                // await ReadAsync ＋ yield return を直接出す。利用者の CancellationToken 引数には [EnumeratorCancellation] が必要(無い場合 SDA0308 で警告)。
                 // Emit `await ReadAsync` + `yield return` directly. The user's CancellationToken parameter must be annotated
-                // [EnumeratorCancellation] (SDA0305 warns when missing).
+                // [EnumeratorCancellation] (SDA0308 warns when missing).
                 builder.Indent().Append("using var __reader = await __cmd.ExecuteReaderAsync(").Append(QueryReaderBehavior(singleRow: false)).Append(", ").Append(cancellationExpression).Append(").ConfigureAwait(false);").NewLine();
                 builder.Indent().Append("if (await __reader.ReadAsync(").Append(cancellationExpression).Append(").ConfigureAwait(false))").NewLine();
                 builder.BeginScope();
@@ -1254,10 +1254,10 @@ internal static class AccessorSourceBuilder
     }
 
     // 1 列分の読み取り式(代入・ctor 引数の右辺)を組み立てる。converter(FromDb)／型別リーダー(enum キャスト含む)／
-    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き(DB NULL は default(プロパティ型)、SDA0307)。
+    // GetValue<T> フォールバックの 3 経路。[NotNullColumn] 以外は IsDBNull ガード付き(DB NULL は default(プロパティ型)、SDA0311)。
     // Build one column's read expression (assignment / ctor-argument RHS): converter (FromDb), typed reader (incl. enum
     // casts), or the GetValue<T> fallback. Except for [NotNullColumn], the read carries the IsDBNull guard (DB NULL
-    // falls through as a property-typed default, SDA0307).
+    // falls through as a property-typed default, SDA0311).
     private static string BuildColumnReadExpression(ColumnInfo column, string readerVariable, string ordinal)
     {
         var sb = new StringBuilder();
@@ -1287,10 +1287,10 @@ internal static class AccessorSourceBuilder
         {
             if (!column.SkipNullCheck)
             {
-                // 非 null 許容プロパティが DB NULL を受けると default になる(SDA0307)。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
+                // 非 null 許容プロパティが DB NULL を受けると default になる(SDA0311)。[NotNullColumn] でこのチェックを外すと、実際の NULL ではプロバイダが InvalidCastException を投げる。
                 // default は必ずプロパティ型で型付けする：三項式の自然型は typed アーム側(非 nullable)に決まるため、
                 // 素の default! では int? 等の Nullable 値型が null ではなく 0 になってしまう。
-                // A non-nullable property receiving DB NULL falls through as default (SDA0307). [NotNullColumn] opts
+                // A non-nullable property receiving DB NULL falls through as default (SDA0311). [NotNullColumn] opts
                 // out of this check; the provider throws InvalidCastException on an actual NULL. The default MUST be
                 // typed with the property type: the conditional's natural type binds to the typed arm, so a bare
                 // default! would materialise DB NULL as 0 (not null) for nullable value types such as int?.

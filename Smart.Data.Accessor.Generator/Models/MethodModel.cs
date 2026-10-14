@@ -39,10 +39,10 @@ internal enum MethodType
 }
 
 // クエリの構築方法(cmd.CommandText をどこから得るか)。MethodType とは直交し、任意に組み合わせられる
-// (例: DirectSql×Execute、DirectSql×Query)。排他は B 群診断 SDA0104/0105/0107/0403/0405/0406 で担保。
+// (例: DirectSql×Execute、DirectSql×Query)。排他は B 群診断 SDA0106/0107/0108/0402/0403/0404 で担保。
 // How the command text is built (where cmd.CommandText comes from). Orthogonal to MethodType and freely combinable
 // (e.g. DirectSql×Execute, DirectSql×Query). Mutual exclusivity is enforced by the B-group diagnostics
-// SDA0104/0105/0107/0403/0405/0406.
+// SDA0106/0107/0108/0402/0403/0404.
 internal enum SqlSource
 {
     TwoWaySql,     // 既定：2-way SQL(動的分岐あり得る)。テキストは .sql ファイル、または [Sql] のインライン指定(InlineSqlText)

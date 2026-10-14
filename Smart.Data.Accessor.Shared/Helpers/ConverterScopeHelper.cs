@@ -96,17 +96,17 @@ internal static class ConverterScopeHelper
 
     // --- "can this converter be used in this context?" predicates (shared) ---------------------------
     // These are pure judgements only; the diagnostic reporting stays per-generator. The core generator
-    // reports SDA0308 / SDA0310 from these; the Builder generator (which sees the same [DataAccessor]
+    // reports SDA0305 / SDA0306 from these; the Builder generator (which sees the same [DataAccessor]
     // class) must NOT re-report them — sharing the predicate avoids duplicating the logic without
     // duplicating the warning.
 
     // True when the converter's IValueConverter<TDb, TClr> TClr matches the bound value type
-    // (Nullable<T> compares against T). The judgement behind SDA0308 (member-scope TClr mismatch).
+    // (Nullable<T> compares against T). The judgement behind SDA0305 (member-scope TClr mismatch).
     public static bool ClrMatchesValueType(ITypeSymbol clrType, ITypeSymbol valueType) =>
         SymbolEqualityComparer.Default.Equals(clrType, UnwrapNullable(valueType));
 
     // True when the converter exposes FromDb and ToDb as accessible static methods (the generated code
-    // calls them directly — implicit interface implementation, not explicit). The judgement behind SDA0310.
+    // calls them directly — implicit interface implementation, not explicit). The judgement behind SDA0306.
     public static bool HasCallableConversionMethods(INamedTypeSymbol converter) =>
         HasCallableStatic(converter, "FromDb") && HasCallableStatic(converter, "ToDb");
 

@@ -203,7 +203,7 @@ Every data method combines two orthogonal choices:
   or a QueryBuilder attribute (`[Insert]` etc.).
 
 Combinations compose naturally (`[Query]` + `[Procedure]`, `[ExecuteReader]` + `[DirectSql]`, ...).
-The execution kind is never implied — omitting it is a compile-time error (SDA0108).
+The execution kind is never implied — omitting it is a compile-time error (SDA0104).
 
 Supported return shapes include `int` / `void`, scalars, `List<T>` / `IList<T>` / `IReadOnlyList<T>`,
 `IEnumerable<T>` (streaming iterator), `T?` (single row), `DbDataReader`, and the async forms

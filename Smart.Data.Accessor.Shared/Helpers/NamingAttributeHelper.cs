@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis;
 
 // [Naming(NamingConvention)] の走査(assembly / class / method の各スコープ共通)。スコープの優先順は
 // 呼び出し側が method → class → assembly で連結する([BindPrefix] と同じ規則)。未定義の enum 値は None
-// (変換なし)として扱い、警告(SDA0012)はコア Generator のみが報告する(Builder Generator との二重報告を避ける)。
+// (変換なし)として扱い、警告(SDA0005)はコア Generator のみが報告する(Builder Generator との二重報告を避ける)。
 // Reads [Naming(NamingConvention)] (shared by every scope: assembly / class / method). Callers chain the
 // scopes method → class → assembly (the same rule as [BindPrefix]). An undefined enum value degrades to
-// None (no conversion); only the core generator reports the warning (SDA0012) so the builder generators do
+// None (no conversion); only the core generator reports the warning (SDA0005) so the builder generators do
 // not double-report it.
 internal static class NamingAttributeHelper
 {
@@ -31,8 +31,8 @@ internal static class NamingAttributeHelper
         return null;
     }
 
-    // 未定義の enum 値を持つ [Naming] を返す(コア Generator の SDA0012 用。無ければ null)。
-    // Return the [Naming] carrying an undefined enum value (for the core generator's SDA0012; null when absent).
+    // 未定義の enum 値を持つ [Naming] を返す(コア Generator の SDA0005 用。無ければ null)。
+    // Return the [Naming] carrying an undefined enum value (for the core generator's SDA0005; null when absent).
     public static AttributeData? FindInvalid(ImmutableArray<AttributeData> attributes, out int value)
     {
         foreach (var attribute in attributes)

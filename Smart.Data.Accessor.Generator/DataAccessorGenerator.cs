@@ -156,12 +156,12 @@ public sealed class DataAccessorGenerator : IIncrementalGenerator
 
     // MSBuild プロパティを OptionModel へ束ねる。
     // SqlFolder はプロジェクト毎に <SmartDataAccessor_SqlFolder> で変更できる(既定 "Sql")。
-    // SkipLocalsInit は <SmartDataAccessor_SkipLocalsInit> で切り替える(既定 true)。解釈できない値は SDA0015 を報告して既定を使う。
+    // SkipLocalsInit は <SmartDataAccessor_SkipLocalsInit> で切り替える(既定 true)。解釈できない値は SDA0012 を報告して既定を使う。
     // 属性が要求する AllowUnsafeBlocks は出力段で確かめる。
     // Bundle the MSBuild properties into an OptionModel.
     // SqlFolder is configurable per project via <SmartDataAccessor_SqlFolder> (default "Sql").
     // SkipLocalsInit is controlled by <SmartDataAccessor_SkipLocalsInit> (default true); a value that cannot be parsed
-    // reports SDA0015 and uses the default. The AllowUnsafeBlocks the attribute needs is checked at the output stage.
+    // reports SDA0012 and uses the default. The AllowUnsafeBlocks the attribute needs is checked at the output stage.
     private static Result<OptionModel> SelectOption(AnalyzerConfigOptionsProvider provider)
     {
         var diagnostics = new List<DiagnosticInfo>();

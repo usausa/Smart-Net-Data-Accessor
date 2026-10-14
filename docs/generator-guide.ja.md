@@ -32,7 +32,7 @@
 Smart.Data.Accessor のメソッドは 2 軸で決まる。
 
 - **A 群（実行種別）** … `[Execute]` / `[ExecuteScalar]` / `[Query]` / `[QueryFirst]` / `[ExecuteReader]`。
-  **生成マーカーであり必須**（B 群だけのメソッドは SDA0108 Error）。
+  **生成マーカーであり必須**（B 群だけのメソッドは SDA0104 Error）。
 - **B 群（コマンドソース）** … SQL をどこから得るか。`.sql` ファイル（既定）／`[Sql]`／`[DirectSql]`／
   `[Procedure]`／**QueryBuilder 属性（本ガイドの拡張点）**。
 
@@ -66,8 +66,8 @@ Smart.Data.Accessor のメソッドは 2 軸で決まる。
    `private static void {メソッド名}__QueryBuilder(ref BuilderContext __context, <値引数>)` を生成する
    （シグネチャの開始と `var __cmd = __context.Command;` は共有 `SqlEmit` が出す）。生成する名前は、メソッドの
    引数名をそのまま使う値引数と衝突しないよう `__` で始める。
-3. 排他・整合はコア側の診断が守る：A 群必須（SDA0108）、QueryBuilder×`[Procedure]`/`[DirectSql]`
-   （SDA0105）、×`[Sql]`（SDA0107）、`.sql` ファイル併存（SDA0405）、QueryBuilder 属性の重複（SDA1002）。
+3. 排他・整合はコア側の診断が守る：A 群必須（SDA0104）、QueryBuilder×`[Procedure]`/`[DirectSql]`
+   （SDA0107）、×`[Sql]`（SDA0108）、`.sql` ファイル併存（SDA0404）、QueryBuilder 属性の重複（SDA1002）。
    **プロバイダ側で再実装しない**こと。
 
 ---
@@ -258,7 +258,7 @@ internal static class OracleModelBuilder
 ```
 
 - **`ClassScanner`** が partial 検証・メソッド列挙・属性マッチを、**`MethodResolver`** が
-  メソッド形状（接続引数・値パラメータ・戻り値等）の解決と共通診断（SDA1001〜1006）を肩代わりする。
+  メソッド形状（接続引数・値パラメータ・戻り値等）の解決と共通診断（SDA1001〜1008）を肩代わりする。
   自前で書くのは「属性 → 種別 Model の変換」と**プロバイダ固有の検証**だけ。
 - 種別は enum で持たず、**属性名 → Build デリゲートの対応表**で分岐する（種別追加が表 1 行で済む）。
 
@@ -296,7 +296,7 @@ internal static class OracleSourceBuilder
 
 ### Step 6 — 診断
 
-- 共有診断（SDA1001〜1006：partial でない、builder 属性重複、エンティティ解決不能等）は
+- 共有診断（SDA1001〜1008：partial でない、builder 属性重複、エンティティ解決不能等）は
   `BuilderDiagnostics`（共有ソース）にあり、`ClassScanner`/`MethodResolver` が自動で出す。
 - **プロバイダ固有の診断はサードパーティ独自の ID プレフィックス**（例：`ORA0001`）で自前定義する。
   `SDA` 帯はコア/同梱プロバイダが採番管理しているため使わない。
@@ -361,7 +361,7 @@ internal static class OracleSourceBuilder
 | `MappingResolver` / `ColumnBinding` / `ParameterBinding` | 〃 | エンティティ列の解決（`[Name]`/`[Key]`/`[DatabaseManaged]`/`[Ignore]`、`[TypeMap]`、converter 束縛） |
 | `SqlEmit` | 〃 | `__QueryBuilder` の開閉、`CommandText`、パラメータ束縛 emit（`QueryBuilderMethodSuffix` 定数もここ） |
 | `SourceOutput` | 〃 | ファイルヘッダ・partial class の外殻・診断報告・hint 名（サフィックス付き） |
-| `BuilderDiagnostics` | 〃 | 共有診断 SDA1001〜1006 |
+| `BuilderDiagnostics` | 〃 | 共有診断 SDA1001〜1008 |
 | `CodeExpressionHelper` | `Shared/Helpers/` | C# 文字列リテラル化（`StringLiteral`）、converter 呼び出し式 |
 | `ColumnAttributeHelper` / `MappingAttributeHelper` / `ConverterScopeHelper` | 〃 | 列属性・`[TypeMap]`・`[TypeHandler<>]` スコープの読み取り（コア Generator と同一規則） |
 | `NamingAttributeHelper` / `NameConverter` / `NamingConvention` | 〃 | `[Naming]` の解決（`[BindPrefix]` と同じ method → class → assembly）と、`ColumnAttributeHelper` / `MethodResolver` が適用する既定名変換（snake_case 等） |

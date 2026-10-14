@@ -27,8 +27,8 @@ internal sealed class NodeBuilder
     public enum BraceBalance
     {
         Balanced,
-        UnclosedBlock,   // SDA0506: more '{' than '}' across code blocks (a block is never closed)
-        ExtraClose // SDA0507: a '}' appears with no matching '{'
+        UnclosedBlock,   // SDA0505: more '{' than '}' across code blocks (a block is never closed)
+        ExtraClose // SDA0506: a '}' appears with no matching '{'
     }
 
     // Verifies that the C# braces across all /*% %/ code blocks are balanced. The block bodies are
@@ -205,7 +205,7 @@ internal sealed class NodeBuilder
             return;
         }
 
-        // SDA0505: unknown pragma '/*!xxx */'
+        // SDA0504: unknown pragma '/*!xxx */'
         if (value.StartsWith("!", StringComparison.Ordinal))
         {
             var pragmaToken = value[1..];

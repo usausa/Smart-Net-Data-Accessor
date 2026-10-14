@@ -1,7 +1,7 @@
 // ReSharper disable InconsistentNaming
 namespace Smart.Data.Accessor.Generator.Tests;
 
-// SDA0506 / SDA0507 — brace-balance of /*% %/ code blocks.
+// SDA0505 / SDA0506 — brace-balance of /*% %/ code blocks.
 public partial class DiagnosticTests
 {
     private const string Source = """
@@ -16,7 +16,7 @@ public partial class DiagnosticTests
         """;
 
     [Fact]
-    public void Sda0506UnclosedCodeBlockBraceEmitsDiagnostic()
+    public void Sda0505UnclosedCodeBlockBraceEmitsDiagnostic()
     {
         // The if-block opens '{' but is never closed.
         const string sql = """
@@ -27,11 +27,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0506");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0505");
     }
 
     [Fact]
-    public void Sda0507ExtraClosingBraceEmitsDiagnostic()
+    public void Sda0506ExtraClosingBraceEmitsDiagnostic()
     {
         // A '}' appears with no matching '{'.
         const string sql = """
@@ -42,11 +42,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0507");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0506");
     }
 
     [Fact]
-    public void Sda0506BalancedCodeBlocksReportNoBraceDiagnosticEmitsNoDiagnostic()
+    public void Sda0505BalancedCodeBlocksReportNoBraceDiagnosticEmitsNoDiagnostic()
     {
         const string sql = """
             update Data set Touched = 1
@@ -57,11 +57,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0506" or "SDA0507");
+        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0505" or "SDA0506");
     }
 
     [Fact]
-    public void Sda0506BracesInsideStringLiteralAreNotCountedEmitsNoDiagnostic()
+    public void Sda0505BracesInsideStringLiteralAreNotCountedEmitsNoDiagnostic()
     {
         // The "}{" literal must be ignored; only the real block braces count → balanced.
         const string sql = """
@@ -73,6 +73,6 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(Source, ("Accessor.Touch", sql));
 
-        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0506" or "SDA0507");
+        Assert.DoesNotContain(diagnostics, x => x.Id is "SDA0505" or "SDA0506");
     }
 }

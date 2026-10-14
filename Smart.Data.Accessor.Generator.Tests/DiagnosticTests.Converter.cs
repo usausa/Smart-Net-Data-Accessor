@@ -1,14 +1,14 @@
 namespace Smart.Data.Accessor.Generator.Tests;
 
-// Verifies the reader-side [TypeHandler<>] converter validation (SDA0307–SDA0311) wired through
+// Verifies the reader-side [TypeHandler<>] converter validation (SDA0304–SDA0306, SDA0309 and SDA0311) wired through
 // ConverterResolver. Each accessor is a [Query] (backed by a SQL file) so column mapping — and
 // thus converter resolution — runs.
 public partial class DiagnosticTests
 {
     [Fact]
-    public void Sda0309ConverterNotIValueConverterEmitsDiagnostic()
+    public void Sda0304ConverterNotIValueConverterEmitsDiagnostic()
     {
-        // SDA0309: the referenced converter type does not implement IValueConverter<,>.
+        // SDA0304: the referenced converter type does not implement IValueConverter<,>.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -33,13 +33,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0309");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0304");
     }
 
     [Fact]
-    public void Sda0308ConverterTClrMismatchEmitsDiagnostic()
+    public void Sda0305ConverterTClrMismatchEmitsDiagnostic()
     {
-        // SDA0308: converter TClr (int) does not match the property type (string).
+        // SDA0305: converter TClr (int) does not match the property type (string).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -67,13 +67,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0308");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0305");
     }
 
     [Fact]
-    public void Sda0310ConverterStaticAbstractMissingEmitsDiagnostic()
+    public void Sda0306ConverterStaticAbstractMissingEmitsDiagnostic()
     {
-        // SDA0310: converter implements the interface only via explicit static members, so the
+        // SDA0306: converter implements the interface only via explicit static members, so the
         // generated `TConverter.FromDb(...)` call cannot bind.
         const string source = """
             using System.Collections.Generic;
@@ -102,13 +102,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0310");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0306");
     }
 
     [Fact]
-    public void Sda0311TypeHandlerDuplicatedEmitsDiagnostic()
+    public void Sda0309TypeHandlerDuplicatedEmitsDiagnostic()
     {
-        // SDA0311: more than one [TypeHandler] on the same property (first wins).
+        // SDA0309: more than one [TypeHandler] on the same property (first wins).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -143,13 +143,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Value from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0311");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0309");
     }
 
     [Fact]
-    public void Sda0307NonNullableReferenceColumnReportsInfoEmitsDiagnostic()
+    public void Sda0311NonNullableReferenceColumnReportsInfoEmitsDiagnostic()
     {
-        // SDA0307 (Info): a non-nullable reference-type column may receive DB NULL.
+        // SDA0311 (Info): a non-nullable reference-type column may receive DB NULL.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -169,7 +169,7 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Name from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0307");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0311");
     }
 
     [Fact]

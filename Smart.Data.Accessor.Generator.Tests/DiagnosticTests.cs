@@ -74,10 +74,10 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0401SqlNotFoundWhenNoSqlAndNoBuilderEmitsDiagnostic()
+    public void Sda0406SqlNotFoundWhenNoSqlAndNoBuilderEmitsDiagnostic()
     {
-        // 要素型はマッピング可能にしておく(int だと SDA0312 が先に発火して SQL 解決に到達しない)。
-        // Keep the element type mappable (an int element would fire SDA0312 before SQL resolution is reached).
+        // 要素型はマッピング可能にしておく(int だと SDA0307 が先に発火して SQL 解決に到達しない)。
+        // Keep the element type mappable (an int element would fire SDA0307 before SQL resolution is reached).
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -94,11 +94,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0401");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0406");
     }
 
     [Fact]
-    public void Sda0502SqlEmptyWhenSqlFileBlankEmitsDiagnostic()
+    public void Sda0509SqlEmptyWhenSqlFileBlankEmitsDiagnostic()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -113,13 +113,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "   "));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0502");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0509");
     }
 
     [Fact]
-    public void Sda0503SqlCommentNotClosedWhenBlockCommentUnterminatedEmitsDiagnostic()
+    public void Sda0501SqlCommentNotClosedWhenBlockCommentUnterminatedEmitsDiagnostic()
     {
-        // SqlTokenizer throws SqlTokenizerException(CommentNotClosed); BuildSqlEmitCode catches it → SDA0503.
+        // SqlTokenizer throws SqlTokenizerException(CommentNotClosed); BuildSqlEmitCode catches it → SDA0501.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -133,13 +133,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data /* oops"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0503");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0501");
     }
 
     [Fact]
-    public void Sda0504SqlQuoteNotClosedWhenStringLiteralUnterminatedEmitsDiagnostic()
+    public void Sda0502SqlQuoteNotClosedWhenStringLiteralUnterminatedEmitsDiagnostic()
     {
-        // SqlTokenizer throws SqlTokenizerException(QuoteNotClosed); BuildSqlEmitCode catches it → SDA0504.
+        // SqlTokenizer throws SqlTokenizerException(QuoteNotClosed); BuildSqlEmitCode catches it → SDA0502.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -153,11 +153,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data where Name = 'oops"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0504");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0502");
     }
 
     [Fact]
-    public void Sda0002DataAccessorClassNestedEmitsDiagnostic()
+    public void Sda0003DataAccessorClassNestedEmitsDiagnostic()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -173,11 +173,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0002");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0003");
     }
 
     [Fact]
-    public void Sda0003DataAccessorClassGenericEmitsDiagnostic()
+    public void Sda0004DataAccessorClassGenericEmitsDiagnostic()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -190,7 +190,7 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0003");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0004");
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0106MethodNameDuplicatedWithinClassEmitsDiagnostic()
+    public void Sda0103MethodNameDuplicatedWithinClassEmitsDiagnostic()
     {
         const string source = """
             using System.Collections.Generic;
@@ -236,11 +236,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Same", "select Value from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0106");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0103");
     }
 
     [Fact]
-    public void Sda0004InjectNameDuplicatedEmitsDiagnostic()
+    public void Sda0007InjectNameDuplicatedEmitsDiagnostic()
     {
         // Class-level [Inject] is only processed once the accessor has at least one data method,
         // so include a valid [Execute] method (backed by a SQL file).
@@ -267,7 +267,7 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Delete", "delete from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0004");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0007");
     }
 
     [Fact]
@@ -291,12 +291,12 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0312QueryElementHasNoMappableColumnsEmitsDiagnostic()
+    public void Sda0307QueryElementHasNoMappableColumnsEmitsDiagnostic()
     {
         // [Query] の要素型にマッピング可能な列(public settable/init プロパティ・record 主 ctor 引数)が無い場合は
-        // SDA0312 で弾く(旧来は生成コードが未定義参照 CS0103 で壊れていた)。
+        // SDA0307 で弾く(旧来は生成コードが未定義参照 CS0103 で壊れていた)。
         // A [Query] element type with no mappable columns (public settable/init property or record primary-ctor
-        // parameter) is rejected with SDA0312 (previously the generated code broke with undefined references, CS0103).
+        // parameter) is rejected with SDA0307 (previously the generated code broke with undefined references, CS0103).
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -312,16 +312,16 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.List", "select Name from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0312");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0307");
     }
 
     [Fact]
     public void Sda0301QueryScalarPrimitiveReportsUnsupportedReturnInBothSyncAndAsyncEmitsNoDiagnostic()
     {
         // スカラー形(単一プリミティブ)の誤 Query は sync/async とも SDA0301 に揃える([ExecuteScalar] を使うべきケース)。
-        // SDA0312 はコレクション要素が非マップ型の場合に限る。
+        // SDA0307 はコレクション要素が非マップ型の場合に限る。
         // A scalar-shaped misuse of Query (single primitive) reports SDA0301 in both sync and async (the user should
-        // use [ExecuteScalar]); SDA0312 is reserved for an unmappable collection element.
+        // use [ExecuteScalar]); SDA0307 is reserved for an unmappable collection element.
         const string source = """
             using System.Threading.Tasks;
             using System.Data.Common;
@@ -345,7 +345,7 @@ public partial class DiagnosticTests
             ("Accessor.GetAsync", "select Name from Data"));
 
         Assert.Equal(2, diagnostics.Count(x => x.Id == "SDA0301"));
-        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0312");
+        Assert.DoesNotContain(diagnostics, x => x.Id == "SDA0307");
     }
 
     [Fact]
@@ -368,9 +368,9 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0405BuilderAndSqlBothPresentEmitsDiagnostic()
+    public void Sda0404BuilderAndSqlBothPresentEmitsDiagnostic()
     {
-        // SDA0405: a QueryBuilder attribute and a SQL file for the same method are ambiguous.
+        // SDA0404: a QueryBuilder attribute and a SQL file for the same method are ambiguous.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -390,13 +390,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Insert", "insert into Data default values"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0405");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0404");
     }
 
     [Fact]
-    public void Sda0103ExecutionKindDuplicatedEmitsDiagnostic()
+    public void Sda0105ExecutionKindDuplicatedEmitsDiagnostic()
     {
-        // SDA0103: [Execute] and [Query] (both A-group) on the same method are mutually exclusive.
+        // SDA0105: [Execute] and [Query] (both A-group) on the same method are mutually exclusive.
         const string source = """
             using System.Collections.Generic;
             using Smart.Data.Accessor.Attributes;
@@ -417,13 +417,13 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Go", "select Id from T"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0103");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0105");
     }
 
     [Fact]
-    public void Sda0104ProcedureDirectSqlConflictEmitsDiagnostic()
+    public void Sda0106ProcedureDirectSqlConflictEmitsDiagnostic()
     {
-        // SDA0104: [Procedure] and [DirectSql] (both B-group command sources) are mutually exclusive.
+        // SDA0106: [Procedure] and [DirectSql] (both B-group command sources) are mutually exclusive.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -439,14 +439,14 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0104");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0106");
     }
 
     [Fact]
-    public void Sda0107SqlAndCommandSourceConflictEmitsDiagnostic()
+    public void Sda0108SqlAndCommandSourceConflictEmitsDiagnostic()
     {
-        // SDA0107: [Sql] は他のコマンドソース([DirectSql] / [Procedure] / QueryBuilder 属性)と併用できない。
-        // SDA0107: [Sql] cannot be combined with another command source ([DirectSql] / [Procedure] / QueryBuilder).
+        // SDA0108: [Sql] は他のコマンドソース([DirectSql] / [Procedure] / QueryBuilder 属性)と併用できない。
+        // SDA0108: [Sql] cannot be combined with another command source ([DirectSql] / [Procedure] / QueryBuilder).
         const string source = """
             using System.Data.Common;
             using Smart.Data.Accessor.Attributes;
@@ -475,15 +475,15 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Equal(3, diagnostics.Count(x => x.Id == "SDA0107"));
+        Assert.Equal(3, diagnostics.Count(x => x.Id == "SDA0108"));
     }
 
     [Fact]
-    public void Sda0108ExecutionKindMissingForCommandSourceAttributesEmitsDiagnostic()
+    public void Sda0104ExecutionKindMissingForCommandSourceAttributesEmitsDiagnostic()
     {
-        // SDA0108: 実行種別属性(A 群)は生成マーカーであり必須。B 群(ソース)属性は実行種別を既定しない
+        // SDA0104: 実行種別属性(A 群)は生成マーカーであり必須。B 群(ソース)属性は実行種別を既定しない
         // (旧仕様の [Procedure]/[DirectSql] → Execute 既定は撤回)。
-        // SDA0108: the execution-kind attribute (A-group) is the generation marker and mandatory; source
+        // SDA0104: the execution-kind attribute (A-group) is the generation marker and mandatory; source
         // attributes never default it (the former [Procedure]/[DirectSql] → Execute default is withdrawn).
         const string source = """
             using System.Data.Common;
@@ -510,14 +510,14 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Equal(4, diagnostics.Count(x => x.Id == "SDA0108"));
+        Assert.Equal(4, diagnostics.Count(x => x.Id == "SDA0104"));
     }
 
     [Fact]
-    public void Sda0211SqlTextEmptyEmitsDiagnostic()
+    public void Sda0111SqlTextEmptyEmitsDiagnostic()
     {
-        // SDA0211: [Sql("")] テキストが空 → 警告。
-        // SDA0211: [Sql("")] empty SQL text -> warning.
+        // SDA0111: [Sql("")] テキストが空 → 警告。
+        // SDA0111: [Sql("")] empty SQL text -> warning.
         const string source = """
             using System.Data.Common;
             using Smart.Data.Accessor.Attributes;
@@ -533,14 +533,14 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0211");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0111");
     }
 
     [Fact]
-    public void Sda0406SqlHasSqlFileEmitsDiagnostic()
+    public void Sda0402SqlHasSqlFileEmitsDiagnostic()
     {
-        // SDA0406: [Sql] は対応する .sql ファイルを持ってはならない(ファイルが黙って無視され食い違う罠を防ぐ)。
-        // SDA0406: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
+        // SDA0402: [Sql] は対応する .sql ファイルを持ってはならない(ファイルが黙って無視され食い違う罠を防ぐ)。
+        // SDA0402: [Sql] must not have a corresponding .sql file (prevents the file silently diverging unused).
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -559,14 +559,14 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.List", "select Id from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0406");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0402");
     }
 
     [Fact]
-    public void Sda0406SqlHasSqlFileWithMethodNameAliasEmitsDiagnostic()
+    public void Sda0402SqlHasSqlFileWithMethodNameAliasEmitsDiagnostic()
     {
-        // SDA0406 のファイル併存チェックは [MethodName] のエイリアスを含むキー({Class}.{Alias}.sql)で判定する。
-        // The SDA0406 file-coexistence check keys on the [MethodName] alias ({Class}.{Alias}.sql).
+        // SDA0402 のファイル併存チェックは [MethodName] のエイリアスを含むキー({Class}.{Alias}.sql)で判定する。
+        // The SDA0402 file-coexistence check keys on the [MethodName] alias ({Class}.{Alias}.sql).
         const string source = """
             using System.Collections.Generic;
             using System.Data.Common;
@@ -586,15 +586,15 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.ListAlias", "select Id from Data"));
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA0406");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0402");
     }
 
     [Fact]
-    public void Sda0503InlineSqlParseErrorPointsInsideRawStringLiteralEmitsDiagnostic()
+    public void Sda0501InlineSqlParseErrorPointsInsideRawStringLiteralEmitsDiagnostic()
     {
-        // SDA0503(コメント未閉塞)の位置が [Sql] の raw string literal 内の該当 "/*" を指す
+        // SDA0501(コメント未閉塞)の位置が [Sql] の raw string literal 内の該当 "/*" を指す
         // (ファイル方式はメソッド宣言、従来のインラインは属性引数全体しか指せなかった)。
-        // SDA0503 (unclosed comment) points at the exact "/*" inside the [Sql] raw string literal
+        // SDA0501 (unclosed comment) points at the exact "/*" inside the [Sql] raw string literal
         // (the file form points at the method declaration; inline used to point at the whole argument).
         const string source = """"
             using System.Data.Common;
@@ -616,17 +616,17 @@ public partial class DiagnosticTests
 
         // "/* broken" の "/" は 9 行目(0 基点)・raw literal のインデント 8 + "where Id = 1 "(13 文字) = 21 桁目。
         // The "/" of "/* broken" sits at line 9 (0-based), column 8 (raw indent) + 13 ("where Id = 1 ") = 21.
-        var diagnostic = diagnostics.Single(x => x.Id == "SDA0503");
+        var diagnostic = diagnostics.Single(x => x.Id == "SDA0501");
         var position = diagnostic.Location.GetLineSpan().StartLinePosition;
         Assert.Equal(9, position.Line);
         Assert.Equal(21, position.Character);
     }
 
     [Fact]
-    public void Sda0504InlineSqlParseErrorPointsInsideRegularLiteralEmitsDiagnostic()
+    public void Sda0502InlineSqlParseErrorPointsInsideRegularLiteralEmitsDiagnostic()
     {
-        // 通常リテラル(エスケープ復号)でも SDA0504(クォート未閉塞)の位置が該当 "'" を指す。
-        // A regular literal (escape decoding) also points SDA0504 (unclosed quote) at the exact "'".
+        // 通常リテラル(エスケープ復号)でも SDA0502(クォート未閉塞)の位置が該当 "'" を指す。
+        // A regular literal (escape decoding) also points SDA0502 (unclosed quote) at the exact "'".
         const string source = """
             using System.Data.Common;
             using Smart.Data.Accessor.Attributes;
@@ -644,7 +644,7 @@ public partial class DiagnosticTests
 
         // "'broken" の "'" は 7 行目(0 基点)・リテラル内容開始 10 + "update Data set Name = "(23 文字) = 33 桁目。
         // The "'" of "'broken" sits at line 7 (0-based), column 10 (content start) + 23 ("update Data set Name = ") = 33.
-        var diagnostic = diagnostics.Single(x => x.Id == "SDA0504");
+        var diagnostic = diagnostics.Single(x => x.Id == "SDA0502");
         var position = diagnostic.Location.GetLineSpan().StartLinePosition;
         Assert.Equal(7, position.Line);
         Assert.Equal(33, position.Character);
@@ -685,7 +685,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0306RecordPrimaryConstructorPathEmitsDiagnostic()
+    public void Sda0312RecordPrimaryConstructorPathEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -706,7 +706,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Id from T"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0306");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0312");
     }
 
     // ------------------------------------------------------------
@@ -714,7 +714,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0402SqlFileNameCollisionEmitsDiagnostic()
+    public void Sda0401SqlFileNameCollisionEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -733,7 +733,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*@ id */1"), ("Accessor.Execute", "update T set B = /*@ id */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0402");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0401");
     }
 
     [Fact]
@@ -761,7 +761,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0404ProcedureHasSqlFileEmitsDiagnostic()
+    public void Sda0405ProcedureHasSqlFileEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -781,7 +781,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0404");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0405");
     }
 
     // ------------------------------------------------------------
@@ -789,7 +789,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0505SqlUnknownPragmaEmitsDiagnostic()
+    public void Sda0504SqlUnknownPragmaEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -808,11 +808,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*!unknown */ /*@ id */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0505");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0504");
     }
 
     [Fact]
-    public void Sda0508UndefinedSqlParameterEmitsDiagnostic()
+    public void Sda0507UndefinedSqlParameterEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -831,11 +831,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*@ id */1 where B = /*@ missing */2"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0508");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0507");
     }
 
     [Fact]
-    public void Sda0509UnusedMethodParameterEmitsDiagnostic()
+    public void Sda0510UnusedMethodParameterEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -854,11 +854,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*@ id */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0509");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0510");
     }
 
     [Fact]
-    public void Sda0510SqlPropertyNotFoundEmitsDiagnostic()
+    public void Sda0508SqlPropertyNotFoundEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -882,7 +882,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*@ entity.Missing */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0510");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0508");
     }
 
     // ------------------------------------------------------------
@@ -890,7 +890,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0208DirectionOnUnsupportedMethodEmitsDiagnostic()
+    public void Sda0205DirectionOnUnsupportedMethodEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -916,11 +916,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Query", "select Id from T"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0208");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0205");
     }
 
     [Fact]
-    public void Sda0210DirectSqlCommandTextDirectionEmitsDiagnostic()
+    public void Sda0208DirectSqlCommandTextDirectionEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -942,11 +942,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0210");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0208");
     }
 
     [Fact]
-    public void Sda0304ExecuteReaderRequiresUsingEmitsDiagnostic()
+    public void Sda0310ExecuteReaderRequiresUsingEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -967,11 +967,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Read", "select Id from T where Id = /*@ id */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0304");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0310");
     }
 
     [Fact]
-    public void Sda0305AsyncEnumerableMissingEnumeratorCancellationEmitsDiagnostic()
+    public void Sda0308AsyncEnumerableMissingEnumeratorCancellationEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -995,7 +995,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.QueryAsync", "select Id from T"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0305");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0308");
     }
 
     // ------------------------------------------------------------
@@ -1003,7 +1003,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0005InjectNameConflictsWithMemberEmitsDiagnostic()
+    public void Sda0008InjectNameConflictsWithMemberEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1022,11 +1022,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0005");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0008");
     }
 
     [Fact]
-    public void Sda0006InjectTypeNotResolvableEmitsDiagnostic()
+    public void Sda0013InjectTypeNotResolvableEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1045,11 +1045,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0006");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0013");
     }
 
     [Fact]
-    public void Sda0008ProviderNameEmptyEmitsDiagnostic()
+    public void Sda0014ProviderNameEmptyEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1068,11 +1068,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0008");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0014");
     }
 
     [Fact]
-    public void Sda0009ProviderOnPatternAOnlyAccessorEmitsDiagnostic()
+    public void Sda0015ProviderOnPatternAOnlyAccessorEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1093,11 +1093,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0009");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0015");
     }
 
     [Fact]
-    public void Sda0010ExecuteConfigProfileInvalidEmitsDiagnostic()
+    public void Sda0009ExecuteConfigProfileInvalidEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1120,11 +1120,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0010");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0009");
     }
 
     [Fact]
-    public void Sda0011ProfileCircularReferenceEmitsDiagnostic()
+    public void Sda0010ProfileCircularReferenceEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1149,7 +1149,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = 1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0011");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0010");
     }
 
     // ------------------------------------------------------------
@@ -1157,7 +1157,7 @@ public partial class DiagnosticTests
     // ------------------------------------------------------------
 
     [Fact]
-    public void Sda0201NameDuplicatedEmitsDiagnostic()
+    public void Sda0202NameDuplicatedEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1176,11 +1176,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Execute", "update T set A = /*@ p */1"));
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0201");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0202");
     }
 
     [Fact]
-    public void Sda0202DirectSqlFirstParamNotStringEmitsDiagnostic()
+    public void Sda0201DirectSqlFirstParamNotStringEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1200,11 +1200,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0202");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0201");
     }
 
     [Fact]
-    public void Sda0203ProcedureNameEmptyEmitsDiagnostic()
+    public void Sda0110ProcedureNameEmptyEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1224,7 +1224,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0203");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0110");
     }
 
     [Fact]
@@ -1254,7 +1254,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0205DbTypeAttributeConflictEmitsDiagnostic()
+    public void Sda0203DbTypeAttributeConflictEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1276,11 +1276,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0205");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0203");
     }
 
     [Fact]
-    public void Sda0206DbTypeProviderEnumNotWhitelistedEmitsDiagnostic()
+    public void Sda0209DbTypeProviderEnumNotWhitelistedEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1305,7 +1305,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0206");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0209");
     }
 
     [Fact]
@@ -1335,7 +1335,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda1005NoKeyForBuilderEmitsDiagnostic()
+    public void Sda1008NoKeyForBuilderEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1359,11 +1359,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA1005");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA1008");
     }
 
     [Fact]
-    public void Sda1005CanBeSuppressedAtMethod()
+    public void Sda1008CanBeSuppressedAtMethod()
     {
         const string source = """
             using Smart.Data.Accessor.Attributes;
@@ -1376,11 +1376,11 @@ public partial class DiagnosticTests
             [DataAccessor]
             internal sealed partial class Accessor
             {
-            #pragma warning disable SDA1005
+            #pragma warning disable SDA1008
                 [Delete(typeof(Entity), Table = "T")]
                 [Execute]
                 public partial int Delete(int id);
-            #pragma warning restore SDA1005
+            #pragma warning restore SDA1008
             }
             """;
 
@@ -1390,17 +1390,17 @@ public partial class DiagnosticTests
     }
 
     // キーの無いエンティティの UPDATE は全行を更新し、Postgres の UPSERT と SQL Server の MERGE は SQL にならないためエラー。
-    // MySQL の UPSERT はキーが無くても成り立つので SDA1005 の警告のまま。
+    // MySQL の UPSERT はキーが無くても成り立つので SDA1008 の警告のまま。
     // An UPDATE of an entity without a key updates every row, and the Postgres UPSERT / SQL Server MERGE are not valid SQL, so
-    // they are errors. The MySQL UPSERT works without a key, so it stays the SDA1005 warning.
+    // they are errors. The MySQL UPSERT works without a key, so it stays the SDA1008 warning.
     [Theory]
-    [InlineData("Update", "SDA1007")]
-    [InlineData("SqlUpdate", "SDA1007")]
-    [InlineData("PgUpdate", "SDA1007")]
-    [InlineData("MySqlUpdate", "SDA1007")]
-    [InlineData("PgUpsert", "SDA1007")]
-    [InlineData("SqlMerge", "SDA1007")]
-    [InlineData("MySqlUpsert", "SDA1005")]
+    [InlineData("Update", "SDA1006")]
+    [InlineData("SqlUpdate", "SDA1006")]
+    [InlineData("PgUpdate", "SDA1006")]
+    [InlineData("MySqlUpdate", "SDA1006")]
+    [InlineData("PgUpsert", "SDA1006")]
+    [InlineData("SqlMerge", "SDA1006")]
+    [InlineData("MySqlUpsert", "SDA1008")]
     public void KeyedStatementWithoutKeyEmitsDiagnostic(string attribute, string id)
     {
         var source = $$"""
@@ -1449,7 +1449,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda1006TypeMapTypeHandlerConflictEmitsDiagnostic()
+    public void Sda1007TypeMapTypeHandlerConflictEmitsDiagnostic()
     {
         // Arrange
         const string source = """
@@ -1487,7 +1487,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA1006");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA1007");
     }
 
     [Fact]
@@ -1535,9 +1535,9 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda1004BuilderSelectColumnsUnresolvableEmitsDiagnostic()
+    public void Sda1005BuilderSelectColumnsUnresolvableEmitsDiagnostic()
     {
-        // SDA1004: [Select] with only a Table name cannot determine the column list.
+        // SDA1005: [Select] with only a Table name cannot determine the column list.
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -1551,7 +1551,7 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, x => x.Id == "SDA1004");
+        Assert.Contains(diagnostics, x => x.Id == "SDA1005");
     }
 
     [Fact]
@@ -1584,9 +1584,9 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0012NamingValueUndefinedEmitsDiagnostic()
+    public void Sda0005NamingValueUndefinedEmitsDiagnostic()
     {
-        // SDA0012: [Naming] cast to an enum value outside NamingConvention (treated as None).
+        // SDA0005: [Naming] cast to an enum value outside NamingConvention (treated as None).
         const string source = """
             using Smart.Data.Accessor.Attributes;
 
@@ -1599,11 +1599,11 @@ public partial class DiagnosticTests
 
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0012");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0005");
     }
 
     [Fact]
-    public void Sda0209ReturnValueDirectionOnArgumentEmitsDiagnostic()
+    public void Sda0206ReturnValueDirectionOnArgumentEmitsDiagnostic()
     {
         const string source = """
             using System.Data;
@@ -1621,7 +1621,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // [Direction(ReturnValue)] is retired everywhere.
-        Assert.Contains(diagnostics, x => x.Id == "SDA0209");
+        Assert.Contains(diagnostics, x => x.Id == "SDA0206");
     }
 
     [Theory]
@@ -1629,7 +1629,7 @@ public partial class DiagnosticTests
     [InlineData("internal abstract partial class Accessor")]
     [InlineData("internal sealed partial record Accessor")]
     [InlineData("file sealed partial class Accessor")]
-    public void Sda0013UnsupportedClassKindEmitsDiagnostic(string declaration)
+    public void Sda0002UnsupportedClassKindEmitsDiagnostic(string declaration)
     {
         // Arrange
         var source = $$"""
@@ -1645,11 +1645,11 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
 
         // Assert
-        Assert.Contains(diagnostics, static x => x.Id == "SDA0013");
+        Assert.Contains(diagnostics, static x => x.Id == "SDA0002");
     }
 
     [Fact]
-    public void Sda0014ClassNamesDifferingOnlyInCaseGenerateTheFirstOnly()
+    public void Sda0011ClassNamesDifferingOnlyInCaseGenerateTheFirstOnly()
     {
         // Arrange
         const string source = """
@@ -1676,7 +1676,7 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"), ("accessor.Delete", "delete from Data where Id = /*@ id */0"));
 
         // Assert
-        Assert.Contains("SDA0014", result);
+        Assert.Contains("SDA0011", result);
         Assert.DoesNotContain("CS8785", result);
     }
 
@@ -1708,7 +1708,7 @@ public partial class DiagnosticTests
     }
 
     [Fact]
-    public void Sda0015InvalidSkipLocalsInitValueEmitsWarning()
+    public void Sda0012InvalidSkipLocalsInitValueEmitsWarning()
     {
         // Arrange
         const string source = """
@@ -1726,7 +1726,7 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnosticsWithProperty("SmartDataAccessor_SkipLocalsInit", "yes", source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
 
         // Assert
-        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0015");
+        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0012");
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
     }
 
@@ -1735,7 +1735,7 @@ public partial class DiagnosticTests
     [InlineData("", "[Direction((ParameterDirection)99)] int id", "")]
     [InlineData("[ReaderBehavior((CommandBehavior)1024)]", "int id", "")]
     [InlineData("", "int id", "[TypeMap(typeof(int), (DbType)999)]")]
-    public void Sda0016UndefinedEnumValueEmitsError(string methodAttribute, string parameter, string classAttribute)
+    public void Sda0006UndefinedEnumValueEmitsError(string methodAttribute, string parameter, string classAttribute)
     {
         // Arrange
         var method = methodAttribute.Length > 0
@@ -1758,12 +1758,12 @@ public partial class DiagnosticTests
         var diagnostics = GeneratorTestHelper.GetDiagnostics(source, ("Accessor.Select", "select * from Data where Id = /*@ id */0"));
 
         // Assert
-        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0016");
+        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "SDA0006");
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
     }
 
     [Fact]
-    public void Sda0508UnknownNameEmitsErrorAndThrowingImplementation()
+    public void Sda0507UnknownNameEmitsErrorAndThrowingImplementation()
     {
         // Arrange
         const string source = """
@@ -1781,13 +1781,13 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0 and Type = /*@ missing */0"));
 
         // Assert
-        Assert.Contains("SDA0508", result);
+        Assert.Contains("SDA0507", result);
         Assert.DoesNotContain("CS0103", result);
         Assert.DoesNotContain("CS8795", result);
     }
 
     [Fact]
-    public void Sda0508ClassMembersAndInjectNamesResolve()
+    public void Sda0507ClassMembersAndInjectNamesResolve()
     {
         // Arrange
         const string source = """
@@ -1811,12 +1811,12 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0 and Type = /*@ Type */0 and Rows < /*@ Limit */0 and Time < /*@ clock.GetUtcNow() */0"));
 
         // Assert
-        Assert.DoesNotContain("SDA0508", result);
+        Assert.DoesNotContain("SDA0507", result);
         Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Sda0510InternalInterfaceAndExtensionMembersResolve()
+    public void Sda0508InternalInterfaceAndExtensionMembersResolve()
     {
         // Arrange
         const string source = """
@@ -1853,12 +1853,12 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Type = /*@ filter.Type */0 and Rows < /*@ filter.Limit() */0 and Name = /*@ entity.Name */'a'"));
 
         // Assert
-        Assert.DoesNotContain("SDA0510", result);
+        Assert.DoesNotContain("SDA0508", result);
         Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Sda0510ExtensionPropertyResolves()
+    public void Sda0508ExtensionPropertyResolves()
     {
         // Arrange
         const string source = """
@@ -1889,12 +1889,12 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Rows < /*@ filter.Limit */0"));
 
         // Assert
-        Assert.DoesNotContain("SDA0510", result);
+        Assert.DoesNotContain("SDA0508", result);
         Assert.DoesNotContain(result, static x => x.StartsWith("CS", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Sda0510UnknownMemberEmitsErrorAndThrowingImplementation()
+    public void Sda0508UnknownMemberEmitsErrorAndThrowingImplementation()
     {
         // Arrange
         const string source = """
@@ -1917,7 +1917,7 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Type = /*@ filter.Kind */0"));
 
         // Assert
-        Assert.Contains("SDA0510", result);
+        Assert.Contains("SDA0508", result);
         Assert.DoesNotContain("CS1061", result);
         Assert.DoesNotContain("CS8795", result);
     }
@@ -1944,7 +1944,7 @@ public partial class DiagnosticTests
         var result = GeneratorTestHelper.GetProblemIds(source, ("Accessor.Delete", "delete from Data where Id = /*@ id */0"));
 
         // Assert
-        Assert.Equal(["SDA0401"], result);
+        Assert.Equal(["SDA0406"], result);
     }
 
     [Fact]

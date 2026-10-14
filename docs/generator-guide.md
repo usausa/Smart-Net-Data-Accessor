@@ -38,7 +38,7 @@ A Smart.Data.Accessor method is defined by two axes:
 
 - **A-group (execution kind)** — `[Execute]` / `[ExecuteScalar]` / `[Query]` / `[QueryFirst]` /
   `[ExecuteReader]`. This is the **generation marker and it is mandatory** (a method with only a
-  B-group attribute is an SDA0108 error).
+  B-group attribute is an SDA0104 error).
 - **B-group (command source)** — where the SQL comes from: a `.sql` file (default), `[Sql]`,
   `[DirectSql]`, `[Procedure]`, or a **QueryBuilder attribute (the extension point of this guide)**.
 
@@ -78,8 +78,8 @@ User code
    the shared `SqlEmit`). The generated names start with `__` so that they do not clash with the value
    parameters, which keep the names of the method parameters.
 3. Exclusivity and consistency are enforced by core diagnostics: the A-group requirement
-   (SDA0108), QueryBuilder × `[Procedure]`/`[DirectSql]` (SDA0105), × `[Sql]` (SDA0107), a
-   coexisting `.sql` file (SDA0405), duplicated QueryBuilder attributes (SDA1002).
+   (SDA0104), QueryBuilder × `[Procedure]`/`[DirectSql]` (SDA0107), × `[Sql]` (SDA0108), a
+   coexisting `.sql` file (SDA0404), duplicated QueryBuilder attributes (SDA1002).
    **Do not re-implement these on the provider side.**
 
 ---
@@ -278,7 +278,7 @@ internal static class OracleModelBuilder
 
 - **`ClassScanner`** covers partial validation, method enumeration and attribute matching;
   **`MethodResolver`** covers method-shape resolution (connection argument, value parameters,
-  return type) plus the shared diagnostics (SDA1001–1006). What you write yourself is only the
+  return type) plus the shared diagnostics (SDA1001–1008). What you write yourself is only the
   "attribute → per-kind model" conversion and **provider-specific validation**.
 - Kinds are not an enum but an **attribute-name → build-delegate table** (adding a kind is one
   table row).
@@ -319,7 +319,7 @@ internal static class OracleSourceBuilder
 
 ### Step 6 — diagnostics
 
-- Shared diagnostics (SDA1001–1006: non-partial container, duplicated builder attributes,
+- Shared diagnostics (SDA1001–1008: non-partial container, duplicated builder attributes,
   unresolvable entity, ...) live in `BuilderDiagnostics` (shared source) and are raised by
   `ClassScanner`/`MethodResolver` automatically.
 - **Provider-specific diagnostics use your own ID prefix** (e.g. `ORA0001`). The `SDA` band is
@@ -385,7 +385,7 @@ internal static class OracleSourceBuilder
 | `MappingResolver` / `ColumnBinding` / `ParameterBinding` | 〃 | Entity-column resolution (`[Name]`/`[Key]`/`[DatabaseManaged]`/`[Ignore]`, `[TypeMap]`, converter binding) |
 | `SqlEmit` | 〃 | Opening/closing `__QueryBuilder`, `CommandText`, parameter-binding emit (`QueryBuilderMethodSuffix` lives here) |
 | `SourceOutput` | 〃 | File header, partial-class shell, diagnostic reporting, hint name (with suffix) |
-| `BuilderDiagnostics` | 〃 | Shared diagnostics SDA1001–1006 |
+| `BuilderDiagnostics` | 〃 | Shared diagnostics SDA1001–1008 |
 | `CodeExpressionHelper` | `Shared/Helpers/` | C# string literalisation (`StringLiteral`), converter-call expressions |
 | `ColumnAttributeHelper` / `MappingAttributeHelper` / `ConverterScopeHelper` | 〃 | Reading column attributes, `[TypeMap]`, `[TypeHandler<>]` scopes (identical rules to the core generator) |
 | `NamingAttributeHelper` / `NameConverter` / `NamingConvention` | 〃 | `[Naming]` resolution (method → class → assembly, like `[BindPrefix]`) and the default-name conversion (snake_case etc.) applied by `ColumnAttributeHelper` / `MethodResolver` |
