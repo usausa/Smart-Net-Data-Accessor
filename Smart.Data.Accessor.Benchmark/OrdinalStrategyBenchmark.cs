@@ -65,11 +65,13 @@ public class OrdinalStrategyBenchmark
             Enumerable.Range(1, RowCount).Select(static x => ExtraWideData.Values(x))));
 
         mockExtraWideUnmapped = new MockRepeatDbConnection(new MockDataReader(
-            [.. ExtraWideData.Columns().SelectMany(static (c, i) => new[]
-            {
-                new MockColumn(typeof(string), "unmapped_" + i.ToString(CultureInfo.InvariantCulture)),
-                c
-            })],
+            [
+                .. ExtraWideData.Columns().SelectMany(static (c, i) => new[]
+                {
+                    new MockColumn(typeof(string), "unmapped_" + i.ToString(CultureInfo.InvariantCulture)),
+                    c
+                })
+            ],
             Enumerable.Range(1, RowCount).Select(static x =>
                 ExtraWideData.Values(x).SelectMany(static v => new[] { "filler", v }).ToArray())));
 

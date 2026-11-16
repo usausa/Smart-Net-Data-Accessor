@@ -88,7 +88,7 @@ User code
 
 | Project | TFM | Role |
 | --- | --- | --- |
-| `<Your>.Builders.Xxx` | `net8.0;net9.0;net10.0` (`IsAotCompatible`) | The **attribute package** users reference. Ships the generator dll inside the NuGet |
+| `<Your>.Builders.Xxx` | `net11.0;net10.0` (`IsAotCompatible`) | The **attribute package** users reference. Ships the generator dll inside the NuGet |
 | `<Your>.Builders.Xxx.Generator` | `netstandard2.0` | The **generator itself** (distributed as a Roslyn analyzer) |
 
 ### 2.1 Generator csproj (essentials)

@@ -3,7 +3,7 @@
   <Import Project="..\Smart.Data.Accessor.props" />
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Example.WebApplication2</RootNamespace>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -11,8 +11,8 @@
   <Import Project="..\Smart.Data.Accessor.targets" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.5.26302.115" />
-    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
+    <PackageReference Include="Usa.Smart.Resolver.Extensions.DependencyInjection" Version="3.3.0" />
   </ItemGroup>
 
   <ItemGroup>

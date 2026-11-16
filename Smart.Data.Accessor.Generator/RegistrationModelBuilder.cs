@@ -36,17 +36,17 @@ internal static class RegistrationModelBuilder
 
             var fallback = symbol.IsPartialDefinition && (symbol.PartialImplementationPart is null) &&
                            (containingType.ContainingType is null) && !containingType.IsFileLocal && !containingType.IsGenericType
-                ? new RegistrationMethodModel(
-                    containingNamespace,
-                    containingType.Name,
-                    symbol.Name,
-                    symbol.GetImplementationSignature(syntax),
-                    string.Empty,
-                    false,
-                    new EquatableArray<string>([]),
-                    LocationInfo.CreateFrom(syntax.Identifier.GetLocation()),
-                    IsFallback: true)
-                : null;
+                               ? new RegistrationMethodModel(
+                                   containingNamespace,
+                                   containingType.Name,
+                                   symbol.Name,
+                                   symbol.GetImplementationSignature(syntax),
+                                   string.Empty,
+                                   false,
+                                   new EquatableArray<string>([]),
+                                   LocationInfo.CreateFrom(syntax.Identifier.GetLocation()),
+                                   IsFallback: true)
+                               : null;
             return new Result<RegistrationMethodModel>(fallback!, new EquatableArray<DiagnosticInfo>(diagnostics));
         }
 

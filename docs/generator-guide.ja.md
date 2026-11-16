@@ -76,7 +76,7 @@ Smart.Data.Accessor のメソッドは 2 軸で決まる。
 
 | プロジェクト | TFM | 役割 |
 | --- | --- | --- |
-| `<Your>.Builders.Xxx` | `net8.0;net9.0;net10.0`（`IsAotCompatible`） | 利用者が参照する**属性パッケージ**。NuGet にジェネレータ dll を同梱する |
+| `<Your>.Builders.Xxx` | `net11.0;net10.0`（`IsAotCompatible`） | 利用者が参照する**属性パッケージ**。NuGet にジェネレータ dll を同梱する |
 | `<Your>.Builders.Xxx.Generator` | `netstandard2.0` | **ジェネレータ本体**（Roslyn アナライザとして配布） |
 
 ### 2.1 ジェネレータ側 csproj（要点）

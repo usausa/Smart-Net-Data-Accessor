@@ -91,11 +91,13 @@ public class ComparisonBenchmark
         // (its worst case) while the hash switch just falls to default. This is the shape where the microbenchmark
         // showed the largest gap between them.
         mockExtraWideUnmapped = new MockRepeatDbConnection(new MockDataReader(
-            [.. ExtraWideData.Columns().SelectMany(static (c, i) => new[]
-            {
-                new MockColumn(typeof(string), "unmapped_" + i.ToString(CultureInfo.InvariantCulture)),
-                c
-            })],
+            [
+                .. ExtraWideData.Columns().SelectMany(static (c, i) => new[]
+                {
+                    new MockColumn(typeof(string), "unmapped_" + i.ToString(CultureInfo.InvariantCulture)),
+                    c
+                })
+            ],
             Enumerable.Range(1, RowCount).Select(static x =>
                 ExtraWideData.Values(x).SelectMany(static v => new[] { "filler", v }).ToArray())));
 

@@ -1206,10 +1206,13 @@ internal static class AccessorModelBuilder
 
             // SqlSource(クエリ構築方法)は MethodType と直交。同時成立しないこと(B 群)は SDA0106/0107/0404 が担保済み。
             // SqlSource (how the SQL is built) is orthogonal to MethodType; B-group exclusivity is enforced by SDA0106/0107/0404.
-            var sqlSource = builder is not null ? SqlSource.QueryBuilder
-                : procedureName is not null ? SqlSource.Procedure
-                : isDirectSql ? SqlSource.DirectSql
-                : SqlSource.TwoWaySql;
+            var sqlSource = builder is not null
+                ? SqlSource.QueryBuilder
+                : procedureName is not null
+                    ? SqlSource.Procedure
+                    : isDirectSql
+                        ? SqlSource.DirectSql
+                        : SqlSource.TwoWaySql;
 
             handled.Add(member);
             methods.Add(new MethodModel(
