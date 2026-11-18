@@ -6,7 +6,6 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Example.ConsoleApplication</RootNamespace>
-    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <Import Project="..\Smart.Data.Accessor.targets" />

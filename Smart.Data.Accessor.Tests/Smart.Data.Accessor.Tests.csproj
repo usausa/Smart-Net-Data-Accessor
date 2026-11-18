@@ -7,7 +7,6 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Smart.Data.Accessor.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
-    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <PropertyGroup>
