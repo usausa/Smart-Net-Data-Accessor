@@ -22,7 +22,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageReference Include="xunit.v3" Version="4.0.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
-    <PackageReference Include="Usa.Smart.Mock.Data" Version="3.0.0" />
+    <PackageReference Include="Usa.Smart.Mock.Data" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>

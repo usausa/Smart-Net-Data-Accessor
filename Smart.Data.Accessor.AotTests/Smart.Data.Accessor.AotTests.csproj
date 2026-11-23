@@ -33,11 +33,4 @@
     <ProjectReference Include="..\Smart.Data.Accessor.Generator\Smart.Data.Accessor.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <!-- AOT note: `dotnet publish -r <rid>` emits IL2104/IL3053 for the third-party Smart.Resolver
-       assembly (the container is not AOT-annotated). This project's own code is AOT-warning-free.
-       The D-3 (Resolver) path is still runtime-safe under NativeAOT because UseDataAccessors() binds
-       accessors via explicit ToMethod/ToConstant factories (no reflective activation) — verified by
-       the native smoke. D-1 (built-in) and D-2 (M.E.DI) are fully AOT-clean. The warnings are NOT
-       suppressed (left visible by policy). -->
-
 </Project>

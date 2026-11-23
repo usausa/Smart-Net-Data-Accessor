@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Usa.Smart.Resolver" Version="3.3.0" />
+    <PackageReference Include="Usa.Smart.Resolver" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup>
